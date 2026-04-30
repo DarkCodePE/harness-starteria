@@ -29,5 +29,6 @@ skills-lock.json
 # Project-specific ignores
 backend/docs/
 BHIL-AI-First-Development-Toolkit/*
+backend/docs/Perfiles del dashboard.xlsx
 image copy.png
 k8s/image.png
