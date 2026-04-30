@@ -1,0 +1,730 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  participante
+  mentor
+  admin
+  sponsor
+  colaborador
+  viewer
+}
+
+enum SponsorCheckpointStatus {
+  PENDING
+  APPROVED
+  FLAGGED
+  EXPIRED
+  SKIPPED
+}
+
+enum AlignmentSignal {
+  ALIGNED
+  CONCERNS
+  PIVOT_SUGGESTED
+}
+
+enum ProjectStatus {
+  DRAFT
+  IN_PROGRESS
+  AI_REVIEW
+  ITERATION
+  EXPERT_SESSION_PENDING
+  STEP_APPROVED
+  COMPLETED
+}
+
+enum StepStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  AI_FEEDBACK
+  ADJUSTED
+  EXPERT_SESSION_PENDING
+  APPROVED
+  BLOCKED
+}
+
+enum ModuleStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  SUBMITTED
+  AI_FEEDBACK
+  ADJUSTED
+  APPROVED
+}
+
+enum Step0Status {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum RunStatus {
+  DRAFT
+  RUNNING
+  CLOSED
+  REVIEW_CHANGES
+}
+
+enum EvidenceStatus {
+  UPLOADED
+  VERIFIED
+  REJECTED
+}
+
+enum EvidenceType {
+  IMAGE
+  PDF
+  VIDEO
+  LINK
+  OTHER
+}
+
+enum TeamRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum TeamMemberStatus {
+  ACTIVE
+  PENDING
+}
+
+enum SessionStatus {
+  PENDING_SCHEDULE
+  SCHEDULED
+  COMPLETED
+}
+
+enum SessionResult {
+  APPROVED
+  ITERATE
+  BLOCKED
+}
+
+enum FeedbackStatus {
+  APPROVED
+  ITERATE
+  BLOCKED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum HelpRequestStatus {
+  PENDING
+  ANSWERED
+  CLOSED
+}
+
+enum StrategicFrontStatus {
+  draft
+  active
+  paused
+  closed
+}
+
+enum StrategicFrontPriority {
+  Alta
+  Media
+  Baja
+}
+
+enum ChallengeActivationMode {
+  convocatoria_abierta
+  personas_seleccionadas
+  squad_asignado
+}
+
+enum ChallengeStatus {
+  draft
+  listo_para_activar
+  activo_interno
+  publicado
+  recibiendo_iniciativas
+  con_iniciativas_activas
+  pendiente_de_decision
+  cerrado
+}
+
+enum ChallengeType {
+  correccion
+  crecimiento
+  exploracion
+}
+
+enum StakeholderStatus {
+  definido
+  notificado
+  confirmado
+}
+
+enum ChallengeCoverageStatus {
+  sin_cobertura
+  cobertura_parcial
+  cobertura_suficiente
+  resuelto
+  reformular
+  cerrar
+}
+
+enum ChallengeOpenCallStatus {
+  inactiva
+  activa
+}
+
+enum InitiativePortfolioStatus {
+  en_step_0
+  en_step_1
+  en_step_2
+  en_step_3
+  en_step_4
+  bloqueada
+  esperando_revision
+  lista_para_decision
+  cerrada
+}
+
+enum InitiativeContributionType {
+  descubrir
+  validar
+  resolver_parcialmente
+  resolver_directamente
+}
+
+enum EstimatedContribution {
+  bajo
+  medio
+  alto
+}
+
+enum InitiativeOverlapLevel {
+  bajo
+  medio
+  alto
+}
+
+enum InitiativeOverlapRecommendation {
+  seguir
+  fusionar
+  reformular_una
+  dejar_como_backup
+  cerrar_una
+}
+
+enum ExecutiveOutputStatus {
+  borrador_ejecutivo
+  listo_para_compartir
+  compartido_con_sponsor
+  compartido_con_gerencia
+  decision_recibida
+  aprobado
+  aprobado_con_ajustes
+  rechazado
+  transferido
+  escalado_a_segunda_fase
+  cerrado
+}
+
+enum PortfolioDecisionOutcome {
+  pasar_a_segunda_fase
+  iterar_desde_otro_angulo
+  transferir_a_ti
+  transferir_al_area_afectada
+  evaluar_innovacion_abierta
+  escalar_piloto
+  cerrar_con_aprendizaje
+}
+
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  passwordHash        String
+  role                Role
+  initials            String
+  skills              String[]
+  bio                 String?
+  avatarUrl           String?
+  isActive            Boolean   @default(true)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  cohortId            String?
+  cohort              Cohort?   @relation(fields: [cohortId], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  projects         Project[]
+  teamMemberships  TeamMember[]
+  mentorSessions   MentorSession[]
+  evidence         Evidence[]
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
+  helpRequests     HelpRequest[]    @relation("HelpRequester")
+  mentorHelpRequests HelpRequest[]  @relation("HelpMentor")
+  sponsorCheckpoints SponsorCheckpoint[] @relation("SponsorCheckpoints")
+
+  @@index([email])
+  @@index([role])
+  @@index([cohortId])
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  name          String
+  description   String?
+  status        ProjectStatus @default(DRAFT)
+  currentStep   Int           @default(0)
+  step0Status   Step0Status   @default(NOT_STARTED)
+  step0Data     Json?
+  mentorCredits Int           @default(3)
+  riskLevel     RiskLevel?
+  isArchived    Boolean       @default(false)
+  lastPosition  Json?
+  sponsorTouchpoints Json?
+  sponsorComments    Json?
+  createdAt     DateTime      @default(now())
+  lastModified  DateTime      @updatedAt
+
+  ownerId  String
+  owner    User    @relation(fields: [ownerId], references: [id])
+  cohortId String?
+  cohort   Cohort? @relation(fields: [cohortId], references: [id])
+
+  steps          Step[]
+  evidence       Evidence[]
+  teamMembers    TeamMember[]
+  mentorSessions     MentorSession[]
+  helpRequests       HelpRequest[]
+  sponsorCheckpoints SponsorCheckpoint[]
+  portfolioMeta      InitiativePortfolioMeta[]
+
+  @@index([ownerId])
+  @@index([cohortId])
+  @@index([status])
+}
+
+model Step {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number    Int
+  name      String
+  status    StepStatus @default(BLOCKED)
+  progress  Int        @default(0)
+  stepData  Json?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  modules    Module[]
+  runs       Run[]
+  feedbackIA FeedbackIA[]
+  mentorSession MentorSession?
+
+  @@unique([projectId, number])
+  @@index([projectId])
+}
+
+model Module {
+  id        String       @id @default(cuid())
+  stepId    String
+  step      Step         @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  moduleId  String
+  name      String
+  status    ModuleStatus @default(BLOCKED)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([stepId, moduleId])
+  @@index([stepId])
+}
+
+model FeedbackIA {
+  id             String         @id @default(cuid())
+  stepId         String
+  step           Step           @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  status         FeedbackStatus
+  summary        String
+  goodPoints     String[]
+  missing        String[]
+  actions        String[]
+  questions      String[]
+  contradictions String[]
+  createdAt      DateTime       @default(now())
+
+  @@index([stepId])
+}
+
+model MentorSession {
+  id           String         @id @default(cuid())
+  projectId    String
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stepId       String         @unique
+  step         Step           @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  stepNumber   Int
+  mentorId     String
+  mentor       User           @relation(fields: [mentorId], references: [id])
+  date         DateTime?
+  status       SessionStatus  @default(PENDING_SCHEDULE)
+  result       SessionResult?
+  comments     String?
+  rubricScores Json?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([mentorId])
+  @@index([stepId])
+}
+
+model Evidence {
+  id         String         @id @default(cuid())
+  projectId  String
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name       String
+  type       EvidenceType
+  size       String?
+  url        String?
+  storageKey String?
+  stepRef    Int
+  moduleRef  String?
+  ownerId    String
+  owner      User           @relation(fields: [ownerId], references: [id])
+  status     EvidenceStatus @default(UPLOADED)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([ownerId])
+  @@index([stepRef])
+}
+
+model TeamMember {
+  id        String           @id @default(cuid())
+  projectId String
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  role      TeamRole         @default(VIEWER)
+  status    TeamMemberStatus @default(PENDING)
+  invitedAt DateTime         @default(now())
+  joinedAt  DateTime?
+
+  modulePermissions String[]    // Module IDs the colaborador can edit
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Run {
+  id           String    @id @default(cuid())
+  stepId       String
+  step         Step      @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  name         String
+  status       RunStatus @default(DRAFT)
+  metrics      Json?
+  learningCard Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([stepId])
+}
+
+model Cohort {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  projects Project[]
+  users    User[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  family    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tokenHash])
+  @@index([family])
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
+
+model HelpRequest {
+  id        String            @id @default(cuid())
+  projectId String
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation("HelpRequester", fields: [userId], references: [id])
+  mentorId  String?
+  mentor    User?             @relation("HelpMentor", fields: [mentorId], references: [id])
+  message   String
+  response  String?
+  status    HelpRequestStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([mentorId])
+  @@index([status])
+}
+
+model SponsorCheckpoint {
+  id                   String                   @id @default(cuid())
+  projectId            String
+  project              Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stepNumber           Int
+  sponsorId            String
+  sponsor              User                     @relation("SponsorCheckpoints", fields: [sponsorId], references: [id])
+  status               SponsorCheckpointStatus  @default(PENDING)
+  strategicFeedback    String?
+  alignmentSignal      AlignmentSignal?
+  focusRecommendation  String?
+  respondedAt          DateTime?
+  expiresAt            DateTime
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  @@unique([projectId, stepNumber])
+  @@index([projectId])
+  @@index([sponsorId])
+  @@index([status])
+}
+
+// ─── Portfolio Lead Models ───────────────────────────────────────────────────
+
+model StrategicFront {
+  id                 String                 @id @default(cuid())
+  name               String
+  description        String?
+  strategicObjective String?
+  whyNow             String?
+  mainKpi            String?
+  baseline           String?
+  target             String?
+  horizon            String?
+  sponsor            String?
+  status             StrategicFrontStatus   @default(draft)
+  priority           StrategicFrontPriority @default(Media)
+  organizationId     String?
+  ownerId            String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  challenges Challenge[]
+
+  @@index([status])
+  @@index([organizationId])
+}
+
+model Challenge {
+  id                     String                  @id @default(cuid())
+  strategicFrontId       String
+  strategicFront         StrategicFront          @relation(fields: [strategicFrontId], references: [id], onDelete: Cascade)
+  title                  String
+  name                   String?
+  description            String?
+  type                   ChallengeType           @default(crecimiento)
+  whatWeWantToMove       String?
+  objective              String?
+  whyNow                 String?
+  successCriteria        String?
+  challengeOwner         String?
+  challengeOwnerStatus   StakeholderStatus       @default(definido)
+  sponsorStatus          StakeholderStatus       @default(definido)
+  openCallStatus         ChallengeOpenCallStatus @default(inactiva)
+  visibleToParticipants  Boolean                 @default(false)
+  publicationNotes       String?
+  lastPublishedAt        DateTime?
+  status                 ChallengeStatus         @default(draft)
+  activationMode         ChallengeActivationMode @default(convocatoria_abierta)
+  coverageStatus         ChallengeCoverageStatus @default(sin_cobertura)
+  sponsorId              String?
+  ownerId                String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  selectedPeople   ChallengeInvitation[]
+  assignedSquad    ChallengeSquadMember[]
+  initiativeMetas  InitiativePortfolioMeta[]
+  overlaps         InitiativeOverlap[]
+  executiveOutputs ExecutiveOutput[]
+
+  @@index([strategicFrontId])
+  @@index([status])
+}
+
+model ChallengeInvitation {
+  id          String            @id @default(cuid())
+  challengeId String
+  challenge   Challenge         @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  value       String
+  status      StakeholderStatus @default(definido)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([challengeId])
+}
+
+model ChallengeSquadMember {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  value       String
+  role        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([challengeId])
+}
+
+model InitiativePortfolioMeta {
+  id                          String                     @id @default(cuid())
+  projectId                   String
+  project                     Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  challengeId                 String
+  challenge                   Challenge                  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  strategicFrontId            String?
+  // Portfolio tracking fields
+  teamOwner                   String?
+  currentStep                 String?
+  status                      InitiativePortfolioStatus  @default(en_step_0)
+  mentor                      String?
+  sponsorTouchpoint           String?
+  mainAlert                   String?
+  nextActionRecommended       String?
+  attackedArea                String?
+  hypothesisCovered           String?
+  mainMetric                  String?
+  contributionType            InitiativeContributionType @default(descubrir)
+  estimatedContribution       EstimatedContribution      @default(bajo)
+  lastActivity                String?
+  signalSummary               String?
+  mainBlocker                 String?
+  teamLabel                   String?
+  requiresSponsor             Boolean                    @default(false)
+  readyForDecision            Boolean                    @default(false)
+  blockedDays                 Int                        @default(0)
+  requiresExternalCapability  Boolean                    @default(false)
+  partialSignal               Boolean                    @default(false)
+  resolvedCorePart            Boolean                    @default(false)
+  executiveSummary            String?
+  experimentSummary           String?
+  aiCommentSummary            String?
+  mentorCommentSummary        String?
+  decisionRecommendationReason String?
+  // Complex arrays kept as Json
+  teamMembers                 Json?
+  deliverables                Json?
+  stepsTimeline               Json?
+  // Legacy/decision fields
+  coverageScore               Float?
+  alignmentNotes              String?
+  decisionOutcome             PortfolioDecisionOutcome?
+  decisionNotes               String?
+  createdAt                   DateTime                   @default(now())
+  updatedAt                   DateTime                   @updatedAt
+
+  @@unique([projectId, challengeId])
+  @@index([projectId])
+  @@index([challengeId])
+}
+
+model InitiativeOverlap {
+  id             String                          @id @default(cuid())
+  challengeId    String
+  challenge      Challenge                       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  initiativeAId  String
+  initiativeBId  String
+  overlapScore   Float?
+  overlapNotes   String?
+  level          InitiativeOverlapLevel          @default(bajo)
+  rationale      String?
+  recommendation InitiativeOverlapRecommendation @default(seguir)
+  createdAt      DateTime                        @default(now())
+  updatedAt      DateTime                        @updatedAt
+
+  @@index([challengeId])
+  @@index([initiativeAId])
+  @@index([initiativeBId])
+}
+
+model ExecutiveOutput {
+  id                     String                   @id @default(cuid())
+  projectId              String
+  challengeId            String
+  challenge              Challenge                @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  // Renamed from projectId — this references the Initiative (Project) id
+  initiativeId           String?
+  recommendation         PortfolioDecisionOutcome?
+  status                 ExecutiveOutputStatus    @default(borrador_ejecutivo)
+  whyNow                 String?
+  kpiToMove              String?
+  approachSummary        String?
+  scopeSummary           String?
+  evidenceSummary        String?
+  keyDeliverableSummary  String?
+  cautionSummary         String?
+  recommendationWhy      String?
+  secondaryOptions       String?
+  nextStepSummary        String?
+  nextStepOwner          String?
+  nextStepHorizon        String?
+  nextStepExpectedResult String?
+  // Complex arrays kept as Json
+  managementNeeds        Json?
+  timeline               Json?
+  sharedAt               DateTime?
+  decisionAt             DateTime?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@unique([projectId, challengeId])
+  @@index([challengeId])
+  @@index([projectId])
+}

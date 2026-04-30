@@ -1,10 +1,34 @@
+# Dependencies
 node_modules/
-.vercel/
+
+# Build
 dist/
+
+# Environment
 .env
-.claude/*
-docs/*
-.claude-flow/*
+
+# Vercel
+.vercel/
+
+# Claude / Swarm tooling
+.claude/
+.claude-flow/metrics/
+.claude-flow/routing-outcomes.json
+.claude-flow/swarm/swarm-state.json
+.agents/
+skills/
+.swarm/memory.db
+.swarm/memory.db-wal
+.swarm/memory.db-shm
+.swarm/hnsw.index
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+skills-lock.json
+
+# Project-specific ignores
+backend/docs/
+BHIL-AI-First-Development-Toolkit/*
 backend/docs/Perfiles del dashboard.xlsx
 image copy.png
 k8s/image.png
