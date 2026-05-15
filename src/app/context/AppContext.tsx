@@ -3,6 +3,32 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 export type Role = 'owner' | 'mentor' | 'admin' | 'sponsor' | 'portfolio_lead';
 
 export type Step0Status = 'No iniciado' | 'En progreso' | 'Completado';
+export type Step0Mode = 'independent' | 'linked_to_challenge';
+export type Step0Frame = 'correccion' | 'crecimiento' | 'exploracion' | '';
+export type Step0ClarityLevel =
+  | 'observacion_inicial'
+  | 'algunas_senales'
+  | 'hipotesis_clara'
+  | 'idea_pensada'
+  | '';
+export type Step0PrimaryObjective =
+  | 'eficiencia'
+  | 'experiencia_cliente'
+  | 'ingresos'
+  | 'riesgo'
+  | 'productividad'
+  | 'aprendizaje'
+  | 'otro'
+  | '';
+export type Step0ContributionType =
+  | 'descubrir_problema'
+  | 'validar_hipotesis'
+  | 'resolver_parte'
+  | 'resolver_directo'
+  | 'no_claro'
+  | '';
+export type Step0AdditionalStakeholders = 'no' | 'si' | 'no_claro' | '';
+export type Step0EvidenceType = '' | 'datos' | 'testimonios' | 'benchmark' | 'hipotesis' | 'otro';
 
 export type ProjectStatus =
   | 'Draft'
@@ -47,6 +73,32 @@ export interface Step0Data {
   respaldo: '' | 'datos' | 'testimonios' | 'benchmark' | 'hipotesis' | 'otro';
   quienEscuchar: string;
   siMinimo: string[];
+  mode?: Step0Mode;
+  initiativeTitle?: string;
+  initiativeFrame?: Step0Frame;
+  clarityLevel?: Step0ClarityLevel;
+  primaryObjective?: Step0PrimaryObjective;
+  specificChallengePart?: string;
+  challengeGoalConnection?: string;
+  linkedContributionType?: Step0ContributionType;
+  impactWho?: string;
+  visibleMoment?: string;
+  whyNowText?: string;
+  ifNotNowConsequence?: string;
+  evidenceType?: Step0EvidenceType;
+  currentEvidence?: string;
+  validationSignal?: string;
+  sponsorInterestReason?: string;
+  supportNeeded?: string;
+  decisionRequested?: string;
+  deliveryEmail?: string;
+  additionalStakeholders?: Step0AdditionalStakeholders;
+  additionalStakeholdersDetail?: string;
+}
+
+export interface ProjectChallengeLink {
+  challengeId: string;
+  createdFrom: 'challenge';
 }
 
 export type TeamMemberRole = 'Owner' | 'Editor' | 'Viewer' | 'Sponsor';
@@ -159,6 +211,7 @@ export interface Project {
   lastModified: string;
   cohort?: string;
   riskLevel?: 'Bajo' | 'Medio' | 'Alto';
+  challengeLink?: ProjectChallengeLink;
 }
 
 export interface User {
@@ -180,7 +233,12 @@ interface AppContextType {
   logout: () => void;
   setCurrentProject: (project: Project | null) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
-  createProject: (name: string, description?: string, teamMembers?: TeamMember[]) => Project;
+  createProject: (
+    name: string,
+    description?: string,
+    teamMembers?: TeamMember[],
+    options?: { challengeLink?: ProjectChallengeLink },
+  ) => Project;
   setUserRole: (role: Role) => void;
   updateStep0: (projectId: string, data: Partial<Step0Data>, status: Step0Status) => void;
   getProjectMember: (projectId: string, email?: string) => TeamMember | null;
@@ -753,7 +811,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const createProject = (name: string, description?: string, teamMembers: TeamMember[] = []): Project => {
+  const createProject = (
+    name: string,
+    description?: string,
+    teamMembers: TeamMember[] = [],
+    options?: { challengeLink?: ProjectChallengeLink },
+  ): Project => {
     const newProject: Project = {
       id: `p${Date.now()}`,
       name,
@@ -805,6 +868,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       evidence: [],
       createdAt: new Date().toISOString().split('T')[0],
       lastModified: new Date().toISOString(),
+      challengeLink: options?.challengeLink,
     };
     setProjects(prev => [newProject, ...prev]);
     return newProject;

@@ -15,6 +15,7 @@ import { EvidenciasPage } from './pages/EvidenciasPage';
 import { MentorPanelPage } from './pages/MentorPanelPage';
 import { AdminCohorte } from './pages/AdminCohorte';
 import { PerfilPage } from './pages/PerfilPage';
+import { ParticipantChallengeDetailPage } from './pages/ParticipantChallengeDetailPage';
 import { PortfolioLeadHomePage } from './pages/PortfolioLeadHomePage';
 import { PortfolioLeadSectionPage } from './pages/PortfolioLeadSectionPage';
 import { PortfolioLeadStrategicFrontsPage } from './pages/PortfolioLeadStrategicFrontsPage';
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, loader: () => redirect('/dashboard') },
           { path: 'dashboard', Component: DashboardPage },
+          { path: 'retos/:challengeId', Component: ParticipantChallengeDetailPage },
           { path: 'projects/new', Component: CreateProjectPage },
           { path: 'projects/:projectId', Component: ProjectHomePage },
           { path: 'projects/:projectId/step/0', Component: Step0Page },
