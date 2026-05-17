@@ -11,6 +11,8 @@ import { ProgressBar } from '../components/ProgressBar';
 import { MentorSupportModal } from '../components/MentorSupportModal';
 import { MentorVirtualPanel } from '../components/MentorVirtualPanel';
 import type { Step } from '../context/AppContext';
+import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
+import { buildInheritedChallengeContext, getStep0Mode, getSummaryBlocks, normalizeStep0Data } from '../step0/step0Config';
 
 const STEP_DESCRIPTIONS = [
   'Entiende el problema con claridad: documenta el proceso actual, mide el impacto y conoce a los actores involucrados.',
@@ -20,7 +22,7 @@ const STEP_DESCRIPTIONS = [
 ];
 
 const BLOCK_REASONS: Record<string, string> = {
-  '1': 'Completa tu Punto de partida para empezar con claridad.',
+  '1': 'Completa tu base estrategica inicial para empezar con claridad.',
   '2': 'Para acceder al Paso 2, el Paso 1 debe estar aprobado por tu mentor.',
   '3': 'Para acceder al Paso 3, el Paso 2 debe estar aprobado por tu mentor.',
   '4': 'Para acceder al Paso 4, el Paso 3 debe estar aprobado por tu mentor.',
@@ -33,7 +35,7 @@ const TOUCHPOINT_LABELS = {
 } as const;
 
 const INTRO_STEP_SUMMARY = [
-  { number: '0', title: 'Punto de partida', description: 'Ordena el contexto inicial.' },
+  { number: '0', title: 'Base inicial', description: 'Justifica la iniciativa con criterio.' },
   { number: '1', title: 'Claridad en el desafío', description: 'Entiende mejor el problema.' },
   { number: '2', title: 'Diseñar solución', description: 'Explora opciones y define una prueba.' },
   { number: '3', title: 'Probar en pequeño', description: 'Valida con evidencia antes de escalar.' },
@@ -43,6 +45,7 @@ const INTRO_STEP_SUMMARY = [
 export function ProjectHomePage() {
   const { projectId } = useParams();
   const { projects, setCurrentProject, user, updateProject, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment } = useApp();
+  const { challenges, strategicFronts } = usePortfolioLead();
   const navigate = useNavigate();
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -269,8 +272,15 @@ export function ProjectHomePage() {
   const canManageSponsors = user?.role === 'owner' || user?.role === 'admin';
   const firstName = user?.name?.trim().split(/\s+/)[0];
   const step0Complete = project.step0Status === 'Completado';
-  const step0Data = project.step0Data;
-  const step0ContactHint = project.step0Data?.quienEscuchar?.trim() ?? '';
+  const step0Mode = getStep0Mode(project);
+  const step0Data = normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? '');
+  const inheritedStep0 = buildInheritedChallengeContext(project, challenges, strategicFronts);
+  const step0SummaryBlocks = getSummaryBlocks(step0Data, inheritedStep0);
+  const step0ContactHint = (
+    step0Mode === 'linked_to_challenge'
+      ? inheritedStep0.items.find(item => item.label === 'Owner del reto')?.value || inheritedStep0.items.find(item => item.label === 'Sponsor definido')?.value || ''
+      : step0Data.quienEscuchar
+  ).trim();
   const step0Touchpoint = (project.sponsorTouchpoints ?? []).find(item => item.id === 'step0');
   const primarySponsorMember = sponsorMembers[0];
   const step0ActionLabel =
@@ -303,28 +313,25 @@ export function ProjectHomePage() {
         ? '1 sponsor asignado'
         : `${sponsorMembers.length} sponsors asignados`;
   const step0SummaryChips = [
-    step0Data?.origen ? 'Origen definido' : null,
-    (step0Data?.impacta?.length ?? 0) > 0 ? `Impacta a ${step0Data?.impacta?.slice(0, 2).join(', ')}` : null,
-    step0Data?.impacto3meses ? 'Impacto principal identificado' : null,
-    (step0Data?.siMinimo?.length ?? 0) > 0 ? 'Apoyo mínimo definido' : null,
+    step0Mode === 'linked_to_challenge' ? 'Iniciativa dentro de reto' : 'Proyecto independiente',
+    step0Data.initiativeFrame ? 'Framing definido' : null,
+    step0Data.primaryObjective ? 'Objetivo principal definido' : null,
+    step0Data.supportNeeded?.trim() ? 'Apoyo minimo definido' : null,
   ].filter(Boolean) as string[];
   const alignmentMessage = [
     `Proyecto: ${project.name}`,
-    step0Data?.quePasaQueQuieres ? `Qué está pasando: ${step0Data.quePasaQueQuieres}` : null,
-    (step0Data?.impacta?.length ?? 0) > 0 ? `A quién impacta: ${step0Data?.impacta?.join(', ')}` : null,
-    step0Data?.impacto3meses ? `Impacto principal: ${step0Data.impacto3meses}` : null,
-    (step0Data?.siMinimo?.length ?? 0) > 0 ? `Apoyo mínimo: ${step0Data?.siMinimo?.join(', ')}` : null,
+    ...step0SummaryBlocks.slice(0, 6).map(block => `${block.label}: ${block.value}`),
     step0ContactHint ? `Contacto clave sugerido: ${step0ContactHint}` : null,
   ].filter(Boolean).join('\n');
   const addSponsor = () => {
     const email = sponsorEmail.trim().toLowerCase();
     if (!email) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setSponsorError('Ingresa un correo vÃ¡lido para el sponsor.');
+      setSponsorError('Ingresa un correo válido para el sponsor.');
       return;
     }
     if (sponsorMembers.length >= 2) {
-      setSponsorError('Esta iniciativa ya tiene el mÃ¡ximo de 2 sponsors.');
+      setSponsorError('Esta iniciativa ya tiene el máximo de 2 sponsors.');
       return;
     }
     if (project.team.some(member => member.email.toLowerCase() === email)) {
@@ -431,7 +438,7 @@ export function ProjectHomePage() {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="rounded-full bg-white px-3 py-1 text-xs text-indigo-700 border border-indigo-100" style={{ fontWeight: 600 }}>
             {step0Complete
-              ? firstName ? `${firstName}, Paso 0 listo` : 'Paso 0 listo'
+              ? firstName ? `${firstName}, base inicial lista` : 'Base inicial lista'
               : firstName ? `${firstName}, bienvenida a tu iniciativa` : 'Bienvenida a tu iniciativa'}
           </span>
           <span className="rounded-full bg-white px-3 py-1 text-xs text-slate-500 border border-slate-200" style={{ fontWeight: 600 }}>
@@ -440,12 +447,16 @@ export function ProjectHomePage() {
         </div>
         <h2 className="text-2xl text-slate-900 max-w-3xl" style={{ fontWeight: 700 }}>
           {step0Complete
-            ? 'Ya tienes una base inicial. Ahora toca alinearla con la persona clave y continuar con el Paso 1.'
+            ? step0Mode === 'linked_to_challenge'
+              ? 'Ya tienes una base para justificar esta iniciativa dentro del reto. Ahora toca alinearla y continuar con el Paso 1.'
+              : 'Ya tienes una base inicial. Ahora toca alinearla con la persona clave y continuar con el Paso 1.'
             : 'Convierte este proyecto en una iniciativa clara, probada y lista para presentar.'}
         </h2>
         <p className="text-sm text-slate-600 mt-3 max-w-3xl">
           {step0Complete
-            ? 'Ordenaste el contexto inicial, identificaste impacto y definiste el apoyo mínimo para mover la iniciativa. El siguiente hito es compartir esta base para destrabar el tramo que sigue.'
+            ? step0Mode === 'linked_to_challenge'
+              ? 'Ya ordenaste el aporte puntual de esta iniciativa dentro del reto, conectaste su justificacion con el contexto heredado y definiste el destrabe que necesitas.'
+              : 'Ordenaste el contexto inicial, identificaste impacto y definiste el apoyo mínimo para mover la iniciativa. El siguiente hito es compartir esta base para destrabar el tramo que sigue.'
             : 'Aquí vas a ordenar el contexto, diseñar una solución, probarla en pequeño y preparar una propuesta con mayor claridad. No necesitas tener todo resuelto desde el inicio.'}
         </p>
         <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
@@ -472,12 +483,12 @@ export function ProjectHomePage() {
             <h2 className="text-sm text-slate-900" style={{ fontWeight: 600 }}>Recorrido del proyecto</h2>
             <p className="text-xs text-slate-500 mt-1">
               {step0Complete
-                ? 'Ya completaste el Paso 0. Ahora toca alinear esta base con la persona clave y continuar con el Paso 1.'
-                : 'Empieza aquí. Completa el Paso 0 para desbloquear el Paso 1 y seguir avanzando por el recorrido completo.'}
+                ? 'Ya completaste la base estrategica inicial. Ahora toca alinear esta base y continuar con el Paso 1.'
+                : 'Empieza aqui. Completa la base estrategica inicial para desbloquear el Paso 1 y seguir avanzando por el recorrido completo.'}
             </p>
           </div>
           <span className={`rounded-full px-3 py-1 text-xs ${step0Complete ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`} style={{ fontWeight: 600 }}>
-            {step0Complete ? 'Paso 0 completado' : 'Empieza aquí'}
+            {step0Complete ? 'Base inicial completa' : 'Empieza aqui'}
           </span>
         </div>
 
@@ -538,12 +549,18 @@ export function ProjectHomePage() {
             </span>
           </div>
           <h2 className="text-lg text-slate-900" style={{ fontWeight: 700 }}>
-            {step0Complete ? 'Ya tienes una base inicial de tu iniciativa' : 'Paso 0: Punto de partida'}
+            {step0Complete
+              ? step0Mode === 'linked_to_challenge'
+                ? 'Ya tienes una base para justificar esta iniciativa dentro del reto'
+                : 'Ya tienes una base inicial de tu iniciativa'
+              : 'Paso 0: Base estrategica inicial'}
           </h2>
           <p className="text-sm text-slate-600 mt-2">
             {step0Complete
-              ? 'Ordenaste el contexto inicial, identificaste impacto y definiste el apoyo mínimo para moverla.'
-              : 'En 5–7 minutos vas a ordenar el contexto inicial de tu iniciativa. Esto te ayudará a avanzar con claridad y desbloquear el Paso 1.'}
+              ? step0Mode === 'linked_to_challenge'
+                ? 'Ya conectaste esta iniciativa con el reto padre, aterrizaste por que merece atencion y definiste el destrabe que necesitas.'
+                : 'Ordenaste el contexto inicial, identificaste impacto y definiste el apoyo mínimo para moverla.'
+              : 'En 5–7 minutos vas a ordenar la base estrategica inicial de tu iniciativa. Esto te ayudará a avanzar con claridad y desbloquear el Paso 1.'}
           </p>
 
           {step0Complete ? (
@@ -555,7 +572,7 @@ export function ProjectHomePage() {
               ))}
               {step0ContactHint && (
                 <span className="rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-700 border border-slate-200" style={{ fontWeight: 600 }}>
-                  Contacto clave: {step0ContactHint}
+                  {step0Mode === 'linked_to_challenge' ? `Actor clave heredado: ${step0ContactHint}` : `Contacto clave: ${step0ContactHint}`}
                 </span>
               )}
             </div>
@@ -593,7 +610,9 @@ export function ProjectHomePage() {
               </h2>
               <p className="text-xs text-slate-500 mt-1">
                 {step0Complete
-                  ? 'El Paso 0 ya te da una base suficiente para compartir la iniciativa y destrabar el siguiente tramo.'
+                  ? step0Mode === 'linked_to_challenge'
+                    ? 'La base inicial ya te permite conversar esta iniciativa dentro del reto y pedir el destrabe correcto.'
+                    : 'La base inicial ya te da suficiente claridad para compartir la iniciativa y destrabar el siguiente tramo.'
                   : 'Es la persona que acompaña momentos clave del proyecto y ayuda a darle respaldo.'}
               </p>
             </div>
@@ -606,15 +625,17 @@ export function ProjectHomePage() {
             <>
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm text-slate-700" style={{ fontWeight: 500 }}>
-                  {alignmentState === 'Sin destinatario definido' && 'Todavía falta definir a quién compartirle esta base.'}
-                  {alignmentState === 'Destinatario definido' && 'Ya tienes una persona clave identificada para abrir esta conversación.'}
-                  {alignmentState === 'Invitación pendiente' && 'Tienes un destinatario listo, pero aún falta registrar el envío de la invitación de alineación.'}
+                  {alignmentState === 'Sin destinatario definido' && 'Todavía falta definir con quién abrir esta conversación.'}
+                  {alignmentState === 'Destinatario definido' && 'Ya tienes una persona o actor clave identificado para abrir esta conversación.'}
+                  {alignmentState === 'Invitación pendiente' && 'Ya hay un destinatario claro, pero aún falta registrar el envío de la invitación de alineación.'}
                   {alignmentState === 'Invitación enviada' && 'La invitación ya fue enviada. El siguiente paso es registrar cuando ocurra la alineación.'}
                   {alignmentState === 'Reunión realizada' && 'La alineación inicial ya quedó registrada. Ahora puedes continuar con el Paso 1 con mejor contexto compartido.'}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
                   {step0ContactHint
-                    ? `Contacto clave definido en Paso 0: ${step0ContactHint}`
+                    ? step0Mode === 'linked_to_challenge'
+                      ? `Actor clave heredado para esta conversacion: ${step0ContactHint}`
+                      : `Contacto clave definido en Paso 0: ${step0ContactHint}`
                     : sponsorMembers.length > 0
                       ? 'Puedes usar el sponsor ya asignado como base para esta conversación.'
                       : 'Si no tienes sponsor aún, deja explícito quién debería escuchar esto primero y registra la alineación cuando ocurra.'}
@@ -627,7 +648,7 @@ export function ProjectHomePage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 transition-colors"
                   style={{ fontWeight: 600 }}
                 >
-                  <ClipboardList size={15} /> {alignmentCopied ? 'Resumen copiado' : 'Compartir iniciativa con sponsor'}
+                  <ClipboardList size={15} /> {alignmentCopied ? 'Resumen copiado' : 'Copiar base para compartir'}
                 </button>
                 {canManageSponsors && primarySponsorMember?.status === 'Pendiente' && (
                   <button
@@ -741,7 +762,7 @@ export function ProjectHomePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <h3 className="text-sm text-slate-900" style={{ fontWeight: 600 }}>
-                    Paso 0: Punto de partida
+                    Paso 0: Base estrategica inicial
                   </h3>
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
@@ -768,8 +789,10 @@ export function ProjectHomePage() {
                 </div>
                 <p className="text-xs text-slate-500 mb-3">
                   {project.step0Status === 'Completado'
-                    ? 'Ya dejaste una base inicial lista para compartir y usar como referencia antes de entrar al Paso 1.'
-                    : 'Ordena el punto de partida en 5 a 7 minutos. Este paso te ayuda a entender qué estás moviendo, por qué importa y qué necesitas aclarar antes de seguir.'}
+                    ? step0Mode === 'linked_to_challenge'
+                      ? 'Ya dejaste una base para justificar esta iniciativa dentro del reto y usarla como referencia antes de entrar al Paso 1.'
+                      : 'Ya dejaste una base inicial lista para compartir y usar como referencia antes de entrar al Paso 1.'
+                    : 'Ordena la base estrategica inicial en 5 a 7 minutos. Este paso te ayuda a entender que estas moviendo, por que importa y que necesitas aclarar antes de seguir.'}
                 </p>
 
                 {project.step0Status !== 'Completado' && (
@@ -1019,7 +1042,7 @@ export function ProjectHomePage() {
               { action: 'Módulo B completado', user: 'Ana Rodríguez', time: 'Hoy, 10:30 AM', paso: 'Paso 1' },
               { action: 'Evidencia "Dashboard_metricas.png" subida', user: 'Ana Rodríguez', time: 'Ayer, 4:15 PM', paso: 'Paso 1 · Módulo B' },
               { action: 'Módulo A completado', user: 'Miguel Torres', time: 'Hace 3 días', paso: 'Paso 1' },
-              { action: 'Punto de partida completado', user: 'Ana Rodríguez', time: '19 feb 2025', paso: 'Paso 0' },
+              { action: 'Base estratégica inicial completada', user: 'Ana Rodríguez', time: '19 feb 2025', paso: 'Paso 0' },
               { action: 'Proyecto creado', user: 'Ana Rodríguez', time: '19 feb 2025', paso: '' },
             ].map((entry, i) => (
               <div key={i} className="flex items-start gap-3 pt-3">
