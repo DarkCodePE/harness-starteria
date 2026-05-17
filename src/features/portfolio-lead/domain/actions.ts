@@ -16,6 +16,32 @@ import type {
   StrategicFront,
 } from './types';
 import { activationLabel } from './copy';
+import {
+  isInitiativeReadyForDecision,
+  normalizeChallengeCoverageStatus,
+  normalizeChallengeStatus,
+  normalizeInitiativeStatus,
+} from './rules';
+
+export {
+  canChallengeReceiveInitiatives,
+  canImportedItemBePublished,
+  getConfidentialityAllowsFullAIProcessing,
+  getStepProgressRiskLevel,
+  isChallengeReadyToActivate,
+  isInitiativeReadyForDecision,
+  normalizeChallengeCoverageStatus,
+  normalizeChallengeStatus,
+  normalizeConfidentialityLevel,
+  normalizeContributionType,
+  normalizeDecisionType,
+  normalizeEvidenceVerificationStatus,
+  normalizeImportedItemStatus,
+  normalizeInitiativeStatus,
+  normalizeStrategicFrontStatus,
+  normalizeStepContentStatus,
+  normalizeStepValidationStatus,
+} from './rules';
 
 export function patchChallenge(
   challenges: Challenge[],
@@ -197,13 +223,12 @@ export function deriveChallengeStatus(challenge: Challenge, initiatives: Initiat
   const related = initiatives.filter(item => item.challengeId === challenge.id);
   const ready = related.filter(
     item =>
-      item.readyForDecision
-      || item.status === 'lista_para_decision'
-      || item.currentStep === 'Step 4',
+      isInitiativeReadyForDecision(item),
   ).length;
-  const active = related.filter(item => !NON_ACTIVE_INITIATIVE_STATUSES.includes(item.status)).length;
+  const active = related.filter(item => !NON_ACTIVE_INITIATIVE_STATUSES.includes(normalizeInitiativeStatus(item.status))).length;
+  const normalizedChallengeStatus = normalizeChallengeStatus(challenge.status);
 
-  if (challenge.status === 'cerrado') return 'cerrado';
+  if (normalizedChallengeStatus === 'closed') return 'cerrado';
   if (!challenge.visibleToParticipants) return challengeIsConfigured(challenge) ? 'activo_interno' : 'listo_para_activar';
   if (related.length === 0) return 'publicado';
   if (ready > 0) return 'pendiente_de_decision';
@@ -215,8 +240,12 @@ export function deriveChallengeCoverageStatus(
   challenge: Challenge,
   initiatives: Initiative[],
 ): ChallengeCoverageStatus {
-  if (challenge.coverageStatus === 'reformular' || challenge.coverageStatus === 'cerrar' || challenge.coverageStatus === 'resuelto') {
-    return challenge.coverageStatus;
+  const normalizedCoverage = normalizeChallengeCoverageStatus(challenge.coverageStatus);
+  if (normalizedCoverage === 'needs_reformulation') {
+    return 'reformular';
+  }
+  if (normalizedCoverage === 'ready_for_decision' || normalizedCoverage === 'overlapped') {
+    return 'resuelto';
   }
 
   const related = initiatives.filter(item => item.challengeId === challenge.id);
@@ -224,9 +253,8 @@ export function deriveChallengeCoverageStatus(
 
   const ready = related.filter(
     item =>
-      item.readyForDecision
-      || DECISION_RELEVANT_INITIATIVE_STATUSES.includes(item.status)
-      || item.currentStep === 'Step 4',
+      isInitiativeReadyForDecision(item)
+      || DECISION_RELEVANT_INITIATIVE_STATUSES.includes(normalizeInitiativeStatus(item.status))
   ).length;
   const resolved = related.filter(item => item.resolvedCorePart).length;
 
@@ -235,7 +263,9 @@ export function deriveChallengeCoverageStatus(
 }
 
 export function buildDecisionRecommendation(initiative: Initiative): PortfolioDecisionItem {
-  if (initiative.status === 'lista_para_decision' || initiative.currentStep === 'Step 4') {
+  const normalizedStatus = normalizeInitiativeStatus(initiative.status);
+
+  if (isInitiativeReadyForDecision(initiative) || normalizedStatus === 'ready_for_decision') {
     return {
       id: `decision-${initiative.id}`,
       challengeId: initiative.challengeId,
@@ -249,7 +279,7 @@ export function buildDecisionRecommendation(initiative: Initiative): PortfolioDe
     };
   }
 
-  if (initiative.status === 'bloqueada' && initiative.blockedDays >= 14) {
+  if (normalizedStatus === 'blocked' && initiative.blockedDays >= 14) {
     return {
       id: `decision-${initiative.id}`,
       challengeId: initiative.challengeId,

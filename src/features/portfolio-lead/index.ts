@@ -2,6 +2,7 @@ export * from './context/PortfolioLeadContext';
 export * from './domain/actions';
 export * from './domain/constants';
 export * from './domain/copy';
+export * from './domain/rules';
 export * from './domain/mockData';
 export * from './domain/selectors';
 export * from './domain/types';

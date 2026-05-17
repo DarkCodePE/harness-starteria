@@ -14,6 +14,7 @@ import type {
   HomeCommandCenterModel,
   Initiative,
   PortfolioAlert,
+  PortfolioAttentionQueueItem,
   PortfolioDecisionCard,
   PortfolioHomeEmptyState,
   PortfolioHomeHeader,
@@ -36,6 +37,14 @@ import type {
 import { hasTechnicalBlocker } from '../utils/portfolioLeadFormatters';
 import { activationLabel, challengeActivationStateLabel, challengeStatusLabel, challengeTypeLabel, coverageLabel, strategicFrontStatusLabel } from './copy';
 import { buildChallengeActivationMessageDraft, deriveChallengeActivationRecommendation } from './actions';
+import {
+  isChallengeReadyToActivate,
+  isInitiativeReadyForDecision,
+  normalizeChallengeCoverageStatus,
+  normalizeChallengeStatus,
+  normalizeInitiativeStatus,
+  normalizeStrategicFrontStatus,
+} from './rules';
 
 export function getFrontById(fronts: StrategicFront[], frontId: string) {
   return fronts.find(front => front.id === frontId) ?? null;
@@ -60,22 +69,22 @@ export function getDecisionsByInitiativeId(decisions: PortfolioDecisionItem[], i
 export function getPendingDecisions(initiatives: Initiative[]) {
   return initiatives.filter(
     initiative =>
-      initiative.status === 'bloqueada'
-      || initiative.status === 'lista_para_decision'
-      || initiative.currentStep === 'Step 4',
+      normalizeInitiativeStatus(initiative.status) === 'blocked'
+      || normalizeInitiativeStatus(initiative.status) === 'ready_for_decision'
+      || isInitiativeReadyForDecision(initiative),
   );
 }
 
 export function getBlockedInitiatives(initiatives: Initiative[]) {
-  return initiatives.filter(initiative => initiative.status === 'bloqueada');
+  return initiatives.filter(initiative => normalizeInitiativeStatus(initiative.status) === 'blocked');
 }
 
 export function getChallengesReadyToActivate(challenges: Challenge[]) {
-  return challenges.filter(challenge => !challenge.visibleToParticipants && challengeIsConfigured(challenge));
+  return challenges.filter(challenge => isChallengeReadyToActivate(challenge));
 }
 
 export function getActiveFronts(fronts: StrategicFront[]) {
-  return fronts.filter(front => ACTIVE_FRONT_STATUSES.includes(front.status));
+  return fronts.filter(front => ACTIVE_FRONT_STATUSES.includes(normalizeStrategicFrontStatus(front.status)));
 }
 
 export function getChallengeCoverageStatus(challenge: Challenge, initiatives: Initiative[]): ChallengeCoverageStatus {
@@ -90,7 +99,7 @@ export function getFrontCoverageStatus(
   const relatedChallenges = getChallengesByFrontId(challenges, front.id);
   const relatedInitiatives = getInitiativesByFrontId(initiatives, front.id);
 
-  if (relatedChallenges.some(challenge => getChallengeCoverageStatus(challenge, initiatives) === 'reformular')) {
+  if (relatedChallenges.some(challenge => normalizeChallengeCoverageStatus(getChallengeCoverageStatus(challenge, initiatives)) === 'needs_reformulation')) {
     return 'necesita_reformulacion';
   }
 
@@ -98,7 +107,7 @@ export function getFrontCoverageStatus(
     return 'sin_cobertura';
   }
 
-  if (relatedChallenges.some(challenge => ['cobertura_suficiente', 'resuelto'].includes(getChallengeCoverageStatus(challenge, initiatives)))) {
+  if (relatedChallenges.some(challenge => ['sufficient', 'ready_for_decision', 'overlapped', 'cobertura_suficiente', 'resuelto'].includes(normalizeChallengeCoverageStatus(getChallengeCoverageStatus(challenge, initiatives))))) {
     return 'cobertura_suficiente';
   }
 
@@ -106,6 +115,7 @@ export function getFrontCoverageStatus(
 }
 
 export function getPortfolioSummary(state: PortfolioLeadState): PortfolioLeadSummary {
+  const pendingDecisions = getPendingDecisions(state.initiatives);
   return {
     fronts: state.strategicFronts.length,
     activeFronts: getActiveFronts(state.strategicFronts).length,
@@ -113,9 +123,10 @@ export function getPortfolioSummary(state: PortfolioLeadState): PortfolioLeadSum
     activeChallenges: state.challenges.filter(challenge => challenge.visibleToParticipants).length,
     challengesReadyToActivate: getChallengesReadyToActivate(state.challenges).length,
     initiatives: state.initiatives.length,
-    activeInitiatives: state.initiatives.filter(initiative => initiative.status !== 'cerrada').length,
+    activeInitiatives: state.initiatives.filter(initiative => normalizeInitiativeStatus(initiative.status) !== 'closed').length,
     blockedInitiatives: getBlockedInitiatives(state.initiatives).length,
-    pendingDecisions: getPendingDecisions(state.initiatives).length,
+    pendingDecisions: pendingDecisions.length,
+    readyForDecisionInitiatives: pendingDecisions.filter(initiative => isInitiativeReadyForDecision(initiative)).length,
     executiveOutputs: state.executiveOutputs.length,
   };
 }
@@ -204,19 +215,19 @@ export function getPortfolioAlerts(state: PortfolioLeadState): PortfolioAlert[] 
     const front = state.strategicFronts.find(item => item.id === initiative.strategicFrontId);
     alerts.push({
       id: `initiative-${initiative.id}`,
-      tone: initiative.status === 'bloqueada' ? 'rose' : 'violet',
-      type: initiative.status === 'bloqueada' ? 'blocker' : 'decision',
-      title: `${initiative.name} ${initiative.status === 'bloqueada' ? 'sigue bloqueada' : 'ya requiere decision'}`,
+      tone: normalizeInitiativeStatus(initiative.status) === 'blocked' ? 'rose' : 'violet',
+      type: normalizeInitiativeStatus(initiative.status) === 'blocked' ? 'blocker' : 'decision',
+      title: `${initiative.name} ${normalizeInitiativeStatus(initiative.status) === 'blocked' ? 'sigue bloqueada' : 'ya requiere decision'}`,
       description: `${front?.name ?? 'Sin frente'} / ${challenge?.name ?? 'Sin reto'}. ${initiative.nextActionRecommended}`,
       contextLabel: `${front?.name ?? 'Sin frente'} / ${challenge?.name ?? 'Sin reto'}`,
-      whyItMatters: initiative.status === 'bloqueada'
+      whyItMatters: normalizeInitiativeStatus(initiative.status) === 'blocked'
         ? 'Este caso ya no avanza solo y necesita destrabe.'
         : 'La evidencia ya alcanzada pide una definicion ejecutiva.',
-      recommendedAction: initiative.status === 'bloqueada'
+      recommendedAction: normalizeInitiativeStatus(initiative.status) === 'blocked'
         ? 'Resuelve el bloqueo o redefine el destino de la iniciativa.'
         : 'Revisa esta decision antes de seguir abriendo mas trabajo.',
-      actionLabel: initiative.status === 'bloqueada' ? 'Ir a seguimiento' : 'Revisar decisiones',
-      actionPath: initiative.status === 'bloqueada'
+      actionLabel: normalizeInitiativeStatus(initiative.status) === 'blocked' ? 'Ir a seguimiento' : 'Revisar decisiones',
+      actionPath: normalizeInitiativeStatus(initiative.status) === 'blocked'
         ? `/portfolio/iniciativas?challengeId=${encodeURIComponent(initiative.challengeId)}&initiativeId=${encodeURIComponent(initiative.id)}`
         : `/portfolio/decisiones?challengeId=${encodeURIComponent(initiative.challengeId)}&initiativeId=${encodeURIComponent(initiative.id)}`,
       initiativeId: initiative.id,
@@ -248,7 +259,7 @@ function findNextActionFromFronts(fronts: StrategicFront[], challenges: Challeng
       };
     }
 
-    const blocked = frontInitiatives.find(initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker));
+    const blocked = frontInitiatives.find(initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker));
     if (blocked) {
       return {
         label: 'Destrabar iniciativa bloqueada',
@@ -266,9 +277,9 @@ function findNextActionFromFronts(fronts: StrategicFront[], challenges: Challeng
 
     const pending = frontInitiatives.find(
       initiative =>
-        initiative.status === 'lista_para_decision'
-        || initiative.currentStep === 'Step 4'
-        || DECISION_RELEVANT_INITIATIVE_STATUSES.includes(initiative.status),
+        normalizeInitiativeStatus(initiative.status) === 'ready_for_decision'
+        || isInitiativeReadyForDecision(initiative)
+        || DECISION_RELEVANT_INITIATIVE_STATUSES.includes(normalizeInitiativeStatus(initiative.status)),
     );
     if (pending) {
       return {
@@ -474,6 +485,96 @@ export function getHomeCommandCenterModel(state: PortfolioLeadState): HomeComman
   };
 }
 
+export function getAttentionQueue(state: PortfolioLeadState): PortfolioAttentionQueueItem[] {
+  const queue: PortfolioAttentionQueueItem[] = [];
+  const seen = new Set<string>();
+
+  const push = (item: PortfolioAttentionQueueItem) => {
+    if (seen.has(item.id)) return;
+    seen.add(item.id);
+    queue.push(item);
+  };
+
+  getPortfolioAlerts(state).forEach(alert => {
+    const iconKey = alert.type === 'activation'
+      ? 'rocket'
+      : alert.type === 'coverage'
+        ? 'flag'
+        : alert.type === 'stakeholder'
+          ? 'users'
+          : alert.type === 'blocker'
+            ? 'alert'
+            : 'decision';
+
+    push({
+      id: `alert-${alert.id}`,
+      tone: alert.tone,
+      iconKey,
+      title: alert.title,
+      subtitle: alert.recommendedAction ?? alert.description,
+      badgeLabel: alert.type === 'blocker'
+        ? 'Bloqueo'
+        : alert.type === 'activation'
+          ? 'Activacion'
+          : alert.type === 'coverage'
+            ? 'Cobertura'
+            : alert.type === 'stakeholder'
+              ? 'Stakeholder'
+              : 'Decision',
+      actionLabel: alert.actionLabel ?? 'Revisar',
+      actionPath: alert.actionPath,
+      contextLabel: alert.contextLabel,
+    });
+  });
+
+  getReadyToActivateChallengeCards(state).slice(0, 3).forEach(card => {
+    push({
+      id: `ready-${card.id}`,
+      tone: 'amber',
+      iconKey: 'rocket',
+      title: `${card.name} ya puede activarse`,
+      subtitle: `${card.challengeTypeLabel} · ${card.frontName}`,
+      badgeLabel: 'Listo para activar',
+      actionLabel: card.actionLabel,
+      actionPath: card.actionPath,
+      contextLabel: card.frontName,
+    });
+  });
+
+  getPendingDecisionCards(state).slice(0, 3).forEach(card => {
+    push({
+      id: `decision-${card.id}`,
+      tone: 'violet',
+      iconKey: 'decision',
+      title: `${card.initiativeName} ya pide decision`,
+      subtitle: `${card.frontName} · ${card.challengeName}`,
+      badgeLabel: 'Decision',
+      actionLabel: card.actionLabel,
+      actionPath: card.actionPath,
+      contextLabel: card.frontName,
+    });
+  });
+
+  getStrategicFrontCards(state)
+    .filter(card => card.coverageStatus === 'sin_cobertura' || card.coverageStatus === 'cobertura_parcial')
+    .slice(0, 2)
+    .forEach(card => {
+      push({
+        id: `coverage-${card.id}`,
+        tone: card.coverageStatus === 'sin_cobertura' ? 'rose' : 'amber',
+        iconKey: card.coverageStatus === 'sin_cobertura' ? 'alert' : 'flag',
+        title: `${card.name} requiere cobertura`,
+        subtitle: `${card.coverageLabel} · ${card.challengesCount} retos · ${card.initiativesCount} iniciativas`,
+        badgeLabel: card.coverageLabel,
+        actionLabel: card.actionLabel,
+        actionPath: card.actionPath,
+        contextLabel: card.areaLabel,
+      });
+    });
+
+  return queue.slice(0, 6);
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -523,21 +624,22 @@ function buildActivityAgeLabel(activityText: string, fallbackDays = 5) {
 }
 
 function getFrontProgressEstimate(front: StrategicFront, challenges: Challenge[], initiatives: Initiative[]) {
-  if (front.status === 'closed') return 100;
+  if (normalizeStrategicFrontStatus(front.status) === 'closed') return 100;
 
   const relatedChallenges = getChallengesByFrontId(challenges, front.id);
   const visibleChallenges = relatedChallenges.filter(challenge => challenge.visibleToParticipants).length;
   const blockedInitiatives = initiatives.filter(
-    initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
   ).length;
   const pendingDecisions = getPendingDecisions(initiatives).length;
 
   let score = 12;
-  switch (front.status) {
-    case 'active':
+  switch (normalizeStrategicFrontStatus(front.status)) {
+    case 'with_active_challenges':
       score = 38;
       break;
-    case 'paused':
+    case 'in_tracking':
+    case 'pending_decision':
       score = 28;
       break;
     case 'draft':
@@ -560,19 +662,20 @@ function getFrontExecutiveState(front: StrategicFront, challenges: Challenge[], 
   const relatedChallenges = getChallengesByFrontId(challenges, front.id);
   const relatedInitiatives = getInitiativesByFrontId(initiatives, front.id);
   const blockedInitiatives = relatedInitiatives.filter(
-    initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
   );
   const pendingDecisions = getPendingDecisions(relatedInitiatives);
   const inactiveChallenges = relatedChallenges.filter(challenge => !challenge.visibleToParticipants);
 
-  if (front.status === 'closed') return { label: 'Cerrado', tone: 'slate' as const };
-  if (front.status === 'draft' || (relatedChallenges.length === 0 && relatedInitiatives.length === 0)) {
+  const normalizedFrontStatus = normalizeStrategicFrontStatus(front.status);
+  if (normalizedFrontStatus === 'closed') return { label: 'Cerrado', tone: 'slate' as const };
+  if (normalizedFrontStatus === 'draft' || (relatedChallenges.length === 0 && relatedInitiatives.length === 0)) {
     return { label: 'En definición', tone: 'slate' as const };
   }
   if (inactiveChallenges.length > 0) return { label: 'Requiere atención', tone: 'amber' as const };
   if (blockedInitiatives.length > 0 && pendingDecisions.length === 0) return { label: 'Bloqueado', tone: 'rose' as const };
   if (pendingDecisions.length > 0) return { label: 'Listo para decisión', tone: 'violet' as const };
-  if (front.status === 'paused') return { label: 'Requiere atención', tone: 'amber' as const };
+  if (normalizedFrontStatus === 'pending_decision') return { label: 'Requiere atención', tone: 'amber' as const };
   if (relatedChallenges.length > 0 || relatedInitiatives.length > 0) return { label: 'En curso', tone: 'emerald' as const };
 
   return { label: 'En definición', tone: 'slate' as const };
@@ -597,9 +700,9 @@ function getFrontLastActivityLabel(front: StrategicFront, challenges: Challenge[
   if (source) {
     const label = /coment/i.test(source.lastActivity)
       ? 'Comentario nuevo'
-      : source.status === 'bloqueada'
+      : normalizeInitiativeStatus(source.status) === 'blocked'
         ? 'Iniciativa bloqueada'
-        : source.readyForDecision || source.currentStep === 'Step 4'
+        : isInitiativeReadyForDecision(source)
           ? 'Iniciativa lista para decisión'
           : 'Actividad reciente';
     return `${label} ${formatRelativeDays(days ?? 5)}`;
@@ -622,7 +725,7 @@ function getFrontAlertLabels(front: StrategicFront, challenges: Challenge[], ini
     alerts.push('Reto sin activar');
   }
 
-  if (relatedInitiatives.some(initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker))) {
+  if (relatedInitiatives.some(initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker))) {
     alerts.push('Iniciativa bloqueada');
   }
 
@@ -652,8 +755,8 @@ function getHomeSummaryCards(state: PortfolioLeadState): PortfolioHomeSummaryCar
     {
       id: 'frentes-activos',
       label: 'Frentes activos',
-      value: `${summary.activeFronts}`,
-      microcopy: 'Objetivos estratégicos en seguimiento.',
+      value: String(summary.activeFronts),
+      microcopy: 'Objetivos en seguimiento.',
       tone: summary.activeFronts > 0 ? 'emerald' : 'slate',
       icon: 'fronts',
       path: '/portfolio/frentes-estrategicos',
@@ -661,8 +764,8 @@ function getHomeSummaryCards(state: PortfolioLeadState): PortfolioHomeSummaryCar
     {
       id: 'retos-activos',
       label: 'Retos activos',
-      value: `${summary.activeChallenges}`,
-      microcopy: 'Retos ya visibles para mover trabajo.',
+      value: String(summary.activeChallenges),
+      microcopy: 'Retos visibles en curso.',
       tone: summary.activeChallenges > 0 ? 'sky' : 'slate',
       icon: 'challenges',
       path: '/portfolio/retos',
@@ -670,8 +773,8 @@ function getHomeSummaryCards(state: PortfolioLeadState): PortfolioHomeSummaryCar
     {
       id: 'retos-por-activar',
       label: 'Retos por activar',
-      value: `${summary.challengesReadyToActivate}`,
-      microcopy: 'Pendientes de publicar o destrabar.',
+      value: String(summary.challengesReadyToActivate),
+      microcopy: 'Pendientes de publicar.',
       tone: summary.challengesReadyToActivate > 0 ? 'amber' : 'slate',
       icon: 'activation',
       path: '/portfolio/retos',
@@ -679,19 +782,37 @@ function getHomeSummaryCards(state: PortfolioLeadState): PortfolioHomeSummaryCar
     {
       id: 'iniciativas-bloqueadas',
       label: 'Iniciativas bloqueadas',
-      value: `${summary.blockedInitiatives}`,
-      microcopy: 'Casos que necesitan intervención.',
+      value: String(summary.blockedInitiatives),
+      microcopy: 'Casos que necesitan intervencion.',
       tone: summary.blockedInitiatives > 0 ? 'rose' : 'slate',
       icon: 'blockers',
       path: '/portfolio/iniciativas',
     },
     {
+      id: 'iniciativas-en-curso',
+      label: 'Iniciativas en curso',
+      value: String(summary.activeInitiatives),
+      microcopy: 'Trabajo visible en movimiento.',
+      tone: summary.activeInitiatives > 0 ? 'sky' : 'slate',
+      icon: 'activity',
+      path: '/portfolio/iniciativas',
+    },
+    {
       id: 'decisiones-pendientes',
       label: 'Decisiones pendientes',
-      value: `${summary.pendingDecisions}`,
-      microcopy: 'Definiciones que ya piden revisión.',
+      value: String(summary.pendingDecisions),
+      microcopy: 'Definiciones que ya piden revision.',
       tone: summary.pendingDecisions > 0 ? 'violet' : 'slate',
       icon: 'decisions',
+      path: '/portfolio/decisiones',
+    },
+    {
+      id: 'listas-para-decision',
+      label: 'Listas para decision',
+      value: String(summary.readyForDecisionInitiatives),
+      microcopy: 'Casos maduros para revisar.',
+      tone: summary.readyForDecisionInitiatives > 0 ? 'emerald' : 'slate',
+      icon: 'ready',
       path: '/portfolio/decisiones',
     },
   ];
@@ -703,7 +824,7 @@ function getHomeFrontCards(state: PortfolioLeadState): PortfolioFrontOverviewCar
     const relatedInitiatives = getInitiativesByFrontId(state.initiatives, front.id);
     const activeChallenges = relatedChallenges.filter(challenge => challenge.visibleToParticipants);
     const blockedInitiatives = relatedInitiatives.filter(
-      initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+      initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
     );
     const pendingDecisions = getPendingDecisions(relatedInitiatives);
     const action = getFrontActionModel(front, relatedChallenges, relatedInitiatives);
@@ -786,20 +907,20 @@ function getHomePendingDecisions(state: PortfolioLeadState): PortfolioPendingDec
     .map(initiative => {
       const challenge = state.challenges.find(item => item.id === initiative.challengeId);
       const front = state.strategicFronts.find(item => item.id === initiative.strategicFrontId);
-      const evidenceLevel = initiative.readyForDecision || initiative.currentStep === 'Step 4'
+      const evidenceLevel = isInitiativeReadyForDecision(initiative)
         ? 'Alta'
         : initiative.partialSignal
           ? 'Media'
           : 'Baja';
-      const urgency = initiative.status === 'bloqueada' || initiative.blockedDays >= 14 || initiative.readyForDecision
+      const urgency = normalizeInitiativeStatus(initiative.status) === 'blocked' || initiative.blockedDays >= 14 || isInitiativeReadyForDecision(initiative)
         ? 'Alta'
         : 'Media';
 
       return {
         id: initiative.id,
-        decision: initiative.status === 'bloqueada'
+        decision: normalizeInitiativeStatus(initiative.status) === 'blocked'
           ? 'Desbloquear o redefinir destino'
-          : initiative.readyForDecision || initiative.currentStep === 'Step 4'
+          : isInitiativeReadyForDecision(initiative)
             ? 'Tomar decisión'
             : 'Revisar avance',
         frontName: front?.name ?? 'Frente no visible',
@@ -863,9 +984,9 @@ function getHomeRecentActivity(state: PortfolioLeadState): PortfolioRecentActivi
 
   state.initiatives.forEach(initiative => {
     const age = parseRelativeDaysFromText(initiative.lastActivity) ?? 5;
-    const label = initiative.status === 'bloqueada'
+    const label = normalizeInitiativeStatus(initiative.status) === 'blocked'
       ? 'Iniciativa bloqueada'
-      : initiative.readyForDecision || initiative.currentStep === 'Step 4'
+      : isInitiativeReadyForDecision(initiative)
         ? 'Iniciativa lista para decisión'
         : /coment/i.test(initiative.lastActivity)
           ? 'Comentario nuevo'
@@ -876,9 +997,9 @@ function getHomeRecentActivity(state: PortfolioLeadState): PortfolioRecentActivi
       label,
       description: initiative.signalSummary || initiative.nextActionRecommended,
       timeLabel: formatRelativeDays(age),
-      tone: initiative.status === 'bloqueada'
+      tone: normalizeInitiativeStatus(initiative.status) === 'blocked'
         ? 'rose'
-        : initiative.readyForDecision || initiative.currentStep === 'Step 4'
+        : isInitiativeReadyForDecision(initiative)
           ? 'violet'
           : /coment/i.test(initiative.lastActivity)
             ? 'sky'
@@ -960,7 +1081,7 @@ export function getChallengeActivationReadiness(challenge: Challenge): Challenge
 
   if (challenge.visibleToParticipants) {
     activationState = 'publicado';
-  } else if (challenge.status === 'activo_interno') {
+  } else if (normalizeChallengeStatus(challenge.status) === 'activating_team') {
     activationState = 'activo_interno';
   } else if (missingItems.length === 0) {
     activationState = 'listo_para_activar';
@@ -977,9 +1098,11 @@ export function getChallengeActivationReadiness(challenge: Challenge): Challenge
 
 function getChallengeActionModel(challenge: Challenge, front: StrategicFront | null, initiatives: Initiative[]) {
   const readiness = getChallengeActivationReadiness(challenge);
-  const pendingDecisions = getPendingDecisions(initiatives).filter(initiative => initiative.status !== 'bloqueada');
+  const pendingDecisions = getPendingDecisions(initiatives).filter(
+    initiative => normalizeInitiativeStatus(initiative.status) !== 'blocked',
+  );
   const blockedInitiatives = initiatives.filter(
-    initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
   );
 
   if (!challenge.visibleToParticipants && readiness.readyToActivate) {
@@ -1059,7 +1182,7 @@ export function getChallengeCards(state: PortfolioLeadState): ChallengeCardModel
       const front = state.strategicFronts.find(item => item.id === challenge.strategicFrontId) ?? null;
       const relatedInitiatives = getInitiativesByChallengeId(state.initiatives, challenge.id);
       const blockedInitiatives = relatedInitiatives.filter(
-        initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+        initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
       );
       const pendingDecisions = getPendingDecisions(relatedInitiatives);
       const readiness = getChallengeActivationReadiness(challenge);
@@ -1231,7 +1354,7 @@ function getFrontActionModel(front: StrategicFront, challenges: Challenge[], ini
   }
 
   const blockedInitiative = initiatives.find(
-    initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
   );
   if (blockedInitiative) {
     return {
@@ -1245,7 +1368,9 @@ function getFrontActionModel(front: StrategicFront, challenges: Challenge[], ini
     };
   }
 
-  const pendingDecision = getPendingDecisions(initiatives).find(initiative => initiative.status !== 'bloqueada');
+  const pendingDecision = getPendingDecisions(initiatives).find(
+    initiative => normalizeInitiativeStatus(initiative.status) !== 'blocked',
+  );
   if (pendingDecision) {
     return {
       label: 'Revisar decision',
@@ -1300,7 +1425,7 @@ export function getStrategicFrontCards(state: PortfolioLeadState): StrategicFron
       const frontInitiatives = getInitiativesByFrontId(state.initiatives, front.id);
       const coverageStatus = getFrontCoverageStatus(front, state.challenges, state.initiatives);
       const blockedInitiatives = frontInitiatives.filter(
-        initiative => initiative.status === 'bloqueada' || hasTechnicalBlocker(initiative.mainBlocker),
+        initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
       );
       const pendingDecisions = getPendingDecisions(frontInitiatives);
       const action = getFrontActionModel(front, frontChallenges, frontInitiatives);
@@ -1394,3 +1519,6 @@ export function getFrontsFocusRecommendation(state: PortfolioLeadState): Strateg
       : `${focusFront.coverageLabel}. Si no actuas, el frente puede quedarse corto en cobertura.`,
   };
 }
+
+
+

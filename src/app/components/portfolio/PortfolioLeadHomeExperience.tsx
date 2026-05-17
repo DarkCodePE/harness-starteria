@@ -1,10 +1,27 @@
 import React from 'react';
-import { ArrowRight, Clock3, Sparkles } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  Flag,
+  GitBranch,
+  Rocket,
+  Sparkles,
+  Target,
+  Users,
+  Lock,
+} from 'lucide-react';
 import { ProgressBar } from '../ProgressBar';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { PortfolioLeadEmptyState } from '../../../features/portfolio-lead/components/states/PortfolioLeadEmptyState';
 import type {
+  PortfolioAttentionQueueItem,
   PortfolioFrontOverviewCard,
   PortfolioImportantChangeCard,
+  PortfolioLeadSummary,
   PortfolioPendingDecisionRow,
   PortfolioRecentActivityItem,
   PortfolioWelcomeBannerActionGroup,
@@ -37,6 +54,28 @@ const impactToneClasses: Record<'Impacto alto' | 'Impacto medio' | 'Impacto bajo
   'Impacto alto': 'border-rose-200 bg-rose-50 text-rose-800',
   'Impacto medio': 'border-amber-200 bg-amber-50 text-amber-800',
   'Impacto bajo': 'border-slate-200 bg-slate-100 text-slate-700',
+};
+
+const queueToneClasses: Record<PortfolioAttentionQueueItem['tone'], string> = {
+  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  amber: 'border-amber-200 bg-amber-50 text-amber-900',
+  rose: 'border-rose-200 bg-rose-50 text-rose-900',
+  violet: 'border-violet-200 bg-violet-50 text-violet-900',
+  sky: 'border-sky-200 bg-sky-50 text-sky-900',
+  slate: 'border-slate-200 bg-white text-slate-900',
+};
+
+const queueIconMap: Record<PortfolioAttentionQueueItem['iconKey'], React.ComponentType<{ size?: number; className?: string }>> = {
+  target: Target,
+  flag: Flag,
+  rocket: Rocket,
+  alert: AlertTriangle,
+  lock: Lock,
+  check: CheckCircle2,
+  sparkles: Sparkles,
+  file: FileText,
+  decision: GitBranch,
+  users: Users,
 };
 
 export function normalizePortfolioText(value?: string) {
@@ -82,6 +121,204 @@ export function PortfolioWelcomeBanner({
           <BannerActionButton action={actions.tertiary} onNavigate={onNavigate} emphasis="ghost" />
         </div>
       </div>
+    </section>
+  );
+}
+
+export function PortfolioPrimaryActionRail({
+  summary,
+  onNavigate,
+}: {
+  summary: PortfolioLeadSummary;
+  onNavigate: (path: string) => void;
+}) {
+  const reviewPath = summary.blockedInitiatives > 0 ? '/portfolio/iniciativas' : '/portfolio/retos';
+  const reviewLabel = summary.blockedInitiatives > 0 ? 'Revisar bloqueos' : 'Revisar retos';
+
+  const actions = [
+    {
+      id: 'create-front',
+      title: 'Crear frente estratégico',
+      description: 'Ordena una prioridad y empieza a mover el portafolio.',
+      note: 'Punto de partida visible.',
+      actionLabel: 'Crear frente',
+      path: '/portfolio/frentes-estrategicos',
+      tone: 'emerald' as const,
+      icon: Target,
+      badge: 'Acción principal',
+    },
+    {
+      id: 'import-initiatives',
+      title: 'Importar iniciativas existentes',
+      description: 'Sube Excel, texto o documentos para clasificarlos por frente y reto.',
+      note: 'Siguiente fase.',
+      actionLabel: 'Preparar importación',
+      path: '/portfolio/iniciar?mode=import',
+      tone: 'slate' as const,
+      icon: FileText,
+      badge: 'Próximamente',
+    },
+    {
+      id: 'pending-decisions',
+      title: 'Revisar decisiones pendientes',
+      description: summary.pendingDecisions > 0
+        ? `${summary.pendingDecisions} caso(s) ya piden definición.`
+        : 'No hay decisiones pendientes por ahora.',
+      note: summary.readyForDecisionInitiatives > 0
+        ? `${summary.readyForDecisionInitiatives} listas para decisión.`
+        : 'Cola tranquila.',
+      actionLabel: 'Ir a decisiones',
+      path: '/portfolio/decisiones',
+      tone: summary.pendingDecisions > 0 ? 'violet' as const : 'sky' as const,
+      icon: GitBranch,
+      badge: summary.pendingDecisions > 0 ? 'Hay cola' : 'Tranquilo',
+    },
+    {
+      id: 'review-work',
+      title: summary.blockedInitiatives > 0 ? 'Revisar bloqueos activos' : 'Revisar retos activos',
+      description: summary.blockedInitiatives > 0
+        ? `${summary.blockedInitiatives} iniciativa(s) necesitan destrabe.`
+        : `${summary.challengesReadyToActivate} reto(s) están listos para activar.`,
+      note: summary.blockedInitiatives > 0 ? 'Atención inmediata.' : 'Siguiente avance útil.',
+      actionLabel: reviewLabel,
+      path: reviewPath,
+      tone: summary.blockedInitiatives > 0 ? 'rose' as const : 'amber' as const,
+      icon: AlertTriangle,
+      badge: summary.blockedInitiatives > 0 ? 'Bloqueos' : 'Retos',
+    },
+  ];
+
+  return (
+    <section className="grid gap-3 xl:grid-cols-4">
+      {actions.map(action => (
+        <article key={action.id} className={`rounded-[24px] border p-5 shadow-sm ${action.tone === 'emerald'
+          ? 'border-emerald-200 bg-emerald-50/70'
+          : action.tone === 'rose'
+            ? 'border-rose-200 bg-rose-50/70'
+            : action.tone === 'violet'
+              ? 'border-violet-200 bg-violet-50/70'
+              : action.tone === 'amber'
+                ? 'border-amber-200 bg-amber-50/70'
+                : 'border-slate-200 bg-white'}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ring-black/5 ${action.tone === 'emerald'
+              ? 'bg-white text-emerald-700'
+              : action.tone === 'rose'
+                ? 'bg-white text-rose-700'
+                : action.tone === 'violet'
+                  ? 'bg-white text-violet-700'
+                  : action.tone === 'amber'
+                    ? 'bg-white text-amber-700'
+                    : 'bg-slate-100 text-slate-700'}`}>
+              <action.icon size={18} />
+            </div>
+            <Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+              {action.badge}
+            </Badge>
+          </div>
+
+          <h3 className="mt-4 text-base text-slate-950" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+            {action.title}
+          </h3>
+          <p className="mt-2 text-sm text-slate-600">{action.description}</p>
+          <p className="mt-3 text-xs text-slate-500">{action.note}</p>
+
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant={action.path ? 'outline' : 'secondary'}
+              disabled={!action.path}
+              onClick={() => action.path && onNavigate(action.path)}
+              className="w-full justify-center rounded-2xl"
+            >
+              {action.actionLabel}
+              {action.path ? <ArrowRight size={14} /> : null}
+            </Button>
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+export function PortfolioAttentionQueueSection({
+  items,
+  onNavigate,
+}: {
+  items: PortfolioAttentionQueueItem[];
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <section className="rounded-[28px] border border-slate-200 bg-white p-6 md:p-7">
+      <div className="max-w-3xl">
+        <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>COLA DE ATENCIÓN</p>
+        <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Lo que conviene mirar primero, sin ruido.</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Bloqueos, decisiones y retos listos para activar en una sola lectura.
+        </p>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="mt-5">
+          <PortfolioLeadEmptyState
+            eyebrow="Atención despejada"
+            title="No hay señales críticas ahora"
+            description="El portafolio está estable. Puedes revisar frentes o seguir alimentando cobertura cuando aparezcan nuevos casos."
+            steps={['Sin bloqueos', 'Sin decisiones urgentes', 'Seguimiento activo']}
+            primaryAction={{
+              label: 'Revisar portafolio',
+              onClick: () => onNavigate('/portfolio/inicio'),
+            }}
+            secondaryAction={{
+              label: 'Crear frente',
+              onClick: () => onNavigate('/portfolio/frentes-estrategicos'),
+              helper: 'Mantén el ritmo con una prioridad clara.',
+            }}
+          />
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-3 xl:grid-cols-2">
+          {items.map(item => {
+            const Icon = queueIconMap[item.iconKey];
+            return (
+              <article key={item.id} className={`rounded-[24px] border p-5 ${queueToneClasses[item.tone]}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 ring-1 ring-black/5">
+                      <Icon size={18} />
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="border-slate-200 bg-white text-slate-700">
+                        {item.badgeLabel}
+                      </Badge>
+                      <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>
+                        {item.title}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-sm text-slate-700">{item.subtitle}</p>
+                {item.contextLabel ? (
+                  <p className="mt-2 text-xs text-slate-500">{item.contextLabel}</p>
+                ) : null}
+
+                {item.actionPath ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onNavigate(item.actionPath!)}
+                    className="mt-4 w-full justify-center rounded-2xl"
+                  >
+                    {item.actionLabel}
+                    <ArrowRight size={14} />
+                  </Button>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -145,9 +382,10 @@ export function StrategicFrontOverviewCard({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <FrontStat label="Retos" value={`${front.challengesCount}`} />
           <FrontStat label="Iniciativas" value={`${front.initiativesCount}`} />
+          <FrontStat label="Bloqueos" value={`${front.blockedInitiativesCount ?? 0}`} />
         </div>
 
         <div className="rounded-2xl border border-white/60 bg-white/80 p-4 backdrop-blur">
@@ -432,3 +670,6 @@ function stateBadgeClasses(tone: PortfolioFrontOverviewCard['executiveTone']) {
   };
   return tones[tone];
 }
+
+
+

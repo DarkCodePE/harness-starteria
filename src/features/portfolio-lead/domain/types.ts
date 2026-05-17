@@ -1,17 +1,45 @@
 ﻿export type PortfolioRole = 'owner' | 'mentor' | 'admin' | 'sponsor' | 'portfolio_lead';
 
-export type StrategicFrontStatus = 'draft' | 'active' | 'tracking' | 'paused' | 'closed';
-export type StrategicFrontPriority = 'Baja' | 'Media' | 'Alta' | 'Critica';
-export type ChallengeActivationMode =
-  | 'convocatoria_abierta'
-  | 'personas_seleccionadas'
-  | 'squad_asignado'
-  | 'equipo_core_encargado'
-  | 'innovacion_abierta_partner_externo'
-  | 'mantener_en_definicion';
-export type ChallengeActivation = ChallengeActivationMode;
-export type ChallengeStatus =
+export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'purple';
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+export interface StatusCopy {
+  label: string;
+  shortLabel: string;
+  description?: string;
+  visualIntent?: StatusTone;
+}
+
+export interface StatusVisualConfig {
+  label: string;
+  shortLabel?: string;
+  tone: StatusTone;
+  iconKey?: string;
+  description?: string;
+}
+
+export type PortfolioStepNumber = 0 | 1 | 2 | 3 | 4;
+
+export type StrategicFrontStatusCanonical =
   | 'draft'
+  | 'in_definition'
+  | 'with_active_challenges'
+  | 'in_tracking'
+  | 'pending_decision'
+  | 'closed';
+export type StrategicFrontStatusLegacy = 'active' | 'tracking' | 'paused';
+export type StrategicFrontStatus = StrategicFrontStatusCanonical | StrategicFrontStatusLegacy;
+
+export type ChallengeStatusCanonical =
+  | 'draft'
+  | 'ready_to_activate'
+  | 'activating_team'
+  | 'active'
+  | 'receiving_initiatives'
+  | 'in_tracking'
+  | 'pending_decision'
+  | 'closed';
+export type ChallengeStatusLegacy =
   | 'listo_para_activar'
   | 'activo_interno'
   | 'publicado'
@@ -19,13 +47,37 @@ export type ChallengeStatus =
   | 'con_iniciativas_activas'
   | 'pendiente_de_decision'
   | 'cerrado';
-export type ChallengeType = 'correccion' | 'crecimiento' | 'exploracion';
-export type StakeholderStatus = 'definido' | 'notificado' | 'confirmado';
-export type SponsorStatus = StakeholderStatus;
-export type ChallengeOwnerStatus = StakeholderStatus;
-export type InvitationStatus = 'pendiente' | 'notificado' | 'confirmado' | 'declinado';
-export type SquadRole = 'lider' | 'colaborador';
-export type InitiativePortfolioStatus =
+export type ChallengeStatus = ChallengeStatusCanonical | ChallengeStatusLegacy;
+
+export type ChallengeCoverageStatusCanonical =
+  | 'no_coverage'
+  | 'partial'
+  | 'sufficient'
+  | 'overlapped'
+  | 'ready_for_decision'
+  | 'needs_reformulation';
+export type ChallengeCoverageStatusLegacy =
+  | 'sin_cobertura'
+  | 'cobertura_parcial'
+  | 'cobertura_suficiente'
+  | 'resuelto'
+  | 'reformular'
+  | 'cerrar'
+  | 'necesita_reformulacion';
+export type ChallengeCoverageStatus = ChallengeCoverageStatusCanonical | ChallengeCoverageStatusLegacy;
+
+export type InitiativePortfolioStatusCanonical =
+  | 'draft'
+  | 'imported_pending_validation'
+  | 'in_step_0'
+  | 'in_step_1'
+  | 'in_step_2'
+  | 'in_step_3'
+  | 'in_step_4'
+  | 'blocked'
+  | 'ready_for_decision'
+  | 'closed';
+export type InitiativePortfolioStatusLegacy =
   | 'en_step_0'
   | 'en_step_1'
   | 'en_step_2'
@@ -35,19 +87,99 @@ export type InitiativePortfolioStatus =
   | 'esperando_revision'
   | 'lista_para_decision'
   | 'cerrada';
-export type InitiativeStep = 'Step 0' | 'Step 1' | 'Step 2' | 'Step 3' | 'Step 4';
-export type ChallengeCoverageStatus =
-  | 'sin_cobertura'
-  | 'cobertura_parcial'
-  | 'cobertura_suficiente'
-  | 'resuelto'
-  | 'reformular'
-  | 'cerrar';
-export type InitiativeContributionType =
+export type InitiativePortfolioStatus = InitiativePortfolioStatusCanonical | InitiativePortfolioStatusLegacy;
+
+export type ImportSessionStatus =
+  | 'uploaded'
+  | 'processing'
+  | 'review_required'
+  | 'partially_published'
+  | 'published'
+  | 'failed';
+
+export type ImportedItemStatus =
+  | 'detected'
+  | 'needs_classification'
+  | 'conflict'
+  | 'ready_to_publish'
+  | 'published'
+  | 'discarded';
+
+export type StepContentStatus =
+  | 'empty'
+  | 'partial'
+  | 'complete_preliminary'
+  | 'complete_with_observations'
+  | 'validated';
+
+export type StepValidationStatus =
+  | 'not_reviewed'
+  | 'ai_reviewed'
+  | 'requires_mentor'
+  | 'requires_challenge_owner'
+  | 'requires_sponsor'
+  | 'approved';
+
+export type EvidenceVerificationStatus =
+  | 'unverified'
+  | 'ai_detected'
+  | 'user_confirmed'
+  | 'mentor_confirmed';
+
+export type DecisionType =
+  | 'continue_validating'
+  | 'iterate'
+  | 'pivot'
+  | 'scale_same_area'
+  | 'scale_similar_area'
+  | 'transfer_to_it'
+  | 'integrate_to_roadmap'
+  | 'pause'
+  | 'close_with_learning';
+
+export type ChallengeTypeCanonical = 'correction' | 'growth' | 'exploration';
+export type ChallengeTypeLegacy = 'correccion' | 'crecimiento' | 'exploracion';
+export type ChallengeType = ChallengeTypeCanonical | ChallengeTypeLegacy;
+
+export type ContributionType = 'discover' | 'validate' | 'partially_solve' | 'directly_solve';
+
+export type ContributionTypeLegacy =
   | 'descubrir'
   | 'validar'
   | 'resolver_parcialmente'
   | 'resolver_directamente';
+
+export type ConfidentialityLevel = 'low' | 'medium' | 'high' | 'no_ai_full_content';
+export type ConfidentialityLevelLegacy = ConfidentialityLevel;
+
+export type ImportSourceType = 'excel' | 'csv' | 'doc' | 'pdf' | 'ppt' | 'text' | 'url' | 'folder';
+export type ImportContextMode =
+  | 'map_to_existing_structure'
+  | 'propose_structure'
+  | 'classify_only'
+  | 'specific_front'
+  | 'specific_challenge';
+export type ImportedItemTargetEntity = 'front' | 'challenge' | 'initiative' | 'step_progress' | 'evidence';
+export type PortfolioValidationRole = 'ai' | 'mentor' | 'challenge_owner' | 'sponsor' | 'portfolio_lead';
+export type PortfolioValidationStatus = 'approved' | 'needs_iteration' | 'blocked' | 'commented';
+export type PortfolioEvidenceType = 'file' | 'text' | 'link' | 'metric' | 'interview' | 'observation' | 'report';
+
+export type StrategicFrontPriority = 'Baja' | 'Media' | 'Alta' | 'Critica';
+export type ChallengeActivationMode =
+  | 'convocatoria_abierta'
+  | 'personas_seleccionadas'
+  | 'squad_asignado'
+  | 'equipo_core_encargado'
+  | 'innovacion_abierta_partner_externo'
+  | 'mantener_en_definicion';
+export type ChallengeActivation = ChallengeActivationMode;
+export type StakeholderStatus = 'definido' | 'notificado' | 'confirmado';
+export type SponsorStatus = StakeholderStatus;
+export type ChallengeOwnerStatus = StakeholderStatus;
+export type InvitationStatus = 'pendiente' | 'notificado' | 'confirmado' | 'declinado';
+export type SquadRole = 'lider' | 'colaborador';
+export type InitiativeStep = 'Step 0' | 'Step 1' | 'Step 2' | 'Step 3' | 'Step 4';
+export type InitiativeContributionType = ContributionType | ContributionTypeLegacy;
 export type EstimatedContribution = 'bajo' | 'medio' | 'alto';
 export type InitiativeOverlapLevel = 'bajo' | 'medio' | 'alto';
 export type PortfolioDecisionOutcome =
@@ -193,6 +325,89 @@ export interface InitiativeStepTimelineEntry {
   note: string;
 }
 
+export interface ImportSession {
+  id: string;
+  organizationId?: string;
+  uploadedBy: string;
+  sourceType: ImportSourceType;
+  sourceName?: string;
+  status: ImportSessionStatus;
+  contextMode: ImportContextMode;
+  confidentialityLevel: ConfidentialityLevel;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImportedItem {
+  id: string;
+  importSessionId: string;
+  detectedName: string;
+  detectedSummary?: string;
+  suggestedFrontId?: string;
+  suggestedFrontName?: string;
+  suggestedChallengeId?: string;
+  suggestedChallengeName?: string;
+  suggestedOwnerEmail?: string;
+  suggestedChallengeType?: ChallengeType;
+  estimatedStep: PortfolioStepNumber;
+  confidenceScore: number;
+  missingCriticalFields: string[];
+  risks: string[];
+  duplicateOfItemId?: string;
+  status: ImportedItemStatus;
+}
+
+export interface FieldMapping {
+  id: string;
+  importedItemId: string;
+  targetEntity: ImportedItemTargetEntity;
+  targetField: string;
+  suggestedValue: string;
+  sourceReference: string;
+  confidenceScore: number;
+  userConfirmed: boolean;
+  userEditedValue?: string;
+}
+
+export interface StepProgress {
+  id: string;
+  initiativeId: string;
+  step: PortfolioStepNumber;
+  contentStatus: StepContentStatus;
+  validationStatus: StepValidationStatus;
+  completionScore: number;
+  missingCriticalFields: string[];
+  risks: string[];
+  sourceRefs?: string[];
+  lastReviewedAt?: string;
+}
+
+export interface PortfolioEvidence {
+  id: string;
+  initiativeId: string;
+  step?: PortfolioStepNumber;
+  moduleKey?: string;
+  type: PortfolioEvidenceType;
+  title: string;
+  description?: string;
+  storageUrl?: string;
+  sourceDocumentId?: string;
+  verificationStatus: EvidenceVerificationStatus;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface PortfolioValidation {
+  id: string;
+  initiativeId: string;
+  step?: PortfolioStepNumber;
+  validatorRole: PortfolioValidationRole;
+  validatorId?: string;
+  status: PortfolioValidationStatus;
+  comments?: string;
+  createdAt: string;
+}
+
 export interface Initiative {
   id: string;
   name: string;
@@ -252,7 +467,21 @@ export interface PortfolioDecisionItem {
   reviewReason: string;
 }
 
-export type PortfolioDecision = PortfolioDecisionItem;
+export interface PortfolioDecisionRecord {
+  id: string;
+  initiativeId: string;
+  challengeId?: string;
+  decisionType: DecisionType;
+  rationale: string;
+  evidenceIds: string[];
+  decidedBy: string;
+  nextStep: string;
+  ownerNextStep?: string;
+  dueDate?: string;
+  createdAt: string;
+}
+
+export type PortfolioDecision = PortfolioDecisionItem | PortfolioDecisionRecord;
 
 export interface ExecutiveTimelineEntry {
   label: string;
@@ -359,6 +588,7 @@ export interface PortfolioLeadSummary {
   activeInitiatives: number;
   blockedInitiatives: number;
   pendingDecisions: number;
+  readyForDecisionInitiatives: number;
   executiveOutputs: number;
 }
 
@@ -374,7 +604,7 @@ export interface PortfolioHomeSummaryCard {
   value: string;
   microcopy: string;
   tone: 'emerald' | 'amber' | 'rose' | 'violet' | 'sky' | 'slate';
-  icon: 'fronts' | 'challenges' | 'activation' | 'blockers' | 'decisions';
+  icon: 'fronts' | 'challenges' | 'activation' | 'blockers' | 'decisions' | 'activity' | 'ready';
   path?: string;
 }
 
@@ -382,8 +612,10 @@ export interface PortfolioFrontOverviewCard {
   id: string;
   name: string;
   objective?: string;
+  statusLabel?: string;
   executiveState: 'En definición' | 'En curso' | 'Requiere atención' | 'Bloqueado' | 'Listo para decisión' | 'Cerrado';
   executiveTone: 'emerald' | 'amber' | 'rose' | 'violet' | 'slate';
+  coverageLabel?: string;
   mainKpi: string;
   progressPercent: number;
   progressLabel: string;
@@ -391,6 +623,7 @@ export interface PortfolioFrontOverviewCard {
   detail: string;
   challengesCount: number;
   initiativesCount: number;
+  blockedInitiativesCount?: number;
   pendingDecisionsCount: number;
   createdLabel: string;
   lastActivityLabel: string;
@@ -432,6 +665,18 @@ export interface PortfolioRecentActivityItem {
   description: string;
   timeLabel: string;
   tone: 'emerald' | 'amber' | 'rose' | 'violet' | 'sky' | 'slate';
+}
+
+export interface PortfolioAttentionQueueItem {
+  id: string;
+  tone: 'emerald' | 'amber' | 'rose' | 'violet' | 'sky' | 'slate';
+  iconKey: 'target' | 'flag' | 'rocket' | 'alert' | 'lock' | 'check' | 'sparkles' | 'file' | 'decision' | 'users';
+  title: string;
+  subtitle: string;
+  badgeLabel: string;
+  actionLabel: string;
+  actionPath?: string;
+  contextLabel?: string;
 }
 
 export interface PortfolioWelcomeBannerActionGroup {

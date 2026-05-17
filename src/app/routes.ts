@@ -17,6 +17,7 @@ import { AdminCohorte } from './pages/AdminCohorte';
 import { PerfilPage } from './pages/PerfilPage';
 import { ParticipantChallengeDetailPage } from './pages/ParticipantChallengeDetailPage';
 import { PortfolioLeadHomePage } from './pages/PortfolioLeadHomePage';
+import { PortfolioLeadStartPage } from './pages/PortfolioLeadStartPage';
 import { PortfolioLeadSectionPage } from './pages/PortfolioLeadSectionPage';
 import { PortfolioLeadStrategicFrontsPage } from './pages/PortfolioLeadStrategicFrontsPage';
 import { PortfolioLeadChallengesPage } from './pages/PortfolioLeadChallengesPage';
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, loader: () => redirect('/portfolio/inicio') },
           { path: 'inicio', Component: PortfolioLeadHomePage },
+          { path: 'iniciar', Component: PortfolioLeadStartPage },
           { path: 'frentes-estrategicos', Component: PortfolioLeadStrategicFrontsPage },
           { path: 'retos', Component: PortfolioLeadChallengesPage },
           { path: 'iniciativas', Component: PortfolioLeadInitiativesPage },

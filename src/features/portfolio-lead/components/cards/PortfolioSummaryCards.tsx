@@ -1,5 +1,5 @@
 import React from 'react';
-import { BriefcaseBusiness, FolderKanban, ShieldCheck, Target } from 'lucide-react';
+import { Activity, BadgeCheck, BriefcaseBusiness, FolderKanban, ShieldCheck, Target } from 'lucide-react';
 import type { PortfolioHomeSummaryCard } from '../../domain/types';
 
 const ICONS = {
@@ -8,6 +8,8 @@ const ICONS = {
   blockers: FolderKanban,
   decisions: ShieldCheck,
   activation: BriefcaseBusiness,
+  activity: Activity,
+  ready: BadgeCheck,
 } as const;
 
 const TONE_CLASSES: Record<PortfolioHomeSummaryCard['tone'], string> = {

@@ -2,16 +2,17 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 import {
+  getAttentionQueue,
+  getHomeCommandCenterModel,
   getPortfolioHomeExperienceModel,
-  getPortfolioSummary,
-  type PortfolioHomeSummaryCard,
   PortfolioSummaryCards,
   usePortfolioLead,
 } from '../../features/portfolio-lead';
 import { PortfolioLeadBreadcrumbs } from '../components/portfolio/PortfolioLeadPageElements';
 import {
-  ImportantChangesSection,
   PendingDecisionsSection,
+  PortfolioAttentionQueueSection,
+  PortfolioPrimaryActionRail,
   PortfolioWelcomeBanner,
   RecentActivitySection,
   StrategicFrontOverviewCard,
@@ -33,45 +34,8 @@ export function PortfolioLeadHomePage() {
     [firstName, portfolioState],
   );
 
-  const portfolioSummary = useMemo(() => getPortfolioSummary(portfolioState), [portfolioState]);
-
-  const summaryCards = useMemo<PortfolioHomeSummaryCard[]>(
-    () => [
-      {
-        id: 'frentes-estrategicos',
-        label: 'Frentes estratégicos',
-        value: `${portfolioSummary.fronts}`,
-        microcopy: 'Frentes creados en el portafolio.',
-        tone: portfolioSummary.fronts > 0 ? 'emerald' : 'slate',
-        icon: 'fronts',
-      },
-      {
-        id: 'retos',
-        label: 'Retos',
-        value: `${portfolioSummary.challenges}`,
-        microcopy: 'Retos registrados en total.',
-        tone: portfolioSummary.challenges > 0 ? 'sky' : 'slate',
-        icon: 'challenges',
-      },
-      {
-        id: 'iniciativas',
-        label: 'Iniciativas',
-        value: `${portfolioSummary.initiatives}`,
-        microcopy: 'Iniciativas activas o registradas.',
-        tone: portfolioSummary.initiatives > 0 ? 'amber' : 'slate',
-        icon: 'blockers',
-      },
-      {
-        id: 'decisiones',
-        label: 'Decisiones',
-        value: `${portfolioSummary.pendingDecisions}`,
-        microcopy: 'Decisiones pendientes o registradas.',
-        tone: portfolioSummary.pendingDecisions > 0 ? 'violet' : 'slate',
-        icon: 'decisions',
-      },
-    ],
-    [portfolioSummary],
-  );
+  const commandCenter = useMemo(() => getHomeCommandCenterModel(portfolioState), [portfolioState]);
+  const attentionQueue = useMemo(() => getAttentionQueue(portfolioState), [portfolioState]);
 
   const strategicFronts = useMemo(
     () =>
@@ -86,20 +50,6 @@ export function PortfolioLeadHomePage() {
     [model.strategicFronts, portfolioState.strategicFronts],
   );
 
-  const importantChanges = useMemo(
-    () =>
-      model.importantChanges.map(item => ({
-        ...item,
-        impactLabel:
-          item.impactLabel
-          || (item.tone === 'rose' ? 'Impacto alto'
-            : item.tone === 'amber' || item.tone === 'violet' || item.tone === 'sky'
-              ? 'Impacto medio'
-              : 'Impacto bajo'),
-      })),
-    [model.importantChanges],
-  );
-
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <PortfolioLeadBreadcrumbs items={[{ label: 'Portfolio Lead', path: '/portfolio/inicio' }, { label: 'Inicio' }]} />
@@ -111,34 +61,44 @@ export function PortfolioLeadHomePage() {
         onNavigate={path => navigate(path)}
       />
 
+      <PortfolioPrimaryActionRail summary={commandCenter.summary} onNavigate={path => navigate(path)} />
+
       <section className="rounded-[28px] border border-slate-200 bg-white p-6 md:p-7">
         <div className="max-w-3xl">
-          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>RESUMEN EJECUTIVO COMPACTO</p>
-          <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Vista general del estado actual de las secciones principales del dashboard.</h2>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>SNAPSHOT EJECUTIVO</p>
+          <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Lo más importante del portafolio en una sola lectura.</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Un vistazo rápido para entender el tamaño actual del portafolio.
+            Frentes, retos, iniciativas, bloqueos y decisiones que marcan el ritmo.
           </p>
         </div>
 
-        <PortfolioSummaryCards items={summaryCards} />
+        <PortfolioSummaryCards items={model.summaryCards} />
       </section>
+
+      <PortfolioAttentionQueueSection items={attentionQueue} onNavigate={path => navigate(path)} />
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-6 md:p-7">
         <div className="max-w-3xl">
-          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>TUS FRENTES ESTRATÉGICOS</p>
-          <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Cada frente muestra avance, cobertura, bloqueos y próxima acción recomendada.</h2>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>FRENTES ESTRATÉGICOS</p>
+          <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Cada frente muestra avance, cobertura, bloqueos y siguiente acción.</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Aquí se lee qué frente existe, cómo se encuentra y qué falta por abordar.
+            Aquí se ve qué frente existe, cómo se encuentra y qué falta por abordar.
           </p>
         </div>
 
         {strategicFronts.length === 0 ? (
           <div className="mt-5">
             <PortfolioLeadEmptyState
-              title="Todavía no hay frentes activos"
-              description="Empieza creando un frente estratégico para ordenar las prioridades del portafolio."
-              primaryAction={{ label: 'Crear nuevo frente', onClick: () => navigate('/portfolio/frentes-estrategicos') }}
-              secondaryAction={{ label: 'Revisar decisiones', onClick: () => navigate('/portfolio/decisiones') }}
+              eyebrow="Portafolio en arranque"
+              title="Todavía no hay frentes estratégicos"
+              description="Crea el primer frente para ordenar prioridades y abrir la secuencia de trabajo."
+              steps={['Crear frente', 'Crear reto', 'Activar', 'Recibir iniciativas', 'Decidir']}
+              primaryAction={{ label: 'Crear primer frente estratégico', onClick: () => navigate('/portfolio/frentes-estrategicos') }}
+              secondaryAction={{
+                label: 'Importar iniciativas existentes',
+                disabled: true,
+                helper: 'Siguiente fase. Sube Excel, texto o documentos para clasificarlos por frente y reto.',
+              }}
             />
           </div>
         ) : (
@@ -153,8 +113,6 @@ export function PortfolioLeadHomePage() {
           </div>
         )}
       </section>
-
-      <ImportantChangesSection items={importantChanges} onNavigate={path => navigate(path)} />
 
       <PendingDecisionsSection items={model.pendingDecisions} onNavigate={path => navigate(path)} />
 
