@@ -2,6 +2,13 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { authService, AuthUser } from '../services/auth.service';
 import { initAuth, getAccessToken, parseApiError, AuthError } from '../services/api';
 import * as projectService from '../services/projectService';
+import { mapPublicDraftToStep0Data } from '../../features/public-start/domain/mappers';
+import {
+  getPublicDraft,
+  isPublicDraftExpired,
+  updatePublicDraft,
+} from '../../features/public-start/services/publicDraftStorage';
+import { saveStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 
 export type { AuthError } from '../services/api';
 
@@ -236,8 +243,8 @@ interface AppContextType {
   projects: Project[];
   projectsLoading: boolean;
   currentProject: Project | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: AuthError }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: AuthError }>;
+  login: (email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
+  register: (name: string, email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
   logout: () => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
@@ -247,6 +254,8 @@ interface AppContextType {
     teamMembers?: TeamMember[],
     options?: { challengeLink?: ProjectChallengeLink },
   ) => Promise<{ success: true; project: Project } | { success: false; error: string }>;
+  createProjectFromPublicDraft: (draftId: string) => Promise<Project>;
+  hydrateProjectStep0FromPrefill: (projectId: string, step0Data: Step0Data) => void;
   setUserRole: (role: Role) => void;
   updateStep0: (projectId: string, data: Partial<Step0Data>, status: Step0Status) => void;
   getProjectMember: (projectId: string, email?: string) => TeamMember | null;
@@ -324,6 +333,13 @@ export const DEFAULT_SPONSOR_TOUCHPOINTS: SponsorTouchpoint[] = [
 
 const AppContext = createContext<AppContextType | null>(null);
 
+const PENDING_CONVERSION_KEY = 'starteria.publicStart.pendingConversion';
+
+function writeSessionJson(key: string, value: unknown) {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(key, JSON.stringify(value));
+}
+
 function enrichProject(raw: any, currentUser: User | null): Project {
   const steps = Array.isArray(raw.steps)
     ? raw.steps.map((s: any, idx: number) => ({
@@ -391,11 +407,15 @@ const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
 
 function mapBackendUser(raw: AuthUser): User {
   const rawAny = raw as AuthUser & { cohortCode?: string | null };
+  const role = raw.email.toLowerCase() === 'portfolio@starteria.io'
+    ? 'portfolio_lead'
+    : BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner';
+
   return {
     id: raw.id,
     name: raw.name,
     email: raw.email,
-    role: BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner',
+    role,
     initials: raw.initials || inferInitials(raw.name),
     skills: [],
     cohort: rawAny.cohortCode ?? raw.cohort ?? '',
@@ -448,26 +468,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: AuthError }> => {
+  const login = async (
+    email: string,
+    password: string,
+    options: { loadProjects?: boolean } = {},
+  ): Promise<{ success: boolean; error?: AuthError }> => {
     try {
       const result = await authService.login(email, password);
       const mappedUser = mapBackendUser(result.user);
       setUser(mappedUser);
       setIsAuthenticated(true);
-      await loadProjects(mappedUser);
+      if (options.loadProjects !== false) {
+        await loadProjects(mappedUser);
+      }
       return { success: true };
     } catch (err) {
       return { success: false, error: parseApiError(err) };
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: AuthError }> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    options: { loadProjects?: boolean } = {},
+  ): Promise<{ success: boolean; error?: AuthError }> => {
     try {
       const result = await authService.register(name, email, password);
       const mappedUser = mapBackendUser(result.user);
       setUser(mappedUser);
       setIsAuthenticated(true);
-      await loadProjects(mappedUser);
+      if (options.loadProjects !== false) {
+        await loadProjects(mappedUser);
+      }
       return { success: true };
     } catch (err) {
       return { success: false, error: parseApiError(err) };
@@ -520,6 +553,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateStep0 = (projectId: string, data: Partial<Step0Data>, status: Step0Status) => {
     updateProject(projectId, { step0Data: data, step0Status: status });
+  };
+
+  const hydrateProjectStep0FromPrefill = (projectId: string, step0Data: Step0Data) => {
+    updateProject(projectId, {
+      currentStep: 0,
+      step0Status: 'En progreso',
+      step0Data,
+    });
   };
 
   const markSponsorInvitationSent = (projectId: string, sponsorEmail: string) => {
@@ -617,12 +658,95 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const createProjectFromPublicDraft = async (draftId: string): Promise<Project> => {
+    if (!user) {
+      throw new Error('AUTH_REQUIRED');
+    }
+
+    const draft = getPublicDraft(draftId);
+    if (!draft) {
+      throw new Error('PUBLIC_DRAFT_NOT_FOUND');
+    }
+    if (draft.status === 'discarded') {
+      throw new Error('PUBLIC_DRAFT_DISCARDED');
+    }
+    if (draft.status === 'converted') {
+      throw new Error('PUBLIC_DRAFT_ALREADY_CONVERTED');
+    }
+    if (draft.status === 'expired' || isPublicDraftExpired(draft)) {
+      throw new Error('PUBLIC_DRAFT_EXPIRED');
+    }
+
+    const mappedStep0Data = mapPublicDraftToStep0Data(draft);
+    const projectName = draft.aiOutput.proposalTitle?.trim() || 'Propuesta de iniciativa';
+    const projectDescription = draft.aiOutput.whatToMove?.trim() || draft.inputText;
+
+    const response = await projectService.create({
+      name: projectName,
+      description: projectDescription,
+    });
+
+    const ownerMember: TeamMember = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: 'Owner',
+      status: 'Activo',
+      initials: user.initials,
+    };
+
+    const createdProject = {
+      ...response,
+      name: response.name ?? projectName,
+      description: response.description ?? projectDescription,
+      currentStep: 0,
+      step0Status: 'En progreso',
+      step0Data: mappedStep0Data,
+      sponsorTouchpoints: DEFAULT_SPONSOR_TOUCHPOINTS,
+      sponsorComments: [],
+      team: [ownerMember],
+      evidence: (response.evidence as Evidence[] | undefined) ?? [],
+      lastModified: (response.lastModified as string | undefined) ?? new Date().toISOString(),
+    } as unknown as Project;
+
+    saveStep0Prefill(createdProject.id, mappedStep0Data);
+
+    setProjects(prev => [createdProject, ...prev.filter(project => project.id !== createdProject.id)]);
+    setCurrentProject(createdProject);
+
+    updatePublicDraft(draft.id, {
+      status: 'converted',
+      convertedByUserId: user.id,
+      convertedProjectId: createdProject.id,
+    });
+
+    let pendingConversion: Record<string, unknown> = {};
+    if (typeof window !== 'undefined') {
+      try {
+        pendingConversion = JSON.parse(window.sessionStorage.getItem(PENDING_CONVERSION_KEY) ?? '{}');
+      } catch {
+        pendingConversion = {};
+      }
+    }
+
+    writeSessionJson(PENDING_CONVERSION_KEY, {
+      ...pendingConversion,
+      draftId,
+      next: 'convert_to_project_step0',
+      status: 'converted',
+      projectId: createdProject.id,
+      convertedAt: new Date().toISOString(),
+    });
+
+    return createdProject;
+  };
+
   const setUserRole = (role: Role) => {
     setUser(prev => prev ? { ...prev, role } : prev);
   };
 
   return (
-    <AppContext.Provider value={{ user, isAuthenticated, authLoading, projects, projectsLoading, currentProject, login, register, logout, setCurrentProject, updateProject, createProject, setUserRole, updateStep0, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment }}>
+    <AppContext.Provider value={{ user, isAuthenticated, authLoading, projects, projectsLoading, currentProject, login, register, logout, setCurrentProject, updateProject, createProject, createProjectFromPublicDraft, hydrateProjectStep0FromPrefill, setUserRole, updateStep0, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment }}>
       {children}
     </AppContext.Provider>
   );
