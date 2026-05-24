@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, ChevronRight, Copy, CreditCard, Download, Loader2, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -26,6 +26,7 @@ import {
   syncLegacyFields,
 } from '../step0/step0Config';
 import type { Step0Data } from '../context/AppContext';
+import { getStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 
 const IA_FEEDBACK = {
   claro: ['La base ya deja mas claro que se quiere mover.', 'La solicitud de apoyo se entiende mejor.', 'La conversacion con sponsor u owner ya tiene mejor foco.'],
@@ -33,6 +34,23 @@ const IA_FEEDBACK = {
   preguntas: ['Que senal justificaria seguir?', 'Que parte del reto o del negocio se moveria primero?', 'Que apoyo minimo necesitas para no quedarte solo en diagnostico?'],
   siguienteAccion: 'Refuerza evidencia y decision solicitada para que el Step 0 quede realmente conversable.',
 };
+
+function hasText(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(item => hasText(item));
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isStep0DataMissingPublicFields(data?: Partial<Step0Data>): boolean {
+  if (!data) return true;
+
+  return ![
+    data.initiativeTitle,
+    data.quePasaQueQuieres,
+    data.whyNowText,
+    data.impactWho,
+    data.impacta,
+  ].some(hasText);
+}
 
 function Field({ label, helper, children }: { label: string; helper?: string; children: React.ReactNode }) {
   return (
@@ -85,7 +103,7 @@ function ChoiceGroup<T extends string>({
 
 export function Step0Page() {
   const { projectId } = useParams();
-  const { projects, updateProject, updateStep0, user } = useApp();
+  const { projects, updateProject, updateStep0, hydrateProjectStep0FromPrefill, user } = useApp();
   const { challenges, strategicFronts } = usePortfolioLead();
   const navigate = useNavigate();
   const project = projects.find(item => item.id === projectId);
@@ -96,6 +114,7 @@ export function Step0Page() {
   const [saved, setSaved] = useState(false);
   const [analysisState, setAnalysisState] = useState<'idle' | 'loading' | 'done'>('idle');
   const [copied, setCopied] = useState(false);
+  const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
   const projectForInit = project ?? {
     id: '',
     name: '',
@@ -111,6 +130,25 @@ export function Step0Page() {
   };
   const [form, setForm] = useState<Step0Data>(() => normalizeStep0Data(project?.step0Data, projectForInit, user?.name ?? '', user?.email ?? ''));
   const saveState = useAutosave([form]);
+
+  useEffect(() => {
+    if (!projectId || !project) return;
+    if (!isStep0DataMissingPublicFields(project.step0Data)) return;
+
+    const prefill = getStep0Prefill(projectId);
+    if (!prefill) return;
+
+    const projectWithPrefill = {
+      ...project,
+      currentStep: 0,
+      step0Status: 'En progreso' as const,
+      step0Data: prefill,
+    };
+
+    hydrateProjectStep0FromPrefill(projectId, prefill);
+    setForm(normalizeStep0Data(prefill, projectWithPrefill, user?.name ?? '', user?.email ?? ''));
+    setRecoveredFromPublicDraft(true);
+  }, [hydrateProjectStep0FromPrefill, project, projectId, user?.email, user?.name]);
 
   if (!project) {
     return <div className="p-6 text-slate-500">Proyecto no encontrado.</div>;
@@ -209,6 +247,17 @@ export function Step0Page() {
             </div>
           </div>
         </div>
+
+        {recoveredFromPublicDraft && (
+          <div className="border-b border-sky-100 bg-sky-50 px-5 py-3">
+            <div className="mx-auto flex max-w-[1480px] items-start gap-3 text-sm text-sky-800">
+              <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-sky-600" />
+              <p>
+                Recuperamos la información de tu propuesta pública. Revísala y complétala antes de enviarla a revisión.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mx-auto grid max-w-[1480px] items-start gap-6 px-5 py-6 min-[1280px]:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">

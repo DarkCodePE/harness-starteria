@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect } from 'react-router';
 import { RootLayout } from './layout/RootLayout';
 import { AppLayout } from './layout/AppLayout';
 import { PortfolioLeadLayout } from './layout/PortfolioLeadLayout';
+import { PublicLayout } from './layout/PublicLayout';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -25,6 +26,11 @@ import { PortfolioLeadChallengesPage } from './pages/PortfolioLeadChallengesPage
 import { PortfolioLeadInitiativesPage } from './pages/PortfolioLeadInitiativesPage';
 import { PortfolioLeadDecisionsPage } from './pages/PortfolioLeadDecisionsPage';
 import { PortfolioLeadExecutiveOutputPage } from './pages/PortfolioLeadExecutiveOutputPage';
+import { PublicStartPage } from './pages/public/PublicStartPage';
+import { PublicInitiativeStartPage } from './pages/public/PublicInitiativeStartPage';
+import { PublicProposalEditorPage } from './pages/public/PublicProposalEditorPage';
+import { PublicProposalResultPage } from './pages/public/PublicProposalResultPage';
+import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +42,23 @@ export const router = createBrowserRouter([
       {
         path: '/auth',
         Component: AuthPage,
+      },
+      {
+        path: '/auth/continue/:draftId',
+        Component: PublicLayout,
+        children: [
+          { index: true, Component: ProgressiveSignupPage },
+        ],
+      },
+      {
+        path: '/public',
+        Component: PublicLayout,
+        children: [
+          { path: 'start', Component: PublicStartPage },
+          { path: 'start/initiative', Component: PublicInitiativeStartPage },
+          { path: 'draft/:draftId/edit', Component: PublicProposalEditorPage },
+          { path: 'draft/:draftId/result', Component: PublicProposalResultPage },
+        ],
       },
       {
         path: '/',
