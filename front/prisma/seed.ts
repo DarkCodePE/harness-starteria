@@ -90,6 +90,32 @@ async function main() {
     },
   });
 
+  const valeria = await prisma.user.upsert({
+    where: { email: 'portfolio@starteria.io' },
+    update: {},
+    create: {
+      email: 'portfolio@starteria.io',
+      name: 'Valeria Castro',
+      passwordHash: DEMO_HASH,
+      role: Role.viewer,
+      initials: 'VC',
+      skills: ['Gestion de portafolio', 'Priorizacion estrategica'],
+    },
+  });
+
+  const sponsor = await prisma.user.upsert({
+    where: { email: 'sponsor@starteria.io' },
+    update: {},
+    create: {
+      email: 'sponsor@starteria.io',
+      name: 'Roberto Jimenez',
+      passwordHash: DEMO_HASH,
+      role: Role.sponsor,
+      initials: 'RJ',
+      skills: ['Direccion ejecutiva', 'Alineamiento estrategico'],
+    },
+  });
+
   // ─── Project 1: Onboarding Digital ──────────────────────────────────────
 
   const p1 = await prisma.project.create({
@@ -530,7 +556,7 @@ async function main() {
 
   console.log('Seed completed successfully.');
   console.log(`  Cohort: ${cohort.name} (${cohort.id})`);
-  console.log(`  Users: ${ana.name}, ${carlos.name}, ${laura.name}, ${roberto.name}`);
+  console.log(`  Users: ${ana.name}, ${carlos.name}, ${laura.name}, ${roberto.name}, ${valeria.name}, ${sponsor.name}`);
   console.log(`  Projects: ${p1.name}, ${p2.name}, ${p3.name}`);
 }
 

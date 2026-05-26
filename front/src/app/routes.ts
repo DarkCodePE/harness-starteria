@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect } from 'react-router';
 import { RootLayout } from './layout/RootLayout';
 import { AppLayout } from './layout/AppLayout';
 import { PortfolioLeadLayout } from './layout/PortfolioLeadLayout';
+import { PublicLayout } from './layout/PublicLayout';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -16,13 +17,20 @@ import { EvidenciasPage } from './pages/EvidenciasPage';
 import { MentorPanelPage } from './pages/MentorPanelPage';
 import { AdminCohorte } from './pages/AdminCohorte';
 import { PerfilPage } from './pages/PerfilPage';
+import { ParticipantChallengeDetailPage } from './pages/ParticipantChallengeDetailPage';
 import { PortfolioLeadHomePage } from './pages/PortfolioLeadHomePage';
+import { PortfolioLeadStartPage } from './pages/PortfolioLeadStartPage';
 import { PortfolioLeadSectionPage } from './pages/PortfolioLeadSectionPage';
 import { PortfolioLeadStrategicFrontsPage } from './pages/PortfolioLeadStrategicFrontsPage';
 import { PortfolioLeadChallengesPage } from './pages/PortfolioLeadChallengesPage';
 import { PortfolioLeadInitiativesPage } from './pages/PortfolioLeadInitiativesPage';
 import { PortfolioLeadDecisionsPage } from './pages/PortfolioLeadDecisionsPage';
 import { PortfolioLeadExecutiveOutputPage } from './pages/PortfolioLeadExecutiveOutputPage';
+import { PublicStartPage } from './pages/public/PublicStartPage';
+import { PublicInitiativeStartPage } from './pages/public/PublicInitiativeStartPage';
+import { PublicProposalEditorPage } from './pages/public/PublicProposalEditorPage';
+import { PublicProposalResultPage } from './pages/public/PublicProposalResultPage';
+import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 
 export const router = createBrowserRouter([
   {
@@ -36,11 +44,29 @@ export const router = createBrowserRouter([
         Component: AuthPage,
       },
       {
+        path: '/auth/continue/:draftId',
+        Component: PublicLayout,
+        children: [
+          { index: true, Component: ProgressiveSignupPage },
+        ],
+      },
+      {
+        path: '/public',
+        Component: PublicLayout,
+        children: [
+          { path: 'start', Component: PublicStartPage },
+          { path: 'start/initiative', Component: PublicInitiativeStartPage },
+          { path: 'draft/:draftId/edit', Component: PublicProposalEditorPage },
+          { path: 'draft/:draftId/result', Component: PublicProposalResultPage },
+        ],
+      },
+      {
         path: '/',
         Component: AppLayout,
         children: [
           { index: true, loader: () => redirect('/dashboard') },
           { path: 'dashboard', Component: DashboardPage },
+          { path: 'retos/:challengeId', Component: ParticipantChallengeDetailPage },
           { path: 'projects/new', Component: CreateProjectPage },
           { path: 'projects/:projectId', Component: ProjectHomePage },
           { path: 'projects/:projectId/step/0', Component: Step0Page },
@@ -60,6 +86,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, loader: () => redirect('/portfolio/inicio') },
           { path: 'inicio', Component: PortfolioLeadHomePage },
+          { path: 'iniciar', Component: PortfolioLeadStartPage },
           { path: 'frentes-estrategicos', Component: PortfolioLeadStrategicFrontsPage },
           { path: 'retos', Component: PortfolioLeadChallengesPage },
           { path: 'iniciativas', Component: PortfolioLeadInitiativesPage },

@@ -15,6 +15,16 @@ type Props = {
   challengeName: string;
   recommendation: PortfolioDecisionOutcome;
   executiveOutputId?: string | null;
+  alertSummary?: {
+    label: string;
+    whatHappens: string;
+    whyItMatters: string;
+    suggestedAction: string;
+    expectedResponsible: string;
+    ctaLabel: string;
+    risk: string;
+  };
+  onPrimaryAlertAction?: () => void;
   onOpenExecutiveOutput?: () => void;
   onClose: () => void;
 };
@@ -25,6 +35,8 @@ export function InitiativeExecutiveDetailDrawer({
   challengeName,
   recommendation,
   executiveOutputId,
+  alertSummary,
+  onPrimaryAlertAction,
   onOpenExecutiveOutput,
   onClose,
 }: Props) {
@@ -71,13 +83,29 @@ export function InitiativeExecutiveDetailDrawer({
               <InfoCard label="Sponsor touchpoint" value={initiative.sponsorTouchpoint || 'No aplica por ahora'} />
               <InfoCard label="Estado" value={initiative.status.replaceAll('_', ' ')} />
               <InfoCard label="Step actual" value={initiative.currentStep} />
-              <InfoCard label="Ultima actividad" value={initiative.lastActivity} />
+              <InfoCard label="Última actividad" value={initiative.lastActivity} />
             </div>
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>LINEA DE AVANCE</p>
-            <h3 className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700 }}>Que se logro y que falta por step</h3>
+            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>CONTEXTO DE PORTAFOLIO</p>
+            <h3 className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700 }}>Qué iniciativa es y qué métrica intenta mover</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Esta vista resume el contexto padre y la señal principal de la iniciativa antes de entrar al detalle operativo.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <InfoCard label="Frente estratégico" value={frontName} />
+              <InfoCard label="Reto asociado" value={challengeName} />
+              <InfoCard label="Métrica principal" value={initiative.mainMetric} />
+              <InfoCard label="Contribución" value={initiative.hypothesisCovered || 'Sin contribución visible'} />
+              <InfoCard label="Avance de la iniciativa" value={`${initiative.stepsTimeline.filter(item => item.state === 'completado').length}/5 pasos completados`} />
+              <InfoCard label="Última actualización" value={initiative.lastActivity} />
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5">
+            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>LÍNEA DE AVANCE</p>
+            <h3 className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700 }}>Qué se logró y qué falta por step</h3>
             <div className="mt-4">
               <ExecutiveStepTimeline initiative={initiative} />
             </div>
@@ -87,7 +115,7 @@ export function InitiativeExecutiveDetailDrawer({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>EVIDENCIA Y ENTREGABLES</p>
-                <h3 className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700 }}>Resumen util para leer antes de decidir</h3>
+                <h3 className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700 }}>Resumen útil para leer antes de decidir</h3>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -111,7 +139,7 @@ export function InitiativeExecutiveDetailDrawer({
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <InfoCard label="Resumen del experimento" value={initiative.experimentSummary} />
-              <InfoCard label="Senal principal" value={initiative.signalSummary} />
+              <InfoCard label="Señal principal" value={initiative.signalSummary} />
               <InfoCard label="Comentario IA resumido" value={initiative.aiCommentSummary} />
               <InfoCard label="Comentario mentor resumido" value={initiative.mentorCommentSummary} />
             </div>
@@ -132,7 +160,7 @@ export function InitiativeExecutiveDetailDrawer({
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>LECTURA PARA DECISION</p>
+            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>LECTURA PARA DECISIÓN</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <InfoCard label="Bloqueo principal" value={initiative.mainBlocker || 'Sin bloqueo visible'} />
               <InfoCard label="Siguiente paso sugerido" value={initiative.nextActionRecommended} />
@@ -152,6 +180,30 @@ export function InitiativeExecutiveDetailDrawer({
                   style={{ fontWeight: 600 }}
                 >
                   {executiveOutputId ? 'Ver salida ejecutiva' : 'Preparar salida ejecutiva'}
+                </button>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5">
+            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>ALERTAS Y ACCIONES</p>
+            <h3 className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700 }}>Qué hacer ahora</h3>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <InfoCard label="Estado de alerta" value={alertSummary?.label ?? 'Sin alertas activas'} />
+              <InfoCard label="Qué está pasando" value={alertSummary?.whatHappens ?? initiative.mainAlert ?? 'La iniciativa avanza sin fricción visible.'} />
+              <InfoCard label="Acción sugerida" value={alertSummary?.suggestedAction ?? initiative.nextActionRecommended} />
+              <InfoCard label="Por qué importa" value={alertSummary?.whyItMatters ?? initiative.decisionRecommendationReason} />
+              <InfoCard label="Riesgo si no se actúa" value={alertSummary?.risk ?? initiative.mainBlocker ?? 'La iniciativa puede perder tracción.'} />
+              <InfoCard label="Responsable esperado" value={alertSummary?.expectedResponsible ?? initiative.teamOwner} />
+            </div>
+            {onPrimaryAlertAction && alertSummary ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  onClick={onPrimaryAlertAction}
+                  className="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white"
+                  style={{ fontWeight: 600 }}
+                >
+                  {alertSummary.ctaLabel}
                 </button>
               </div>
             ) : null}

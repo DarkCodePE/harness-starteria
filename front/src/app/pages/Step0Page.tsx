@@ -1,327 +1,245 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import {
-  ArrowLeft, Sparkles, CheckCircle2, Info, Calendar, CreditCard,
-  ChevronRight, Download, Bot, Loader2, AlertCircle, FileText, Copy,
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, ChevronRight, Copy, CreditCard, Download, Loader2, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import type { Step0Data } from '../context/AppContext';
-import { BannerPorDefinir } from '../components/BannerPorDefinir';
 import { MentorVirtualPanel } from '../components/MentorVirtualPanel';
 import { MentorSupportModal } from '../components/MentorSupportModal';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
-import { AutofillField } from '../components/autofill/AutofillField';
+import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
+import {
+  ADDITIONAL_STAKEHOLDER_OPTIONS,
+  CLARITY_OPTIONS,
+  CONTRIBUTION_OPTIONS,
+  EVIDENCE_TYPE_OPTIONS,
+  FRAME_OPTIONS,
+  PRIMARY_OBJECTIVE_OPTIONS,
+  buildInheritedChallengeContext,
+  getConsequenceHelper,
+  getDescriptionHelper,
+  getDynamicDescriptionLabel,
+  getRequiredFieldKeys,
+  getStep0Mode,
+  getSummaryBlocks,
+  getSummaryTitle,
+  isFilled,
+  normalizeStep0Data,
+  syncLegacyFields,
+} from '../step0/step0Config';
+import type { Step0Data } from '../context/AppContext';
+import { getStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+const IA_FEEDBACK = {
+  claro: ['La base ya deja mas claro que se quiere mover.', 'La solicitud de apoyo se entiende mejor.', 'La conversacion con sponsor u owner ya tiene mejor foco.'],
+  faltaPrecisar: ['Refuerza la evidencia actual.', 'Haz mas concreta la decision que estas pidiendo.', 'Aterriza mejor el destrabe minimo.'],
+  preguntas: ['Que senal justificaria seguir?', 'Que parte del reto o del negocio se moveria primero?', 'Que apoyo minimo necesitas para no quedarte solo en diagnostico?'],
+  siguienteAccion: 'Refuerza evidencia y decision solicitada para que el Step 0 quede realmente conversable.',
+};
 
-type OrigenType = Step0Data['origen'];
-type ParteProcesoType = Step0Data['parteProceso'];
-type Impacto3mesesType = Step0Data['impacto3meses'];
-type RespaldoType = Step0Data['respaldo'];
+function hasText(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(item => hasText(item));
+  return typeof value === 'string' && value.trim().length > 0;
+}
 
-// ─── Options data ─────────────────────────────────────────────────────────────
+function isStep0DataMissingPublicFields(data?: Partial<Step0Data>): boolean {
+  if (!data) return true;
 
-const ORIGEN_OPTIONS: { value: Exclude<OrigenType, ''>; label: string }[] = [
-  { value: 'problema', label: 'Detecté un problema que quiero resolver' },
-  { value: 'oportunidad', label: 'Vi una oportunidad que vale la pena aprovechar' },
-  { value: 'idea', label: 'Ya tengo una idea o solución bastante pensada' },
-  { value: 'explorando', label: 'Estoy explorando y quiero enfocarlo con más claridad' },
-  { value: 'otra', label: 'Otra' },
-];
+  return ![
+    data.initiativeTitle,
+    data.quePasaQueQuieres,
+    data.whyNowText,
+    data.impactWho,
+    data.impacta,
+  ].some(hasText);
+}
 
-const IMPACTA_OPTIONS = [
-  'Clientes externos', 'Operaciones', 'Ventas', 'Postventa',
-  'Finanzas', 'TI', 'Gerencias', 'Otros',
-];
+function Field({ label, helper, children }: { label: string; helper?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div>
+        <p className="text-sm text-slate-900" style={{ fontWeight: 600 }}>{label}</p>
+        {helper && <p className="mt-1 text-xs text-slate-500">{helper}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
 
-const PARTE_PROCESO_OPTIONS: { value: Exclude<ParteProcesoType, ''>; label: string }[] = [
-  { value: 'antes', label: 'Antes de iniciar el proceso' },
-  { value: 'durante', label: 'Durante la operación o ejecución' },
-  { value: 'despues', label: 'En el seguimiento o cierre' },
-  { value: 'transversal', label: 'Se siente de forma transversal' },
-  { value: 'otra', label: 'En la coordinación entre áreas o atención' },
-];
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 ${props.className ?? ''}`} />;
+}
 
-const IMPACTO_3M_OPTIONS: { value: Exclude<Impacto3mesesType, ''>; label: string }[] = [
-  { value: 'ingresos', label: 'Pérdida de ingresos' },
-  { value: 'costos', label: 'Costos y reprocesos' },
-  { value: 'riesgo', label: 'Riesgo' },
-  { value: 'cliente', label: 'Experiencia del cliente' },
-  { value: 'productividad', label: 'Productividad y clima' },
-  { value: 'no_claro', label: 'Aún no lo tengo claro' },
-  { value: 'otro', label: 'Otro' },
-];
+function Area(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${props.className ?? ''}`} />;
+}
 
-const RESPALDO_OPTIONS: { value: Exclude<RespaldoType, ''>; label: string }[] = [
-  { value: 'datos', label: 'Datos internos' },
-  { value: 'testimonios', label: 'Testimonios' },
-  { value: 'benchmark', label: 'Benchmark o referencias externas' },
-  { value: 'hipotesis', label: 'Aún es una hipótesis y necesito validarla' },
-  { value: 'otro', label: 'Otro' },
-];
-
-const SI_MINIMO_OPTIONS = [
-  'Reunión de 30 min con la persona correcta',
-  'Asignar sponsor o responsable',
-  'Acceso a datos',
-  'Permiso para un piloto corto',
-  'Tiempo de personas clave',
-  'Presupuesto pequeño',
-  'Otro',
-];
-
-// ─── Component ───────────────────────────────────────────────────────────────
+function ChoiceGroup<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T | '';
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {options.map(option => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${selected ? 'border-indigo-500 bg-indigo-50 text-indigo-900' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'}`}
+            style={{ fontWeight: 600 }}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Step0Page() {
   const { projectId } = useParams();
-  const { projects, updateStep0 } = useApp();
+  const { projects, updateProject, updateStep0, hydrateProjectStep0FromPrefill, user } = useApp();
+  const { challenges, strategicFronts } = usePortfolioLead();
   const navigate = useNavigate();
-
-  const project = projects.find(p => p.id === projectId);
-
-  // PDF auto-fill (PRD-002): the uploader + extraction trigger live in
-  // ProjectHomePage so Step 0 is not a competing entry point. AutofillContext
-  // (mounted in RootLayout) keeps proposals available as <AutofillField>
-  // affordances on the fields below regardless of which page kicked off the run.
-
-  const [form, setForm] = useState<Step0Data>({
-    nombreParticipante: project?.step0Data?.nombreParticipante ?? '',
-    rolArea: project?.step0Data?.rolArea ?? '',
-    origen: project?.step0Data?.origen ?? '',
-    quePasaQueQuieres: project?.step0Data?.quePasaQueQuieres ?? '',
-    impacta: project?.step0Data?.impacta ?? [],
-    parteProceso: project?.step0Data?.parteProceso ?? '',
-    impacto3meses: project?.step0Data?.impacto3meses ?? '',
-    respaldo: project?.step0Data?.respaldo ?? '',
-    quienEscuchar: project?.step0Data?.quienEscuchar ?? '',
-    siMinimo: project?.step0Data?.siMinimo ?? [],
-  });
-
-  const analysisPreview = useMemo(() => ({
-    enunciado: form.quePasaQueQuieres || '',
-    impactoPrincipal: IMPACTO_3M_OPTIONS.find(o => o.value === form.impacto3meses)?.label || '',
-    aquienImpacta: form.impacta?.join(' · ') || '',
-    etapaProceso: PARTE_PROCESO_OPTIONS.find(o => o.value === form.parteProceso)?.label || '',
-    respaldoDisponible: RESPALDO_OPTIONS.find(o => o.value === form.respaldo)?.label || '',
-    siMinimo: form.siMinimo?.join(', ') || '',
-    proximoPaso: form.quienEscuchar || '',
-  }), [form]);
-
+  const project = projects.find(item => item.id === projectId);
   const [showIAPanel, setShowIAPanel] = useState(false);
   const [iaLoading, setIaLoading] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [iaAnalysisState, setIaAnalysisState] = useState<'idle' | 'loading' | 'done'>('idle');
-  const [copyMsg, setCopyMsg] = useState(false);
-  const [deliveryEmail, setDeliveryEmail] = useState('');
-
+  const [analysisState, setAnalysisState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const [copied, setCopied] = useState(false);
+  const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
+  const projectForInit = project ?? {
+    id: '',
+    name: '',
+    status: 'Draft' as const,
+    currentStep: 1,
+    step0Status: 'No iniciado' as const,
+    mentorCredits: 0,
+    steps: [],
+    team: [],
+    evidence: [],
+    createdAt: '',
+    lastModified: '',
+  };
+  const [form, setForm] = useState<Step0Data>(() => normalizeStep0Data(project?.step0Data, projectForInit, user?.name ?? '', user?.email ?? ''));
   const saveState = useAutosave([form]);
-  const firstName = form.nombreParticipante.trim().split(/\s+/)[0];
+
+  useEffect(() => {
+    if (!projectId || !project) return;
+    if (!isStep0DataMissingPublicFields(project.step0Data)) return;
+
+    const prefill = getStep0Prefill(projectId);
+    if (!prefill) return;
+
+    const projectWithPrefill = {
+      ...project,
+      currentStep: 0,
+      step0Status: 'En progreso' as const,
+      step0Data: prefill,
+    };
+
+    hydrateProjectStep0FromPrefill(projectId, prefill);
+    setForm(normalizeStep0Data(prefill, projectWithPrefill, user?.name ?? '', user?.email ?? ''));
+    setRecoveredFromPublicDraft(true);
+  }, [hydrateProjectStep0FromPrefill, project, projectId, user?.email, user?.name]);
 
   if (!project) {
-    return (
-      <div className="p-6 text-center">
-        <p className="text-slate-500">Proyecto no encontrado.</p>
-        <button onClick={() => navigate('/dashboard')} className="text-indigo-600 text-sm mt-2">
-          ← Volver al inicio
-        </button>
-      </div>
-    );
+    return <div className="p-6 text-slate-500">Proyecto no encontrado.</div>;
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  const mode = form.mode ?? getStep0Mode(project);
+  const inherited = buildInheritedChallengeContext(project, challenges, strategicFronts);
+  const summaryBlocks = getSummaryBlocks(form, inherited);
+  const requiredKeys = getRequiredFieldKeys(mode, form);
+  const completed = requiredKeys.filter(key => isFilled(form[key])).length;
+  const progress = Math.round((completed / requiredKeys.length) * 100);
+  const missing = requiredKeys.filter(key => !isFilled(form[key]));
+  const canSave = missing.length === 0;
+  const summaryTitle = getSummaryTitle(mode);
+  const previewCount = Math.min(summaryBlocks.length, Math.round((completed / requiredKeys.length) * summaryBlocks.length));
+  const descriptionLabel = getDynamicDescriptionLabel(form.initiativeFrame ?? '', mode);
+  const descriptionHelper = getDescriptionHelper(form.initiativeFrame ?? '', form.primaryObjective ?? '');
+  const consequenceHelper = getConsequenceHelper(form.primaryObjective ?? '');
 
-  const toggleMulti = (field: 'impacta' | 'siMinimo', val: string) => {
-    setForm(prev => ({
-      ...prev,
-      [field]: prev[field].includes(val)
-        ? (prev[field] as string[]).filter(v => v !== val)
-        : [...(prev[field] as string[]), val],
-    }));
-  };
+  const analysisText = useMemo(
+    () => [summaryTitle, ...summaryBlocks.map(block => `${block.label}: ${block.value}`)].join('\n'),
+    [summaryBlocks, summaryTitle],
+  );
+
+  const setField = <K extends keyof Step0Data>(key: K, value: Step0Data[K]) => setForm(prev => ({ ...prev, [key]: value }));
 
   const openIA = () => {
     setShowIAPanel(true);
     setIaLoading(true);
-    setTimeout(() => setIaLoading(false), 1500);
+    window.setTimeout(() => setIaLoading(false), 1200);
   };
-
-  const canSave =
-    !!form.nombreParticipante.trim() &&
-    !!form.rolArea.trim() &&
-    !!form.origen &&
-    !!form.quePasaQueQuieres.trim();
 
   const handleSave = async () => {
+    const synced = syncLegacyFields({ ...form, mode });
     setSaving(true);
-    await new Promise(r => setTimeout(r, 500));
-    updateStep0(project.id, form, 'Completado');
+    await new Promise(resolve => window.setTimeout(resolve, 450));
+    if ((synced.initiativeTitle ?? '').trim() && synced.initiativeTitle!.trim() !== project.name.trim()) {
+      updateProject(project.id, { name: synced.initiativeTitle!.trim() });
+    }
+    updateStep0(project.id, synced, 'Completado');
     setSaving(false);
     setSaved(true);
-    setTimeout(() => navigate(`/projects/${project.id}`), 600);
+    window.setTimeout(() => navigate(`/projects/${project.id}`), 600);
   };
 
-  // ── IA Analysis helpers ────────────────────────────────────────────────────
-
-  const getMissingForAnalysis = () => {
-    const missing: { label: string }[] = [];
-    if (!form.quePasaQueQuieres.trim()) missing.push({ label: 'Qué está pasando (Sección 4)' });
-    if (form.impacta.length === 0) missing.push({ label: 'A quién impacta (Sección 5)' });
-    if (!form.parteProceso) missing.push({ label: 'Dónde se nota más el reto (Sección 6)' });
-    if (!form.impacto3meses) missing.push({ label: 'Impacto principal a 3 meses (Sección 7)' });
-    if (!form.respaldo) missing.push({ label: 'Respaldo actual (Sección 8)' });
-    return missing;
+  const runAnalysis = () => {
+    if (!canSave) return;
+    setAnalysisState('loading');
+    window.setTimeout(() => setAnalysisState('done'), 1500);
   };
 
-  const handleGenerarAnalisis = () => {
-    const missing = getMissingForAnalysis();
-    if (missing.length > 0) return; // guarded by button state
-    setIaAnalysisState('loading');
-    setTimeout(() => setIaAnalysisState('done'), 2200);
+  const copySummary = async () => {
+    await navigator.clipboard.writeText(analysisText);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const handleDescargarPDF = () => {
-    // Simulación de descarga PDF
-    const lines = [
-      'STARTERÍA — Resumen inicial de la iniciativa',
-      `Proyecto: ${project?.name}`,
-      `Participante: ${form.nombreParticipante} · ${form.rolArea}`,
-      '---',
-      `Enunciado del reto: ${analysisPreview.enunciado}`,
-      `Impacto principal: ${analysisPreview.impactoPrincipal}`,
-      `A quién impacta: ${analysisPreview.aquienImpacta}`,
-      `Etapa: ${analysisPreview.etapaProceso}`,
-      `Respaldo: ${analysisPreview.respaldoDisponible}`,
-      `Sí mínimo: ${analysisPreview.siMinimo}`,
-      `Próximo paso: ${analysisPreview.proximoPaso}`,
-    ];
-    const blob = new Blob([lines.filter(line => !line.endsWith(': ')).join('\n')], { type: 'text/plain' });
+  const downloadSummary = () => {
+    const blob = new Blob([analysisText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Starteria_PuntodePartida_${project?.name ?? 'analisis'}.txt`;
+    a.download = `starteria-step0-${project.name.replace(/\s+/g, '-').toLowerCase()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleCopyAnalisis = () => {
-    const text = [
-      `Reto: ${analysisPreview.enunciado}`,
-      `Impacto: ${analysisPreview.impactoPrincipal}`,
-      `A quién: ${analysisPreview.aquienImpacta}`,
-      `Etapa: ${analysisPreview.etapaProceso}`,
-      `Respaldo: ${analysisPreview.respaldoDisponible}`,
-      `Sí mínimo: ${analysisPreview.siMinimo}`,
-      `Próximo paso: ${analysisPreview.proximoPaso}`,
-    ].filter(line => !line.endsWith(': ')).join('\n');
-    navigator.clipboard.writeText(text);
-    setCopyMsg(true);
-    setTimeout(() => setCopyMsg(false), 2000);
-  };
-
-  // ── Progress calc ──────────────────────────────────────────────────────────
-
-  const filledCount = [
-    form.nombreParticipante,
-    form.rolArea,
-    form.origen,
-    form.quePasaQueQuieres,
-    form.impacta.length > 0,
-    form.parteProceso,
-    form.impacto3meses,
-    form.respaldo,
-  ].filter(Boolean).length;
-
-  const progress = Math.round((filledCount / 8) * 100);
-
-  // ─── Ficha data ─────────────────────────────────────────────────────────────
-
-  const previewBlocks = [
-    {
-      title: 'Quién impulsa esta iniciativa',
-      value:
-        form.nombreParticipante || form.rolArea
-          ? [form.nombreParticipante, form.rolArea].filter(Boolean).join(' · ')
-          : 'Completa tu nombre y rol para personalizar esta ficha.',
-      filled: !!form.nombreParticipante.trim() && !!form.rolArea.trim(),
-    },
-    {
-      title: 'Qué está pasando',
-      value: form.quePasaQueQuieres || 'Describe con tus palabras qué está pasando o qué quieres lograr.',
-      filled: !!form.quePasaQueQuieres.trim(),
-    },
-    {
-      title: 'A quién impacta',
-      value: form.impacta.length > 0 ? form.impacta.join(', ') : 'Marca los grupos que hoy sienten este reto más directamente.',
-      filled: form.impacta.length > 0,
-    },
-    {
-      title: 'Qué pasa si no se mueve',
-      value: IMPACTO_3M_OPTIONS.find(o => o.value === form.impacto3meses)?.label || 'Define el impacto principal de no abordarlo en los próximos 3 meses.',
-      filled: !!form.impacto3meses,
-    },
-    {
-      title: 'Qué respaldo existe',
-      value: RESPALDO_OPTIONS.find(o => o.value === form.respaldo)?.label || 'Indica qué sustento tienes hoy para mover esta conversación.',
-      filled: !!form.respaldo,
-    },
-    {
-      title: 'Qué apoyo mínimo se necesita',
-      value:
-        form.siMinimo.length > 0
-          ? form.siMinimo.join(', ')
-          : 'Identifica el primer destrabe real que te permitiría mover la propuesta.',
-      filled: form.siMinimo.length > 0,
-    },
-  ];
-
-  const previewCompletedCount = previewBlocks.filter(block => block.filled).length;
-
-  // ─── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <div className="flex flex-col h-full">
-      {/* ── Scrollable area ── */}
+    <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto">
-
-        {/* Page header */}
-        <div className="px-5 pt-6 pb-5 bg-white border-b border-slate-100 min-[1440px]:px-6 min-[1680px]:px-8">
-          <div className="mx-auto w-full max-w-[1380px] min-[1440px]:max-w-[1480px] min-[1680px]:max-w-[1560px]">
-            <button
-              onClick={() => navigate(`/projects/${project.id}`)}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 mb-4 transition-colors"
-            >
+        <div className="border-b border-slate-100 bg-white px-5 pb-5 pt-6">
+          <div className="mx-auto max-w-[1480px]">
+            <button onClick={() => navigate(`/projects/${project.id}`)} className="mb-4 flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700">
               <ArrowLeft size={14} /> Volver al proyecto
             </button>
-
-            <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700"
-                    style={{ fontWeight: 600 }}
-                  >
-                    PASO 0
-                  </span>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700" style={{ fontWeight: 700 }}>PASO 0</span>
                   <span className="text-xs text-slate-400">{progress}% completado</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                    {mode === 'linked_to_challenge' ? 'Iniciativa dentro de reto' : 'Proyecto independiente'}
+                  </span>
                 </div>
-                <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>
-                  Punto de partida
-                </h1>
-                <p className="text-sm text-slate-500 mt-1 max-w-2xl">
-                  Ordena lo que ya sabes sobre esta iniciativa para construir una primera base clara, compartible y con sentido para avanzar.
-                </p>
-                <p className="text-sm text-slate-500 mt-2 max-w-2xl">
-                  No necesitas tener todas las respuestas. Este paso te ayudará a darle forma inicial a tu propuesta y a preparar una mejor conversación con quien pueda respaldarla.
+                <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>Base estrategica inicial</h1>
+                <p className="mt-1 max-w-3xl text-sm text-slate-500">
+                  Este paso construye una base breve pero estrategica para justificar por que esta iniciativa merece luz verde, profundidad o destrabe.
                 </p>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setShowMentorModal(true)}
-                  className="flex items-center gap-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 px-3 py-2 rounded-xl text-sm transition-colors"
-                >
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowMentorModal(true)} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">
                   <Calendar size={14} /> Pedir ayuda a un mentor
                 </button>
                 <AutosaveIndicator state={saveState} />
@@ -330,832 +248,139 @@ export function Step0Page() {
           </div>
         </div>
 
-        {/* 2-column content */}
-        <div className="mx-auto w-full max-w-[1380px] px-5 py-6 min-[1440px]:max-w-[1480px] min-[1440px]:px-6 min-[1680px]:max-w-[1560px] min-[1680px]:px-8">
-          <div className="grid items-start gap-6 min-[1280px]:grid-cols-[minmax(0,880px)_300px] min-[1440px]:grid-cols-[minmax(0,920px)_320px] min-[1680px]:grid-cols-[minmax(0,980px)_340px] min-[1680px]:gap-8">
+        {recoveredFromPublicDraft && (
+          <div className="border-b border-sky-100 bg-sky-50 px-5 py-3">
+            <div className="mx-auto flex max-w-[1480px] items-start gap-3 text-sm text-sky-800">
+              <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-sky-600" />
+              <p>
+                Recuperamos la información de tu propuesta pública. Revísala y complétala antes de enviarla a revisión.
+              </p>
+            </div>
+          </div>
+        )}
 
-            {/* ── LEFT: Form ─────────────────────────────────────────────── */}
-            <div className="flex-1 min-w-0 space-y-0">
-
-              {/*
-                All Step 0 fields tracked by the autofill ground truth are now
-                wrapped with <AutofillField>:
-                  freeform: nombreParticipante, rolArea, quePasaQueQuieres, quienEscuchar
-                  enum:     origen, parteProceso, impacto3meses, respaldo
-                  multi:    impacta
-                The chip multi-select (impacta) consumes/produces string[]
-                directly so the proposal's `proposedValue` (also string[])
-                flows through the render-prop unchanged.
-              */}
-
-              {/* ─── Sección 1 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    Antes de empezar, ¿cómo te llamas?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Usaremos tu nombre para personalizar esta ficha y el resumen de salida.
-                  </p>
-                </div>
-                <div id="field-step0-nombreParticipante">
-                  <AutofillField
-                    fieldPath="step0.nombreParticipante"
-                    initiativeId={project.id}
-                    value={form.nombreParticipante}
-                    onChange={(v) => setForm(p => ({ ...p, nombreParticipante: String(v ?? '') }))}
-                    label="Nombre del participante"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <input
-                        value={String(value ?? '')}
-                        onChange={e => onChange(e.target.value)}
-                        readOnly={readOnly}
-                        placeholder="Tu nombre completo"
-                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
-                      />
-                    )}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 2 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    {firstName ? `Hola, ${firstName}. ¿Desde qué rol y área nos escribes?` : 'Hola. ¿Desde qué rol y área nos escribes?'}
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Esto ayuda a entender desde qué parte de la empresa estás viendo esta iniciativa.
-                  </p>
-                </div>
-                <div id="field-step0-rolArea">
-                  <AutofillField
-                    fieldPath="step0.rolArea"
-                    initiativeId={project.id}
-                    value={form.rolArea}
-                    onChange={(v) => setForm(p => ({ ...p, rolArea: String(v ?? '') }))}
-                    label="Rol y área"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <input
-                        value={String(value ?? '')}
-                        onChange={e => onChange(e.target.value)}
-                        readOnly={readOnly}
-                        placeholder="Ej. Ejecutivo comercial / Ventas"
-                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
-                      />
-                    )}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 3 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    {firstName ? `Genial, ${firstName}. Para ubicarnos: ¿desde dónde nace tu iniciativa hoy?` : 'Para ubicarnos: ¿desde dónde nace tu iniciativa hoy?'}
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    No define tu proyecto para siempre. Solo nos ayuda a entender desde qué punto partes hoy.
-                  </p>
-                </div>
-                <div id="field-step0-origen">
-                  <AutofillField
-                    fieldPath="step0.origen"
-                    initiativeId={project.id}
-                    value={form.origen}
-                    onChange={(v) => setForm(p => ({ ...p, origen: (v ?? '') as OrigenType }))}
-                    label="Origen"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <div className="space-y-2" role="radiogroup" aria-label="Origen de la iniciativa">
-                        {ORIGEN_OPTIONS.map(opt => {
-                          const selected = value === opt.value;
-                          return (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              role="radio"
-                              aria-checked={selected}
-                              disabled={readOnly}
-                              onClick={() => onChange(opt.value)}
-                              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm text-left transition-all ${
-                                selected
-                                  ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                              } ${readOnly ? 'opacity-90 cursor-default' : ''}`}
-                            >
-                              <span
-                                className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                                  selected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'
-                                }`}
-                              >
-                                {selected && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                )}
-                              </span>
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 4 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    Cuéntamelo con tus palabras: ¿qué está pasando o qué quieres lograr?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    No necesitas redactarlo perfecto. Escribe lo que hoy sabes.
-                  </p>
-                </div>
-                <div id="field-step0-quePasaQueQuieres">
-                  <AutofillField
-                    fieldPath="step0.quePasaQueQuieres"
-                    initiativeId={project.id}
-                    value={form.quePasaQueQuieres}
-                    onChange={(v) => setForm(p => ({ ...p, quePasaQueQuieres: String(v ?? '') }))}
-                    label="Qué está pasando o qué quieres lograr"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <textarea
-                        value={String(value ?? '')}
-                        onChange={e => onChange(e.target.value)}
-                        readOnly={readOnly}
-                        rows={4}
-                        placeholder="Ej. Nuestro proceso de cierre mensual toma 10 días y debería tomar 3. Eso genera retrasos en reportes que el directorio necesita para tomar decisiones."
-                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all resize-none"
-                      />
-                    )}
-                  </AutofillField>
-                  <button
-                    onClick={openIA}
-                    className="mt-2 flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-700 transition-colors"
-                    style={{ fontWeight: 500 }}
-                  >
-                    <Sparkles size={12} /> Mejorar claridad con IA
-                  </button>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 5 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    ¿A quién impacta más directamente este reto?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Elige hasta 3 grupos.
-                  </p>
-                </div>
-                <div id="field-step0-impacta">
-                  <AutofillField
-                    fieldPath="step0.impacta"
-                    initiativeId={project.id}
-                    value={form.impacta}
-                    onChange={(v) =>
-                      setForm(p => ({ ...p, impacta: Array.isArray(v) ? (v as string[]) : [] }))
-                    }
-                    label="A quién impacta"
-                  >
-                    {({ value, onChange, readOnly }) => {
-                      // The proposal carries an array directly — normalise both shapes
-                      // so we never crash on a malformed payload.
-                      const selected: string[] = Array.isArray(value) ? (value as string[]) : [];
-                      return (
-                        <div className="flex flex-wrap gap-2" role="group" aria-label="Grupos impactados">
-                          {IMPACTA_OPTIONS.map(opt => {
-                            const isSelected = selected.includes(opt);
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                disabled={readOnly}
-                                onClick={() => {
-                                  if (!isSelected && selected.length >= 3) return;
-                                  const nextList = isSelected
-                                    ? selected.filter(v => v !== opt)
-                                    : [...selected, opt];
-                                  onChange(nextList);
-                                }}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm transition-all ${
-                                  isSelected
-                                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                                } ${readOnly ? 'opacity-90 cursor-default' : ''}`}
-                                style={{ fontWeight: isSelected ? 600 : 400 }}
-                              >
-                                {isSelected && <CheckCircle2 size={12} className="text-indigo-500" />}
-                                {opt}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    }}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 6 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    ¿En qué momento se nota más este reto?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Más adelante, en el Paso 1, vas a profundizar mejor el proceso. Aquí solo queremos una primera ubicación.
-                  </p>
-                </div>
-                <div id="field-step0-parteProceso">
-                  <AutofillField
-                    fieldPath="step0.parteProceso"
-                    initiativeId={project.id}
-                    value={form.parteProceso}
-                    onChange={(v) => setForm(p => ({ ...p, parteProceso: (v ?? '') as ParteProcesoType }))}
-                    label="Parte del proceso"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Parte del proceso">
-                        {PARTE_PROCESO_OPTIONS.map(opt => {
-                          const selected = value === opt.value;
-                          return (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              role="radio"
-                              aria-checked={selected}
-                              disabled={readOnly}
-                              onClick={() => onChange(opt.value)}
-                              className={`px-3 py-3 rounded-xl border text-sm text-left transition-all ${
-                                selected
-                                  ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                              } ${readOnly ? 'opacity-90 cursor-default' : ''}`}
-                              style={{ fontWeight: selected ? 600 : 400 }}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 7 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    Si esto no se aborda en los próximos 3 meses, ¿cuál sería el impacto más importante?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Elige el impacto principal, aunque hoy sea una estimación.
-                  </p>
-                </div>
-                <div id="field-step0-impacto3meses">
-                  <AutofillField
-                    fieldPath="step0.impacto3meses"
-                    initiativeId={project.id}
-                    value={form.impacto3meses}
-                    onChange={(v) => setForm(p => ({ ...p, impacto3meses: (v ?? '') as Impacto3mesesType }))}
-                    label="Impacto a 3 meses"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Impacto a 3 meses">
-                        {IMPACTO_3M_OPTIONS.map(opt => {
-                          const selected = value === opt.value;
-                          return (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              role="radio"
-                              aria-checked={selected}
-                              disabled={readOnly}
-                              onClick={() => onChange(opt.value)}
-                              className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm text-left transition-all ${
-                                selected
-                                  ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                              } ${readOnly ? 'opacity-90 cursor-default' : ''}`}
-                            >
-                              <span
-                                className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex-none ${
-                                  selected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'
-                                }`}
-                              />
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 8 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    Para moverlo con criterio: ¿qué respaldo tienes hoy?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Elige el respaldo más claro que ya tienes hoy.
-                  </p>
-                </div>
-                <div id="field-step0-respaldo">
-                  <AutofillField
-                    fieldPath="step0.respaldo"
-                    initiativeId={project.id}
-                    value={form.respaldo}
-                    onChange={(v) => setForm(p => ({ ...p, respaldo: (v ?? '') as RespaldoType }))}
-                    label="Respaldo"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Respaldo">
-                        {RESPALDO_OPTIONS.map(opt => {
-                          const selected = value === opt.value;
-                          return (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              role="radio"
-                              aria-checked={selected}
-                              disabled={readOnly}
-                              onClick={() => onChange(opt.value)}
-                              className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm text-left transition-all ${
-                                selected
-                                  ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                              } ${readOnly ? 'opacity-90 cursor-default' : ''}`}
-                            >
-                              <span
-                                className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex-none ${
-                                  selected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'
-                                }`}
-                              />
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </AutofillField>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 9 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    Para que esto avance y no se quede solo en una idea: ¿quién debería escuchar o saber de esto? ¿Y por qué?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Ej. Gerente de Operaciones, porque puede habilitar un piloto con dos áreas.
-                  </p>
-                </div>
-                <div id="field-step0-quienEscuchar">
-                  <AutofillField
-                    fieldPath="step0.quienEscuchar"
-                    initiativeId={project.id}
-                    value={form.quienEscuchar}
-                    onChange={(v) => setForm(p => ({ ...p, quienEscuchar: String(v ?? '') }))}
-                    label="Quién debería escuchar"
-                  >
-                    {({ value, onChange, readOnly }) => (
-                      <textarea
-                        value={String(value ?? '')}
-                        onChange={e => onChange(e.target.value)}
-                        readOnly={readOnly}
-                        rows={2}
-                        placeholder="Ej. La líder de Operaciones, porque puede priorizar el piloto y ayudar a destrabar la coordinación con otras áreas."
-                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all resize-none"
-                      />
-                    )}
-                  </AutofillField>
-                </div>
-                <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
-                  <p className="text-xs text-indigo-700">
-                    Una iniciativa interna gana fuerza cuando una persona clave entiende el problema, ve su impacto y ayuda a destrabar el siguiente paso.
-                  </p>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 10 ─── */}
-              <section className="space-y-4 pb-8">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    ¿Cuál es el “sí” mínimo que necesitas para mover esta propuesta?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Piensa en el primer destrabe real, no en todo lo ideal.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  {SI_MINIMO_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => toggleMulti('siMinimo', opt)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm text-left transition-all ${
-                        form.siMinimo.includes(opt)
-                          ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                      }`}
-                    >
-                      <span
-                        className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-all ${
-                          form.siMinimo.includes(opt)
-                            ? 'border-indigo-500 bg-indigo-500'
-                            : 'border-slate-300'
-                        }`}
-                      >
-                        {form.siMinimo.includes(opt) && (
-                          <span className="text-white" style={{ fontSize: '10px' }}>✓</span>
-                        )}
-                      </span>
-                      {opt}
-                    </button>
+        <div className="mx-auto grid max-w-[1480px] items-start gap-6 px-5 py-6 min-[1280px]:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-6">
+            {mode === 'linked_to_challenge' && inherited.items.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Bloque 0 - Contexto heredado del reto</h2>
+                <p className="mt-1 text-sm text-slate-500">Este contexto viene del reto padre y se muestra solo como ancla.</p>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {inherited.items.map(item => (
+                    <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{item.label}</p>
+                      <p className="mt-2 text-sm text-slate-800" style={{ fontWeight: 600 }}>{item.value}</p>
+                    </div>
                   ))}
                 </div>
+              </div>
+            )}
 
-                <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <p className="text-xs text-slate-600">
-                    <span style={{ fontWeight: 600 }}>¿Por qué importa esto?</span>{' '}
-                    Este paso busca asegurar el primer respaldo real para que tu iniciativa no se quede solo en una buena intención.
-                  </p>
-                </div>
-              </section>
-
-              <div className="h-px bg-slate-100 mb-8" />
-
-              {/* ─── Sección 11 ─── */}
-              <section className="space-y-4 pb-4">
-                <div>
-                  <h2 className="text-sm text-slate-800" style={{ fontWeight: 600 }}>
-                    ¿A qué correo te envío el one-pager listo para presentar?
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Te enviaremos un resumen claro con lo que acabas de construir para que puedas revisarlo o compartirlo.
-                  </p>
-                </div>
-                <input
-                  type="email"
-                  value={deliveryEmail}
-                  onChange={e => setDeliveryEmail(e.target.value)}
-                  placeholder="tu.correo@empresa.com"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
-                />
-
-                <BannerPorDefinir
-                  title="Gating del Paso 0"
-                  question="¿Cuáles campos son obligatorios para marcar el Paso 0 como Completado y habilitar el Paso 1? ¿Se requieren todas las secciones o solo las marcadas con (*)?"
-                  context="pending"
-                />
-
-                {/* ─── Divider ─── */}
-                <div className="h-px bg-slate-100 my-8" />
-
-                {/* ─── ANÁLISIS POR IA EXPERTA ─── */}
-                <section className="space-y-4 pb-6">
-                  <div className="border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl overflow-hidden">
-                    {/* Header */}
-                    <div className="px-5 py-4 border-b border-indigo-100 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
-                        <Bot size={18} className="text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>
-                            Base inicial para conversar con sponsor o líder
-                          </h2>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700" style={{ fontWeight: 600 }}>
-                            Intraemprendimiento
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Aquí vas a convertir lo que escribiste en una base corta, clara y útil para compartir o seguir refinando.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="p-5 space-y-4">
-                      {/* Estado: idle */}
-                      {iaAnalysisState === 'idle' && (() => {
-                        const missing = getMissingForAnalysis();
-                        return (
-                          <div className="space-y-4">
-                            {missing.length > 0 ? (
-                              <div className="flex items-start gap-2.5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
-                                <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-xs text-amber-800 mb-1.5" style={{ fontWeight: 600 }}>
-                                    Completa {missing.length} {missing.length === 1 ? 'campo' : 'campos'} más para generar una primera base clara:
-                                  </p>
-                                  <ul className="space-y-0.5">
-                                    {missing.map((m, i) => (
-                                      <li key={i} className="text-xs text-amber-700">· {m.label}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-start gap-2.5 p-3.5 bg-slate-100 border border-slate-200 rounded-xl">
-                                <FileText size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                                <p className="text-xs text-slate-500">
-                                  Cuando completes lo mínimo, podrás generar un resumen breve para revisarlo o compartirlo con quien pueda respaldar esta iniciativa.
-                                </p>
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <button
-                                onClick={handleGenerarAnalisis}
-                                disabled={getMissingForAnalysis().length > 0}
-                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl text-sm transition-colors"
-                                style={{ fontWeight: 500 }}
-                              >
-                                <Sparkles size={14} /> Generar resumen inicial
-                              </button>
-
-                              <div className="relative group">
-                                <button
-                                  disabled
-                                  className="flex items-center gap-2 border border-slate-200 text-slate-400 bg-white cursor-not-allowed px-4 py-2.5 rounded-xl text-sm"
-                                  style={{ fontWeight: 500 }}
-                                >
-                                  <Download size={14} /> Descargar PDF
-                                </button>
-                                <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block">
-                                  <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap shadow-lg">
-                                    Primero genera el análisis
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Estado: loading */}
-                      {iaAnalysisState === 'loading' && (
-                        <div className="flex flex-col items-center justify-center py-8 gap-3">
-                          <Loader2 size={28} className="text-indigo-500 animate-spin" />
-                          <p className="text-sm text-slate-600" style={{ fontWeight: 500 }}>Ordenando tu base inicial…</p>
-                          <p className="text-xs text-slate-400">Revisando tu punto de partida con criterios de intraemprendimiento</p>
-                        </div>
-                      )}
-
-                      {/* Estado: done */}
-                      {iaAnalysisState === 'done' && (
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 size={15} className="text-emerald-500" />
-                            <p className="text-xs text-emerald-700" style={{ fontWeight: 600 }}>Resumen inicial listo</p>
-                            <span className="text-xs text-slate-400">· Ya tienes una base clara para conversar</span>
-                          </div>
-
-                          <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                            <p className="text-sm text-emerald-900" style={{ fontWeight: 600 }}>
-                              Esta iniciativa ya tiene una base clara para abrir conversación con sponsor, líder o mentor.
-                            </p>
-                            <p className="text-xs text-emerald-700 mt-1">
-                              No está perfecta ni cerrada, pero sí lo suficientemente aterrizada para sostener una conversación útil y avanzar con mejor criterio.
-                            </p>
-                          </div>
-
-                          {/* Bullets del análisis */}
-                          <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
-                            {[
-                              { label: 'Enunciado claro del reto', value: analysisPreview.enunciado },
-                              { label: 'Impacto principal (3 meses)', value: analysisPreview.impactoPrincipal },
-                              { label: 'A quién impacta · Etapa', value: `${analysisPreview.aquienImpacta} · ${analysisPreview.etapaProceso}` },
-                              { label: 'Respaldo disponible', value: analysisPreview.respaldoDisponible },
-                              { label: '"Sí mínimo" recomendado', value: analysisPreview.siMinimo },
-                              { label: 'Próximo paso recomendado', value: analysisPreview.proximoPaso },
-                            ].map((item, i) => (
-                              <div key={i} className="px-4 py-3">
-                                <p className="text-xs text-slate-400 mb-0.5" style={{ fontWeight: 600, letterSpacing: '0.02em' }}>
-                                  {item.label.toUpperCase()}
-                                </p>
-                                <p className="text-xs text-slate-700">{item.value}</p>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Botones de acción */}
-                          <div className="flex items-center gap-3 flex-wrap pt-1">
-                            <button
-                              onClick={handleDescargarPDF}
-                              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm transition-colors"
-                              style={{ fontWeight: 500 }}
-                            >
-                              <Download size={14} /> Descargar resumen
-                            </button>
-                            <button
-                              onClick={handleCopyAnalisis}
-                              className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white px-4 py-2.5 rounded-xl text-sm transition-colors"
-                              style={{ fontWeight: 500 }}
-                            >
-                              <Copy size={14} /> {copyMsg ? '¡Copiado!' : 'Copiar resumen'}
-                            </button>
-                            <button
-                              onClick={handleGenerarAnalisis}
-                              className="flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-700 transition-colors"
-                              style={{ fontWeight: 500 }}
-                            >
-                              <Sparkles size={12} /> Regenerar
-                            </button>
-                          </div>
-
-                          {/* Nota de confianza */}
-                          <div className="flex items-start gap-2 pt-1">
-                            <Info size={12} className="text-slate-300 shrink-0 mt-0.5" />
-                            <p className="text-xs text-slate-400">
-                              La IA te ayuda a ordenar lo que ya sabes. La validación final la hacen las conversaciones y el trabajo posterior.
-                            </p>
-                          </div>
-
-                          {/* Microcopy para compartir */}
-                          <p className="text-xs text-indigo-500" style={{ fontWeight: 500 }}>
-                            Usa este resumen como primer one-pager para compartir el contexto con sponsor o liderazgo.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-              </section>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
+              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{mode === 'linked_to_challenge' ? 'Bloque 1 - Encaje con el reto padre' : 'Bloque 1 - Punto de partida'}</h2>
+              <Field label="¿Como se llama tu iniciativa?"><Input value={form.initiativeTitle ?? project.name} onChange={event => setField('initiativeTitle', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Desde que rol y area estas viendo este reto?' : '¿Desde que rol y area estas viendo esta iniciativa?'}><Input value={form.rolArea} onChange={event => setField('rolArea', event.target.value)} /></Field>
+              {mode === 'linked_to_challenge' && <Field label="¿Que parte especifica del reto estas buscando mover con esta iniciativa?"><Area rows={3} value={form.specificChallengePart ?? ''} onChange={event => setField('specificChallengePart', event.target.value)} /></Field>}
+              {mode === 'linked_to_challenge' && <Field label="¿Como se conecta esta iniciativa con el objetivo o KPI que ya persigue este reto?"><Area rows={3} value={form.challengeGoalConnection ?? ''} onChange={event => setField('challengeGoalConnection', event.target.value)} /></Field>}
+              <Field label="¿Como quieres enmarcar esta iniciativa hoy?"><ChoiceGroup value={form.initiativeFrame ?? ''} options={FRAME_OPTIONS} onChange={value => setField('initiativeFrame', value)} /></Field>
+              <Field label="¿Que objetivo principal ayudaria a mover esta iniciativa?"><ChoiceGroup value={form.primaryObjective ?? ''} options={PRIMARY_OBJECTIVE_OPTIONS} onChange={value => setField('primaryObjective', value)} /></Field>
+              <Field label="¿Con que nivel de claridad llegas hoy?"><ChoiceGroup value={form.clarityLevel ?? ''} options={CLARITY_OPTIONS} onChange={value => setField('clarityLevel', value)} /></Field>
+              {mode === 'linked_to_challenge' && <Field label="¿Que tipo de aporte crees que puede hacer esta iniciativa dentro del reto?"><ChoiceGroup value={form.linkedContributionType ?? ''} options={CONTRIBUTION_OPTIONS} onChange={value => setField('linkedContributionType', value)} /></Field>}
             </div>
 
-            {/* ── RIGHT: Tu ficha inicial ─────────────────────────────────── */}
-            <div className="hidden min-[1280px]:block min-w-0">
-              <div className="sticky top-4 space-y-3">
-
-                {/* Preview card */}
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                  <div className="bg-indigo-600 px-4 py-3.5">
-                    <p className="text-xs text-indigo-300" style={{ fontWeight: 600, letterSpacing: '0.04em' }}>
-                      PREVIEW DEL RESUMEN
-                    </p>
-                    <p className="text-white text-sm mt-0.5" style={{ fontWeight: 600 }}>
-                      {project.name}
-                    </p>
-                  </div>
-
-                  <div className="p-4 space-y-3">
-                    {previewBlocks.map((row, i) => (
-                      <div key={i}>
-                        <p className="text-xs text-slate-400" style={{ fontWeight: 600, letterSpacing: '0.03em' }}>
-                          {row.title.toUpperCase()}
-                        </p>
-                        <p
-                          className={`text-xs mt-0.5 ${
-                            row.filled ? 'text-slate-700' : 'text-slate-400'
-                          }`}
-                        >
-                          {row.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="px-4 pb-4">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <p className="text-xs text-slate-400">Bloques completos</p>
-                      <p className="text-xs text-indigo-600" style={{ fontWeight: 600 }}>{previewCompletedCount}/6</p>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                        style={{ width: `${(previewCompletedCount / 6) * 100}%` }}
-                      />
-                    </div>
-                  </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
+              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Bloque 2 - Justificacion de la iniciativa</h2>
+              <Field label={descriptionLabel} helper={descriptionHelper}><Area rows={5} value={form.quePasaQueQuieres} onChange={event => setField('quePasaQueQuieres', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿A quien impacta mas directamente esta parte del reto?' : '¿A quien impacta mas directamente esta iniciativa?'}><Area rows={3} value={form.impactWho ?? ''} onChange={event => setField('impactWho', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Donde o en que momento se hace mas visible esta parte del reto?' : '¿Donde o en que momento se hace mas visible este reto?'}><Area rows={3} value={form.visibleMoment ?? ''} onChange={event => setField('visibleMoment', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Por que vale la pena mover esta iniciativa ahora dentro del reto?' : '¿Por que conviene mover esto ahora?'}><Area rows={3} value={form.whyNowText ?? ''} onChange={event => setField('whyNowText', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? 'Si esta parte del reto no se aborda, ¿que efecto tendria sobre el objetivo o KPI del reto?' : 'Si esto no se aborda en los proximos 3 meses, ¿cual seria la consecuencia principal?'} helper={consequenceHelper}><Area rows={3} value={form.ifNotNowConsequence ?? ''} onChange={event => setField('ifNotNowConsequence', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Que evidencia, senales o referencias respaldan hoy esta iniciativa?' : '¿Que respaldo tienes hoy para sostener esta iniciativa?'}>
+                <div className="space-y-3">
+                  <ChoiceGroup value={form.evidenceType ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={value => setField('evidenceType', value)} />
+                  <Area rows={3} value={form.currentEvidence ?? ''} onChange={event => setField('currentEvidence', event.target.value)} />
                 </div>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Que senal te haria pensar que esta iniciativa si merece seguir avanzando dentro del reto?' : '¿Que senal te haria decir que vale la pena seguir avanzando?'}><Area rows={3} value={form.validationSignal ?? ''} onChange={event => setField('validationSignal', event.target.value)} /></Field>
+            </div>
 
-                {/* Próximo paso sugerido */}
-                {previewCompletedCount >= 3 && (
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                    <p className="text-xs text-emerald-700 mb-1" style={{ fontWeight: 600 }}>
-                      Ya tienes una base conversable
-                    </p>
-                    <p className="text-xs text-emerald-600">
-                      Ya puedes usar esta ficha para conversar con sponsor, líder o mentor con más claridad y criterio.
-                    </p>
-                  </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
+              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{mode === 'linked_to_challenge' ? 'Bloque 3 - Decision y destrabe real' : 'Bloque 3 - Respaldo y siguiente paso'}</h2>
+              {mode === 'independent' && <Field label="¿Que area, lider o sponsor tendria mas sentido que escuche esto primero?"><Area rows={3} value={form.quienEscuchar} onChange={event => setField('quienEscuchar', event.target.value)} /></Field>}
+              {mode === 'independent' && <Field label="¿Por que esa persona o area deberia interesarse en esta iniciativa?"><Area rows={3} value={form.sponsorInterestReason ?? ''} onChange={event => setField('sponsorInterestReason', event.target.value)} /></Field>}
+              {mode === 'linked_to_challenge' && <Field label="Ademas del sponsor y owner ya definidos, ¿hay alguien mas que conviene involucrar desde el inicio?"><ChoiceGroup value={form.additionalStakeholders ?? ''} options={ADDITIONAL_STAKEHOLDER_OPTIONS} onChange={value => setField('additionalStakeholders', value)} /></Field>}
+              {mode === 'linked_to_challenge' && form.additionalStakeholders === 'si' && <Field label="¿A quien mas conviene involucrar y para que?"><Area rows={3} value={form.additionalStakeholdersDetail ?? ''} onChange={event => setField('additionalStakeholdersDetail', event.target.value)} /></Field>}
+              <Field label={mode === 'linked_to_challenge' ? '¿Que apoyo minimo necesitas del sponsor o owner ya definido para avanzar?' : '¿Que apoyo minimo necesitas para que esto avance?'}><Area rows={3} value={form.supportNeeded ?? ''} onChange={event => setField('supportNeeded', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Que decision puntual estas buscando en esta etapa?' : '¿Que decision estas buscando en esta etapa?'}><Area rows={3} value={form.decisionRequested ?? ''} onChange={event => setField('decisionRequested', event.target.value)} /></Field>
+              <Field label="¿A que correo te envio el one-pager listo para compartir?"><Input type="email" value={form.deliveryEmail ?? ''} onChange={event => setField('deliveryEmail', event.target.value)} /></Field>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{summaryTitle}</h2>
+              <p className="mt-1 text-sm text-slate-500">Convierte lo que ya escribiste en una base breve para compartir o seguir refinando.</p>
+              <div className="mt-4 space-y-4">
+                {analysisState === 'idle' && (
+                  <>
+                    {missing.length > 0 && <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700"><AlertCircle size={14} className="mt-0.5 shrink-0" /> Completa los campos visibles para generar el resumen inicial.</div>}
+                    <button onClick={runAnalysis} disabled={!canSave} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Generar resumen inicial</button>
+                  </>
                 )}
-
-                {/* Mejorar con IA */}
-                <button
-                  onClick={openIA}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-violet-50 border border-violet-100 rounded-xl hover:bg-violet-100 transition-colors"
-                >
-                  <Sparkles size={14} className="text-violet-500 shrink-0" />
-                  <div className="text-left">
-                    <p className="text-xs text-violet-700" style={{ fontWeight: 500 }}>
-                      Mejorar claridad con IA
-                    </p>
-                    <p className="text-xs text-violet-400">Recibe sugerencias personalizadas</p>
-                  </div>
-                </button>
-
-                {/* Ver ejemplo */}
-                <button className="w-full text-xs text-slate-400 hover:text-slate-600 text-center py-1.5 transition-colors">
-                  Ver ejemplo completo →
-                </button>
+                {analysisState === 'loading' && <div className="flex flex-col items-center gap-3 py-8 text-sm text-slate-600"><Loader2 size={28} className="animate-spin text-indigo-500" />Ordenando tu base estrategica...</div>}
+                {analysisState === 'done' && (
+                  <>
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900" style={{ fontWeight: 600 }}>
+                      {mode === 'linked_to_challenge' ? 'La iniciativa ya tiene una base clara para justificarse dentro del reto.' : 'La iniciativa ya tiene una base clara para abrir conversacion y buscar respaldo inicial.'}
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white">
+                      {summaryBlocks.map(block => <div key={block.label} className="border-b border-slate-100 px-4 py-3 text-xs text-slate-700 last:border-b-0"><span style={{ fontWeight: 700 }}>{block.label}: </span>{block.value}</div>)}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <button onClick={downloadSummary} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}><Download size={14} className="mr-2 inline" />Descargar resumen</button>
+                      <button onClick={copySummary} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}><Copy size={14} className="mr-2 inline" />{copied ? 'Copiado' : 'Copiar resumen'}</button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+          </div>
 
+          <div className="hidden min-[1280px]:block">
+            <div className="sticky top-4 space-y-3">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <div className="bg-indigo-600 px-4 py-3.5">
+                  <p className="text-xs text-indigo-200" style={{ fontWeight: 700 }}>PREVIEW DEL RESUMEN</p>
+                  <p className="mt-0.5 text-sm text-white" style={{ fontWeight: 700 }}>{summaryTitle}</p>
+                </div>
+                <div className="space-y-3 p-4">
+                  {mode === 'linked_to_challenge' && inherited.items.length > 0 && <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-700">{inherited.items.slice(0, 4).map(item => `${item.label}: ${item.value}`).join(' | ')}</div>}
+                  {summaryBlocks.map(block => <div key={block.label}><p className="text-xs text-slate-400" style={{ fontWeight: 700 }}>{block.label.toUpperCase()}</p><p className="mt-0.5 text-xs text-slate-700">{block.value}</p></div>)}
+                </div>
+                <div className="px-4 pb-4">
+                  <div className="mb-1.5 flex justify-between text-xs text-slate-400"><span>Bloques listos</span><span className="text-indigo-600" style={{ fontWeight: 700 }}>{previewCount}/{summaryBlocks.length}</span></div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${(previewCount / summaryBlocks.length) * 100}%` }} /></div>
+                </div>
+              </div>
+              <button onClick={openIA} className="w-full rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-left text-sm text-violet-700 hover:bg-violet-100" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Mejorar claridad con IA</button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Sticky footer ── */}
-      <div className="border-t border-slate-200 bg-white px-5 py-4 shrink-0 min-[1440px]:px-6 min-[1680px]:px-8">
-        <div className="mx-auto flex w-full max-w-[1380px] items-center gap-3 flex-wrap min-[1440px]:max-w-[1480px] min-[1680px]:max-w-[1560px]">
-          <button
-            onClick={handleSave}
-            disabled={!canSave || saving || saved}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-xl text-sm transition-colors"
-            style={{ fontWeight: 500 }}
-          >
-            {saved ? (
-              <><CheckCircle2 size={14} /> Guardado</>
-            ) : saving ? (
-              'Guardando…'
-            ) : (
-              <>Guardar y continuar <ChevronRight size={14} /></>
-            )}
+      <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4">
+        <div className="mx-auto flex max-w-[1480px] flex-wrap items-center gap-3">
+          <button onClick={handleSave} disabled={!canSave || saving || saved} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}>
+            {saved ? <><CheckCircle2 size={14} className="mr-2 inline" />Guardado</> : saving ? 'Guardando...' : <>Guardar y continuar <ChevronRight size={14} className="ml-1 inline" /></>}
           </button>
-
-          <button
-            onClick={openIA}
-            className="flex items-center gap-2 border border-violet-200 text-violet-600 hover:bg-violet-50 px-4 py-2.5 rounded-xl text-sm transition-colors"
-            style={{ fontWeight: 500 }}
-          >
-            <Sparkles size={14} /> Mejorar claridad con IA
-          </button>
-
-          <button className="text-sm text-slate-400 hover:text-slate-600 px-3 py-2.5 transition-colors">
-            Ver ejemplo
-          </button>
-
-          <div className="ml-auto hidden sm:flex items-center gap-3">
-            {project.mentorCredits !== undefined && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <CreditCard size={12} />
-                <span>{project.mentorCredits} créditos disponibles</span>
-              </div>
-            )}
+          <button onClick={openIA} className="rounded-xl border border-violet-200 px-4 py-2.5 text-sm text-violet-600" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Mejorar claridad con IA</button>
+          <div className="ml-auto hidden items-center gap-3 sm:flex">
+            {project.mentorCredits !== undefined && <div className="flex items-center gap-1.5 text-xs text-slate-400"><CreditCard size={12} /><span>{project.mentorCredits} creditos disponibles</span></div>}
             <AutosaveIndicator state={saveState} />
           </div>
         </div>
       </div>
 
-      {/* ── Panels ── */}
-      <MentorVirtualPanel
-        open={showIAPanel}
-        onClose={() => setShowIAPanel(false)}
-        context="Paso 0 · Punto de partida"
-        loading={iaLoading}
-      />
-
-      {showMentorModal && (
-        <MentorSupportModal
-          onClose={() => setShowMentorModal(false)}
-          context="Paso 0 · Punto de partida"
-          mentorCredits={project.mentorCredits ?? 3}
-          onOpenIA={() => { setShowMentorModal(false); openIA(); }}
-        />
-      )}
+      <MentorVirtualPanel open={showIAPanel} onClose={() => setShowIAPanel(false)} context="Paso 0 · Base estrategica inicial" feedback={IA_FEEDBACK} loading={iaLoading} />
+      {showMentorModal && <MentorSupportModal onClose={() => setShowMentorModal(false)} context="Paso 0 · Base estrategica inicial" mentorCredits={project.mentorCredits ?? 3} onOpenIA={() => { setShowMentorModal(false); openIA(); }} />}
     </div>
   );
 }

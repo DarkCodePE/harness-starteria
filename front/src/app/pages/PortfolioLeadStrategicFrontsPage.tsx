@@ -1,579 +1,1174 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, FileBarChart, Flag, Layers3, PenSquare, Plus, Target } from 'lucide-react';
-import { useNavigate } from 'react-router';
 import {
-  Challenge,
+  Archive,
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Eye,
+  MoreVertical,
+  PencilLine,
+  Plus,
+  PauseCircle,
+  PlayCircle,
+  Search,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  usePortfolioLead,
+} from '../../features/portfolio-lead';
+import type {
   CreateStrategicFrontInput,
-  Initiative,
   StrategicFront,
   StrategicFrontPriority,
   StrategicFrontStatus,
-  usePortfolioLead,
-} from '../portfolio/PortfolioLeadContext';
-import { challengeStatusLabel, challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
-import { PortfolioLeadBreadcrumbs, PortfolioLeadContextStrip, PortfolioLeadEmptyState } from '../components/portfolio/PortfolioLeadPageElements';
+} from '../../features/portfolio-lead';
+import { PortfolioLeadBreadcrumbs } from '../components/portfolio/PortfolioLeadPageElements';
 
-const STATUS_OPTIONS: Array<{ value: StrategicFrontStatus; label: string }> = [
-  { value: 'draft', label: 'Draft' },
+type DrawerMode = 'create' | 'edit' | 'view' | null;
+type DrawerIntent = 'general' | 'sponsor' | 'status';
+
+type StrategicFrontFormState = {
+  name: string;
+  strategicObjective: string;
+  whyNow: string;
+  sponsor: string;
+  sponsorEmail: string;
+  mainKpi: string;
+  baseline: string;
+  target: string;
+  threshold: string;
+  area: string;
+  horizon: string;
+  endDate: string;
+  priority: StrategicFrontPriority;
+  status: StrategicFrontStatus;
+  notes: string;
+};
+
+type ClarityInsight = {
+  goodPoints: string[];
+  missingPoints: string[];
+  nextStep: string;
+};
+
+type FrontFormErrors = Partial<Record<keyof StrategicFrontFormState, string>>;
+
+const STATUS_FILTER_OPTIONS: Array<{ value: StrategicFrontStatus | 'all'; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'draft', label: 'Borrador' },
   { value: 'active', label: 'Activo' },
-  { value: 'paused', label: 'Pausado' },
+  { value: 'tracking', label: 'En seguimiento' },
+  { value: 'paused', label: 'En pausa' },
   { value: 'closed', label: 'Cerrado' },
 ];
 
-const PRIORITY_OPTIONS: StrategicFrontPriority[] = ['Alta', 'Media', 'Baja'];
+const PRIORITY_FILTER_OPTIONS: Array<{ value: StrategicFrontPriority | 'all'; label: string }> = [
+  { value: 'all', label: 'Todas' },
+  { value: 'Baja', label: 'Baja' },
+  { value: 'Media', label: 'Media' },
+  { value: 'Alta', label: 'Alta' },
+  { value: 'Critica', label: 'Crítica' },
+];
 
-const EMPTY_FORM: CreateStrategicFrontInput = {
+const CREATE_STATUS_OPTIONS: Array<{ value: StrategicFrontStatus; label: string }> = [
+  { value: 'draft', label: 'Borrador' },
+  { value: 'active', label: 'Activo' },
+];
+
+const EDIT_STATUS_OPTIONS: Array<{ value: StrategicFrontStatus; label: string }> = [
+  { value: 'draft', label: 'Borrador' },
+  { value: 'active', label: 'Activo' },
+  { value: 'tracking', label: 'En seguimiento' },
+  { value: 'paused', label: 'En pausa' },
+  { value: 'closed', label: 'Cerrado' },
+];
+
+const PRIORITY_OPTIONS: Array<{ value: StrategicFrontPriority; label: string }> = [
+  { value: 'Baja', label: 'Baja' },
+  { value: 'Media', label: 'Media' },
+  { value: 'Alta', label: 'Alta' },
+  { value: 'Critica', label: 'Crítica' },
+];
+
+const STATUS_META: Record<StrategicFrontStatus, { label: string; tone: string }> = {
+  draft: { label: 'Borrador', tone: 'border-slate-200 bg-slate-100 text-slate-700' },
+  active: { label: 'Activo', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+  tracking: { label: 'En seguimiento', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
+  paused: { label: 'En pausa', tone: 'border-amber-200 bg-amber-50 text-amber-700' },
+  closed: { label: 'Cerrado', tone: 'border-slate-300 bg-slate-200 text-slate-600' },
+};
+
+const PRIORITY_META: Record<StrategicFrontPriority, { label: string; tone: string }> = {
+  Baja: { label: 'Baja', tone: 'border-slate-200 bg-slate-50 text-slate-600' },
+  Media: { label: 'Media', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
+  Alta: { label: 'Alta', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
+  Critica: { label: 'Crítica', tone: 'border-rose-200 bg-rose-50 text-rose-700' },
+};
+
+const EMPTY_FORM: StrategicFrontFormState = {
   name: '',
   strategicObjective: '',
   whyNow: '',
+  sponsor: '',
+  sponsorEmail: '',
   mainKpi: '',
   baseline: '',
   target: '',
+  threshold: '',
+  area: '',
   horizon: '',
-  sponsor: '',
+  endDate: '',
   priority: 'Alta',
   status: 'draft',
+  notes: '',
 };
-
-type FrontCoverage = 'sin_cobertura' | 'cobertura_parcial' | 'cobertura_suficiente' | 'necesita_reformulacion';
-
-type FrontInsight = {
-  coverage: FrontCoverage;
-  nextAction: string;
-  report: string;
-};
-
-function statusLabel(status: StrategicFrontStatus) {
-  return STATUS_OPTIONS.find(option => option.value === status)?.label ?? status;
-}
-
-function statusClasses(status: StrategicFrontStatus) {
-  switch (status) {
-    case 'active':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-    case 'paused':
-      return 'border-amber-200 bg-amber-50 text-amber-700';
-    case 'closed':
-      return 'border-slate-300 bg-slate-100 text-slate-600';
-    default:
-      return 'border-indigo-200 bg-indigo-50 text-indigo-700';
-  }
-}
-
-function coverageLabel(coverage: FrontCoverage) {
-  const labels: Record<FrontCoverage, string> = {
-    sin_cobertura: 'Sin cobertura',
-    cobertura_parcial: 'Cobertura parcial',
-    cobertura_suficiente: 'Cobertura suficiente',
-    necesita_reformulacion: 'Necesita reformulacion',
-  };
-  return labels[coverage];
-}
-
-function coverageClasses(coverage: FrontCoverage) {
-  switch (coverage) {
-    case 'cobertura_suficiente':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-    case 'cobertura_parcial':
-      return 'border-amber-200 bg-amber-50 text-amber-700';
-    case 'necesita_reformulacion':
-      return 'border-rose-200 bg-rose-50 text-rose-700';
-    default:
-      return 'border-slate-200 bg-slate-100 text-slate-700';
-  }
-}
-
-function getFrontInsight(front: StrategicFront, challenges: Challenge[], initiatives: Initiative[]): FrontInsight {
-  const frontChallenges = challenges.filter(challenge => challenge.strategicFrontId === front.id);
-  const frontInitiatives = initiatives.filter(initiative => initiative.strategicFrontId === front.id);
-  const readyForDecision = frontInitiatives.filter(initiative => initiative.readyForDecision || initiative.status === 'bloqueada').length;
-  const blocked = frontInitiatives.filter(initiative => initiative.status === 'bloqueada').length;
-  const inactiveChallenges = frontChallenges.filter(challenge => !challenge.visibleToParticipants).length;
-  const needsReformulation = frontChallenges.some(challenge => challenge.coverageStatus === 'reformular');
-  const enoughCoverage = frontChallenges.some(challenge => challenge.coverageStatus === 'cobertura_suficiente' || challenge.coverageStatus === 'resuelto');
-
-  let coverage: FrontCoverage = 'sin_cobertura';
-  if (needsReformulation) coverage = 'necesita_reformulacion';
-  else if (frontChallenges.length === 0 || frontInitiatives.length === 0) coverage = 'sin_cobertura';
-  else if (enoughCoverage && blocked === 0) coverage = 'cobertura_suficiente';
-  else coverage = 'cobertura_parcial';
-
-  let nextAction = 'Definir el primer reto para convertir esta prioridad en trabajo gobernable.';
-  if (inactiveChallenges > 0) nextAction = 'Activar los retos pendientes para que el frente deje de quedarse en definicion.';
-  else if (frontChallenges.length > 0 && frontInitiatives.length === 0) nextAction = 'Revisar por que los retos de este frente aun no generan iniciativas visibles.';
-  else if (blocked > 0) nextAction = 'Destrabar las iniciativas bloqueadas antes de ampliar el alcance del frente.';
-  else if (readyForDecision > 0) nextAction = 'Llevar los casos maduros a decision para cerrar la lectura del frente.';
-  else if (frontChallenges.length > 0) nextAction = 'Mantener seguimiento de cobertura y ajustar donde el frente siga flojo.';
-
-  const report = frontChallenges.length === 0
-    ? 'Este frente ya define una prioridad, pero todavia no baja a retos concretos.'
-    : readyForDecision > 0
-      ? `El frente ya concentra ${readyForDecision} caso(s) que requieren decision proxima.`
-      : blocked > 0
-        ? `El frente acumula ${blocked} iniciativa(s) bloqueada(s) y conviene destrabarlas antes de abrir mas trabajo.`
-        : `El frente tiene ${frontChallenges.length} reto(s) y ${frontInitiatives.length} iniciativa(s) asociada(s) bajo seguimiento.`;
-
-  return { coverage, nextAction, report };
-}
 
 export function PortfolioLeadStrategicFrontsPage() {
-  const navigate = useNavigate();
-  const { strategicFronts, challenges, initiatives, createStrategicFront, updateStrategicFront, updateStrategicFrontStatus } = usePortfolioLead();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [form, setForm] = useState<CreateStrategicFrontInput>(EMPTY_FORM);
-  const [submitted, setSubmitted] = useState(false);
-  const [selectedFrontId, setSelectedFrontId] = useState<string>(strategicFronts[0]?.id ?? '');
+  const { strategicFronts, createStrategicFront, updateStrategicFront, updateStrategicFrontStatus } = usePortfolioLead();
 
-  const selectedFront = strategicFronts.find(front => front.id === selectedFrontId) ?? strategicFronts[0] ?? null;
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StrategicFrontStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<StrategicFrontPriority | 'all'>('all');
+  const [showArchived, setShowArchived] = useState(true);
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
+  const [drawerIntent, setDrawerIntent] = useState<DrawerIntent>('general');
+  const [activeFrontId, setActiveFrontId] = useState<string | null>(null);
+  const [form, setForm] = useState<StrategicFrontFormState>(EMPTY_FORM);
+  const [errors, setErrors] = useState<FrontFormErrors>({});
+  const [aiInsight, setAiInsight] = useState<ClarityInsight | null>(null);
 
-  const summary = useMemo(() => ({
-    total: strategicFronts.length,
-    active: strategicFronts.filter(front => front.status === 'active').length,
-    withChallenges: strategicFronts.filter(front => challenges.some(challenge => challenge.strategicFrontId === front.id)).length,
-    withCoverage: strategicFronts.filter(front => getFrontInsight(front, challenges, initiatives).coverage !== 'sin_cobertura').length,
-  }), [challenges, initiatives, strategicFronts]);
+  const activeFront = useMemo(
+    () => strategicFronts.find(front => front.id === activeFrontId) ?? null,
+    [activeFrontId, strategicFronts],
+  );
 
-  const missingFields = [
-    ['nombre', form.name.trim()],
-    ['objetivo estrategico', form.strategicObjective.trim()],
-    ['por que importa ahora', form.whyNow.trim()],
-    ['KPI principal', form.mainKpi.trim()],
-    ['baseline', form.baseline.trim()],
-    ['meta', form.target.trim()],
-    ['horizonte', form.horizon.trim()],
-    ['sponsor principal', form.sponsor.trim()],
-  ].filter(([, value]) => !value);
+  const filteredFronts = useMemo(() => {
+    const normalizedSearch = normalizeText(search.trim());
 
-  const canSubmit = missingFields.length === 0;
-  const createLabel = strategicFronts.length === 0 ? 'Crear primer frente estrategico' : 'Crear nuevo frente estrategico';
+    return [...strategicFronts]
+      .filter(front => (showArchived ? true : front.status !== 'closed'))
+      .filter(front => {
+        if (statusFilter !== 'all' && front.status !== statusFilter) return false;
+        if (priorityFilter !== 'all' && front.priority !== priorityFilter) return false;
+        if (!normalizedSearch) return true;
 
-  const openCreateForm = () => {
-    setFormMode('create');
+        const haystack = normalizeText([
+          front.name,
+          front.strategicObjective,
+          front.whyNow,
+          front.sponsor,
+          front.sponsorEmail ?? '',
+          front.mainKpi,
+          front.area ?? '',
+          front.horizon,
+          front.threshold ?? '',
+        ].join(' '));
+
+        return haystack.includes(normalizedSearch);
+      })
+      .sort((a, b) => {
+        const statusWeight = getStatusWeight(a.status) - getStatusWeight(b.status);
+        if (statusWeight !== 0) return statusWeight;
+        return compareDateDesc(a.lastUpdatedAt ?? a.createdAt, b.lastUpdatedAt ?? b.createdAt);
+      });
+  }, [priorityFilter, search, showArchived, statusFilter, strategicFronts]);
+
+  const hasFronts = strategicFronts.length > 0;
+  const hasFilteredFronts = filteredFronts.length > 0;
+
+  const openCreateDrawer = () => {
+    setDrawerMode('create');
+    setDrawerIntent('general');
+    setActiveFrontId(null);
     setForm(EMPTY_FORM);
-    setSubmitted(false);
-    setIsFormOpen(true);
+    setErrors({});
+    setAiInsight(null);
   };
 
-  const openEditForm = (front: StrategicFront) => {
-    setFormMode('edit');
-    setSelectedFrontId(front.id);
-    setForm({
-      name: front.name,
-      strategicObjective: front.strategicObjective,
-      whyNow: front.whyNow,
-      mainKpi: front.mainKpi,
-      baseline: front.baseline,
-      target: front.target,
-      horizon: front.horizon,
-      sponsor: front.sponsor,
-      priority: front.priority,
-      status: front.status,
-    });
-    setSubmitted(false);
-    setIsFormOpen(true);
+  const openEditDrawer = (front: StrategicFront, intent: DrawerIntent = 'general') => {
+    setDrawerMode('edit');
+    setDrawerIntent(intent);
+    setActiveFrontId(front.id);
+    setForm(mapFrontToForm(front));
+    setErrors({});
+    setAiInsight(null);
   };
 
-  const resetForm = () => {
-    setIsFormOpen(false);
-    setSubmitted(false);
+  const openViewDrawer = (front: StrategicFront) => {
+    setDrawerMode('view');
+    setDrawerIntent('general');
+    setActiveFrontId(front.id);
+    setErrors({});
+    setAiInsight(null);
+  };
+
+  const closeDrawer = () => {
+    setDrawerMode(null);
+    setDrawerIntent('general');
+    setActiveFrontId(null);
     setForm(EMPTY_FORM);
-    setFormMode('create');
+    setErrors({});
+    setAiInsight(null);
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    setSubmitted(true);
-    if (!canSubmit) return;
-    if (formMode === 'edit' && selectedFront) updateStrategicFront(selectedFront.id, form);
-    else {
-      const createdFront = createStrategicFront(form);
-      setSelectedFrontId(createdFront.id);
-    }
-    resetForm();
+  const handleCreate = (status: StrategicFrontStatus) => {
+    const nextErrors = validateFrontForm(form, { allowDraft: status === 'draft' });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    const created = createStrategicFront(mapFormToCreateInput(form, status));
+    toast.success('Frente estratégico creado.');
+    setActiveFrontId(created.id);
+    closeDrawer();
+  };
+
+  const handleUpdate = () => {
+    if (!activeFront) return;
+
+    const nextErrors = validateFrontForm(form, { allowDraft: form.status === 'draft' });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    updateStrategicFront(activeFront.id, mapFormToCreateInput(form, form.status));
+    toast.success('Frente estratégico actualizado.');
+    closeDrawer();
+  };
+
+  const handleQuickStatusChange = (front: StrategicFront, nextStatus: StrategicFrontStatus, message: string) => {
+    updateStrategicFrontStatus(front.id, nextStatus);
+    toast.success(message);
+  };
+
+  const handleImproveWithAi = () => {
+    setAiInsight(buildClarityInsight(form));
   };
 
   return (
     <div className="mx-auto max-w-7xl p-6 md:p-8">
-      <PortfolioLeadBreadcrumbs items={[{ label: 'Portfolio Lead', path: '/portfolio/inicio' }, { label: 'Frentes estrategicos' }]} />
+      <PortfolioLeadBreadcrumbs
+        items={[
+          { label: 'Portfolio Lead', path: '/portfolio/inicio' },
+          { label: 'Frentes estratégicos' },
+        ]}
+      />
 
-      <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#fff6d8_0%,#ffffff_54%,#edf4eb_100%)] p-6 md:p-8">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-xs text-amber-800" style={{ fontWeight: 700 }}>FRENTES ESTRATEGICOS</p>
-            <h1 className="mt-2 text-3xl text-slate-950" style={{ fontWeight: 700, letterSpacing: '-0.03em' }}>
-              Define prioridades estrategicas gobernables y conecta cada una con cobertura real
-            </h1>
-            <p className="mt-3 text-sm text-slate-600">
-              Aqui no solo das de alta un frente. Dejas claro que quiere mover el negocio, con que KPI, desde donde parte, hacia donde va y que tan bien esta cubierto por retos e iniciativas.
-            </p>
-          </div>
-          <button onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800" style={{ fontWeight: 600 }}>
-            <Plus size={16} />
-            {createLabel}
-          </button>
-        </div>
+      <StrategicFrontsHeader onCreate={openCreateDrawer} />
 
-        <PortfolioLeadContextStrip
-          items={[
-            { label: 'Frente padre visible', value: selectedFront?.name ?? 'Todavia no hay frente seleccionado' },
-            { label: 'Reto seleccionado', value: 'Se define despues en Retos' },
-            { label: 'Estado de activacion', value: selectedFront ? `${challenges.filter(item => item.strategicFrontId === selectedFront.id && item.visibleToParticipants).length} retos activos` : 'Sin retos activos todavia' },
-            { label: 'Iniciativas asociadas', value: selectedFront ? `${initiatives.filter(item => item.strategicFrontId === selectedFront.id).length}` : '0' },
-            { label: 'Siguiente accion recomendada', value: selectedFront ? getFrontInsight(selectedFront, challenges, initiatives).nextAction : 'Crear el primer frente estrategico' },
-          ]}
-        />
-      </div>
+      <StrategicFrontsToolbar
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        priorityFilter={priorityFilter}
+        onPriorityFilterChange={setPriorityFilter}
+        showArchived={showArchived}
+        onToggleArchived={() => setShowArchived(prev => !prev)}
+      />
 
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="max-w-3xl">
-            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>LECTURA OPERATIVA</p>
-            <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Cada frente debe explicar prioridad, cobertura y siguiente paso</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Esta pantalla prioriza lectura estrategica con salida accionable. Te muestra que frente sigue solo en definicion y cual ya tiene cobertura visible.
-            </p>
+        <div className="max-w-3xl">
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>TUS FRENTES ESTRATÉGICOS</p>
+          <h2 className="mt-1 text-2xl text-slate-950" style={{ fontWeight: 700 }}>Gestiona el estado, responsables, KPI y horizonte de cada frente</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Aquí creas frentes estratégicos, revisas los ya existentes y actualizas sponsor, KPI, umbral, prioridad y horizonte sin salir de la gestión central.
+          </p>
+        </div>
+
+        {!hasFronts ? (
+          <div className="mt-6">
+            <EmptyStrategicFrontsState onCreate={openCreateDrawer} />
           </div>
-          <button onClick={() => navigate('/portfolio/inicio')} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50" style={{ fontWeight: 600 }}>
-            Volver a Inicio
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-4">
-          <SummaryCard label="Frentes creados" value={summary.total} icon={Flag} hint="Prioridades estrategicas visibles en el portafolio" />
-          <SummaryCard label="Frentes activos" value={summary.active} icon={Target} hint="Los que hoy deben gobernarse con seguimiento" />
-          <SummaryCard label="Con retos asociados" value={summary.withChallenges} icon={Layers3} hint="Ya bajaron a problemas concretos" />
-          <SummaryCard label="Con cobertura visible" value={summary.withCoverage} icon={FileBarChart} hint="Ya muestran una lectura inicial de cobertura" />
-        </div>
-      </section>
-
-      {isFormOpen ? (
-        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="max-w-3xl">
-              <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>TAREA ACTUAL</p>
-              <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>
-                {formMode === 'edit' ? 'Editar frente estrategico' : 'Crear frente estrategico'}
-              </h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Define una prioridad gobernable: que quiere mover el negocio, por que importa ahora, con que KPI se medira y bajo que sponsor quedara sostenida.
-              </p>
-            </div>
-            <button onClick={resetForm} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50" style={{ fontWeight: 600 }}>
-              Cancelar
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Nombre del frente" value={form.name} onChange={value => setForm(prev => ({ ...prev, name: value }))} placeholder="Ej. Excelencia operativa transversal" />
-              <Field label="Sponsor principal" value={form.sponsor} onChange={value => setForm(prev => ({ ...prev, sponsor: value }))} placeholder="Nombre y area del sponsor" />
-              <Field label="KPI principal" value={form.mainKpi} onChange={value => setForm(prev => ({ ...prev, mainKpi: value }))} placeholder="Indicador que quieres mover" />
-              <Field label="Horizonte" value={form.horizon} onChange={value => setForm(prev => ({ ...prev, horizon: value }))} placeholder="Ej. Q3 2026 o 6 meses" />
-              <Field label="Baseline" value={form.baseline} onChange={value => setForm(prev => ({ ...prev, baseline: value }))} placeholder="Punto de partida actual" />
-              <Field label="Meta" value={form.target} onChange={value => setForm(prev => ({ ...prev, target: value }))} placeholder="Resultado esperado" />
-            </div>
-
-            <TextAreaField label="Objetivo estrategico" value={form.strategicObjective} onChange={value => setForm(prev => ({ ...prev, strategicObjective: value }))} placeholder="Explica que prioridad del negocio articula este frente y que quiere mover." />
-            <TextAreaField label="Por que importa ahora" value={form.whyNow} onChange={value => setForm(prev => ({ ...prev, whyNow: value }))} placeholder="Aclara la urgencia o razon de negocio para atender este frente ahora." />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <SelectField label="Prioridad" value={form.priority} onChange={value => setForm(prev => ({ ...prev, priority: value as StrategicFrontPriority }))} options={PRIORITY_OPTIONS.map(option => ({ value: option, label: option }))} />
-              <SelectField label="Estado inicial" value={form.status} onChange={value => setForm(prev => ({ ...prev, status: value as StrategicFrontStatus }))} options={STATUS_OPTIONS.map(option => ({ value: option.value, label: option.label }))} />
-            </div>
-
-            {submitted && !canSubmit ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <div className="flex items-start gap-2">
-                  <AlertCircle size={16} className="mt-0.5 text-amber-700" />
-                  <div className="text-sm text-amber-800">
-                    <p style={{ fontWeight: 700 }}>Que falta</p>
-                    <p className="mt-1">Completa {missingFields.map(([label]) => label).join(', ')} para definir un frente con base suficiente.</p>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <InsightCard title="Que define" tone="emerald" text="Una prioridad estrategica con KPI, sponsor, meta y razon de negocio visibles." />
-              <InsightCard title="Que habilita" tone="amber" text="Retos multiples bajo el mismo frente, sin perder el hilo estrategico." />
-              <InsightCard title="Siguiente paso" tone="slate" text="Despues de guardarlo, toca abrir o revisar los retos que daran cobertura al frente." />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
-              <p className="text-sm text-slate-500">Esta pantalla define el frente, pero no absorbe la gestion detallada de retos ni de iniciativas.</p>
-              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white transition-colors hover:bg-slate-800" style={{ fontWeight: 600 }}>
-                <Plus size={16} />
-                {formMode === 'edit' ? 'Guardar cambios del frente' : 'Guardar frente estrategico'}
-              </button>
-            </div>
-          </form>
-        </section>
-      ) : null}
-
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_1.15fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="max-w-2xl">
-              <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>LISTADO DE FRENTES</p>
-              <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Prioridades activas del portafolio</h2>
-              <p className="mt-2 text-sm text-slate-600">Cada card comunica estado, hijos, cobertura general y siguiente accion recomendada.</p>
-            </div>
-            <button onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50" style={{ fontWeight: 600 }}>
-              <Plus size={16} />
-              {createLabel}
-            </button>
-          </div>
-
-          {strategicFronts.length === 0 ? (
-            <div className="mt-6">
-              <PortfolioLeadEmptyState
-                title="Todavia no hay frentes estrategicos"
-                description="Empieza creando el primer frente para definir una prioridad con KPI, sponsor, meta y horizonte claros. Esa es la ancla para el resto de la capa Portfolio Lead."
-                primaryAction={{ label: createLabel, onClick: openCreateForm }}
-              />
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {strategicFronts.map(front => {
-                const frontChallenges = challenges.filter(challenge => challenge.strategicFrontId === front.id);
-                const frontInitiatives = initiatives.filter(initiative => initiative.strategicFrontId === front.id);
-                const insight = getFrontInsight(front, challenges, initiatives);
-
-                return (
-                  <article key={front.id} className={`rounded-[28px] border p-5 transition-colors ${selectedFront?.id === front.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <button className="max-w-xl text-left" onClick={() => setSelectedFrontId(front.id)}>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">Prioridad {front.priority}</span>
-                          <span className={`rounded-full border px-3 py-1 text-xs ${statusClasses(front.status)}`}>{statusLabel(front.status)}</span>
-                          <span className={`rounded-full border px-3 py-1 text-xs ${coverageClasses(insight.coverage)}`}>{coverageLabel(insight.coverage)}</span>
-                        </div>
-                        <h3 className="mt-3 text-lg text-slate-950" style={{ fontWeight: 700 }}>{front.name}</h3>
-                        <p className="mt-2 text-sm text-slate-600">{front.strategicObjective}</p>
-                      </button>
-
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => setSelectedFrontId(front.id)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100" style={{ fontWeight: 600 }}>
-                          Ver detalle
-                        </button>
-                        <button onClick={() => openEditForm(front)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100" style={{ fontWeight: 600 }}>
-                          <PenSquare size={14} className="mr-2 inline-flex" />
-                          Editar
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid gap-3 md:grid-cols-3">
-                      <OperationalCard title="Sponsor" value={front.sponsor} />
-                      <OperationalCard title="Retos asociados" value={`${frontChallenges.length} reto${frontChallenges.length === 1 ? '' : 's'}`} />
-                      <OperationalCard title="Iniciativas asociadas" value={`${frontInitiatives.length} iniciativa${frontInitiatives.length === 1 ? '' : 's'}`} />
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <MetricCard label="KPI principal" value={front.mainKpi} />
-                      <MetricCard label="Horizonte" value={front.horizon} />
-                      <MetricCard label="Baseline" value={front.baseline} />
-                      <MetricCard label="Meta" value={front.target} />
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Siguiente accion recomendada</p>
-                      <p className="mt-2 text-sm text-slate-600">{insight.nextAction}</p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <section className="rounded-3xl border border-slate-200 bg-white p-6">
-          {selectedFront ? (
-            <FrontDetailPanel
-              front={selectedFront}
-              challenges={challenges.filter(challenge => challenge.strategicFrontId === selectedFront.id)}
-              initiatives={initiatives.filter(initiative => initiative.strategicFrontId === selectedFront.id)}
-              insight={getFrontInsight(selectedFront, challenges, initiatives)}
-              onEdit={() => openEditForm(selectedFront)}
-              onOpenChallenges={() => navigate(`/portfolio/retos?frontId=${encodeURIComponent(selectedFront.id)}`)}
-              onOpenInitiatives={() => navigate(`/portfolio/iniciativas?frontId=${encodeURIComponent(selectedFront.id)}`)}
-              onUpdateStatus={status => updateStrategicFrontStatus(selectedFront.id, status)}
-            />
-          ) : (
-            <PortfolioLeadEmptyState
-              title="Selecciona un frente para ver su detalle"
-              description="Aqui apareceran su resumen estrategico, los retos asociados, la cobertura visible y el siguiente paso recomendado para mover el portafolio."
-              primaryAction={{ label: createLabel, onClick: openCreateForm }}
-            />
-          )}
-        </section>
-      </section>
-    </div>
-  );
-}
-
-function FrontDetailPanel({
-  front,
-  challenges,
-  initiatives,
-  insight,
-  onEdit,
-  onOpenChallenges,
-  onOpenInitiatives,
-  onUpdateStatus,
-}: {
-  front: StrategicFront;
-  challenges: Challenge[];
-  initiatives: Initiative[];
-  insight: FrontInsight;
-  onEdit: () => void;
-  onOpenChallenges: () => void;
-  onOpenInitiatives: () => void;
-  onUpdateStatus: (status: StrategicFrontStatus) => void;
-}) {
-  const blocked = initiatives.filter(initiative => initiative.status === 'bloqueada').length;
-  const readyForDecision = initiatives.filter(initiative => initiative.readyForDecision || initiative.status === 'bloqueada').length;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-2xl">
-          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>DETALLE DEL FRENTE</p>
-          <h2 className="mt-1 text-2xl text-slate-950" style={{ fontWeight: 700 }}>{front.name}</h2>
-          <p className="mt-2 text-sm text-slate-600">{front.strategicObjective}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={onEdit} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50" style={{ fontWeight: 600 }}>
-            Editar frente
-          </button>
-          <button onClick={onOpenChallenges} className="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800" style={{ fontWeight: 600 }}>
-            Ver retos asociados
-          </button>
-        </div>
-      </div>
-
-      <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>1. RESUMEN ESTRATEGICO</p>
-            <p className="mt-2 text-sm text-slate-600">Este frente quiere mover una prioridad concreta del negocio con una lectura visible de resultado, horizonte y sponsor.</p>
-          </div>
-          <div className="min-w-[180px] rounded-2xl border border-slate-200 bg-white p-3">
-            <label className="block text-xs text-slate-500" style={{ fontWeight: 700 }}>Estado</label>
-            <select value={front.status} onChange={event => onUpdateStatus(event.target.value as StrategicFrontStatus)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
-              {STATUS_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          <MetricCard label="Objetivo estrategico" value={front.strategicObjective} />
-          <MetricCard label="Por que importa ahora" value={front.whyNow} />
-          <MetricCard label="KPI principal" value={front.mainKpi} />
-          <MetricCard label="Sponsor principal" value={front.sponsor} />
-          <MetricCard label="Baseline" value={front.baseline} />
-          <MetricCard label="Meta" value={front.target} />
-          <MetricCard label="Horizonte" value={front.horizon} />
-          <MetricCard label="Prioridad" value={front.priority} />
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>2. RETOS ASOCIADOS</p>
-            <p className="mt-2 text-sm text-slate-600">Un frente puede sostener varios retos. Aqui se deja visible cuantos existen y en que estado general se encuentran.</p>
-          </div>
-          <button onClick={onOpenChallenges} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50" style={{ fontWeight: 600 }}>
-            Ir a retos
-          </button>
-        </div>
-
-        {challenges.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-[#faf8f2] p-4">
-            <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Todavia no hay retos asociados</p>
-            <p className="mt-2 text-sm text-slate-600">El frente ya existe como prioridad, pero aun no baja a varios problemas concretos que le den cobertura.</p>
+        ) : !hasFilteredFronts ? (
+          <div className="mt-6">
+            <EmptyResultsState onClear={() => {
+              setSearch('');
+              setStatusFilter('all');
+              setPriorityFilter('all');
+              setShowArchived(true);
+            }} />
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
-            {challenges.map(challenge => (
-              <div key={challenge.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="max-w-xl">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">{challengeStatusLabel(challenge.status)}</span>
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">{challengeTypeLabel(challenge.challengeType)}</span>
-                    </div>
-                    <p className="mt-3 text-sm text-slate-900" style={{ fontWeight: 700 }}>{challenge.name}</p>
-                    <p className="mt-1 text-sm text-slate-600">{challenge.whatWeWantToMove}</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                    {challenge.initiativeCount} iniciativa{challenge.initiativeCount === 1 ? '' : 's'}
-                  </div>
-                </div>
-              </div>
+          <div className="mt-6 space-y-4">
+            {filteredFronts.map(front => (
+              <StrategicFrontCard
+                key={front.id}
+                front={front}
+                onView={openViewDrawer}
+                onEdit={openEditDrawer}
+                onQuickStatusChange={handleQuickStatusChange}
+              />
             ))}
           </div>
         )}
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5">
-        <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>3. SEGUIMIENTO Y COBERTURA</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <OperationalCard title="Cobertura general" value={coverageLabel(insight.coverage)} />
-          <OperationalCard title="Retos asociados" value={`${challenges.length}`} />
-          <OperationalCard title="Iniciativas asociadas" value={`${initiatives.length}`} />
-          <OperationalCard title="Casos para decision" value={`${readyForDecision}`} />
-        </div>
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm text-amber-900" style={{ fontWeight: 700 }}>Lectura de cobertura</p>
-          <p className="mt-2 text-sm text-amber-800">{insight.nextAction}</p>
-        </div>
-      </section>
+      {drawerMode === 'create' || drawerMode === 'edit' ? (
+        <StrategicFrontFormDrawer
+          mode={drawerMode}
+          intent={drawerIntent}
+          form={form}
+          errors={errors}
+          aiInsight={aiInsight}
+          onClose={closeDrawer}
+          onChange={setForm}
+          onCreateDraft={() => handleCreate('draft')}
+          onCreateActive={() => handleCreate('active')}
+          onUpdate={handleUpdate}
+          onImproveWithAi={handleImproveWithAi}
+        />
+      ) : null}
 
-      <section className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-white">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs text-amber-300" style={{ fontWeight: 700 }}>4. REPORTE BREVE DEL FRENTE</p>
-            <p className="mt-2 text-sm text-slate-300">{insight.report}</p>
-          </div>
-          <button onClick={onOpenInitiatives} className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white transition-colors hover:bg-white/15" style={{ fontWeight: 600 }}>
-            Ver iniciativas del frente
-          </button>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <DarkMetric label="Estado actual" value={statusLabel(front.status)} />
-          <DarkMetric label="Bloqueos visibles" value={`${blocked}`} />
-          <DarkMetric label="Siguiente lectura" value={readyForDecision > 0 ? 'Decision proxima' : 'Seguimiento de cobertura'} />
-        </div>
-      </section>
+      {drawerMode === 'view' && activeFront ? (
+        <StrategicFrontDetailDrawer
+          front={activeFront}
+          onClose={closeDrawer}
+          onEdit={() => openEditDrawer(activeFront)}
+          onPause={() => handleQuickStatusChange(activeFront, 'paused', 'Frente pausado.')}
+          onReactivate={() => handleQuickStatusChange(activeFront, 'active', 'Frente reactivado.')}
+          onCloseFront={() => handleQuickStatusChange(activeFront, 'closed', 'Frente archivado como cerrado.')}
+        />
+      ) : null}
     </div>
   );
 }
 
-function Field({
+function StrategicFrontsHeader({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#f7f3e7_0%,#ffffff_68%,#eef4ff_100%)] p-6 md:p-7">
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>FRENTES ESTRATÉGICOS</p>
+          <h1 className="mt-2 text-3xl text-slate-950 md:text-4xl" style={{ fontWeight: 700, letterSpacing: '-0.03em' }}>
+            Frentes estratégicos
+          </h1>
+          <p className="mt-3 text-sm text-slate-600 md:text-base">
+            Crea y actualiza las prioridades estratégicas que quieres mover desde Starteria.
+          </p>
+        </div>
+
+        <button
+          onClick={onCreate}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white transition-colors hover:bg-slate-800"
+          style={{ fontWeight: 700 }}
+        >
+          <Plus size={16} />
+          Crear frente estratégico
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StrategicFrontsToolbar({
+  search,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+  priorityFilter,
+  onPriorityFilterChange,
+  showArchived,
+  onToggleArchived,
+}: {
+  search: string;
+  onSearchChange: (value: string) => void;
+  statusFilter: StrategicFrontStatus | 'all';
+  onStatusFilterChange: (value: StrategicFrontStatus | 'all') => void;
+  priorityFilter: StrategicFrontPriority | 'all';
+  onPriorityFilterChange: (value: StrategicFrontPriority | 'all') => void;
+  showArchived: boolean;
+  onToggleArchived: () => void;
+}) {
+  return (
+    <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="grid gap-4 xl:grid-cols-[1.3fr_0.8fr_0.8fr_auto]">
+        <SearchField
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Buscar por nombre, sponsor o KPI"
+        />
+        <SelectField
+          label="Estado"
+          value={statusFilter}
+          onChange={value => onStatusFilterChange(value as StrategicFrontStatus | 'all')}
+          options={STATUS_FILTER_OPTIONS}
+        />
+        <SelectField
+          label="Prioridad"
+          value={priorityFilter}
+          onChange={value => onPriorityFilterChange(value as StrategicFrontPriority | 'all')}
+          options={PRIORITY_FILTER_OPTIONS}
+        />
+        <div className="flex items-end">
+          <button
+            onClick={onToggleArchived}
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
+            style={{ fontWeight: 700 }}
+          >
+            <Archive size={15} className="mr-2" />
+            {showArchived ? 'Ocultar archivados' : 'Ver archivados'}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StrategicFrontCard({
+  front,
+  onView,
+  onEdit,
+  onQuickStatusChange,
+}: {
+  front: StrategicFront;
+  onView: (front: StrategicFront) => void;
+  onEdit: (front: StrategicFront, intent?: DrawerIntent) => void;
+  onQuickStatusChange: (front: StrategicFront, nextStatus: StrategicFrontStatus, message: string) => void;
+}) {
+  const timeLabel = getTimeLabel(front);
+  const lastActivityLabel = formatRelativeLabel(front.lastUpdatedAt ?? front.createdAt);
+
+  return (
+    <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+              Frente estratégico
+            </span>
+            <StatusBadge status={front.status} />
+            <PriorityBadge priority={front.priority} />
+            {front.area ? (
+              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+                {front.area}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Nombre del frente</p>
+              <h3 className="mt-1 text-2xl text-slate-950" style={{ fontWeight: 700 }}>
+                {front.name}
+              </h3>
+            </div>
+            <span className="text-xs text-slate-500 md:pt-1" style={{ fontWeight: 700 }}>
+              {timeLabel}
+            </span>
+          </div>
+
+          <p className="mt-3 max-w-4xl text-sm text-slate-600 md:text-base">{front.strategicObjective}</p>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            <FrontInfoBox label="Descripción del frente" value={front.whyNow || 'No hay lectura adicional registrada.'} />
+            <FrontInfoBox label="Señal principal" value={front.mainKpi} />
+            <FrontInfoBox label="Estado de avance del frente" value={getFrontProgressLabel(front)} helper={getFrontProgressHelper(front)} />
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <FrontStat label="Retos asociados" value={`${front.challengeCount}`} />
+            <FrontStat label="Iniciativas asociadas" value={`${front.initiativeCount}`} />
+            <FrontStat label="Última actualización" value={lastActivityLabel} />
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>
+              {front.status === 'paused' || front.status === 'draft'
+                ? 'Puntos por abordar'
+                : 'Seguimiento sugerido'}
+            </p>
+            <ul className="mt-3 space-y-2 text-sm text-slate-700">
+              {buildFrontChecklist(front).map(item => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 xl:w-64">
+          <button
+            onClick={() => onView(front)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
+            style={{ fontWeight: 700 }}
+          >
+            <Eye size={15} />
+            Ver
+          </button>
+          <button
+            onClick={() => onEdit(front)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+            style={{ fontWeight: 700 }}
+          >
+            <PencilLine size={15} />
+            Editar
+          </button>
+
+          <details className="group relative">
+            <summary className="list-none">
+              <button
+                type="button"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
+                style={{ fontWeight: 700 }}
+              >
+                <MoreVertical size={15} />
+                Más acciones
+              </button>
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+              <MenuAction onClick={() => onEdit(front, 'sponsor')}>Cambiar sponsor</MenuAction>
+              <MenuAction onClick={() => onEdit(front, 'status')}>Cambiar estado</MenuAction>
+              {front.status === 'paused' ? (
+                <MenuAction onClick={() => onQuickStatusChange(front, 'active', 'Frente reactivado.')}>Reactivar frente</MenuAction>
+              ) : front.status !== 'closed' ? (
+                <MenuAction onClick={() => onQuickStatusChange(front, 'paused', 'Frente pausado.')}>Pausar frente</MenuAction>
+              ) : null}
+              {front.status !== 'closed' ? (
+                <MenuAction onClick={() => onQuickStatusChange(front, 'closed', 'Frente archivado como cerrado.')}>Archivar</MenuAction>
+              ) : null}
+              {front.status !== 'closed' ? (
+                <MenuAction onClick={() => onQuickStatusChange(front, 'closed', 'Frente cerrado.')}>Cerrar</MenuAction>
+              ) : null}
+            </div>
+          </details>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function StrategicFrontFormDrawer({
+  mode,
+  intent,
+  form,
+  errors,
+  aiInsight,
+  onClose,
+  onChange,
+  onCreateDraft,
+  onCreateActive,
+  onUpdate,
+  onImproveWithAi,
+}: {
+  mode: Exclude<DrawerMode, 'view' | null>;
+  intent: DrawerIntent;
+  form: StrategicFrontFormState;
+  errors: FrontFormErrors;
+  aiInsight: ClarityInsight | null;
+  onClose: () => void;
+  onChange: React.Dispatch<React.SetStateAction<StrategicFrontFormState>>;
+  onCreateDraft: () => void;
+  onCreateActive: () => void;
+  onUpdate: () => void;
+  onImproveWithAi: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/35 p-3 md:p-6">
+      <div className="ml-auto flex h-full w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <div className="flex h-full w-full flex-col overflow-y-auto">
+          <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>
+                  {mode === 'edit' ? 'EDITAR FRENTE ESTRATÉGICO' : 'CREAR FRENTE ESTRATÉGICO'}
+                </p>
+                <h2 className="mt-1 text-2xl text-slate-950" style={{ fontWeight: 700 }}>
+                  {mode === 'edit' ? 'Editar frente estratégico' : 'Crear frente estratégico'}
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Define una prioridad del negocio que luego podrás convertir en retos accionables.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-2xl border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {intent !== 'general' ? (
+              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {intent === 'sponsor'
+                  ? 'Atajo abierto: revisa sponsor, email y estado del frente.'
+                  : 'Atajo abierto: revisa el estado del frente antes de guardar.'}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="grid flex-1 gap-0 xl:grid-cols-[1.45fr_0.9fr]">
+            <div className="border-r border-slate-200 p-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                <FormField
+                  label="Nombre del frente"
+                  required
+                  value={form.name}
+                  onChange={value => onChange(prev => ({ ...prev, name: value }))}
+                  placeholder="Ej. Excelencia operativa"
+                  helper="Debe representar una prioridad del negocio, no una solución específica."
+                  error={errors.name}
+                />
+                <FormField
+                  label="Área o unidad involucrada"
+                  required
+                  value={form.area}
+                  onChange={value => onChange(prev => ({ ...prev, area: value }))}
+                  placeholder="Operaciones, Comercial, Talento, TI"
+                  helper="¿Quién tendrá mayor responsabilidad sobre este frente?"
+                  error={errors.area}
+                />
+                <FormField
+                  label="KPI principal o señal de éxito"
+                  required
+                  value={form.mainKpi}
+                  onChange={value => onChange(prev => ({ ...prev, mainKpi: value }))}
+                  placeholder="Ej. Tiempo promedio de cierre"
+                  helper="Indica cómo sabrás que el frente está avanzando."
+                  error={errors.mainKpi}
+                />
+                <FormField
+                  label="Meta esperada"
+                  required
+                  value={form.target}
+                  onChange={value => onChange(prev => ({ ...prev, target: value }))}
+                  placeholder="Ej. Reducir a 15 días"
+                  helper="Define el resultado que quieres mover con claridad."
+                  error={errors.target}
+                />
+                <FormField
+                  label="Baseline actual"
+                  value={form.baseline}
+                  onChange={value => onChange(prev => ({ ...prev, baseline: value }))}
+                  placeholder="Ej. 21 días"
+                />
+                <FormField
+                  label="Umbral mínimo de avance"
+                  value={form.threshold}
+                  onChange={value => onChange(prev => ({ ...prev, threshold: value }))}
+                  placeholder="Ej. Reducir al menos 20%"
+                  helper="Opcional, pero útil para saber cuándo el frente realmente avanza."
+                />
+                <FormField
+                  label="Sponsor"
+                  value={form.sponsor}
+                  onChange={value => onChange(prev => ({ ...prev, sponsor: value }))}
+                  placeholder="Nombre del sponsor o líder ejecutivo"
+                />
+                <FormField
+                  label="Email del sponsor"
+                  value={form.sponsorEmail}
+                  onChange={value => onChange(prev => ({ ...prev, sponsorEmail: value }))}
+                  placeholder="sponsor@empresa.com"
+                />
+                <FormField
+                  label="Horizonte"
+                  required
+                  value={form.horizon}
+                  onChange={value => onChange(prev => ({ ...prev, horizon: value }))}
+                  placeholder="Ej. Trimestre, semestre o 90 días"
+                  helper="Puedes usar 30 días, 60 días, 90 días, trimestre, semestre o año."
+                  error={errors.horizon}
+                />
+                <FormField
+                  label="Fecha estimada de término"
+                  type="date"
+                  value={form.endDate}
+                  onChange={value => onChange(prev => ({ ...prev, endDate: value }))}
+                />
+                <SelectField
+                  label="Prioridad"
+                  required
+                  value={form.priority}
+                  onChange={value => onChange(prev => ({ ...prev, priority: value as StrategicFrontPriority }))}
+                  options={PRIORITY_OPTIONS}
+                  error={errors.priority}
+                />
+                <SelectField
+                  label={mode === 'create' ? 'Estado inicial' : 'Estado'}
+                  required
+                  value={form.status}
+                  onChange={value => onChange(prev => ({ ...prev, status: value as StrategicFrontStatus }))}
+                  options={mode === 'create' ? CREATE_STATUS_OPTIONS : EDIT_STATUS_OPTIONS}
+                  error={errors.status}
+                />
+              </div>
+
+              <div className="mt-5 grid gap-5">
+                <TextAreaField
+                  label="Objetivo estratégico"
+                  required
+                  value={form.strategicObjective}
+                  onChange={value => onChange(prev => ({ ...prev, strategicObjective: value }))}
+                  placeholder="Ej. Reducir reprocesos en cierres de atención para mejorar eficiencia operativa."
+                  helper="Explica qué quieres mover y por qué importa para el negocio."
+                  error={errors.strategicObjective}
+                />
+                <TextAreaField
+                  label="Lectura actual del frente"
+                  value={form.whyNow}
+                  onChange={value => onChange(prev => ({ ...prev, whyNow: value }))}
+                  placeholder="Opcional. Qué está pasando ahora y por qué conviene abrir este frente."
+                />
+                <TextAreaField
+                  label="Notas internas"
+                  value={form.notes}
+                  onChange={value => onChange(prev => ({ ...prev, notes: value }))}
+                  placeholder="Notas de seguimiento, contexto o decisiones que quieras dejar registradas."
+                />
+              </div>
+
+              {Object.keys(errors).length > 0 ? (
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p style={{ fontWeight: 700 }}>Revisa los campos marcados</p>
+                  <p className="mt-1">El frente todavía necesita completar algunos datos mínimos para quedar listo.</p>
+                </div>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
+                <p className="text-sm text-slate-500">
+                  Un frente no reemplaza la gestión de retos ni iniciativas. Solo ordena la prioridad que quieres mover.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Cancelar
+                  </button>
+                  {mode === 'create' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={onCreateDraft}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
+                        style={{ fontWeight: 700 }}
+                      >
+                        Guardar como borrador
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onCreateActive}
+                        className="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
+                        style={{ fontWeight: 700 }}
+                      >
+                        Crear frente
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={onUpdate}
+                      className="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
+                      style={{ fontWeight: 700 }}
+                    >
+                      Guardar cambios
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-6">
+              <StrategicFrontAiGuideCard
+                form={form}
+                aiInsight={aiInsight}
+                onImproveWithAi={onImproveWithAi}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StrategicFrontDetailDrawer({
+  front,
+  onClose,
+  onEdit,
+  onPause,
+  onReactivate,
+  onCloseFront,
+}: {
+  front: StrategicFront;
+  onClose: () => void;
+  onEdit: () => void;
+  onPause: () => void;
+  onReactivate: () => void;
+  onCloseFront: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/35 p-3 md:p-6">
+      <div className="ml-auto flex h-full w-full max-w-4xl overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        <div className="flex h-full w-full flex-col overflow-y-auto">
+          <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>DETALLE BREVES DEL FRENTE</p>
+                <h2 className="mt-1 text-2xl text-slate-950" style={{ fontWeight: 700 }}>{front.name}</h2>
+                <p className="mt-2 text-sm text-slate-600">{front.strategicObjective}</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-2xl border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50"
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-5 p-6">
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge status={front.status} />
+              <PriorityBadge priority={front.priority} />
+              {front.area ? (
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+                  {front.area}
+                </span>
+              ) : null}
+            </div>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5">
+              <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Descripción del frente</p>
+              <p className="mt-2 text-sm text-slate-700">{front.whyNow || 'No hay lectura adicional registrada.'}</p>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <InfoCard label="Señal principal" value={front.mainKpi} />
+                <InfoCard label="Meta esperada" value={front.target} />
+                <InfoCard label="Baseline" value={front.baseline || 'No definido'} />
+                <InfoCard label="Umbral" value={front.threshold || 'No definido'} />
+                <InfoCard label="Horizonte" value={front.horizon} />
+                <InfoCard label="Fecha estimada de término" value={front.endDate ? formatDisplayDate(front.endDate) : 'No definida'} />
+                <InfoCard label="Sponsor" value={front.sponsor || 'Sin sponsor'} />
+                <InfoCard label="Email sponsor" value={front.sponsorEmail || 'No definido'} />
+                <InfoCard label="Retos asociados" value={`${front.challengeCount}`} />
+                <InfoCard label="Iniciativas asociadas" value={`${front.initiativeCount}`} />
+                <InfoCard label="Creado" value={formatRelativeLabel(front.createdAt)} />
+                <InfoCard label="Última actualización" value={formatRelativeLabel(front.lastUpdatedAt ?? front.createdAt)} />
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Acciones rápidas</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  onClick={onEdit}
+                  className="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
+                  style={{ fontWeight: 700 }}
+                >
+                  Editar frente
+                </button>
+                {front.status === 'paused' ? (
+                  <button
+                    onClick={onReactivate}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Reactivar frente
+                  </button>
+                ) : front.status !== 'closed' ? (
+                  <button
+                    onClick={onPause}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Pausar frente
+                  </button>
+                ) : null}
+                {front.status !== 'closed' ? (
+                  <button
+                    onClick={onCloseFront}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                    style={{ fontWeight: 700 }}
+                  >
+                    Cerrar frente
+                  </button>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StrategicFrontAiGuideCard({
+  form,
+  aiInsight,
+  onImproveWithAi,
+}: {
+  form: StrategicFrontFormState;
+  aiInsight: ClarityInsight | null;
+  onImproveWithAi: () => void;
+}) {
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-white p-5">
+      <div className="flex items-start gap-3">
+        <div className="rounded-2xl bg-violet-50 p-2 text-violet-700">
+          <Sparkles size={18} />
+        </div>
+        <div>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>GUÍA PARA DEFINIR UN BUEN FRENTE</p>
+          <h3 className="mt-1 text-lg text-slate-950" style={{ fontWeight: 700 }}>Un frente estratégico debe expresar una prioridad clara, medible y accionable</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Usa esta guía para revisar si el frente representa una prioridad del negocio y no una solución puntual.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>Checklist</p>
+        <ul className="mt-3 space-y-2 text-sm text-slate-700">
+          {[
+            'Representa una prioridad, no una solución.',
+            'Tiene una señal clara de avance.',
+            'Está conectado a un sponsor o área responsable.',
+            'Tiene un horizonte realista.',
+            'Puede convertirse en uno o varios retos accionables.',
+          ].map(item => (
+            <li key={item} className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <p className="text-sm text-rose-900" style={{ fontWeight: 700 }}>Evita estos errores</p>
+        <ul className="mt-3 space-y-2 text-sm text-rose-900/90">
+          {[
+            'No uses nombres demasiado amplios como Transformación digital.',
+            'No definas el frente como una herramienta: app, dashboard o chatbot.',
+            'No avances sin KPI o señal mínima.',
+            'No actives un frente si nadie puede respaldarlo.',
+          ].map(item => (
+            <li key={item} className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-rose-500" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        onClick={onImproveWithAi}
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm text-white transition-colors hover:bg-violet-700"
+        style={{ fontWeight: 700 }}
+      >
+        <Sparkles size={15} />
+        Mejorar con IA
+      </button>
+
+      {aiInsight ? (
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>Recomendación de claridad</p>
+
+          <div className="mt-3 space-y-3 text-sm text-slate-700">
+            <InsightLine label="Qué está bien" items={aiInsight.goodPoints} tone="emerald" />
+            <InsightLine label="Qué falta" items={aiInsight.missingPoints} tone="amber" />
+            <InsightLine label="Siguiente ajuste recomendado" items={[aiInsight.nextStep]} tone="slate" />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function EmptyStrategicFrontsState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>AÚN NO TIENES FRENTES ESTRATÉGICOS</p>
+      <h3 className="mt-2 text-2xl text-slate-950" style={{ fontWeight: 700 }}>Empieza creando una prioridad estratégica del negocio</h3>
+      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600">
+        Después podrás convertirla en retos accionables y darle seguimiento desde Starteria.
+      </p>
+      <button
+        onClick={onCreate}
+        className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white transition-colors hover:bg-slate-800"
+        style={{ fontWeight: 700 }}
+      >
+        <Plus size={16} />
+        Crear primer frente estratégico
+      </button>
+      <p className="mt-4 text-xs text-slate-500">
+        Ejemplo: reducir reprocesos operativos, aumentar adopción digital o abrir un nuevo segmento.
+      </p>
+    </div>
+  );
+}
+
+function EmptyResultsState({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center">
+      <p className="text-sm text-slate-700" style={{ fontWeight: 700 }}>No hay frentes con esos filtros</p>
+      <p className="mt-2 text-sm text-slate-600">
+        Ajusta la búsqueda o limpia los filtros para volver a ver el listado completo.
+      </p>
+      <button
+        onClick={onClear}
+        className="mt-4 inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
+        style={{ fontWeight: 700 }}
+      >
+        Limpiar filtros
+      </button>
+    </div>
+  );
+}
+
+function MenuAction({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+      style={{ fontWeight: 600 }}
+    >
+      <span>{children}</span>
+      <ArrowRight size={14} className="text-slate-400" />
+    </button>
+  );
+}
+
+function StatusBadge({ status }: { status: StrategicFrontStatus }) {
+  const meta = STATUS_META[status];
+  return (
+    <span className={`rounded-full border px-3 py-1 text-xs ${meta.tone}`} style={{ fontWeight: 700 }}>
+      {meta.label}
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: StrategicFrontPriority }) {
+  const meta = PRIORITY_META[priority];
+  return (
+    <span className={`rounded-full border px-3 py-1 text-xs ${meta.tone}`} style={{ fontWeight: 700 }}>
+      Prioridad {meta.label}
+    </span>
+  );
+}
+
+function FrontInfoBox({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>{value}</p>
+      {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
+    </div>
+  );
+}
+
+function FrontStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>{value}</p>
+    </div>
+  );
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>{value}</p>
+    </div>
+  );
+}
+
+function SelectField({
   label,
   value,
   onChange,
-  placeholder,
+  options,
+  required,
+  error,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  placeholder: string;
+  options: Array<{ value: string; label: string }>;
+  required?: boolean;
+  error?: string;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>{label}</span>
+      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>
+        {label}
+        {required ? <span className="text-rose-500"> *</span> : null}
+      </span>
+      <select
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
+          error ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'
+        }`}
+      >
+        {options.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {error ? <p className="mt-1.5 text-xs text-rose-600">{error}</p> : null}
+    </label>
+  );
+}
+
+function FormField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  helper,
+  error,
+  required,
+  type = 'text',
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  helper?: string;
+  error?: string;
+  required?: boolean;
+  type?: 'text' | 'date';
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>
+        {label}
+        {required ? <span className="text-rose-500"> *</span> : null}
+      </span>
       <input
+        type={type}
         value={value}
         onChange={event => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
+          error ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'
+        }`}
       />
+      {helper ? <p className="mt-1.5 text-xs text-slate-500">{helper}</p> : null}
+      {error ? <p className="mt-1.5 text-xs text-rose-600">{error}</p> : null}
     </label>
   );
 }
@@ -583,122 +1178,287 @@ function TextAreaField({
   value,
   onChange,
   placeholder,
+  helper,
+  error,
+  required,
 }: {
   label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  helper?: string;
+  error?: string;
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>
+        {label}
+        {required ? <span className="text-rose-500"> *</span> : null}
+      </span>
+      <textarea
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={placeholder}
+        rows={4}
+        className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
+          error ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'
+        }`}
+      />
+      {helper ? <p className="mt-1.5 text-xs text-slate-500">{helper}</p> : null}
+      {error ? <p className="mt-1.5 text-xs text-rose-600">{error}</p> : null}
+    </label>
+  );
+}
+
+function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>{label}</span>
-      <textarea
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        placeholder={placeholder}
-        rows={4}
-        className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-      />
+      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>Buscar</span>
+      <div className="relative">
+        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          value={value}
+          onChange={event => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400"
+        />
+      </div>
     </label>
   );
 }
 
-function SelectField({
+function InsightLine({
   label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm text-slate-700" style={{ fontWeight: 600 }}>{label}</span>
-      <select
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        {options.map(option => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
-      <p className="mt-2 text-sm text-slate-800" style={{ fontWeight: 600 }}>{value}</p>
-    </div>
-  );
-}
-
-function OperationalCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{title}</p>
-      <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>{value}</p>
-    </div>
-  );
-}
-
-function InsightCard({
-  title,
-  text,
+  items,
   tone,
 }: {
-  title: string;
-  text: string;
+  label: string;
+  items: string[];
   tone: 'emerald' | 'amber' | 'slate';
 }) {
-  const toneClasses = {
+  const toneStyles = {
     emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
     amber: 'border-amber-200 bg-amber-50 text-amber-900',
     slate: 'border-slate-200 bg-slate-50 text-slate-900',
   };
 
   return (
-    <div className={`rounded-2xl border p-4 ${toneClasses[tone]}`}>
-      <p className="text-sm" style={{ fontWeight: 700 }}>{title}</p>
-      <p className="mt-2 text-sm opacity-90">{text}</p>
+    <div className={`rounded-2xl border p-4 ${toneStyles[tone]}`}>
+      <p className="text-xs" style={{ fontWeight: 700 }}>{label}</p>
+      <ul className="mt-2 space-y-1.5">
+        {items.map(item => (
+          <li key={item} className="text-sm">
+            • {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-function SummaryCard({
-  label,
-  value,
-  icon: Icon,
-  hint,
-}: {
-  label: string;
-  value: number;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  hint: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-800">
-        <Icon size={18} />
-      </div>
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-3xl text-slate-950" style={{ fontWeight: 700 }}>{value}</p>
-      <p className="mt-2 text-xs text-slate-500">{hint}</p>
-    </div>
-  );
+function mapFrontToForm(front: StrategicFront): StrategicFrontFormState {
+  return {
+    name: front.name,
+    strategicObjective: front.strategicObjective,
+    whyNow: front.whyNow,
+    sponsor: front.sponsor,
+    sponsorEmail: front.sponsorEmail ?? '',
+    mainKpi: front.mainKpi,
+    baseline: front.baseline,
+    target: front.target,
+    threshold: front.threshold ?? '',
+    area: front.area ?? '',
+    horizon: front.horizon,
+    endDate: front.endDate ?? '',
+    priority: front.priority,
+    status: front.status,
+    notes: front.notes ?? '',
+  };
 }
 
-function DarkMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-white/10 p-4">
-      <p className="text-xs text-slate-300" style={{ fontWeight: 700 }}>{label}</p>
-      <p className="mt-2 text-sm text-white" style={{ fontWeight: 700 }}>{value}</p>
-    </div>
-  );
+function mapFormToCreateInput(form: StrategicFrontFormState, status: StrategicFrontStatus): CreateStrategicFrontInput {
+  return {
+    name: form.name.trim(),
+    strategicObjective: form.strategicObjective.trim(),
+    whyNow: form.whyNow.trim() || form.strategicObjective.trim(),
+    sponsorEmail: form.sponsorEmail.trim() || undefined,
+    mainKpi: form.mainKpi.trim(),
+    baseline: form.baseline.trim(),
+    target: form.target.trim(),
+    threshold: form.threshold.trim() || undefined,
+    horizon: form.horizon.trim(),
+    endDate: form.endDate.trim() || undefined,
+    area: form.area.trim() || undefined,
+    sponsor: form.sponsor.trim(),
+    priority: form.priority,
+    status,
+    notes: form.notes.trim() || undefined,
+  };
+}
+
+function validateFrontForm(
+  form: StrategicFrontFormState,
+  { allowDraft }: { allowDraft: boolean },
+): FrontFormErrors {
+  const errors: FrontFormErrors = {};
+
+  if (!form.name.trim()) errors.name = 'Define un nombre para el frente.';
+  if (!form.strategicObjective.trim()) errors.strategicObjective = 'Describe la prioridad estratégica que quieres mover.';
+  if (!form.mainKpi.trim()) errors.mainKpi = 'Agrega un KPI o señal principal.';
+  if (!form.target.trim()) errors.target = 'Define la meta esperada.';
+  if (!form.horizon.trim()) errors.horizon = 'Indica un horizonte.';
+  if (!form.area.trim()) errors.area = 'Indica el área o unidad involucrada.';
+  if (!form.priority.trim()) errors.priority = 'Selecciona una prioridad.';
+
+  if (!allowDraft && (!form.mainKpi.trim() || !form.target.trim())) {
+    errors.mainKpi = errors.mainKpi ?? 'No puedes activarlo sin un KPI principal.';
+    errors.target = errors.target ?? 'No puedes activarlo sin una meta esperada.';
+  }
+
+  return errors;
+}
+
+function buildClarityInsight(form: StrategicFrontFormState): ClarityInsight {
+  const goodPoints: string[] = [];
+  const missingPoints: string[] = [];
+
+  if (form.name.trim()) goodPoints.push('El frente ya tiene un nombre claro.');
+  if (form.strategicObjective.trim()) goodPoints.push('El objetivo estratégico está descrito.');
+  if (form.area.trim()) goodPoints.push('El frente ya está conectado a un área responsable.');
+  if (form.priority.trim()) goodPoints.push('La prioridad del frente ya está definida.');
+
+  if (!form.mainKpi.trim()) missingPoints.push('Falta definir el KPI principal.');
+  if (!form.target.trim()) missingPoints.push('Falta una meta esperada verificable.');
+  if (!form.sponsor.trim()) missingPoints.push('Falta sponsor responsable visible.');
+  if (!form.horizon.trim()) missingPoints.push('Falta horizonte temporal.');
+  if (!form.threshold.trim()) missingPoints.push('Conviene agregar un umbral mínimo de avance.');
+
+  const nextStep = !form.mainKpi.trim() || !form.target.trim()
+    ? 'Convierte la meta en un indicador concreto antes de activar el frente.'
+    : !form.sponsor.trim()
+      ? 'Define sponsor responsable antes de mover este frente a activo.'
+      : !form.threshold.trim()
+        ? 'Agrega un umbral mínimo para saber cuándo el frente realmente avanza.'
+        : 'Refina baseline y notas internas para que el seguimiento sea más fácil de sostener.';
+
+  return {
+    goodPoints: goodPoints.length > 0 ? goodPoints : ['Aún no hay señales suficientes para validar claridad.'],
+    missingPoints: missingPoints.length > 0 ? missingPoints : ['No hay faltantes críticos visibles.'],
+    nextStep,
+  };
+}
+
+function buildFrontChecklist(front: StrategicFront) {
+  if (front.status === 'active' || front.status === 'tracking') {
+    const checklist = [
+      'Mantener seguimiento de las iniciativas asociadas.',
+      'Revisar profundidad de cobertura del frente.',
+      front.sponsor ? 'Confirmar la próxima revisión con sponsor.' : 'Definir sponsor visible para dar continuidad.',
+    ];
+    return checklist;
+  }
+
+  if (front.status === 'paused') {
+    return [
+      'Revisar qué bloquea la reactivación.',
+      'Confirmar si el sponsor sigue disponible.',
+      'Definir el siguiente paso antes de volver a activarlo.',
+    ];
+  }
+
+  if (front.status === 'closed') {
+    return [
+      'Conservar la trazabilidad de lo ya resuelto.',
+      'Dejar claro qué decisión cerró este frente.',
+      'Usar este frente como referencia para nuevas prioridades.',
+    ];
+  }
+
+  return [
+    'Completar sponsor o responsable visible.',
+    'Definir retos que conviertan el frente en trabajo accionable.',
+    'Confirmar qué métrica dirá si este frente avanza.',
+  ];
+}
+
+function getFrontProgressLabel(front: StrategicFront) {
+  if (front.status === 'closed') return 'Frente cerrado';
+  if (front.status === 'paused') return 'En pausa';
+  if (front.status === 'draft') return 'En definición';
+  if (front.status === 'tracking') return 'En seguimiento';
+  return 'En curso';
+}
+
+function getFrontProgressHelper(front: StrategicFront) {
+  if (front.status === 'draft') return 'Todavía necesita definición y activación.';
+  if (front.status === 'paused') return 'La ejecución está detenida temporalmente.';
+  if (front.status === 'tracking') return 'Ya tiene seguimiento, pero aún requiere control cercano.';
+  if (front.status === 'closed') return 'El frente quedó cerrado y solo conserva trazabilidad.';
+  return 'Calculado según retos asociados e iniciativas en curso.';
+}
+
+function getTimeLabel(front: StrategicFront) {
+  const source = front.lastUpdatedAt ?? front.createdAt;
+  const relative = formatRelativeLabel(source);
+  return front.lastUpdatedAt && front.lastUpdatedAt !== front.createdAt
+    ? `Actualizado ${relative}`
+    : `Creado ${relative}`;
+}
+
+function formatRelativeLabel(value: string) {
+  const date = parseDate(value);
+  if (!date) return value;
+  const diffMs = Date.now() - date.getTime();
+  const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  if (days === 0) return 'hoy';
+  if (days === 1) return 'hace 1 día';
+  return `hace ${days} días`;
+}
+
+function formatDisplayDate(value: string) {
+  const date = parseDate(value);
+  if (!date) return value;
+  return new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function parseDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function compareDateDesc(left: string, right: string) {
+  const leftDate = parseDate(left)?.getTime() ?? 0;
+  const rightDate = parseDate(right)?.getTime() ?? 0;
+  return rightDate - leftDate;
+}
+
+function getStatusWeight(status: StrategicFrontStatus) {
+  const order: Record<StrategicFrontStatus, number> = {
+    active: 0,
+    tracking: 1,
+    draft: 2,
+    paused: 3,
+    closed: 4,
+  };
+  return order[status];
+}
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }

@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import React, { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Plus, X, AlertCircle, CheckCircle2, Users, ChevronDown } from 'lucide-react';
 import { createTeamMember, useApp } from '../context/AppContext';
+import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
+import { challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
 
 interface Invite { id: string; email: string; role: 'Editor' | 'Viewer'; status: 'Pendiente' | 'Enviado' }
 interface SponsorInvite { id: string; email: string; status: 'Pendiente' | 'Enviado' }
 
 export function CreateProjectPage() {
   const { createProject, setCurrentProject } = useApp();
+  const { challenges, strategicFronts } = usePortfolioLead();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -21,6 +25,12 @@ export function CreateProjectPage() {
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [createError, setCreateError] = useState<string | null>(null);
+  const linkedChallengeId = searchParams.get('challengeId') ?? '';
+  const linkedChallenge = useMemo(() => challenges.find(item => item.id === linkedChallengeId) ?? null, [challenges, linkedChallengeId]);
+  const linkedFront = useMemo(
+    () => linkedChallenge ? strategicFronts.find(item => item.id === linkedChallenge.strategicFrontId) ?? null : null,
+    [linkedChallenge, strategicFronts],
+  );
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
@@ -57,7 +67,8 @@ export function CreateProjectPage() {
       [
         ...invites.map(invite => createTeamMember(invite.email, invite.role)),
         ...sponsorInvites.map(invite => createTeamMember(invite.email, 'Sponsor', 'Pendiente')),
-      ]
+      ],
+      linkedChallenge ? { challengeLink: { challengeId: linkedChallenge.id, createdFrom: 'challenge' } } : undefined,
     );
     if (!result.success) {
       setCreateError(result.error);
@@ -99,6 +110,17 @@ export function CreateProjectPage() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         {step === 1 ? (
           <div className="space-y-5">
+            {linkedChallenge && (
+              <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                <p className="text-sm text-sky-900" style={{ fontWeight: 600 }}>Crear iniciativa dentro de reto definido</p>
+                <p className="mt-1 text-xs text-sky-700">
+                  Esta iniciativa quedara vinculada al reto "{linkedChallenge.name}"{linkedFront ? ` del frente ${linkedFront.name}` : ''}.
+                </p>
+                <p className="mt-2 text-xs text-sky-700">
+                  Tipo de reto: {challengeTypeLabel(linkedChallenge.challengeType)}. En Step 0 veras el contexto heredado del reto.
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm text-slate-800 mb-1.5" style={{ fontWeight: 500 }}>
                 Nombre del proyecto <span className="text-red-500">*</span>
