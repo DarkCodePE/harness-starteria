@@ -7,6 +7,7 @@ import { StatusChip } from '../components/StatusChip';
 import { ProgressBar } from '../components/ProgressBar';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { activationLabel, challengeStatusLabel, challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
+import { DashboardPdfDropzone } from '../components/DashboardPdfDropzone';
 
 function SkeletonCard() {
   return (
@@ -153,6 +154,8 @@ export function DashboardPage() {
           </button>
         )}
       </div>
+
+      {user?.role === 'owner' && <DashboardPdfDropzone />}
 
       {isSponsor && (
         <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
