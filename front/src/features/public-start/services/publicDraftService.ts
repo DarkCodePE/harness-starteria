@@ -168,6 +168,61 @@ export function createPublicDraftFromInput(inputText: string): PublicDraft {
   return savePublicDraft(draft);
 }
 
+/**
+ * Create an empty anonymous draft for a PDF upload (issue #24).
+ *
+ * Unlike `createPublicDraftFromInput`, there is no seed text — the editable
+ * fields are filled by the AI extraction proposals that get merged into the
+ * AutofillContext keyed by this draft's id. We still produce a well-formed
+ * `aiOutput` skeleton so the editor renders before/while proposals arrive.
+ */
+export function createPublicDraftFromUpload(fileName: string): PublicDraft {
+  const now = new Date();
+  const emptyOutput: PublicDraftOutput = {
+    proposalTitle: '',
+    whatToMove: '',
+    whyNow: '',
+    impactedAudience: '',
+    initialEvidence: '',
+    suggestedStakeholder: '',
+    supportNeeded: '',
+    decisionRequested: '',
+    suggestedChallengeType: 'correction',
+    suggestedKpiOrSignal: '',
+    missingCriticalFields: [...DEFAULT_MISSING_FIELDS],
+    risks: [
+      'La propuesta proviene de un documento y aún debe revisarse campo por campo.',
+    ],
+    nextRecommendedAction:
+      'Revisa los valores propuestos por la IA, confírmalos o edítalos y completa lo que falte.',
+    confidenceScore: 0.5,
+  };
+
+  const draft: PublicDraft = {
+    id: createPublicDraftId(),
+    anonymousSessionId: getAnonymousSessionId(),
+    mode: 'initiative',
+    inputText: `Documento: ${fileName}`,
+    sourceType: 'file',
+    aiOutput: emptyOutput,
+    status: 'created',
+    questions: buildQuestions(emptyOutput),
+    aiRecommendation: {
+      summary:
+        'Subiste un documento. La IA extraerá los datos clave para armar tu propuesta inicial.',
+      goodPoints: [],
+      missing: emptyOutput.missingCriticalFields,
+      nextAction: emptyOutput.nextRecommendedAction,
+      confidenceScore: emptyOutput.confidenceScore,
+    },
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + PUBLIC_DRAFT_EXPIRATION_HOURS * 60 * 60 * 1000).toISOString(),
+  };
+
+  return savePublicDraft(draft);
+}
+
 export function updatePublicDraftAnswers(draftId: string, answers: Record<string, string>): PublicDraft | null {
   const draft = getPublicDraft(draftId);
   if (!draft || isPublicDraftExpired(draft)) return null;
@@ -181,12 +236,32 @@ export function updatePublicDraftAnswers(draftId: string, answers: Record<string
     };
   });
 
+  // The editable preview fields the public editor surfaces. Listed explicitly
+  // so we patch ONLY known keys into aiOutput — guards against accidentally
+  // spreading arbitrary input from callers.
+  const PUBLIC_OUTPUT_ANSWER_KEYS = [
+    'proposalTitle',
+    'whatToMove',
+    'whyNow',
+    'impactedAudience',
+    'initialEvidence',
+    'suggestedStakeholder',
+    'supportNeeded',
+    'decisionRequested',
+  ] as const;
+
+  const patchedOutput = { ...draft.aiOutput };
+  for (const key of PUBLIC_OUTPUT_ANSWER_KEYS) {
+    const incoming = answers[key];
+    if (incoming === undefined) continue;
+    // Only overwrite when the caller supplied a non-empty value; keep the
+    // existing value otherwise so partial patches do not blank fields.
+    if (incoming.trim() === '') continue;
+    (patchedOutput as Record<string, unknown>)[key] = incoming;
+  }
+
   const aiOutput: PublicDraftOutput = {
-    ...draft.aiOutput,
-    initialEvidence: answers.initialEvidence ?? draft.aiOutput.initialEvidence,
-    suggestedStakeholder: answers.suggestedStakeholder ?? draft.aiOutput.suggestedStakeholder,
-    decisionRequested: answers.decisionRequested ?? draft.aiOutput.decisionRequested,
-    supportNeeded: answers.supportNeeded ?? draft.aiOutput.supportNeeded,
+    ...patchedOutput,
     missingCriticalFields: draft.aiOutput.missingCriticalFields.filter(field => {
       if (field === 'Evidencia inicial') return !(answers.initialEvidence ?? draft.aiOutput.initialEvidence)?.trim();
       if (field === 'Persona o area que debe escuchar la propuesta') {

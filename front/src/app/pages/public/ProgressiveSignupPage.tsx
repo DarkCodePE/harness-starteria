@@ -18,6 +18,8 @@ import type { AuthError } from '../../services/api';
 import type { PublicDraft } from '../../../features/public-start/domain/types';
 import { getPublicDraft, isPublicDraftExpired } from '../../../features/public-start/services/publicDraftStorage';
 import { buildPublicProposalMarkdown, downloadPublicProposal } from '../../../features/public-start/services/publicProposalExportService';
+import { PublicCompletionAdvisor } from '../../../features/public-start/components/PublicCompletionAdvisor';
+import { usePublicDraftAutoSeed } from '../../../features/public-start/hooks/usePublicDraftAutoSeed';
 
 type ContinueState =
   | { status: 'loading' }
@@ -151,6 +153,14 @@ export function ProgressiveSignupPage() {
   }, [draftId]);
 
   const draft = state.status === 'ready' ? state.draft : null;
+
+  // Defensive auto-seed — mirrors the editor's patching logic so that if the
+  // extractor dropped some step0.* proposals on the first hop, late values
+  // still land in the preview. See `usePublicDraftAutoSeed` for the why.
+  usePublicDraftAutoSeed(draftId, draft, refreshed => {
+    setState({ status: 'ready', draft: refreshed });
+  });
+
   const canSubmit = useMemo(() => {
     if (loadingSubmit) return false;
     if (!validateEmail(email.trim())) return false;
@@ -451,6 +461,8 @@ function SignupOnePager({ draft, onCopy, onDownload }: { draft: PublicDraft; onC
 
   return (
     <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+      <PublicCompletionAdvisor draftId={draft.id} output={output} />
+
       <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-white/85 p-2.5 shadow-sm ring-1 ring-slate-200/80">
         <button type="button" onClick={onCopy} className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 850 }}>
           <Copy size={14} />

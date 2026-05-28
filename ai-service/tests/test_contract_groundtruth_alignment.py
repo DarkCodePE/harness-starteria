@@ -150,6 +150,7 @@ def _build_fully_populated_extraction() -> Any:
         )
 
     step0 = Step0Extraction(
+        # Legacy fields
         nombreParticipante=fp(),
         rolArea=fp(),
         origen=fp(),
@@ -159,6 +160,23 @@ def _build_fully_populated_extraction() -> Any:
         impacto3meses=fp(),
         respaldo=fp(),
         quienEscuchar=fp(),
+        # New fields (public initiative start flow)
+        initiativeTitle=fp(),
+        initiativeFrame=fp(),
+        clarityLevel=fp(),
+        primaryObjective=fp(),
+        impactWho=fp(),
+        visibleMoment=fp(),
+        whyNowText=fp(),
+        ifNotNowConsequence=fp(),
+        evidenceType=fp(),
+        currentEvidence=fp(),
+        validationSignal=fp(),
+        sponsorInterestReason=fp(),
+        supportNeeded=fp(),
+        decisionRequested=fp(),
+        additionalStakeholders=fp(),
+        additionalStakeholdersDetail=fp(),
     )
 
     step1 = Step1Extraction(

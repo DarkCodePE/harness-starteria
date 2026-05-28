@@ -321,3 +321,28 @@ export function useAutofillContext(): AutofillContextValue {
   }
   return ctx;
 }
+
+// ---------- Persistence-mode context (public / anonymous path) ----------
+//
+// The authenticated flow persists confirm/edit/discard/restore to the backend
+// (see `useAutofillProposals`). The PUBLIC (anonymous) flow has NO backend
+// mutation endpoints — proposals live only in this context for the session.
+// Wrapping a subtree in <AutofillLocalPersistenceProvider> flips
+// `useAutofillProposals` into local-only mode: it still dispatches the
+// optimistic reducer action, but skips the HTTP call entirely. This keeps
+// AutofillField and its existing call sites (Step0Page) untouched.
+
+const AutofillLocalPersistenceContext = createContext<boolean>(false);
+
+export function AutofillLocalPersistenceProvider({ children }: { children: ReactNode }) {
+  return (
+    <AutofillLocalPersistenceContext.Provider value={true}>
+      {children}
+    </AutofillLocalPersistenceContext.Provider>
+  );
+}
+
+/** True when the surrounding subtree opted into local-only persistence. */
+export function useAutofillLocalPersistence(): boolean {
+  return useContext(AutofillLocalPersistenceContext);
+}

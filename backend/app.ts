@@ -21,6 +21,7 @@ import { helpRouter } from './modules/mentor/mentor.router';
 import { sponsorRouter } from './modules/sponsor/sponsor.router';
 import { portfolioRouter } from './modules/portfolio/portfolio.router';
 import { pdfRouter, initiativePdfService } from './modules/initiative-pdfs/pdf.router';
+import { publicPdfRouter } from './modules/initiative-pdfs/public-pdf.router';
 import { createAiWebhookRouter } from './modules/initiative-pdfs/webhook.router';
 
 export function createApp() {
@@ -54,6 +55,10 @@ export function createApp() {
   app.use('/api/v1/portfolio', portfolioRouter);
   // TASK-006: PDF storage + extraction routes mirror evidence/step registration.
   app.use('/api/v1/initiatives', pdfRouter);
+  // issue #23: PUBLIC (no-auth) PDF extraction for the anonymous landing flow.
+  // Hardened, Project-row-free, Step0-scoped, PII-redaction-enforced. NO
+  // `authenticate` middleware — guardrails live in the router/multipart layer.
+  app.use('/api/v1/public/pdf-extract', publicPdfRouter);
   // Internal ai-service → backend push channel (X-Internal-Token only; no JWT).
   // Lets ai-service notify backend the moment an extraction finishes so the DB is
   // updated even when no frontend client is actively polling.

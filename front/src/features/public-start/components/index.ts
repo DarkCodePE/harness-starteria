@@ -2,6 +2,7 @@ export * from './PublicStartHero';
 export * from './PublicQuickInput';
 export * from './PublicExampleChips';
 export * from './PublicUploadButton';
+export * from './PublicUploadProgress';
 export * from './PublicConfidentialityNotice';
 export * from './PublicEnterpriseCards';
 export * from './PublicProposalEditor';

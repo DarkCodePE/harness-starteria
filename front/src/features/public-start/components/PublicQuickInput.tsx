@@ -3,14 +3,23 @@ import { ArrowRight, Eye, Loader2 } from 'lucide-react';
 import { PUBLIC_START_COPY } from '../domain/copy';
 import { PUBLIC_START_EXAMPLES, PublicExampleChips } from './PublicExampleChips';
 import { PublicUploadButton } from './PublicUploadButton';
+import { PublicPdfDropzone } from './PublicPdfDropzone';
 
 interface PublicQuickInputProps {
   value: string;
   notice: string | null;
   loading?: boolean;
+  /** When true, the upload button opens a real file picker (issue #24). */
+  uploadEnabled?: boolean;
+  /** When true, the upload button shows a spinner (upload/extraction running). */
+  uploadBusy?: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
   onUploadUnavailable: () => void;
+  /** Called with a validated PDF when uploads are enabled. */
+  onFileSelected?: (file: File) => void;
+  /** Called when a picked file fails validation (wrong type / too large). */
+  onUploadValidationError?: (message: string) => void;
 }
 
 const MIN_INPUT_LENGTH = 30;
@@ -19,9 +28,13 @@ export function PublicQuickInput({
   value,
   notice,
   loading = false,
+  uploadEnabled = false,
+  uploadBusy = false,
   onChange,
   onSubmit,
   onUploadUnavailable,
+  onFileSelected,
+  onUploadValidationError,
 }: PublicQuickInputProps) {
   const remaining = Math.max(0, MIN_INPUT_LENGTH - value.trim().length);
   const canSubmit = remaining === 0 && !loading;
@@ -46,7 +59,15 @@ export function PublicQuickInput({
             {remaining === 0 ? 'Listo para armar un borrador editable.' : `Escribe ${remaining} caracteres más para continuar.`}
           </p>
           <div className="flex flex-wrap gap-2">
-            <PublicUploadButton onUnavailable={onUploadUnavailable} />
+            {!uploadEnabled && (
+              <PublicUploadButton
+                enabled={uploadEnabled}
+                busy={uploadBusy}
+                onUnavailable={onUploadUnavailable}
+                onFileSelected={onFileSelected}
+                onValidationError={onUploadValidationError}
+              />
+            )}
             <button
               type="button"
               onClick={() => onChange(PUBLIC_START_EXAMPLES[0])}
@@ -82,6 +103,18 @@ export function PublicQuickInput({
       {notice && (
         <div className="mt-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
           {notice}
+        </div>
+      )}
+
+      {uploadEnabled && onFileSelected && (
+        <div className="mt-5">
+          <p className="mb-2 text-xs uppercase text-slate-400" style={{ fontWeight: 800, letterSpacing: '0.08em' }}>
+            O sube un PDF con tu iniciativa
+          </p>
+          <PublicPdfDropzone
+            onFileSelected={onFileSelected}
+            onValidationError={onUploadValidationError}
+          />
         </div>
       )}
 

@@ -38,6 +38,7 @@ class FieldProposal(BaseModel):
 class Step0Extraction(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    # Legacy fields
     nombreParticipante: Optional[FieldProposal] = None
     rolArea: Optional[FieldProposal] = None
     origen: Optional[FieldProposal] = None
@@ -47,6 +48,23 @@ class Step0Extraction(BaseModel):
     impacto3meses: Optional[FieldProposal] = None
     respaldo: Optional[FieldProposal] = None
     quienEscuchar: Optional[FieldProposal] = None
+    # New fields (public initiative start flow)
+    initiativeTitle: Optional[FieldProposal] = None
+    initiativeFrame: Optional[FieldProposal] = None
+    clarityLevel: Optional[FieldProposal] = None
+    primaryObjective: Optional[FieldProposal] = None
+    impactWho: Optional[FieldProposal] = None
+    visibleMoment: Optional[FieldProposal] = None
+    whyNowText: Optional[FieldProposal] = None
+    ifNotNowConsequence: Optional[FieldProposal] = None
+    evidenceType: Optional[FieldProposal] = None
+    currentEvidence: Optional[FieldProposal] = None
+    validationSignal: Optional[FieldProposal] = None
+    sponsorInterestReason: Optional[FieldProposal] = None
+    supportNeeded: Optional[FieldProposal] = None
+    decisionRequested: Optional[FieldProposal] = None
+    additionalStakeholders: Optional[FieldProposal] = None
+    additionalStakeholdersDetail: Optional[FieldProposal] = None
 
 
 # ---------- Step 1 ----------

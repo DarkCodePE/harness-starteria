@@ -58,6 +58,7 @@ HARD RULES (non-negotiable):
 _STEP_SCHEMAS: dict[str, dict[str, Any]] = {
     "step0": {
         "fields": [
+            # --- Legacy fields (kept for back-compat) ---
             "nombreParticipante (string) — co-líder o sponsor presentando la iniciativa (usualmente en la diapositiva de equipo/última página)",
             "rolArea (string) — rol y área del co-líder (p.ej. 'Sub Gerente Créditos / Sucursales — Unimaq')",
             "origen (enum: 'problema'|'oportunidad'|'idea'|'explorando'|'otra') — si el deck habla de un 'Reto' o 'Desafío' = 'problema'",
@@ -67,6 +68,23 @@ _STEP_SCHEMAS: dict[str, dict[str, Any]] = {
             "impacto3meses (enum: 'ingresos'|'costos'|'riesgo'|'cliente'|'productividad'|'no_claro'|'otro')",
             "respaldo (enum: 'datos'|'testimonios'|'benchmark'|'hipotesis'|'otro') — si la presentación incluye métricas cuantitativas (#excepciones, %, tiempos) = 'datos'",
             "quienEscuchar (string) — roles/perfiles operativos cuya voz importa (no los co-líderes ni sponsors; busca jefes de oficina, administradores, equipo afectado)",
+            # --- New fields (public initiative start flow, front PR #5) ---
+            "initiativeTitle (string) — título corto de la iniciativa (la diapositiva de portada o el header del deck)",
+            "initiativeFrame (enum: 'correccion'|'crecimiento'|'exploracion') — cómo se enmarca: corregir una fricción/problema='correccion'; capturar oportunidad='crecimiento'; explorar apuesta o reducir incertidumbre='exploracion'",
+            "clarityLevel (enum: 'observacion_inicial'|'algunas_senales'|'hipotesis_clara'|'idea_pensada') — nivel de claridad con que se llega: sólo observación, señales sueltas, hipótesis articulada, o solución ya pensada",
+            "primaryObjective (enum: 'eficiencia'|'experiencia_cliente'|'ingresos'|'riesgo'|'productividad'|'aprendizaje'|'otro') — objetivo principal que mueve la iniciativa",
+            "impactWho (string) — descripción de a quién impacta más directamente (cliente externo, equipo interno, sponsor, etc.)",
+            "visibleMoment (string) — dónde o en qué momento se hace más visible el reto (canal, etapa, geografía)",
+            "whyNowText (string_long) — razón por la que conviene mover esto AHORA (ventana de oportunidad, regulación, contexto de negocio)",
+            "ifNotNowConsequence (string_long) — consecuencia principal si esto NO se aborda en los próximos 3 meses",
+            "evidenceType (enum: 'datos'|'testimonios'|'benchmark'|'hipotesis'|'otro') — tipo de respaldo predominante; alinearlo con `respaldo` cuando ambos aplican",
+            "currentEvidence (string_long) — qué respaldo concreto se tiene hoy (números, citas, benchmarks)",
+            "validationSignal (string) — qué señal haría decir 'vale la pena seguir avanzando'",
+            "sponsorInterestReason (string_long) — por qué el sponsor/líder identificado debería interesarse",
+            "supportNeeded (string_long) — apoyo mínimo necesario para avanzar (presupuesto, tiempo, decisión, acceso a datos)",
+            "decisionRequested (string) — qué decisión específica se está pidiendo en esta etapa (luz verde, profundizar, presupuesto, kill)",
+            "additionalStakeholders (enum: 'no'|'si'|'no_claro') — si conviene involucrar a otra persona o equipo además del sponsor primario",
+            "additionalStakeholdersDetail (string) — quién/es serían esos stakeholders adicionales y por qué",
         ],
         "example": {
             "origen": {

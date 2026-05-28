@@ -34,7 +34,35 @@ export type ModuleStatus =
 export type RunStatus = 'Draft' | 'En ejecucion' | 'Cerrado' | 'Revisar cambios';
 export type EvidenceStatus = 'Subida' | 'Verificada' | 'Rechazada';
 
+export type Step0Mode = 'independent' | 'linked_to_challenge';
+export type Step0Frame = '' | 'correccion' | 'crecimiento' | 'exploracion';
+export type Step0ClarityLevel =
+  | ''
+  | 'observacion_inicial'
+  | 'algunas_senales'
+  | 'hipotesis_clara'
+  | 'idea_pensada';
+export type Step0PrimaryObjective =
+  | ''
+  | 'eficiencia'
+  | 'experiencia_cliente'
+  | 'ingresos'
+  | 'riesgo'
+  | 'productividad'
+  | 'aprendizaje'
+  | 'otro';
+export type Step0ContributionType =
+  | ''
+  | 'descubrir_problema'
+  | 'validar_hipotesis'
+  | 'resolver_parte'
+  | 'resolver_directo'
+  | 'no_claro';
+export type Step0AdditionalStakeholders = '' | 'no' | 'si' | 'no_claro';
+export type Step0EvidenceType = '' | 'datos' | 'testimonios' | 'benchmark' | 'hipotesis' | 'otro';
+
 export interface Step0Data {
+  // Legacy fields (kept for back-compat with existing rows + PDF extractor)
   nombreParticipante: string;
   rolArea: string;
   origen: '' | 'problema' | 'oportunidad' | 'idea' | 'explorando' | 'otra';
@@ -45,6 +73,28 @@ export interface Step0Data {
   respaldo: '' | 'datos' | 'testimonios' | 'benchmark' | 'hipotesis' | 'otro';
   quienEscuchar: string;
   siMinimo: string[];
+  // New fields introduced by the public initiative start flow (PR #5)
+  mode?: Step0Mode;
+  initiativeTitle?: string;
+  initiativeFrame?: Step0Frame;
+  clarityLevel?: Step0ClarityLevel;
+  primaryObjective?: Step0PrimaryObjective;
+  specificChallengePart?: string;
+  challengeGoalConnection?: string;
+  linkedContributionType?: Step0ContributionType;
+  impactWho?: string;
+  visibleMoment?: string;
+  whyNowText?: string;
+  ifNotNowConsequence?: string;
+  evidenceType?: Step0EvidenceType;
+  currentEvidence?: string;
+  validationSignal?: string;
+  sponsorInterestReason?: string;
+  supportNeeded?: string;
+  decisionRequested?: string;
+  deliveryEmail?: string;
+  additionalStakeholders?: Step0AdditionalStakeholders;
+  additionalStakeholdersDetail?: string;
 }
 
 export interface Evidence {

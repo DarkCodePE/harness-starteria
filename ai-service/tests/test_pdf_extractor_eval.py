@@ -69,7 +69,14 @@ def test_pdf_extractor_meets_baseline_thresholds() -> None:
 
     gt = json.loads(GT_PATH.read_text())
     report = score(extraction, gt)
-    metrics = report.aggregate()
+    # ScoreReport exposes the four baseline metrics as properties (not an
+    # aggregate() method). Project them into the dict the assertions read.
+    metrics = {
+        "precision": report.precision,
+        "recall": report.recall,
+        "hallucination_rate": report.hallucination_rate,
+        "provenance_page_accuracy": report.provenance_accuracy,
+    }
 
     assert metrics["precision"] >= 0.80, f"precision={metrics['precision']:.3f} < 0.80"
     assert metrics["recall"] >= 0.70, f"recall={metrics['recall']:.3f} < 0.70"

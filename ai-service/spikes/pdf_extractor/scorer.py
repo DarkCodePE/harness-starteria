@@ -77,9 +77,13 @@ def _get_by_path(obj: Any, path: str) -> Any:
             cur = getattr(cur, name, None)
         if idx:
             i = int(idx)
-            if cur is None or i >= len(cur):
+            # TASK-008 §6: list fields (testCycles/instrumentacion/implementationPlan)
+            # are wrapped in a FieldProposal whose `.value` IS the list. Unwrap before
+            # indexing so `step3.testCycles[0].x` walks into the actual list item.
+            indexable = _coerce_value(cur)
+            if indexable is None or not hasattr(indexable, "__len__") or i >= len(indexable):
                 return None
-            cur = cur[i]
+            cur = indexable[i]
     return cur
 
 

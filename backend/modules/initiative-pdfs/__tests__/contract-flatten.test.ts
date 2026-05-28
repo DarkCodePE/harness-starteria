@@ -136,6 +136,23 @@ function buildPayload(testCyclesShape: 'wrapped' | 'bare' = 'wrapped'): Record<s
       impacto3meses: fp(),
       respaldo: fp(),
       quienEscuchar: fp(),
+      // New fields aligned with public initiative start flow
+      initiativeTitle: fp(),
+      initiativeFrame: fp(),
+      clarityLevel: fp(),
+      primaryObjective: fp(),
+      impactWho: fp(),
+      visibleMoment: fp(),
+      whyNowText: fp(),
+      ifNotNowConsequence: fp(),
+      evidenceType: fp(),
+      currentEvidence: fp(),
+      validationSignal: fp(),
+      sponsorInterestReason: fp(),
+      supportNeeded: fp(),
+      decisionRequested: fp(),
+      additionalStakeholders: fp(),
+      additionalStakeholdersDetail: fp(),
     },
     step1: {
       asisData: {

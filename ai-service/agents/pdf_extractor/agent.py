@@ -44,6 +44,7 @@ class _PreparedRun:
     language: str | None
     cost_cap_usd: float
     file_name: str
+    target_step: str | None = None
 
 
 class PdfExtractorAgent:
@@ -88,6 +89,7 @@ class PdfExtractorAgent:
             language=body.language,
             cost_cap_usd=cost_cap,
             file_name=body.fileName,
+            target_step=body.targetStep,
         )
         asyncio.create_task(self._run(prepared))
         logger.info(
@@ -125,6 +127,7 @@ class PdfExtractorAgent:
                     language,
                     cost_cap_usd=prepared.cost_cap_usd,
                     pii_redactions=redactions_total,
+                    target_step=prepared.target_step,
                 )
             except CostCapExceeded as cap_exc:
                 logger.warning(

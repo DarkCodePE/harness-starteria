@@ -14,6 +14,7 @@ export const updateProjectSchema = z.object({
 });
 
 export const updateStep0Schema = z.object({
+  // Legacy fields
   nombreParticipante: z.string().optional(),
   rolArea: z.string().optional(),
   origen: z.enum(['', 'problema', 'oportunidad', 'idea', 'explorando', 'otra']).optional(),
@@ -25,6 +26,43 @@ export const updateStep0Schema = z.object({
   quienEscuchar: z.string().optional(),
   siMinimo: z.array(z.string()).optional(),
   status: z.enum(['No iniciado', 'En progreso', 'Completado']).optional(),
+  // New fields (PR #5 public initiative start flow)
+  mode: z.enum(['independent', 'linked_to_challenge']).optional(),
+  initiativeTitle: z.string().optional(),
+  initiativeFrame: z.enum(['', 'correccion', 'crecimiento', 'exploracion']).optional(),
+  clarityLevel: z
+    .enum(['', 'observacion_inicial', 'algunas_senales', 'hipotesis_clara', 'idea_pensada'])
+    .optional(),
+  primaryObjective: z
+    .enum([
+      '',
+      'eficiencia',
+      'experiencia_cliente',
+      'ingresos',
+      'riesgo',
+      'productividad',
+      'aprendizaje',
+      'otro',
+    ])
+    .optional(),
+  specificChallengePart: z.string().optional(),
+  challengeGoalConnection: z.string().optional(),
+  linkedContributionType: z
+    .enum(['', 'descubrir_problema', 'validar_hipotesis', 'resolver_parte', 'resolver_directo', 'no_claro'])
+    .optional(),
+  impactWho: z.string().optional(),
+  visibleMoment: z.string().optional(),
+  whyNowText: z.string().optional(),
+  ifNotNowConsequence: z.string().optional(),
+  evidenceType: z.enum(['', 'datos', 'testimonios', 'benchmark', 'hipotesis', 'otro']).optional(),
+  currentEvidence: z.string().optional(),
+  validationSignal: z.string().optional(),
+  sponsorInterestReason: z.string().optional(),
+  supportNeeded: z.string().optional(),
+  decisionRequested: z.string().optional(),
+  deliveryEmail: z.string().email().optional().or(z.literal('')),
+  additionalStakeholders: z.enum(['', 'no', 'si', 'no_claro']).optional(),
+  additionalStakeholdersDetail: z.string().optional(),
 });
 
 export const projectIdParam = z.object({

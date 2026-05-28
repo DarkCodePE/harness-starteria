@@ -1,13 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Circle, FileText, Loader2, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, FileText, Loader2, Sparkles } from 'lucide-react';
 import type { PublicDraft, PublicDraftOutput } from '../domain/types';
-import { finishPublicDraft, generateMockPublicDraftOutput } from '../services/publicDraftService';
+import { finishPublicDraft, generateMockPublicDraftOutput, updatePublicDraftAnswers } from '../services/publicDraftService';
 import { updatePublicDraft } from '../services/publicDraftStorage';
 import { buildPublicProposalMarkdown } from '../services/publicProposalExportService';
 import { PublicAIAssistPanel, type PublicAISuggestion } from './PublicAIAssistPanel';
+import { PublicFieldDropdown } from './PublicFieldDropdown';
 import { PublicOnePagerPreview } from './PublicOnePagerPreview';
 import type { PublicEditorQuestionStatus } from './PublicQuestionCard';
+import { AutofillField } from '../../../app/components/autofill/AutofillField';
+import { AutofillLocalPersistenceProvider, selectProposal, useAutofillContext } from '../../../app/context/AutofillContext';
+import { isPdfAutofillEnabled } from '../../../app/services/featureFlags';
+import { STEP0_FIELD_PATH } from '../domain/step0FieldPath';
 
 type EditableField = keyof Pick<
   PublicDraftOutput,
@@ -106,8 +111,10 @@ const STATUS_COPY: Record<PublicEditorQuestionStatus, { label: string; className
   ai_refined: { label: 'Afinado con IA', className: 'border-violet-200 bg-violet-50 text-violet-700' },
 };
 
+
 export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDraft }) {
   const navigate = useNavigate();
+  const autofillOn = isPdfAutofillEnabled();
   const [draft, setDraft] = useState(initialDraft);
   const [activeField, setActiveField] = useState<EditableField>('proposalTitle');
   const [activeValue, setActiveValue] = useState(String(initialDraft.aiOutput.proposalTitle ?? ''));
@@ -119,6 +126,84 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
   const [contextStatus, setContextStatus] = useState<ContextStatus>('idle');
   const [selectedDestination, setSelectedDestination] = useState<EditableField>('impactedAudience');
   const [suggestion, setSuggestion] = useState<PublicAISuggestion | null>(null);
+
+  // ---- Auto-seed aiOutput from AutofillContext proposals -----------------
+  //
+  // After a PDF upload on /public/start, the agent extracts step0 fields and
+  // proposals are merged into AutofillContext keyed by this draft.id. The
+  // chips on the per-field editor on the left would normally drive the
+  // one-pager preview on the right only AFTER the user confirms each chip —
+  // but the user expects the preview to populate immediately, the chips
+  // becoming "Afinado con IA" markers they can still tweak.
+  //
+  // This effect bridges proposals → draft.aiOutput on mount and whenever the
+  // proposals slice for this draftId changes. It only seeds fields whose
+  // current aiOutput value is empty/whitespace, so user edits are never
+  // overwritten.
+  const { state: autofillState } = useAutofillContext();
+  // Stable signature derived from the proposals we care about: rebuilds the
+  // effect only when a relevant field's effective value (final ?? proposed)
+  // actually changes. Keying off `state.byInitiative[draft.id]` reference
+  // alone would also work, but a value-based signature makes the dependency
+  // boring and impossible to accidentally retrigger from unrelated dispatches.
+  const proposalSignature = useMemo(() => {
+    const slice = autofillState.byInitiative[draft.id];
+    if (!slice) return '';
+    const parts: string[] = [];
+    for (const field of FIELDS) {
+      const path = STEP0_FIELD_PATH[field.id];
+      if (!path) continue;
+      const p = slice[path];
+      if (!p) continue;
+      const effective = (p.finalValue ?? p.proposedValue) as unknown;
+      parts.push(`${field.id}:${typeof effective === 'string' ? effective : ''}`);
+    }
+    return parts.join('|');
+  }, [autofillState.byInitiative, draft.id]);
+
+  useEffect(() => {
+    const patch: Partial<Record<EditableField, string>> = {};
+    const newlyRefined: EditableField[] = [];
+    for (const field of FIELDS) {
+      const path = STEP0_FIELD_PATH[field.id];
+      if (!path) continue;
+      const proposal = selectProposal(autofillState, draft.id, path);
+      if (!proposal) continue;
+      const raw = (proposal.finalValue ?? proposal.proposedValue) as unknown;
+      if (typeof raw !== 'string') continue;
+      const trimmed = raw.trim();
+      if (!trimmed) continue;
+      const current = String(draft.aiOutput[field.id] ?? '').trim();
+      if (current) continue; // user-set or already seeded: do not overwrite
+      patch[field.id] = trimmed;
+      newlyRefined.push(field.id);
+    }
+    if (newlyRefined.length === 0) return;
+
+    setDraft(prev => ({
+      ...prev,
+      aiOutput: { ...prev.aiOutput, ...patch },
+    }));
+    setAiRefinedFields(prev => {
+      const next = new Set(prev);
+      for (const id of newlyRefined) next.add(id);
+      return next;
+    });
+    // Sync the editor textarea on the left only when it's still empty for the
+    // currently active field — never fight an in-progress user edit.
+    if (newlyRefined.includes(activeField) && !activeValue.trim()) {
+      const seeded = patch[activeField];
+      if (seeded) setActiveValue(seeded);
+    }
+    // Persist the patch through the existing storage helper so a reload
+    // within the draft's lifespan keeps the seeded values.
+    updatePublicDraftAnswers(draft.id, patch as Record<string, string>);
+    // We intentionally exclude `draft.aiOutput`, `activeField`, `activeValue`
+    // from deps: the effect must only run when the proposals slice changes.
+    // `proposalSignature` is value-based, so re-runs stop once the slice
+    // stabilises and the guard (`current` non-empty) is idempotent on top.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposalSignature, draft.id]);
 
   const requiredMissing = useMemo(() => missingRequired(draft.aiOutput), [draft.aiOutput]);
   const precisionMissing = useMemo(() => precisionFields(draft.aiOutput), [draft.aiOutput]);
@@ -244,6 +329,7 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
   };
 
   return (
+    <AutofillLocalPersistenceProvider>
     <div className="mx-auto flex min-h-[calc(100vh-96px)] max-w-[1560px] flex-col gap-4 px-3 pb-28 pt-3 lg:px-5">
       <header className="rounded-3xl bg-white/80 px-4 py-3 shadow-sm ring-1 ring-slate-200/80 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
@@ -254,7 +340,7 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
         </div>
       </header>
 
-      <div className="grid flex-1 gap-5 xl:grid-cols-[minmax(340px,35fr)_minmax(0,65fr)]">
+      <div className="grid flex-1 gap-5 xl:grid-cols-[minmax(280px,30fr)_minmax(0,70fr)]">
         <section className="space-y-4">
           <div className="rounded-3xl bg-white/78 p-4 shadow-sm ring-1 ring-slate-200/80">
             <div className="flex items-start justify-between gap-3">
@@ -263,25 +349,16 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
                 <p className="mt-1 text-xs leading-5 text-slate-500">Elige un campo, guardalo y revisa como cambia el one-pager.</p>
               </div>
             </div>
-            <div className="mt-4 grid gap-2">
-              {FIELDS.map(field => {
-                const status = fieldStatus(String(draft.aiOutput[field.id] ?? ''), aiRefinedFields.has(field.id));
-                const statusCopy = STATUS_COPY[status];
-                return (
-                  <button
-                    key={field.id}
-                    type="button"
-                    onClick={() => selectField(field.id)}
-                    className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left transition-colors ${activeField === field.id ? 'bg-indigo-50 text-indigo-950 ring-1 ring-indigo-200' : 'bg-transparent text-slate-700 hover:bg-slate-50'}`}
-                  >
-                    <span className="flex min-w-0 items-center gap-2 text-sm" style={{ fontWeight: 750 }}>
-                      {status === 'complete' || status === 'ai_refined' ? <CheckCircle2 size={15} className="shrink-0 text-emerald-500" /> : <Circle size={15} className="shrink-0 text-slate-300" />}
-                      <span className="truncate">{field.label}</span>
-                    </span>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${statusCopy.className}`} style={{ fontWeight: 800 }}>{statusCopy.label}</span>
-                  </button>
-                );
-              })}
+            <div className="mt-3">
+              <PublicFieldDropdown
+                items={FIELDS.map(field => ({
+                  id: field.id,
+                  label: field.label,
+                  status: fieldStatus(String(draft.aiOutput[field.id] ?? ''), aiRefinedFields.has(field.id)),
+                }))}
+                activeId={activeField}
+                onSelect={selectField}
+              />
             </div>
           </div>
 
@@ -289,13 +366,35 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
             <p className="text-xs uppercase text-indigo-600" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>{activeConfig.label}</p>
             <h3 className="mt-2 text-xl text-slate-950" style={{ fontWeight: 900 }}>{activeConfig.question}</h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">{activeConfig.helper}</p>
-            <textarea
-              value={activeValue}
-              onChange={event => setActiveValue(event.target.value)}
-              rows={7}
-              placeholder={activeConfig.placeholder}
-              className="mt-4 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition-all focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-            />
+            <div className="mt-4">
+              <AutofillField
+                fieldPath={STEP0_FIELD_PATH[activeField] ?? `step0.${activeField}`}
+                initiativeId={draft.id}
+                value={activeValue}
+                label={activeConfig.label}
+                onChange={value => {
+                  const next = String(value ?? '');
+                  setActiveValue(next);
+                  // With autofill on, this onChange fires only on confirm/edit
+                  // of a proposal (the input is read-only while unconfirmed), so
+                  // persisting here is correct. With the flag off, AutofillField
+                  // is a pure passthrough and fires onChange on every keystroke —
+                  // we keep the original "Guardar cambio" UX (persist on button).
+                  if (autofillOn) updateField(activeField, next);
+                }}
+              >
+                {({ value, onChange, readOnly }) => (
+                  <textarea
+                    value={value as string}
+                    onChange={event => onChange(event.target.value)}
+                    readOnly={readOnly}
+                    rows={7}
+                    placeholder={activeConfig.placeholder}
+                    className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition-all focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                  />
+                )}
+              </AutofillField>
+            </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" onClick={refineActiveField} className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-700 hover:bg-violet-100" style={{ fontWeight: 850 }}><Sparkles size={13} />Afinar con IA</button>
               <button type="button" onClick={useExample} className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 800 }}>Usar ejemplo</button>
@@ -396,5 +495,6 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
 
       <PublicAIAssistPanel suggestion={suggestion} onApply={applySuggestion} onKeep={() => setSuggestion(null)} onEditManually={() => setSuggestion(null)} />
     </div>
+    </AutofillLocalPersistenceProvider>
   );
 }

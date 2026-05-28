@@ -32,6 +32,17 @@ export interface PdfExtractCallInput {
   targetStep?: string;
   /** Echoed to the ai-service so logs on both sides correlate. */
   requestId?: string;
+  /**
+   * When `true`, the backend asserts the ai-service MUST apply PII Stage-B
+   * redaction before any text reaches the model. The ai-service redacts on
+   * EVERY path by default (see `ai-service/agents/pdf_extractor/agent.py`), so
+   * this flag is an explicit, auditable contract marker used by the PUBLIC
+   * (unauthenticated) extraction surface (issue #23) — it must never be omitted
+   * or set false on that path. It is forwarded as `enforceRedaction` in the
+   * request body so the ai-service can hard-fail if a future config tried to
+   * disable redaction for anonymous uploads.
+   */
+  enforceRedaction?: boolean;
 }
 
 export interface RunStateResponse {
@@ -73,6 +84,8 @@ export class AiServiceClient {
       pdfBase64: input.pdfBase64,
       language: input.language,
       targetStep: input.targetStep,
+      // Only included when the caller explicitly asserts it (public path).
+      ...(input.enforceRedaction ? { enforceRedaction: true } : {}),
     };
     const response = await fetch(url, {
       method: 'POST',

@@ -51,6 +51,7 @@ class FieldProposal(BaseModel):
 class Step0Extraction(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    # Legacy fields (kept for back-compat with existing eval ground truth)
     nombreParticipante: Optional[FieldProposal] = None
     rolArea: Optional[FieldProposal] = None
     origen: Optional[FieldProposal] = None
@@ -60,6 +61,23 @@ class Step0Extraction(BaseModel):
     impacto3meses: Optional[FieldProposal] = None
     respaldo: Optional[FieldProposal] = None
     quienEscuchar: Optional[FieldProposal] = None
+    # New fields aligned with the public initiative start flow (front PR #5)
+    initiativeTitle: Optional[FieldProposal] = None
+    initiativeFrame: Optional[FieldProposal] = None
+    clarityLevel: Optional[FieldProposal] = None
+    primaryObjective: Optional[FieldProposal] = None
+    impactWho: Optional[FieldProposal] = None
+    visibleMoment: Optional[FieldProposal] = None
+    whyNowText: Optional[FieldProposal] = None
+    ifNotNowConsequence: Optional[FieldProposal] = None
+    evidenceType: Optional[FieldProposal] = None
+    currentEvidence: Optional[FieldProposal] = None
+    validationSignal: Optional[FieldProposal] = None
+    sponsorInterestReason: Optional[FieldProposal] = None
+    supportNeeded: Optional[FieldProposal] = None
+    decisionRequested: Optional[FieldProposal] = None
+    additionalStakeholders: Optional[FieldProposal] = None
+    additionalStakeholdersDetail: Optional[FieldProposal] = None
 
 
 # ---------- Step 1 ----------
@@ -255,6 +273,14 @@ class PdfExtractRequest(BaseModel):
     )
     costCapUsd: Optional[float] = Field(
         None, description="Per-upload cost cap override (must be ≤ env default)"
+    )
+    targetStep: Optional[str] = Field(
+        None,
+        description=(
+            "If set, restrict extraction to a single step (e.g. 'step_0' or 'step0'). "
+            "Skipped steps are returned as empty defaults. Used by the public path "
+            "to avoid the full Step0-Step4 sweep (5x fewer LLM calls)."
+        ),
     )
 
 

@@ -102,6 +102,139 @@
       "weight": 0.7,
       "evidence": { "page": "5,14", "quote": "Si habilitamos a los jefes y administradores con criterios claros — Equipo Cobranzas / Jefes de Oficina" }
     },
+    "step0.initiativeTitle": {
+      "expected": "Protocolo de Autonomía - Velocidad Comercial y Confianza del Cliente",
+      "type": "string",
+      "match_rule": "substring",
+      "must_contain_any": ["Protocolo", "Autonomía", "Velocidad Comercial"],
+      "weight": 0.8,
+      "evidence": { "page": 1, "quote": "Protocolo de Autonomía — Velocidad Comercial y Confianza del Cliente" }
+    },
+    "step0.initiativeFrame": {
+      "expected": "correccion",
+      "type": "enum",
+      "enum_options": ["correccion", "crecimiento", "exploracion"],
+      "match_rule": "exact",
+      "weight": 0.7,
+      "evidence": { "page": 3, "quote": "El Reto: Rigidez Operativa — friccion documentada con 6,000+ excepciones" }
+    },
+    "step0.clarityLevel": {
+      "expected": "hipotesis_clara",
+      "alternates": ["idea_pensada"],
+      "type": "enum",
+      "enum_options": ["observacion_inicial", "algunas_senales", "hipotesis_clara", "idea_pensada"],
+      "match_rule": "exact",
+      "weight": 0.5,
+      "evidence": { "page": "4,5", "quote": "Hipotesis articulada + piloto en sedes — equipo ya identifico la solucion" }
+    },
+    "step0.primaryObjective": {
+      "expected": "eficiencia",
+      "alternates": ["experiencia_cliente"],
+      "type": "enum",
+      "enum_options": ["eficiencia", "experiencia_cliente", "ingresos", "riesgo", "productividad", "aprendizaje", "otro"],
+      "match_rule": "exact",
+      "weight": 0.7,
+      "evidence": { "page": 3, "quote": "5h+ lead time — 6,000+ excepciones/ano que detienen operativa (eficiencia)" }
+    },
+    "step0.impactWho": {
+      "expected": "Clientes externos y equipo de créditos",
+      "type": "string",
+      "match_rule": "list_overlap",
+      "min_overlap": 0.5,
+      "key_entities_required": ["clientes", "equipo", "créditos"],
+      "weight": 0.5,
+      "evidence": { "page": 3, "quote": "carga administrativa masiva para el equipo de creditos que detiene la operatividad del cliente" }
+    },
+    "step0.visibleMoment": {
+      "expected": "Fines de semana o cierres de mes",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["fines de semana", "cierres"],
+      "weight": 0.5,
+      "evidence": { "page": 3, "quote": "detiene la operatividad del cliente durante fines de semana o cierres de mes" }
+    },
+    "step0.whyNowText": {
+      "expected": "La rigidez operativa genera una carga administrativa masiva que detiene la operatividad del cliente, especialmente en fines de semana y cierres de mes.",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["operativa", "cliente"],
+      "weight": 0.5,
+      "evidence": { "page": 3, "quote": "Una carga administrativa masiva para el equipo de creditos que detiene la operatividad del cliente durante fines de semana o cierres de mes" }
+    },
+    "step0.ifNotNowConsequence": {
+      "expected": "La operatividad del cliente seguira detenida y la carga administrativa continuara afectando al equipo de creditos.",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["operatividad", "cliente"],
+      "weight": 0.5,
+      "evidence": { "page": 3, "quote": "detiene la operatividad del cliente durante fines de semana o cierres de mes" }
+    },
+    "step0.evidenceType": {
+      "expected": "datos",
+      "type": "enum",
+      "enum_options": ["datos", "testimonios", "benchmark", "hipotesis", "otro"],
+      "match_rule": "exact",
+      "weight": 0.7,
+      "evidence": { "page": 3, "quote": "6,000+ excepciones en 2025 + 5h+ lead time (metricas cuantitativas)" }
+    },
+    "step0.currentEvidence": {
+      "expected": "6,000+ excepciones en 2025 y un lead time de 5h+ para resolverlas",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["6,000", "5h", "excepciones"],
+      "weight": 0.6,
+      "evidence": { "page": 3, "quote": "6,000+ EXCEPCIONES EN 2025 — 5h+ LEAD TIME DE RESPUESTA" }
+    },
+    "step0.validationSignal": {
+      "expected": "Reduccion del tiempo de respuesta/resolucion de excepciones y mayor autonomia local de las sucursales",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["reducción", "tiempo"],
+      "weight": 0.4,
+      "evidence": { "page": 8, "quote": "Reduccion del Tiempo — Solicitudes resueltas localmente" }
+    },
+    "step0.sponsorInterestReason": {
+      "expected": "Mejorar la eficiencia operativa y la experiencia/satisfaccion del cliente, alineado con los objetivos del negocio",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["eficiencia", "cliente"],
+      "weight": 0.4,
+      "evidence": { "page": 3, "quote": "carga administrativa masiva para el equipo de creditos que detiene la operatividad del cliente" }
+    },
+    "step0.supportNeeded": {
+      "expected": "Presupuesto para la repotenciacion del gestor documental (S/.20,000 aprox) y asignacion de un sponsor gerencial para remover barreras tecnicas",
+      "type": "string_long",
+      "match_rule": "freeform_long",
+      "key_entities_required": ["presupuesto", "sponsor", "gestor documental"],
+      "weight": 0.4,
+      "evidence": { "page": 12, "quote": "Asignar un sponsor gerencial para remover barreras tecnicas — repotenciacion del gestor documental (Costo: S/.20,000 aproximadamente)" }
+    },
+    "step0.decisionRequested": {
+      "expected": "Luz verde para avanzar con la iniciativa y asignar un sponsor gerencial",
+      "alternates": ["Profundizar el piloto", "Aprobar protocolo de autonomia", "Expandir el piloto y formalizar reglas Nivel 2"],
+      "type": "string",
+      "match_rule": "substring",
+      "must_contain_any": ["luz verde", "sponsor", "avanzar", "piloto", "autonomia", "aprobar"],
+      "weight": 0.4,
+      "evidence": { "page": 12, "quote": "Asignar un sponsor gerencial para remover barreras tecnicas" }
+    },
+    "step0.additionalStakeholders": {
+      "expected": "si",
+      "type": "enum",
+      "enum_options": ["no", "si", "no_claro"],
+      "match_rule": "exact",
+      "weight": 0.3,
+      "evidence": { "page": 14, "quote": "Equipo de Experimentacion — Jefes de Oficina, Administradores, Coordinador Sucursales deben participar" }
+    },
+    "step0.additionalStakeholdersDetail": {
+      "expected": "Otros roles/equipos del PDF (p.ej. jefes y administradores de sucursales, o equipo de soporte/facilitadores)",
+      "comment": "WEAKLY GROUNDED: the PDF lists a team slide but no explicit 'additional stakeholders' field; the model extracts a different subset each run (jefes/administradores vs soporte/facilitadores). Lenient substring + low weight (0.3) so a plausible stakeholder mention scores, but unrelated content does not.",
+      "type": "string",
+      "match_rule": "substring",
+      "must_contain_any": ["jefes", "administradores", "sucursales", "coordinador", "equipo", "soporte", "facilitador", "metodológic", "técnic"],
+      "weight": 0.3,
+      "evidence": { "page": 14, "quote": "Jose Llanos — Jefe Oficina Chiclayo — Vanessa Tello — Jefe Adm Trujillo — Kelly Neyra — Coordinador Sucursales — Isaac Lopez Facilitador" }
+    },
     "step1.asisData.casoReal": {
       "expected": "Un cliente con urgencia llega a la sucursal para liberar pedido o crédito; el sistema (SAP) bloquea la operación por reglas de admisión heredadas; el ejecutivo de sucursal no puede liberar y debe escalar a Lima. La autorización tarda 5h+ y, en fines de semana o cierres de mes, detiene completamente la operatividad del cliente.",
       "type": "string_long",

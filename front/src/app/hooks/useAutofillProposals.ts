@@ -12,6 +12,7 @@ import { useCallback } from 'react';
 import {
   selectProposal,
   useAutofillContext,
+  useAutofillLocalPersistence,
   type AutofillProposalState,
 } from '../context/AutofillContext';
 import {
@@ -67,12 +68,25 @@ export function useAutofillProposals(
   fieldPath: string,
 ): UseAutofillProposalsReturn {
   const { state, dispatch } = useAutofillContext();
+  // Anonymous/public subtrees opt into local-only persistence: the reducer
+  // dispatch is the source of truth and no backend mutation call is made
+  // (no such endpoint exists for anonymous drafts — it would 404).
+  const localOnly = useAutofillLocalPersistence();
   const proposal = initiativeId ? selectProposal(state, initiativeId, fieldPath) : null;
 
   const confirm = useCallback(async () => {
     if (!initiativeId || !proposal) return;
     const previous = { ...proposal };
     dispatch({ type: 'CONFIRM', initiativeId, fieldPath });
+    if (localOnly) {
+      trackAutofillEvent('field_autofill_confirmed', {
+        initiativeId,
+        fieldPath,
+        confidenceBand: previous.confidenceBand,
+        runId: previous.runId,
+      });
+      return;
+    }
     try {
       await confirmProposal(initiativeId, proposal.runId, fieldPath);
       trackAutofillEvent('field_autofill_confirmed', {
@@ -90,13 +104,23 @@ export function useAutofillProposals(
       });
       throw err;
     }
-  }, [initiativeId, proposal, fieldPath, dispatch]);
+  }, [initiativeId, proposal, fieldPath, dispatch, localOnly]);
 
   const edit = useCallback(
     async (newValue: unknown) => {
       if (!initiativeId || !proposal) return;
       const distance = normalisedEditDistance(proposal.proposedValue, newValue);
       dispatch({ type: 'EDIT', initiativeId, fieldPath, finalValue: newValue });
+      if (localOnly) {
+        trackAutofillEvent('field_autofill_edited', {
+          initiativeId,
+          fieldPath,
+          confidenceBand: proposal.confidenceBand,
+          runId: proposal.runId,
+          editDistance: distance,
+        });
+        return;
+      }
       try {
         await editProposal(initiativeId, proposal.runId, fieldPath, newValue);
         trackAutofillEvent('field_autofill_edited', {
@@ -111,12 +135,21 @@ export function useAutofillProposals(
         throw err;
       }
     },
-    [initiativeId, proposal, fieldPath, dispatch],
+    [initiativeId, proposal, fieldPath, dispatch, localOnly],
   );
 
   const discard = useCallback(async () => {
     if (!initiativeId || !proposal) return;
     dispatch({ type: 'DISCARD', initiativeId, fieldPath });
+    if (localOnly) {
+      trackAutofillEvent('field_autofill_discarded', {
+        initiativeId,
+        fieldPath,
+        confidenceBand: proposal.confidenceBand,
+        runId: proposal.runId,
+      });
+      return;
+    }
     try {
       await discardProposal(initiativeId, proposal.runId, fieldPath);
       trackAutofillEvent('field_autofill_discarded', {
@@ -129,11 +162,19 @@ export function useAutofillProposals(
       dispatch({ type: 'RESTORE', initiativeId, fieldPath });
       throw err;
     }
-  }, [initiativeId, proposal, fieldPath, dispatch]);
+  }, [initiativeId, proposal, fieldPath, dispatch, localOnly]);
 
   const restore = useCallback(async () => {
     if (!initiativeId || !proposal) return;
     dispatch({ type: 'RESTORE', initiativeId, fieldPath });
+    if (localOnly) {
+      trackAutofillEvent('field_autofill_restored', {
+        initiativeId,
+        fieldPath,
+        runId: proposal.runId,
+      });
+      return;
+    }
     try {
       await restoreProposal(initiativeId, proposal.runId, fieldPath);
       trackAutofillEvent('field_autofill_restored', {
@@ -145,7 +186,7 @@ export function useAutofillProposals(
       dispatch({ type: 'DISCARD', initiativeId, fieldPath });
       throw err;
     }
-  }, [initiativeId, proposal, fieldPath, dispatch]);
+  }, [initiativeId, proposal, fieldPath, dispatch, localOnly]);
 
   const selectConflictSource = useCallback(
     async (chosenSourceId: string) => {
@@ -156,6 +197,15 @@ export function useAutofillProposals(
         fieldPath,
         chosenSourceId,
       });
+      if (localOnly) {
+        trackAutofillEvent('field_autofill_conflict_resolved', {
+          initiativeId,
+          fieldPath,
+          runId: proposal.runId,
+          chosenSourceId,
+        });
+        return;
+      }
       try {
         await resolveConflict(initiativeId, proposal.runId, fieldPath, chosenSourceId);
         trackAutofillEvent('field_autofill_conflict_resolved', {
@@ -169,7 +219,7 @@ export function useAutofillProposals(
         throw err;
       }
     },
-    [initiativeId, proposal, fieldPath, dispatch],
+    [initiativeId, proposal, fieldPath, dispatch, localOnly],
   );
 
   return { proposal, confirm, edit, discard, restore, selectConflictSource };

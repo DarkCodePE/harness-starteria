@@ -27,6 +27,7 @@ import {
 } from '../step0/step0Config';
 import type { Step0Data } from '../context/AppContext';
 import { getStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
+import { AutofillField } from '../components/autofill/AutofillField';
 
 const IA_FEEDBACK = {
   claro: ['La base ya deja mas claro que se quiere mover.', 'La solicitud de apoyo se entiende mejor.', 'La conversacion con sponsor u owner ya tiene mejor foco.'],
@@ -278,41 +279,143 @@ export function Step0Page() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
               <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{mode === 'linked_to_challenge' ? 'Bloque 1 - Encaje con el reto padre' : 'Bloque 1 - Punto de partida'}</h2>
-              <Field label="¿Como se llama tu iniciativa?"><Input value={form.initiativeTitle ?? project.name} onChange={event => setField('initiativeTitle', event.target.value)} /></Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Desde que rol y area estas viendo este reto?' : '¿Desde que rol y area estas viendo esta iniciativa?'}><Input value={form.rolArea} onChange={event => setField('rolArea', event.target.value)} /></Field>
-              {mode === 'linked_to_challenge' && <Field label="¿Que parte especifica del reto estas buscando mover con esta iniciativa?"><Area rows={3} value={form.specificChallengePart ?? ''} onChange={event => setField('specificChallengePart', event.target.value)} /></Field>}
-              {mode === 'linked_to_challenge' && <Field label="¿Como se conecta esta iniciativa con el objetivo o KPI que ya persigue este reto?"><Area rows={3} value={form.challengeGoalConnection ?? ''} onChange={event => setField('challengeGoalConnection', event.target.value)} /></Field>}
-              <Field label="¿Como quieres enmarcar esta iniciativa hoy?"><ChoiceGroup value={form.initiativeFrame ?? ''} options={FRAME_OPTIONS} onChange={value => setField('initiativeFrame', value)} /></Field>
-              <Field label="¿Que objetivo principal ayudaria a mover esta iniciativa?"><ChoiceGroup value={form.primaryObjective ?? ''} options={PRIMARY_OBJECTIVE_OPTIONS} onChange={value => setField('primaryObjective', value)} /></Field>
-              <Field label="¿Con que nivel de claridad llegas hoy?"><ChoiceGroup value={form.clarityLevel ?? ''} options={CLARITY_OPTIONS} onChange={value => setField('clarityLevel', value)} /></Field>
-              {mode === 'linked_to_challenge' && <Field label="¿Que tipo de aporte crees que puede hacer esta iniciativa dentro del reto?"><ChoiceGroup value={form.linkedContributionType ?? ''} options={CONTRIBUTION_OPTIONS} onChange={value => setField('linkedContributionType', value)} /></Field>}
+              <Field label="¿Como se llama tu iniciativa?">
+                <AutofillField fieldPath="step0.initiativeTitle" initiativeId={projectId} value={form.initiativeTitle ?? project.name} onChange={v => setField('initiativeTitle', v as string)} label="¿Como se llama tu iniciativa?">
+                  {({ value, onChange, readOnly }) => <Input value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Desde que rol y area estas viendo este reto?' : '¿Desde que rol y area estas viendo esta iniciativa?'}>
+                <AutofillField fieldPath="step0.rolArea" initiativeId={projectId} value={form.rolArea ?? ''} onChange={v => setField('rolArea', v as string)} label="Rol y area">
+                  {({ value, onChange, readOnly }) => <Input value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              {mode === 'linked_to_challenge' && (
+                <Field label="¿Que parte especifica del reto estas buscando mover con esta iniciativa?">
+                  <AutofillField fieldPath="step0.specificChallengePart" initiativeId={projectId} value={form.specificChallengePart ?? ''} onChange={v => setField('specificChallengePart', v as string)} label="Parte especifica del reto">
+                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                  </AutofillField>
+                </Field>
+              )}
+              {mode === 'linked_to_challenge' && (
+                <Field label="¿Como se conecta esta iniciativa con el objetivo o KPI que ya persigue este reto?">
+                  <AutofillField fieldPath="step0.challengeGoalConnection" initiativeId={projectId} value={form.challengeGoalConnection ?? ''} onChange={v => setField('challengeGoalConnection', v as string)} label="Conexion con objetivo o KPI">
+                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                  </AutofillField>
+                </Field>
+              )}
+              <Field label="¿Como quieres enmarcar esta iniciativa hoy?">
+                <AutofillField fieldPath="step0.initiativeFrame" initiativeId={projectId} value={form.initiativeFrame ?? ''} onChange={v => setField('initiativeFrame', v as Step0Data['initiativeFrame'])} label="Encuadre de la iniciativa">
+                  {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['initiativeFrame']) ?? ''} options={FRAME_OPTIONS} onChange={onChange} />}
+                </AutofillField>
+              </Field>
+              <Field label="¿Que objetivo principal ayudaria a mover esta iniciativa?">
+                <AutofillField fieldPath="step0.primaryObjective" initiativeId={projectId} value={form.primaryObjective ?? ''} onChange={v => setField('primaryObjective', v as Step0Data['primaryObjective'])} label="Objetivo principal">
+                  {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['primaryObjective']) ?? ''} options={PRIMARY_OBJECTIVE_OPTIONS} onChange={onChange} />}
+                </AutofillField>
+              </Field>
+              <Field label="¿Con que nivel de claridad llegas hoy?">
+                <AutofillField fieldPath="step0.clarityLevel" initiativeId={projectId} value={form.clarityLevel ?? ''} onChange={v => setField('clarityLevel', v as Step0Data['clarityLevel'])} label="Nivel de claridad">
+                  {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['clarityLevel']) ?? ''} options={CLARITY_OPTIONS} onChange={onChange} />}
+                </AutofillField>
+              </Field>
+              {mode === 'linked_to_challenge' && (
+                <Field label="¿Que tipo de aporte crees que puede hacer esta iniciativa dentro del reto?">
+                  <AutofillField fieldPath="step0.linkedContributionType" initiativeId={projectId} value={form.linkedContributionType ?? ''} onChange={v => setField('linkedContributionType', v as Step0Data['linkedContributionType'])} label="Tipo de aporte">
+                    {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['linkedContributionType']) ?? ''} options={CONTRIBUTION_OPTIONS} onChange={onChange} />}
+                  </AutofillField>
+                </Field>
+              )}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
               <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Bloque 2 - Justificacion de la iniciativa</h2>
-              <Field label={descriptionLabel} helper={descriptionHelper}><Area rows={5} value={form.quePasaQueQuieres} onChange={event => setField('quePasaQueQuieres', event.target.value)} /></Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿A quien impacta mas directamente esta parte del reto?' : '¿A quien impacta mas directamente esta iniciativa?'}><Area rows={3} value={form.impactWho ?? ''} onChange={event => setField('impactWho', event.target.value)} /></Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Donde o en que momento se hace mas visible esta parte del reto?' : '¿Donde o en que momento se hace mas visible este reto?'}><Area rows={3} value={form.visibleMoment ?? ''} onChange={event => setField('visibleMoment', event.target.value)} /></Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Por que vale la pena mover esta iniciativa ahora dentro del reto?' : '¿Por que conviene mover esto ahora?'}><Area rows={3} value={form.whyNowText ?? ''} onChange={event => setField('whyNowText', event.target.value)} /></Field>
-              <Field label={mode === 'linked_to_challenge' ? 'Si esta parte del reto no se aborda, ¿que efecto tendria sobre el objetivo o KPI del reto?' : 'Si esto no se aborda en los proximos 3 meses, ¿cual seria la consecuencia principal?'} helper={consequenceHelper}><Area rows={3} value={form.ifNotNowConsequence ?? ''} onChange={event => setField('ifNotNowConsequence', event.target.value)} /></Field>
+              <Field label={descriptionLabel} helper={descriptionHelper}>
+                <AutofillField fieldPath="step0.quePasaQueQuieres" initiativeId={projectId} value={form.quePasaQueQuieres ?? ''} onChange={v => setField('quePasaQueQuieres', v as string)} label={descriptionLabel}>
+                  {({ value, onChange, readOnly }) => <Area rows={5} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿A quien impacta mas directamente esta parte del reto?' : '¿A quien impacta mas directamente esta iniciativa?'}>
+                <AutofillField fieldPath="step0.impactWho" initiativeId={projectId} value={form.impactWho ?? ''} onChange={v => setField('impactWho', v as string)} label="A quien impacta">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Donde o en que momento se hace mas visible esta parte del reto?' : '¿Donde o en que momento se hace mas visible este reto?'}>
+                <AutofillField fieldPath="step0.visibleMoment" initiativeId={projectId} value={form.visibleMoment ?? ''} onChange={v => setField('visibleMoment', v as string)} label="Momento visible">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Por que vale la pena mover esta iniciativa ahora dentro del reto?' : '¿Por que conviene mover esto ahora?'}>
+                <AutofillField fieldPath="step0.whyNowText" initiativeId={projectId} value={form.whyNowText ?? ''} onChange={v => setField('whyNowText', v as string)} label="Por que ahora">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? 'Si esta parte del reto no se aborda, ¿que efecto tendria sobre el objetivo o KPI del reto?' : 'Si esto no se aborda en los proximos 3 meses, ¿cual seria la consecuencia principal?'} helper={consequenceHelper}>
+                <AutofillField fieldPath="step0.ifNotNowConsequence" initiativeId={projectId} value={form.ifNotNowConsequence ?? ''} onChange={v => setField('ifNotNowConsequence', v as string)} label="Consecuencia si no se aborda">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
               <Field label={mode === 'linked_to_challenge' ? '¿Que evidencia, senales o referencias respaldan hoy esta iniciativa?' : '¿Que respaldo tienes hoy para sostener esta iniciativa?'}>
                 <div className="space-y-3">
-                  <ChoiceGroup value={form.evidenceType ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={value => setField('evidenceType', value)} />
-                  <Area rows={3} value={form.currentEvidence ?? ''} onChange={event => setField('currentEvidence', event.target.value)} />
+                  <AutofillField fieldPath="step0.evidenceType" initiativeId={projectId} value={form.evidenceType ?? ''} onChange={v => setField('evidenceType', v as Step0Data['evidenceType'])} label="Tipo de evidencia">
+                    {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['evidenceType']) ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={onChange} />}
+                  </AutofillField>
+                  <AutofillField fieldPath="step0.currentEvidence" initiativeId={projectId} value={form.currentEvidence ?? ''} onChange={v => setField('currentEvidence', v as string)} label="Evidencia actual">
+                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                  </AutofillField>
                 </div>
               </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Que senal te haria pensar que esta iniciativa si merece seguir avanzando dentro del reto?' : '¿Que senal te haria decir que vale la pena seguir avanzando?'}><Area rows={3} value={form.validationSignal ?? ''} onChange={event => setField('validationSignal', event.target.value)} /></Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Que senal te haria pensar que esta iniciativa si merece seguir avanzando dentro del reto?' : '¿Que senal te haria decir que vale la pena seguir avanzando?'}>
+                <AutofillField fieldPath="step0.validationSignal" initiativeId={projectId} value={form.validationSignal ?? ''} onChange={v => setField('validationSignal', v as string)} label="Senal de validacion">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
               <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{mode === 'linked_to_challenge' ? 'Bloque 3 - Decision y destrabe real' : 'Bloque 3 - Respaldo y siguiente paso'}</h2>
-              {mode === 'independent' && <Field label="¿Que area, lider o sponsor tendria mas sentido que escuche esto primero?"><Area rows={3} value={form.quienEscuchar} onChange={event => setField('quienEscuchar', event.target.value)} /></Field>}
-              {mode === 'independent' && <Field label="¿Por que esa persona o area deberia interesarse en esta iniciativa?"><Area rows={3} value={form.sponsorInterestReason ?? ''} onChange={event => setField('sponsorInterestReason', event.target.value)} /></Field>}
-              {mode === 'linked_to_challenge' && <Field label="Ademas del sponsor y owner ya definidos, ¿hay alguien mas que conviene involucrar desde el inicio?"><ChoiceGroup value={form.additionalStakeholders ?? ''} options={ADDITIONAL_STAKEHOLDER_OPTIONS} onChange={value => setField('additionalStakeholders', value)} /></Field>}
-              {mode === 'linked_to_challenge' && form.additionalStakeholders === 'si' && <Field label="¿A quien mas conviene involucrar y para que?"><Area rows={3} value={form.additionalStakeholdersDetail ?? ''} onChange={event => setField('additionalStakeholdersDetail', event.target.value)} /></Field>}
-              <Field label={mode === 'linked_to_challenge' ? '¿Que apoyo minimo necesitas del sponsor o owner ya definido para avanzar?' : '¿Que apoyo minimo necesitas para que esto avance?'}><Area rows={3} value={form.supportNeeded ?? ''} onChange={event => setField('supportNeeded', event.target.value)} /></Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Que decision puntual estas buscando en esta etapa?' : '¿Que decision estas buscando en esta etapa?'}><Area rows={3} value={form.decisionRequested ?? ''} onChange={event => setField('decisionRequested', event.target.value)} /></Field>
-              <Field label="¿A que correo te envio el one-pager listo para compartir?"><Input type="email" value={form.deliveryEmail ?? ''} onChange={event => setField('deliveryEmail', event.target.value)} /></Field>
+              {mode === 'independent' && (
+                <Field label="¿Que area, lider o sponsor tendria mas sentido que escuche esto primero?">
+                  <AutofillField fieldPath="step0.quienEscuchar" initiativeId={projectId} value={form.quienEscuchar ?? ''} onChange={v => setField('quienEscuchar', v as string)} label="Quien deberia escuchar">
+                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                  </AutofillField>
+                </Field>
+              )}
+              {mode === 'independent' && (
+                <Field label="¿Por que esa persona o area deberia interesarse en esta iniciativa?">
+                  <AutofillField fieldPath="step0.sponsorInterestReason" initiativeId={projectId} value={form.sponsorInterestReason ?? ''} onChange={v => setField('sponsorInterestReason', v as string)} label="Razon de interes del sponsor">
+                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                  </AutofillField>
+                </Field>
+              )}
+              {mode === 'linked_to_challenge' && (
+                <Field label="Ademas del sponsor y owner ya definidos, ¿hay alguien mas que conviene involucrar desde el inicio?">
+                  <AutofillField fieldPath="step0.additionalStakeholders" initiativeId={projectId} value={form.additionalStakeholders ?? ''} onChange={v => setField('additionalStakeholders', v as Step0Data['additionalStakeholders'])} label="Stakeholders adicionales">
+                    {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['additionalStakeholders']) ?? ''} options={ADDITIONAL_STAKEHOLDER_OPTIONS} onChange={onChange} />}
+                  </AutofillField>
+                </Field>
+              )}
+              {mode === 'linked_to_challenge' && form.additionalStakeholders === 'si' && (
+                <Field label="¿A quien mas conviene involucrar y para que?">
+                  <AutofillField fieldPath="step0.additionalStakeholdersDetail" initiativeId={projectId} value={form.additionalStakeholdersDetail ?? ''} onChange={v => setField('additionalStakeholdersDetail', v as string)} label="Detalle de stakeholders adicionales">
+                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                  </AutofillField>
+                </Field>
+              )}
+              <Field label={mode === 'linked_to_challenge' ? '¿Que apoyo minimo necesitas del sponsor o owner ya definido para avanzar?' : '¿Que apoyo minimo necesitas para que esto avance?'}>
+                <AutofillField fieldPath="step0.supportNeeded" initiativeId={projectId} value={form.supportNeeded ?? ''} onChange={v => setField('supportNeeded', v as string)} label="Apoyo minimo necesario">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label={mode === 'linked_to_challenge' ? '¿Que decision puntual estas buscando en esta etapa?' : '¿Que decision estas buscando en esta etapa?'}>
+                <AutofillField fieldPath="step0.decisionRequested" initiativeId={projectId} value={form.decisionRequested ?? ''} onChange={v => setField('decisionRequested', v as string)} label="Decision solicitada">
+                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
+              <Field label="¿A que correo te envio el one-pager listo para compartir?">
+                <AutofillField fieldPath="step0.deliveryEmail" initiativeId={projectId} value={form.deliveryEmail ?? ''} onChange={v => setField('deliveryEmail', v as string)} label="Correo de entrega">
+                  {({ value, onChange, readOnly }) => <Input type="email" value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
+                </AutofillField>
+              </Field>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5">

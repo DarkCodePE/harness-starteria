@@ -223,12 +223,27 @@ def _call_step(
     return validated, duration_ms, tokens
 
 
+def _normalize_target_step(target_step: str | None) -> str | None:
+    """Normalize the request-body convention to the loop convention.
+
+    Backend sends `'step_0'` (`PUBLIC_TARGET_STEP`); the loop uses `'step0'`.
+    Returns the normalized name, or None when no filtering should be applied
+    (None / empty string / unknown step). Unknown steps are treated as a no-op
+    so a malformed override never accidentally suppresses the full sweep.
+    """
+    if not target_step:
+        return None
+    candidate = target_step.replace("_", "").strip().lower()
+    return candidate if candidate in _STEP_VALIDATORS else None
+
+
 def extract(
     blocks: list[PageBlock],
     language: str,
     *,
     cost_cap_usd: float | None = None,
     pii_redactions: int = 0,
+    target_step: str | None = None,
 ) -> InitiativeExtraction:
     """Run a full Step0-Step4 extraction and assemble the InitiativeExtraction.
 
@@ -238,6 +253,10 @@ def extract(
         cost_cap_usd: if set, abort remaining steps when running cost would exceed cap.
             Already-completed steps survive; status will be set to 'cost_capped' by caller.
         pii_redactions: count of upstream PII redactions, copied into metadata.
+        target_step: if set (e.g. ``'step_0'`` / ``'step0'``), only that step is sent
+            to the LLM; the others are filled with default validator instances. Used
+            by the public path (issue #29) to cut 5 LLM calls down to 1. None or an
+            empty string preserves the existing full Step0-Step4 sweep.
 
     Raises:
         CostCapExceeded: when running cost exceeds the configured cap. The exception
@@ -259,7 +278,22 @@ def extract(
     cost_so_far = 0.0
     completed: list[str] = []
 
+    normalized_target = _normalize_target_step(target_step)
+    if normalized_target is not None:
+        logger.info(
+            "extract restricted to %s (target_step=%r); other steps will use default validators",
+            normalized_target,
+            target_step,
+        )
+
     for step in ("step0", "step1", "step2", "step3", "step4"):
+        if normalized_target is not None and step != normalized_target:
+            # Skipped by target_step filter: keep the shape of InitiativeExtraction
+            # intact by filling with the default validator instance — mirrors the
+            # cost-cap branch below.
+            extracted[step] = _STEP_VALIDATORS[step]()
+            continue
+
         if cost_cap_usd is not None and cost_so_far >= cost_cap_usd:
             logger.warning(
                 "Cost cap reached before %s (cost=$%.4f cap=$%.4f); aborting remaining steps",
