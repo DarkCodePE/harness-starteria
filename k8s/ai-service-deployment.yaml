@@ -22,7 +22,7 @@ spec:
         # Image tag is overwritten at deploy time by .github/workflows/cd.yml
         # via `kubectl set image`. The :latest placeholder keeps the manifest
         # valid for `kubectl apply` between releases.
-        image: ghcr.io/nmindfa/starteria-ai-service:latest
+        image: orlandogtp/starteria-ai-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8001

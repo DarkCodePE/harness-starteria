@@ -51,11 +51,10 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_OWNER: ${{ github.repository_owner }}
+  # Images live on Docker Hub (kept public, matches the pre-CD setup).
+  DOCKERHUB_NAMESPACE: orlandogtp
   NAMESPACE: starteria
   ROLLOUT_TIMEOUT: 180s
 
@@ -107,19 +106,16 @@ jobs:
             echo "::error::Tag '$tag' is not valid semver (vX.Y.Z[-suffix])"
             exit 1
           fi
-          owner_lc=$(printf '%s' "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "owner_lc=$owner_lc" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -131,8 +127,8 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.tag.outputs.owner_lc }}/starteria-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ steps.tag.outputs.owner_lc }}/starteria-${{ matrix.service }}:latest
+            ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
+            ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:latest
 
   # ---------------------------------------------------------------------------
   # Apply manifests + secrets, roll out new images, auto-undo on failure.
@@ -157,9 +153,7 @@ jobs:
           else
             tag="${GITHUB_REF_NAME}"
           fi
-          owner_lc=$(printf '%s' "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "owner_lc=$owner_lc" >> "$GITHUB_OUTPUT"
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -264,13 +258,12 @@ jobs:
         id: rollout
         env:
           TAG: ${{ steps.tag.outputs.tag }}
-          OWNER: ${{ steps.tag.outputs.owner_lc }}
         run: |
           set -euo pipefail
           for svc in backend frontend ai-service; do
             kubectl -n "$NAMESPACE" set image \
               "deployment/starteria-$svc" \
-              "$svc=${REGISTRY}/${OWNER}/starteria-$svc:${TAG}"
+              "$svc=${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}"
           done
           for svc in backend frontend ai-service; do
             echo "::group::rollout status starteria-$svc"
@@ -297,7 +290,6 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
           STATUS: ${{ steps.rollout.outcome }}
-          OWNER: ${{ steps.tag.outputs.owner_lc }}
         run: |
           {
             echo "# Deploy summary"
@@ -305,7 +297,7 @@ jobs:
             echo "- Tag: \`${TAG}\`"
             echo "- Rollout: ${STATUS:-skipped}"
             echo "- Namespace: \`${NAMESPACE}\`"
-            echo "- Images: \`${REGISTRY}/${OWNER}/starteria-{backend,frontend,ai-service}:${TAG}\`"
+            echo "- Images: \`${DOCKERHUB_NAMESPACE}/starteria-{backend,frontend,ai-service}:${TAG}\`"
             echo ""
             if [ "${STATUS:-}" = "success" ]; then
               echo "Stack is live. Smoke check: \`curl https://api.starter-ia.com/health\`"
