@@ -17,7 +17,10 @@ COPY front/postcss.config.mjs ./
 COPY front/src/ ./src/
 
 # Vite envs must be present at build time (prefixed VITE_*) — they get baked into the bundle.
-ARG VITE_API_URL=http://localhost:3001
+# Default to /api/v1 (relative): in prod the frontend's nginx proxies /api/ to
+# starteria-backend:3001 (see k8s/nginx.conf), so the SPA stays same-origin and
+# avoids CORS entirely. Override via --build-arg VITE_API_URL=... for staging.
+ARG VITE_API_URL=/api/v1
 ARG VITE_FEATURE_PDF_AUTOFILL=true
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_FEATURE_PDF_AUTOFILL=$VITE_FEATURE_PDF_AUTOFILL
