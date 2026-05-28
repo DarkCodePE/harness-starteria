@@ -48,7 +48,7 @@ spec:
           # bursts handled via the higher limit. Bump requests back to 200m if the
           # node pool grows or scheduling becomes lazy.
           requests:
-            cpu: "100m"
+            cpu: "50m"
             memory: "256Mi"
           limits:
             cpu: "500m"
