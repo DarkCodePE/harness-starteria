@@ -44,8 +44,11 @@ spec:
         - name: BACKEND_WEBHOOK_URL
           value: "http://starteria-backend:3001/api/v1/internal/ai/webhooks/pdf-extract/runs"
         resources:
+          # Tight node (2 vCPU total, ~1500m allocatable). uvicorn idle is <100m;
+          # bursts handled via the higher limit. Bump requests back to 200m if the
+          # node pool grows or scheduling becomes lazy.
           requests:
-            cpu: "200m"
+            cpu: "100m"
             memory: "256Mi"
           limits:
             cpu: "500m"

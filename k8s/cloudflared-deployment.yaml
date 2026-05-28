@@ -29,8 +29,11 @@ spec:
         # Tunnel is remotely managed from Cloudflare Zero Trust dashboard
         # (config_src=cloudflare). TUNNEL_TOKEN below identifies the tunnel;
         # ingress + DNS are configured via the dashboard, not via a local config file.
+        # --metrics enables the :2000 endpoint that the readiness/liveness probes hit.
         args:
           - "tunnel"
+          - "--metrics"
+          - "0.0.0.0:2000"
           - "run"
         env:
         - name: TUNNEL_TOKEN
