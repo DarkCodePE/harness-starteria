@@ -14,6 +14,8 @@ on:
   push:
     branches:
       - main
+  # Allow cd.yml to gate deploys on this same test suite (no duplication).
+  workflow_call:
 
 # Cancel superseded runs on the same branch/PR to save minutes.
 concurrency:

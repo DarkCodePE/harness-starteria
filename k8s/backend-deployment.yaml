@@ -23,15 +23,16 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 3001
+        envFrom:
+        # Secret synced by .github/workflows/cd.yml at deploy time.
+        # Provides: DATABASE_URL, JWT_SECRET, AI_SERVICE_TOKEN, AI_SERVICE_URL, BRIDGE_SHARED_SECRET.
+        - secretRef:
+            name: starteria-backend-secrets
         env:
         - name: NODE_ENV
           value: "production"
         - name: PORT
           value: "3001"
-        - name: DATABASE_URL
-          value: "postgresql://starteria:fab67f6041e7eeee60aa040cf5a094b9@starteria-db:5432/starteria_db"
-        - name: JWT_SECRET
-          value: "cbfac9cad703c24a93ad9f0b939e04ee97864ac5544086b231b67a48ef832f1b"
         - name: JWT_EXPIRES_IN
           value: "15m"
         - name: JWT_REFRESH_EXPIRES_IN

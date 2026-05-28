@@ -26,10 +26,11 @@ spec:
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
+        # Tunnel is remotely managed from Cloudflare Zero Trust dashboard
+        # (config_src=cloudflare). TUNNEL_TOKEN below identifies the tunnel;
+        # ingress + DNS are configured via the dashboard, not via a local config file.
         args:
           - "tunnel"
-          - "--config"
-          - "/etc/cloudflared/config.yaml"
           - "run"
         env:
         - name: TUNNEL_TOKEN
@@ -63,11 +64,4 @@ spec:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "sleep 10"]
-        volumeMounts:
-        - name: config
-          mountPath: /etc/cloudflared
-      volumes:
-      - name: config
-        configMap:
-          name: cloudflared-config
       terminationGracePeriodSeconds: 120

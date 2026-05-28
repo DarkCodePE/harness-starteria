@@ -1,0 +1,315 @@
+# CD pipeline — Rackspace Spot deploy
+#
+# Triggers:
+#   - push of a semver tag v*.*.*  → full deploy of that tag
+#   - workflow_dispatch (input: tag) → manual (re)deploy / rollback
+#
+# Flow:
+#   tests (reuses ci.yml via workflow_call)
+#     → build-and-push (matrix: backend, frontend, ai-service → GHCR)
+#       → deploy:
+#           1. Fetch kubeconfig from Rackspace Spot API
+#           2. Sync k8s Secrets from GitHub Secrets (kubectl create … --dry-run | apply)
+#           3. Apply manifests
+#           4. kubectl set image on the 3 Deployments
+#           5. kubectl rollout status (auto-undo on failure)
+#
+# Required GitHub Secrets:
+#   RACKSPACE_REFRESH_TOKEN        Spot Console → API Access → Terraform → refresh_token
+#   RACKSPACE_ORG_NAME             Spot organization name
+#   RACKSPACE_CLOUDSPACE_NAME      Spot cloudspace name (the hcp-... one)
+#   STARTERIA_JWT_SECRET           JWT signing key (REGENERATE — previous leaked in git history)
+#   STARTERIA_DB_PASSWORD          Postgres password (REGENERATE — previous leaked in git history)
+#   STARTERIA_AI_SERVICE_TOKEN     Shared secret backend ↔ ai-service
+#   STARTERIA_BRIDGE_SHARED_SECRET Shared secret for ai-service webhooks
+#   OPENROUTER_API_KEY             OpenRouter API key for ai-service
+#   LANGSMITH_API_KEY              (optional) LangSmith tracing key
+#
+# First-deploy checklist:
+#   1. Configure the 9 GitHub Secrets above.
+#   2. Push tag: `git tag v2.1.0 && git push origin v2.1.0`.
+#   3. After the first successful run, mark the 3 GHCR packages public at
+#      https://github.com/<owner>?tab=packages so the cluster can pull them
+#      without an imagePullSecret. Alternative: configure imagePullSecret.
+
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to (re)deploy (e.g. v2.1.0). Must already exist on the repo.'
+        required: true
+        type: string
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  NAMESPACE: starteria
+  ROLLOUT_TIMEOUT: 180s
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Gate: reuse the existing CI suite. No duplication of test logic.
+  # ---------------------------------------------------------------------------
+  tests:
+    name: Tests gate
+    uses: ./.github/workflows/ci.yml
+
+  # ---------------------------------------------------------------------------
+  # Build & push 3 service images to GHCR. Matrix → parallel.
+  # ---------------------------------------------------------------------------
+  build-and-push:
+    name: Build & push (${{ matrix.service }})
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: backend
+            context: .
+            dockerfile: Dockerfile.backend
+          - service: frontend
+            context: .
+            dockerfile: Dockerfile.frontend
+          - service: ai-service
+            context: ./ai-service
+            dockerfile: ./ai-service/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: tag
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DISPATCH_TAG:-}" ]; then
+            tag="${DISPATCH_TAG}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$'; then
+            echo "::error::Tag '$tag' is not valid semver (vX.Y.Z[-suffix])"
+            exit 1
+          fi
+          owner_lc=$(printf '%s' "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "owner_lc=$owner_lc" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.tag.outputs.owner_lc }}/starteria-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.tag.outputs.owner_lc }}/starteria-${{ matrix.service }}:latest
+
+  # ---------------------------------------------------------------------------
+  # Apply manifests + secrets, roll out new images, auto-undo on failure.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to Rackspace Spot
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: tag
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DISPATCH_TAG:-}" ]; then
+            tag="${DISPATCH_TAG}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          owner_lc=$(printf '%s' "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "owner_lc=$owner_lc" >> "$GITHUB_OUTPUT"
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Fetch kubeconfig from Rackspace Spot API
+        env:
+          RACKSPACE_REFRESH_TOKEN: ${{ secrets.RACKSPACE_REFRESH_TOKEN }}
+          RACKSPACE_ORG_NAME: ${{ secrets.RACKSPACE_ORG_NAME }}
+          RACKSPACE_CLOUDSPACE_NAME: ${{ secrets.RACKSPACE_CLOUDSPACE_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RACKSPACE_REFRESH_TOKEN:-}" ] || \
+             [ -z "${RACKSPACE_ORG_NAME:-}" ] || \
+             [ -z "${RACKSPACE_CLOUDSPACE_NAME:-}" ]; then
+            echo "::error::Missing one or more RACKSPACE_* secrets. See cd.yml header."
+            exit 1
+          fi
+          payload=$(jq -nc \
+            --arg org "$RACKSPACE_ORG_NAME" \
+            --arg cs  "$RACKSPACE_CLOUDSPACE_NAME" \
+            --arg rt  "$RACKSPACE_REFRESH_TOKEN" \
+            '{organization_name:$org, cloudspace_name:$cs, refresh_token:$rt}')
+          http_status=$(curl -sS -o /tmp/spot-response.json -w '%{http_code}' \
+            -X POST 'https://spot.rackspace.com/apis/auth.ngpc.rxt.io/v1/generate-kubeconfig' \
+            -H 'Content-Type: application/json' \
+            --data "$payload")
+          if [ "$http_status" != "200" ]; then
+            echo "::error::Rackspace API returned HTTP $http_status. Refresh token may be expired — regenerate in Spot Console → API Access."
+            jq -r '.message // .error // "no body"' /tmp/spot-response.json 2>/dev/null || true
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/kube"
+          jq -er '.data.kubeconfig' /tmp/spot-response.json > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          rm -f /tmp/spot-response.json
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+
+      - name: Verify cluster connectivity
+        run: |
+          kubectl cluster-info
+          kubectl get nodes -o wide
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Sync backend Secret
+        env:
+          DB_PASSWORD: ${{ secrets.STARTERIA_DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.STARTERIA_JWT_SECRET }}
+          AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
+          BRIDGE_SHARED_SECRET: ${{ secrets.STARTERIA_BRIDGE_SHARED_SECRET }}
+        run: |
+          set -euo pipefail
+          # Postgres host/db match k8s/postgres-service.yaml + postgres-statefulset.yaml.
+          DATABASE_URL="postgresql://starteria:${DB_PASSWORD}@starteria-db:5432/starteria_db"
+          kubectl create secret generic starteria-backend-secrets \
+            -n "$NAMESPACE" \
+            --from-literal=DATABASE_URL="$DATABASE_URL" \
+            --from-literal=JWT_SECRET="$JWT_SECRET" \
+            --from-literal=AI_SERVICE_TOKEN="$AI_SERVICE_TOKEN" \
+            --from-literal=AI_SERVICE_URL="http://starteria-ai-service:8001" \
+            --from-literal=BRIDGE_SHARED_SECRET="$BRIDGE_SHARED_SECRET" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Sync ai-service Secret
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
+        run: |
+          set -euo pipefail
+          kubectl create secret generic starteria-ai-service-secrets \
+            -n "$NAMESPACE" \
+            --from-literal=OPENROUTER_API_KEY="$OPENROUTER_API_KEY" \
+            --from-literal=LANGSMITH_API_KEY="${LANGSMITH_API_KEY:-}" \
+            --from-literal=AI_SERVICE_INTERNAL_TOKEN="$AI_SERVICE_TOKEN" \
+            --from-literal=BACKEND_WEBHOOK_TOKEN="$AI_SERVICE_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply manifests
+        run: |
+          # Explicit list to avoid picking up deploy.sh, nginx.conf, or the
+          # documentation-only cloudflared-secret.yaml (real secret is created
+          # out-of-band, see k8s/cloudflared-secret.yaml header).
+          # Tunnel ingress is remotely managed (config_src=cloudflare); no configmap.
+          kubectl apply -n "$NAMESPACE" \
+            -f k8s/postgres-statefulset.yaml \
+            -f k8s/postgres-service.yaml \
+            -f k8s/backend-deployment.yaml \
+            -f k8s/backend-service.yaml \
+            -f k8s/frontend-deployment.yaml \
+            -f k8s/frontend-service.yaml \
+            -f k8s/ai-service-deployment.yaml \
+            -f k8s/ai-service-service.yaml \
+            -f k8s/cloudflared-deployment.yaml \
+            -f k8s/cloudflared-service.yaml
+
+      - name: Roll out new image tags
+        id: rollout
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          OWNER: ${{ steps.tag.outputs.owner_lc }}
+        run: |
+          set -euo pipefail
+          for svc in backend frontend ai-service; do
+            kubectl -n "$NAMESPACE" set image \
+              "deployment/starteria-$svc" \
+              "$svc=${REGISTRY}/${OWNER}/starteria-$svc:${TAG}"
+          done
+          for svc in backend frontend ai-service; do
+            echo "::group::rollout status starteria-$svc"
+            kubectl -n "$NAMESPACE" rollout status \
+              "deployment/starteria-$svc" --timeout="$ROLLOUT_TIMEOUT"
+            echo "::endgroup::"
+          done
+
+      - name: Rollback on failure
+        if: ${{ failure() && steps.rollout.outcome == 'failure' }}
+        run: |
+          for svc in backend frontend ai-service; do
+            echo "::warning::Rolling back deployment/starteria-$svc"
+            kubectl -n "$NAMESPACE" rollout undo "deployment/starteria-$svc" || true
+          done
+
+      - name: Cleanup kubeconfig
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/kube/config" || true
+
+      - name: Write summary
+        if: always()
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          STATUS: ${{ steps.rollout.outcome }}
+          OWNER: ${{ steps.tag.outputs.owner_lc }}
+        run: |
+          {
+            echo "# Deploy summary"
+            echo ""
+            echo "- Tag: \`${TAG}\`"
+            echo "- Rollout: ${STATUS:-skipped}"
+            echo "- Namespace: \`${NAMESPACE}\`"
+            echo "- Images: \`${REGISTRY}/${OWNER}/starteria-{backend,frontend,ai-service}:${TAG}\`"
+            echo ""
+            if [ "${STATUS:-}" = "success" ]; then
+              echo "Stack is live. Smoke check: \`curl https://api.starter-ia.com/health\`"
+            else
+              echo ":warning: Deploy did not finish cleanly — see job logs and rollback step."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
