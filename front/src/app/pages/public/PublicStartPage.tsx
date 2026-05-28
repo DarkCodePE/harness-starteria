@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   PublicConfidentialityNotice,
-  PublicEnterpriseCards,
   PublicQuickInput,
   PublicStartHero,
 } from '../../../features/public-start/components';
@@ -37,8 +36,9 @@ export function PublicStartPage() {
   };
 
   return (
-    <div className="space-y-7 py-6">
-      <div className="space-y-8">
+    <div className="relative -mx-5 -my-8 overflow-hidden px-5 py-6 md:py-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_50%_0%,rgba(124,58,237,0.12),rgba(248,250,252,0)_64%)]" />
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-5">
         <PublicStartHero />
         <PublicQuickInput
           value={inputText}
@@ -51,10 +51,8 @@ export function PublicStartPage() {
           onSubmit={handleSubmit}
           onUploadUnavailable={handleUploadUnavailable}
         />
+        <PublicConfidentialityNotice />
       </div>
-
-      <PublicConfidentialityNotice />
-      <PublicEnterpriseCards />
     </div>
   );
 }
