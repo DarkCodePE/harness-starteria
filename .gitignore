@@ -9,6 +9,9 @@ dist/
 .env
 .env.local
 
+# Google OAuth client secret JSON (do not commit — contains client_secret)
+client_secret_*.json
+
 # Vercel
 .vercel/
 
