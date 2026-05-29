@@ -37,6 +37,17 @@ export const authService = {
     return result;
   },
 
+  // Google Identity Services (GIS) sign-in. Frontend obtains a Google-signed
+  // ID token via @react-oauth/google and forwards it here; the backend verifies
+  // it server-side and issues our own JWT pair.
+  async googleSignIn(idToken: string): Promise<LoginResponse> {
+    const { data } = await api.post('/auth/google', { idToken });
+    const result = data.data;
+    const token = result.tokens?.accessToken || result.accessToken;
+    setAccessToken(token);
+    return result;
+  },
+
   async logout(): Promise<void> {
     try {
       await api.post('/auth/logout');

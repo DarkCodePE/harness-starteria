@@ -42,4 +42,7 @@ export const config = {
   // TASK-006 / SPEC-002 V1: PDFs are persisted on the local filesystem under this directory.
   // TODO(ADR-007): swap LocalDiskPdfStorage for an S3PresignedStorage implementation.
   localStorageDir: process.env.LOCAL_STORAGE_DIR || './storage',
+  // OAuth: GIS (Google Identity Services) audience. Backend uses google-auth-library
+  // to verify ID tokens against this client id. Empty string = Google login disabled.
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 } as const;

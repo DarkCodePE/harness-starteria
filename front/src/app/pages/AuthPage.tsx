@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Zap, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { AuthError } from '../services/api';
+import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 
 type FieldErrors = {
   email?: string;
@@ -45,7 +46,7 @@ export function AuthPage() {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
 
-  const { login, register, isAuthenticated, user } = useApp();
+  const { login, register, googleSignIn, isAuthenticated, user } = useApp();
   const navigate = useNavigate();
 
   // Tick para refrescar la cuenta regresiva del bloqueo.
@@ -171,6 +172,37 @@ export function AuthPage() {
     setSubmitErrorKey((k) => k + 1);
   };
 
+  const handleGoogleSuccess = async (idToken: string) => {
+    resetErrors();
+    setLoading(true);
+    const result = await googleSignIn(idToken);
+    setLoading(false);
+
+    if (result.success) {
+      navigate('/dashboard');
+      return;
+    }
+
+    if (result.error) {
+      applyServerError(result.error);
+    } else {
+      setTopError({
+        code: 'UNKNOWN',
+        message: 'No pudimos completar el inicio con Google. Vuelve a intentar.',
+      });
+    }
+    setSubmitErrorKey((k) => k + 1);
+  };
+
+  const handleGoogleError = () => {
+    setTopError({
+      code: 'AUTH_GOOGLE_CANCELLED',
+      message: 'Inicio con Google cancelado o bloqueado por el navegador.',
+      hint: 'Verifica que cookies de terceros estén permitidas y vuelve a intentar.',
+    });
+    setSubmitErrorKey((k) => k + 1);
+  };
+
   const switchMode = (next: 'login' | 'register') => {
     setMode(next);
     resetErrors();
@@ -237,6 +269,30 @@ export function AuthPage() {
           <p className="text-sm text-slate-500 mb-6">
             {mode === 'login' ? 'Ingresa para continuar con tu proyecto.' : 'Regístrate para empezar tu primer proyecto.'}
           </p>
+
+          {/* Google Identity Services — renders only when VITE_GOOGLE_CLIENT_ID is set.
+              Same flow for login + register: GIS verifies the user, backend finds-or-creates. */}
+          <div className="mb-5 flex justify-center">
+            <GoogleSignInButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              text={mode === 'register' ? 'signup_with' : 'continue_with'}
+              theme="outline"
+              width={320}
+              disabled={loading || isLocked}
+            />
+          </div>
+
+          <div className="relative mb-5" aria-hidden="true">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-xs text-slate-400" style={{ fontWeight: 500 }}>
+                o continúa con email
+              </span>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (

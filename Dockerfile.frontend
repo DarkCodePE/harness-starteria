@@ -22,8 +22,12 @@ COPY front/src/ ./src/
 # avoids CORS entirely. Override via --build-arg VITE_API_URL=... for staging.
 ARG VITE_API_URL=/api/v1
 ARG VITE_FEATURE_PDF_AUTOFILL=true
+# Google Identity Services client id. Empty = Google login button hidden.
+# cd.yml passes it from the GOOGLE_CLIENT_ID GH Secret.
+ARG VITE_GOOGLE_CLIENT_ID=
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_FEATURE_PDF_AUTOFILL=$VITE_FEATURE_PDF_AUTOFILL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
 # Build the production bundle
 RUN npm run build

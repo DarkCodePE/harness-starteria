@@ -292,7 +292,8 @@ model User {
   id                  String    @id @default(cuid())
   email               String    @unique
   name                String
-  passwordHash        String
+  passwordHash        String?
+  googleId            String?   @unique
   role                Role
   initials            String
   skills              String[]
@@ -319,6 +320,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([cohortId])
+  @@index([googleId])
 }
 
 model Project {

@@ -21,5 +21,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'La contrasena es requerida'),
 });
 
+export const googleSignInSchema = z.object({
+  // Google ID tokens are JWTs that are typically 800-1500 chars long. Lower bound
+  // protects against obvious garbage; the real validation happens server-side
+  // via google-auth-library.verifyIdToken().
+  idToken: z.string().min(20, 'Token de Google invalido'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type GoogleSignInInput = z.infer<typeof googleSignInSchema>;

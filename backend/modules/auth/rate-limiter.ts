@@ -91,6 +91,18 @@ export const registerEmailLimiter: RequestHandler = createRateLimiter(
 );
 
 /**
+ * Google sign-in limiter: 10 attempts per minute per IP.
+ * No per-email limiter is needed for /auth/google because forging a valid ID
+ * token requires Google's private signing key. IP-only is sufficient against
+ * spamming the verification endpoint.
+ */
+export const googleLimiter: RequestHandler = createRateLimiter(
+  60_000,
+  10,
+  (req) => req.ip || req.socket.remoteAddress || 'unknown',
+);
+
+/**
  * API rate limiter: 100 requests per minute per user (or IP if unauthenticated).
  * On limit, emits AUTH_RATE_LIMITED via the canonical error envelope.
  */

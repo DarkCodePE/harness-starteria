@@ -70,6 +70,34 @@ export class AuthController {
   };
 
   /**
+   * POST /api/v1/auth/google
+   * Authenticate with a Google ID token (GIS flow). Find or create the user,
+   * issue our own JWT pair (same shape as /login).
+   */
+  google = async (
+    req: Request,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { idToken } = req.body;
+      const { user, tokens } = await this.service.googleSignInOrCreate(idToken);
+
+      res.cookie(COOKIE_NAME, tokens.refreshToken, COOKIE_OPTIONS);
+
+      res.json({
+        success: true,
+        data: {
+          accessToken: tokens.accessToken,
+          user,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  /**
    * POST /api/v1/auth/refresh
    * Extract refresh token from HTTP-only cookie, rotate, issue new pair.
    */

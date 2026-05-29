@@ -172,4 +172,49 @@ export class AppError extends Error {
       { details },
     );
   }
+
+  // --- Google (GIS) auth factories ---
+
+  /** Google ID token is missing, malformed, expired, or signed for the wrong audience. */
+  static googleInvalidToken(): AppError {
+    return new AppError(
+      401,
+      'No pudimos validar tu sesion de Google. Intentalo otra vez.',
+      'AUTH_GOOGLE_INVALID_TOKEN',
+      true,
+      { hint: 'Refresca la pagina y vuelve a intentar.' },
+    );
+  }
+
+  /** Google reports the user's email as not verified (rare, but blocks signup). */
+  static googleEmailUnverified(): AppError {
+    return new AppError(
+      401,
+      'Tu correo de Google no esta verificado.',
+      'AUTH_GOOGLE_EMAIL_UNVERIFIED',
+      true,
+      { hint: 'Verifica tu correo en tu cuenta de Google y vuelve a intentar.' },
+    );
+  }
+
+  /** Email/password login attempted on an account linked only to Google (no passwordHash). */
+  static authGoogleOnly(): AppError {
+    return new AppError(
+      401,
+      'Esta cuenta esta vinculada a Google. Usa el boton "Continuar con Google".',
+      'AUTH_GOOGLE_ONLY',
+      true,
+      { hint: 'Inicia sesion con Google en la misma pantalla.' },
+    );
+  }
+
+  /** Google server config is missing (GOOGLE_CLIENT_ID env not set). 500-level. */
+  static googleNotConfigured(): AppError {
+    return new AppError(
+      500,
+      'El inicio de sesion con Google no esta configurado en este entorno.',
+      'AUTH_GOOGLE_NOT_CONFIGURED',
+      false,
+    );
+  }
 }

@@ -245,6 +245,7 @@ interface AppContextType {
   currentProject: Project | null;
   login: (email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
   register: (name: string, email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
+  googleSignIn: (idToken: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
   logout: () => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
@@ -507,6 +508,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const googleSignIn = async (
+    idToken: string,
+    options: { loadProjects?: boolean } = {},
+  ): Promise<{ success: boolean; error?: AuthError }> => {
+    try {
+      const result = await authService.googleSignIn(idToken);
+      const mappedUser = mapBackendUser(result.user);
+      setUser(mappedUser);
+      setIsAuthenticated(true);
+      if (options.loadProjects !== false) {
+        await loadProjects(mappedUser);
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: parseApiError(err) };
+    }
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -746,7 +765,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ user, isAuthenticated, authLoading, projects, projectsLoading, currentProject, login, register, logout, setCurrentProject, updateProject, createProject, createProjectFromPublicDraft, hydrateProjectStep0FromPrefill, setUserRole, updateStep0, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment }}>
+    <AppContext.Provider value={{ user, isAuthenticated, authLoading, projects, projectsLoading, currentProject, login, register, googleSignIn, logout, setCurrentProject, updateProject, createProject, createProjectFromPublicDraft, hydrateProjectStep0FromPrefill, setUserRole, updateStep0, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment }}>
       {children}
     </AppContext.Provider>
   );

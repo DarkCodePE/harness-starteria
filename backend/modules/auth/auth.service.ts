@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import crypto from 'crypto';
 import { AppError } from '../../shared/errors/AppError';
 import { logger } from '../../shared/utils/logger';
@@ -10,6 +10,7 @@ import {
   TokenPayload,
 } from './token.service';
 import { RegisterInput } from './auth.schemas';
+import { verifyGoogleIdToken } from './google.service';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -116,6 +117,16 @@ export class AuthService {
       // for "user not found" matches "wrong password". Result is discarded.
       await verifyPassword(password, DUMMY_PASSWORD_HASH);
       throw AppError.invalidCredentials();
+    }
+
+    // Google-OAuth-only accounts have passwordHash === null. Send a distinct
+    // error so the UI can prompt the user to use the Google button instead of
+    // looping them on "wrong password" forever.
+    if (!user.passwordHash) {
+      // Timing-oracle guard: same dummy compare so attackers cannot use latency
+      // to enumerate which emails are Google-only vs password-backed.
+      await verifyPassword(password, DUMMY_PASSWORD_HASH);
+      throw AppError.authGoogleOnly();
     }
 
     // Check lockout
@@ -260,6 +271,107 @@ export class AuthService {
       });
       logger.info({ userId: storedToken.userId }, 'User logged out — token family revoked');
     }
+  }
+
+  /**
+   * Sign in (or create) a user from a Google ID token (GIS flow).
+   *
+   * Resolution order:
+   *  1. Find by googleId  → return existing user, issue tokens (re-login path).
+   *  2. Find by email     → link googleId to existing user (the email-already-in-system path).
+   *  3. Else              → create new user with passwordHash=null + googleId set.
+   *
+   * Race: if two requests with the same googleId pass step 1 and reach step 3
+   * simultaneously, the second fails with Prisma P2002 (unique violation). We
+   * catch it and re-run the find by googleId path.
+   */
+  async googleSignInOrCreate(
+    idToken: string,
+  ): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+    const payload = await verifyGoogleIdToken(idToken);
+
+    if (!payload.emailVerified) {
+      throw AppError.googleEmailUnverified();
+    }
+
+    // 1. Existing Google-linked account
+    let user = await this.prisma.user.findUnique({
+      where: { googleId: payload.googleId },
+    });
+
+    // 2. Existing email/password account — link googleId
+    if (!user) {
+      const byEmail = await this.prisma.user.findUnique({
+        where: { email: payload.email },
+      });
+      if (byEmail) {
+        user = await this.prisma.user.update({
+          where: { id: byEmail.id },
+          data: {
+            googleId: payload.googleId,
+            // Hydrate avatar only if user doesn't already have one.
+            avatarUrl: byEmail.avatarUrl || payload.picture || null,
+          },
+        });
+        logger.info(
+          { userId: user.id, googleId: payload.googleId },
+          'Linked Google account to existing user',
+        );
+      }
+    }
+
+    // 3. Brand-new user
+    if (!user) {
+      const initials = computeInitials(payload.name || payload.email.split('@')[0]);
+      try {
+        user = await this.prisma.user.create({
+          data: {
+            email: payload.email,
+            name: payload.name || payload.email.split('@')[0],
+            passwordHash: null,
+            googleId: payload.googleId,
+            avatarUrl: payload.picture ?? null,
+            role: 'participante',
+            initials,
+          },
+        });
+        logger.info(
+          { userId: user.id, googleId: payload.googleId },
+          'Created new user via Google sign-in',
+        );
+      } catch (err) {
+        // Race: another request created the same googleId between our lookup
+        // and our insert. Re-fetch and continue.
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          user = await this.prisma.user.findUnique({
+            where: { googleId: payload.googleId },
+          });
+          if (!user) {
+            // Extremely unlikely (race ran into a DIFFERENT unique violation).
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        initials: user.initials,
+        cohort: user.cohortId,
+      },
+      tokens,
+    };
   }
 
   /**

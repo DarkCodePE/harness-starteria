@@ -4,8 +4,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { authenticate } from './auth.middleware';
 import { validate } from '../../shared/middleware/validate';
-import { registerSchema, loginSchema } from './auth.schemas';
-import { loginLimiter, loginEmailLimiter, registerEmailLimiter } from './rate-limiter';
+import { registerSchema, loginSchema, googleSignInSchema } from './auth.schemas';
+import { loginLimiter, loginEmailLimiter, registerEmailLimiter, googleLimiter } from './rate-limiter';
 
 // Dependencies: cookie-parser must be applied at app level for req.cookies
 const service = new AuthService(prisma);
@@ -19,6 +19,11 @@ authRouter.post('/register', validate(registerSchema), registerEmailLimiter, con
 
 // POST /api/v1/auth/login — Login with email/password (per-IP + per-email rate limit)
 authRouter.post('/login', loginLimiter, validate(loginSchema), loginEmailLimiter, controller.login);
+
+// POST /api/v1/auth/google — Sign in or sign up via Google Identity Services.
+// IP-based rate-limit only; per-email is not needed because forging a valid
+// Google ID token requires Google's private key.
+authRouter.post('/google', googleLimiter, validate(googleSignInSchema), controller.google);
 
 // POST /api/v1/auth/refresh — Refresh access token via HTTP-only cookie
 authRouter.post('/refresh', controller.refresh);

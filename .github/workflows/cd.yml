@@ -126,6 +126,10 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          # VITE_GOOGLE_CLIENT_ID is only consumed by Dockerfile.frontend (ignored
+          # by backend/ai-service Dockerfiles, which don't declare that ARG).
+          build-args: |
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           tags: |
             ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:${{ steps.tag.outputs.tag }}
             ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:latest
@@ -208,12 +212,14 @@ jobs:
           JWT_SECRET: ${{ secrets.STARTERIA_JWT_SECRET }}
           AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
           BRIDGE_SHARED_SECRET: ${{ secrets.STARTERIA_BRIDGE_SHARED_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: |
           set -euo pipefail
           # Postgres host/db match k8s/postgres-service.yaml + postgres-statefulset.yaml.
           DATABASE_URL="postgresql://starteria:${DB_PASSWORD}@starteria-db:5432/starteria_db"
           kubectl create secret generic starteria-backend-secrets \
             -n "$NAMESPACE" \
+            --from-literal=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
             --from-literal=DATABASE_URL="$DATABASE_URL" \
             --from-literal=JWT_SECRET="$JWT_SECRET" \
             --from-literal=AI_SERVICE_TOKEN="$AI_SERVICE_TOKEN" \
