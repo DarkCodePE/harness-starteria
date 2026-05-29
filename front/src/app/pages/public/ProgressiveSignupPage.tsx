@@ -20,6 +20,7 @@ import { getPublicDraft, isPublicDraftExpired } from '../../../features/public-s
 import { buildPublicProposalMarkdown, downloadPublicProposal } from '../../../features/public-start/services/publicProposalExportService';
 import { PublicCompletionAdvisor } from '../../../features/public-start/components/PublicCompletionAdvisor';
 import { usePublicDraftAutoSeed } from '../../../features/public-start/hooks/usePublicDraftAutoSeed';
+import { GoogleSignInButton } from '../../components/auth/GoogleSignInButton';
 
 type ContinueState =
   | { status: 'loading' }
@@ -117,7 +118,7 @@ export function ProgressiveSignupPage() {
   const { draftId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { authLoading, isAuthenticated, login, register, user, createProjectFromPublicDraft } = useApp();
+  const { authLoading, isAuthenticated, login, register, googleSignIn, user, createProjectFromPublicDraft } = useApp();
   const [state, setState] = useState<ContinueState>({ status: 'loading' });
   const [mode, setMode] = useState<AuthMode>('register');
   const [intent, setIntent] = useState<UseIntent>('develop_initiative');
@@ -235,6 +236,26 @@ export function ProgressiveSignupPage() {
     navigate(`/auth/continue/${draftId}?ready=1`, { replace: true });
   };
 
+  const handleGoogleSuccess = async (idToken: string) => {
+    setFieldError(null);
+    setSubmitError(null);
+    setLoadingSubmit(true);
+    const result = await googleSignIn(idToken, { loadProjects: false });
+    setLoadingSubmit(false);
+
+    if (!result.success) {
+      setSubmitError(formatAuthError(result.error, 'No pudimos completar el inicio con Google.'));
+      return;
+    }
+
+    markPending();
+    navigate(`/auth/continue/${draftId}?ready=1`, { replace: true });
+  };
+
+  const handleGoogleError = () => {
+    setSubmitError('Inicio con Google cancelado o bloqueado por el navegador. Verifica que cookies de terceros estén permitidas.');
+  };
+
   const handleCopy = async () => {
     if (!draft) return;
     await navigator.clipboard.writeText(buildPublicProposalMarkdown(draft));
@@ -330,10 +351,39 @@ export function ProgressiveSignupPage() {
             </p>
             <IntentSelector intent={intent} onChange={setIntent} />
             {conversionError && <ErrorBox text={conversionError} />}
-            <PrimaryConvertButton loading={conversionLoading} onClick={handleConvert} />
+            <PrimaryConvertButton
+              loading={conversionLoading}
+              onClick={handleConvert}
+              label="Continuar y guardar iniciativa"
+              loadingLabel="Guardando tu iniciativa..."
+            />
           </div>
         ) : (
           <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200/80">
+            {/* Google Identity Services — only renders when VITE_GOOGLE_CLIENT_ID is baked in.
+                Mirrors the AuthPage UX so signup-from-public-draft and direct /auth share the same option. */}
+            <div className="mb-5 flex justify-center">
+              <GoogleSignInButton
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                text={mode === 'register' ? 'signup_with' : 'continue_with'}
+                theme="outline"
+                width={320}
+                disabled={loadingSubmit}
+              />
+            </div>
+
+            <div className="relative mb-5" aria-hidden="true">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-white px-3 text-xs text-slate-400" style={{ fontWeight: 500 }}>
+                  o continúa con email
+                </span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
               {(['register', 'login'] as const).map(nextMode => (
                 <button
@@ -412,7 +462,17 @@ function ReadyToConvertCard({
   );
 }
 
-function PrimaryConvertButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
+function PrimaryConvertButton({
+  loading,
+  onClick,
+  label = 'Continuar y guardar iniciativa',
+  loadingLabel = 'Guardando tu iniciativa...',
+}: {
+  loading: boolean;
+  onClick: () => void;
+  label?: string;
+  loadingLabel?: string;
+}) {
   return (
     <>
       <button
@@ -422,7 +482,7 @@ function PrimaryConvertButton({ loading, onClick }: { loading: boolean; onClick:
         className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45"
         style={{ fontWeight: 900 }}
       >
-        {loading ? 'Guardando tu iniciativa...' : 'Crear cuenta y guardar iniciativa'}
+        {loading ? loadingLabel : label}
         <ArrowRight size={15} />
       </button>
       <p className="mt-2 text-center text-xs leading-5 text-slate-500">
