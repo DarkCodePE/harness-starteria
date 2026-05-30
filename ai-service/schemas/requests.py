@@ -134,3 +134,15 @@ class NarrativeFeedbackRequest(BaseModel):
     projectId: str = Field(..., description="UUID del proyecto")
     slides: list[dict[str, Any]] = Field(..., description="Array de slides editados")
     notes: str = Field(..., description="Notas del participante")
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/refine-field  (PRD-003 / ADR-006 / ADR-016 — public landing editor)
+# ---------------------------------------------------------------------------
+
+class RefineFieldRequest(BaseModel):
+    field: str = Field(..., min_length=1, max_length=120, description="Id/etiqueta del campo a mejorar")
+    currentValue: str = Field("", max_length=8000, description="Valor actual del campo (puede estar vacío)")
+    draftContext: dict[str, Any] | None = Field(
+        None, description="Contexto no-PII del borrador (tipo de reto, otros campos)"
+    )

@@ -20,6 +20,7 @@ import { buildPublicProposalMarkdown } from '../services/publicProposalExportSer
 import { PublicOnePagerPreview } from './PublicOnePagerPreview';
 import type { PublicEditorQuestionStatus } from './PublicQuestionCard';
 import { usePublicDraftAutoSeed } from '../hooks/usePublicDraftAutoSeed';
+import { refinePublicField } from '../services/publicFieldRefineService';
 
 type EditableField = keyof Pick<
   PublicDraftOutput,
@@ -361,13 +362,32 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
     setActiveValue(buildSuggestion(activeField, '', draft.aiOutput).suggestedValue);
   };
 
-  const adjustActiveField = (version = 1) => {
+  const adjustActiveField = async (version = 1) => {
     setSuggestionLoading(true);
     setSuggestion(null);
-    window.setTimeout(() => {
+    try {
+      // Real AI refinement (ADR-016). NO-PII context: only the draft's own
+      // initiative content, never user identity (the public draft is anonymous).
+      const result = await refinePublicField(activeField, activeValue, {
+        suggestedChallengeType: draft.aiOutput.suggestedChallengeType,
+        proposalTitle: draft.aiOutput.proposalTitle,
+        whatToMove: draft.aiOutput.whatToMove,
+      });
+      setSuggestion({
+        questionId: activeField,
+        currentValue: activeValue,
+        suggestedValue: result.suggestedValue,
+        rationale: result.rationale,
+        fromInitialInfo: activeValue.trim().length === 0,
+        version,
+      });
+    } catch {
+      // Fallback heurístico local: servicio caído / timeout / 429 nunca rompe la
+      // UI ni bloquea al usuario (ADR-016 / PRD-003 US-002 / NFR-3 Zero-Mocks).
       setSuggestion(buildSuggestion(activeField, activeValue, draft.aiOutput, version));
+    } finally {
       setSuggestionLoading(false);
-    }, 450);
+    }
   };
 
   const applySuggestion = () => {

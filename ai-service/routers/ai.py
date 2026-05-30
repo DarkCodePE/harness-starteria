@@ -8,12 +8,14 @@ import os
 import secrets
 
 from fastapi import APIRouter, Header, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
 
 from agents.experiment_coach import ExperimentCoachAgent
 from agents.feedback_ia import FeedbackIAAgent
 from agents.mentor_virtual import MentorVirtualAgent
 from agents.narrative_builder import NarrativeBuilderAgent
 from agents.orchestrator import OrchestratorAgent
+from agents.field_refiner import refine_field
 from agents.pdf_extractor import PdfExtractorAgent, get_run_registry
 from agents.research_assistant import ResearchAssistantAgent
 from agents.solution_design import SolutionDesignAgent
@@ -33,6 +35,7 @@ from schemas.requests import (
     NarrativeBuildRequest,
     NarrativeFeedbackRequest,
     PrototypeSuggestRequest,
+    RefineFieldRequest,
     ResearchAssistRequest,
 )
 from schemas.responses import (
@@ -47,6 +50,7 @@ from schemas.responses import (
     NarrativeBuildResponse,
     NarrativeFeedbackResponse,
     PrototypeSuggestResponse,
+    RefineFieldResponse,
     ResearchAssistResponse,
 )
 from services.context_assembler import ContextAssembler
@@ -451,6 +455,33 @@ async def narrative_feedback(body: NarrativeFeedbackRequest) -> NarrativeFeedbac
         _handle_cost_error(exc)
     except Exception as exc:
         logger.exception("narrative-feedback error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),
+        ) from exc
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/refine-field  (PRD-003 / ADR-006 / ADR-016 — public landing editor)
+#
+# Stateless LangChain chain (NOT a graph). Express fronts this with rate-limit +
+# cost caps and HMAC; on any failure here the frontend falls back to a local
+# heuristic, so we surface failures cleanly as 503.
+# ---------------------------------------------------------------------------
+
+@router.post("/refine-field", response_model=RefineFieldResponse)
+async def refine_field_endpoint(body: RefineFieldRequest) -> RefineFieldResponse:
+    try:
+        result = await run_in_threadpool(
+            refine_field, body.field, body.currentValue, body.draftContext
+        )
+        return RefineFieldResponse(
+            suggestedValue=result.suggestedValue,
+            rationale=result.rationale,
+            confidence=result.confidence,
+        )
+    except Exception as exc:  # noqa: BLE001 — surface as clean 503; FE falls back
+        logger.exception("refine-field error: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),
