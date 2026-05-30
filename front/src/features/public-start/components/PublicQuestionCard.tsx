@@ -1,13 +1,14 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 
-export type PublicEditorQuestionStatus = 'complete' | 'missing' | 'needs_improvement' | 'ai_refined';
+export type PublicEditorQuestionStatus = 'review' | 'missing' | 'confirmed' | 'ai_refined' | 'suggestion_available';
 
 const STATUS_COPY: Record<PublicEditorQuestionStatus, { label: string; className: string }> = {
-  complete: { label: 'Completo', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-  missing: { label: 'Falta responder', className: 'border-amber-200 bg-amber-50 text-amber-700' },
-  needs_improvement: { label: 'Necesita mejorar', className: 'border-sky-200 bg-sky-50 text-sky-700' },
-  ai_refined: { label: 'Afinado con IA', className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  review: { label: 'Revisar', className: 'border-sky-200 bg-sky-50 text-sky-700' },
+  missing: { label: 'Falta aclarar', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+  confirmed: { label: 'Confirmado', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+  ai_refined: { label: 'Mejorado con IA', className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  suggestion_available: { label: 'Sugerencia disponible', className: 'border-violet-200 bg-violet-50 text-violet-700' },
 };
 
 interface PublicQuestionCardProps {
@@ -59,7 +60,7 @@ export function PublicQuestionCard({
           style={{ fontWeight: 750 }}
         >
           <Sparkles size={13} />
-          Sugerir mejor versión
+          Ajustar este punto con IA
         </button>
       </div>
     </article>

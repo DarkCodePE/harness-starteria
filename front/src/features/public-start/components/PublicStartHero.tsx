@@ -4,16 +4,16 @@ import { PUBLIC_START_COPY } from '../domain/copy';
 
 export function PublicStartHero() {
   return (
-    <section className="mx-auto max-w-4xl text-center">
-      <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs text-indigo-700 shadow-sm">
-        <Sparkles size={13} />
-        <span style={{ fontWeight: 750 }}>Creador público con IA</span>
+    <section className="mx-auto max-w-3xl text-center">
+      <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-violet-200/80 bg-white/80 px-3 py-1 text-xs text-violet-700 shadow-sm shadow-violet-100/60">
+        <Sparkles size={12} />
+        <span style={{ fontWeight: 750 }}>Entrada pública</span>
       </div>
-      <h1 className="text-4xl text-slate-950 md:text-6xl" style={{ fontWeight: 820, lineHeight: 1.02 }}>
+      <h1 className="text-3xl text-slate-950 md:text-[2.65rem]" style={{ fontWeight: 900, lineHeight: 1.05 }}>
         {PUBLIC_START_COPY.headline}
       </h1>
-      <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
-        Describe una oportunidad, problema o idea. Starteria la ordena en una propuesta clara para presentarla, validarla o seguir desarrollándola.
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
+        {PUBLIC_START_COPY.subtitle}
       </p>
     </section>
   );
