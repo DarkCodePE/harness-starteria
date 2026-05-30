@@ -842,3 +842,29 @@ model PdfFieldProposal {
   @@unique([runId, fieldPath])
   @@index([projectId, status])
 }
+
+// ─── Public pilot leads (ADR-015, PRD-003 / SPEC-003) ─────────────────────────
+// Captura de interés en piloto desde el landing público (anónimo). Reemplaza la
+// conversión pública borrador→proyecto. `draftId` es el id del borrador en
+// localStorage (NO hay FK: el draft público no vive en DB). PII: email/phone —
+// nunca en logs en claro; consentimiento explícito con timestamp obligatorio.
+model PilotLead {
+  id              String   @id @default(uuid())
+  draftId         String   @unique
+  pilotCode       String   @unique
+  name            String
+  email           String
+  phone           String?
+  organization    String?
+  consentAccepted Boolean
+  consentAt       DateTime
+  status          String   @default("submitted")
+  source          String   @default("public_landing")
+  retentionUntil  DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([retentionUntil])
+}

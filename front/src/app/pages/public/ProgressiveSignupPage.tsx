@@ -259,7 +259,7 @@ function SuccessState({ lead }: { lead: PublicPilotLead }) {
       </div>
       <div className="mt-5 rounded-2xl border border-emerald-200 bg-white px-4 py-3">
         <p className="text-xs uppercase text-emerald-700" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>Código de postulación</p>
-        <p className="mt-1 text-xl text-emerald-950" style={{ fontWeight: 900 }}>{lead.id}</p>
+        <p className="mt-1 text-xl text-emerald-950" style={{ fontWeight: 900 }}>{lead.pilotCode}</p>
       </div>
     </div>
   );

@@ -22,6 +22,8 @@ import { sponsorRouter } from './modules/sponsor/sponsor.router';
 import { portfolioRouter } from './modules/portfolio/portfolio.router';
 import { pdfRouter, initiativePdfService } from './modules/initiative-pdfs/pdf.router';
 import { publicPdfRouter } from './modules/initiative-pdfs/public-pdf.router';
+import { pilotLeadRouter } from './modules/pilot-leads';
+import { refineFieldRouter } from './modules/public-ai';
 import { createAiWebhookRouter } from './modules/initiative-pdfs/webhook.router';
 
 export function createApp() {
@@ -59,6 +61,14 @@ export function createApp() {
   // Hardened, Project-row-free, Step0-scoped, PII-redaction-enforced. NO
   // `authenticate` middleware — guardrails live in the router/multipart layer.
   app.use('/api/v1/public/pdf-extract', publicPdfRouter);
+  // PRD-003 / ADR-015: PUBLIC (no-auth) pilot-lead capture for the landing
+  // pivot. Persists anonymous "interés en piloto" (PII + consent) — replaces the
+  // public draft→project conversion. Rate-limited; no `authenticate`.
+  app.use('/api/v1/public/pilot-leads', pilotLeadRouter);
+  // ADR-016: PUBLIC (no-auth) field-refinement bridge → ai-service LangChain
+  // chain (ADR-006). Rate-limited (cost cap proxy); HMAC/X-Internal-Token to the
+  // ai-service. On failure the frontend falls back to a local heuristic.
+  app.use('/api/v1/public/refine-field', refineFieldRouter);
   // Internal ai-service → backend push channel (X-Internal-Token only; no JWT).
   // Lets ai-service notify backend the moment an extraction finishes so the DB is
   // updated even when no frontend client is actively polling.

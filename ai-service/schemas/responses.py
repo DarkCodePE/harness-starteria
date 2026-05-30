@@ -208,3 +208,9 @@ class ErrorResponse(BaseModel):
     error: str
     code: ErrorCode
     details: str | None = None
+
+
+class RefineFieldResponse(BaseModel):
+    suggestedValue: str
+    rationale: str
+    confidence: float
