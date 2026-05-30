@@ -1,4 +1,5 @@
 import type { PublicDraft } from '../domain/types';
+import { inferPublicDraftNarrative } from './publicDraftService';
 
 function line(value: string | undefined, fallback = 'Pendiente por completar.') {
   return value?.trim() || fallback;
@@ -8,57 +9,44 @@ function list(items: string[]) {
   return items.length > 0 ? items.map(item => `- ${item}`).join('\n') : '- Sin elementos críticos por ahora.';
 }
 
-function challengeTypeLabel(value: PublicDraft['aiOutput']['suggestedChallengeType']) {
-  switch (value) {
-    case 'growth':
-      return 'Crecimiento';
-    case 'exploration':
-      return 'Exploración';
-    case 'correction':
-    default:
-      return 'Corrección';
-  }
-}
-
 export function buildPublicProposalMarkdown(draft: PublicDraft): string {
   const output = draft.aiOutput;
+  const narrative = inferPublicDraftNarrative(draft.inputText, output);
   return [
-    `# ${line(output.proposalTitle, 'Propuesta de iniciativa')}`,
+    `# ${narrative.title}`,
     '',
-    '## Resumen',
-    `- Qué quiere mover: ${line(output.whatToMove)}`,
-    `- A quién impacta: ${line(output.impactedAudience)}`,
-    `- Por qué importa ahora: ${line(output.whyNow)}`,
-    `- Respaldo inicial: ${line(output.initialEvidence, 'Aún falta documentar evidencia o señales iniciales.')}`,
-    `- Apoyo o decisión requerida: ${line([output.supportNeeded, output.decisionRequested].filter(Boolean).join(' '))}`,
+    '_Propuesta preliminar. No representa evidencia validada ni aprobación._',
     '',
-    '## Propuesta estructurada',
-    `### Qué quiere mover\n${line(output.whatToMove)}`,
+    `**Foco:** ${narrative.focus}`,
     '',
-    `### Por qué importa ahora\n${line(output.whyNow)}`,
+    '## Resumen claro',
+    narrative.summary,
     '',
-    `### A quién impacta\n${line(output.impactedAudience)}`,
+    '## Situación actual',
+    line(output.whatToMove, narrative.currentSituation),
     '',
-    `### Evidencia o respaldo inicial\n${line(output.initialEvidence, 'Aún falta documentar evidencia o señales iniciales.')}`,
+    '## Por qué importa',
+    line(output.whyNow, narrative.whyMatters),
     '',
-    `### Stakeholder sugerido\n${line(output.suggestedStakeholder)}`,
+    '## A quién impacta',
+    line(output.impactedAudience, narrative.audience),
     '',
-    `### Apoyo o decisión requerida\n${line([output.supportNeeded, output.decisionRequested].filter(Boolean).join(' '))}`,
+    '## Hipótesis inicial',
+    narrative.hypothesis,
     '',
-    `### Tipo de reto sugerido\n${challengeTypeLabel(output.suggestedChallengeType)}`,
+    '## Qué te hace pensar que esto importa',
+    line(output.initialEvidence, narrative.signal),
     '',
-    `### KPI o señal sugerida\n${line(output.suggestedKpiOrSignal)}`,
+    '## Qué falta aclarar',
+    list(narrative.validationItems),
     '',
-    '## Faltantes recomendados',
-    list(output.missingCriticalFields),
+    '## Primer paso recomendado',
+    narrative.nextStep,
     '',
-    '## Riesgos o supuestos',
-    list(output.risks),
+    '## Cómo seguir en Starteria',
+    'Puedes convertir este borrador en una iniciativa dentro de Starteria para profundizar el contexto, ordenar señales, definir prioridades, identificar responsables y preparar una ruta de acción.',
     '',
-    '## Siguiente acción',
-    line(output.nextRecommendedAction),
-    '',
-    '_Documento generado desde el modo público de Starteria. Esta propuesta no representa evidencia validada ni aprobación._',
+    '_Documento generado desde el modo público de Starteria. Úsalo para conversar, validar y decidir si conviene llevar la iniciativa a Starteria._',
   ].join('\n');
 }
 
@@ -66,7 +54,8 @@ export function downloadPublicProposal(draft: PublicDraft): void {
   const markdown = buildPublicProposalMarkdown(draft);
   const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const filenameBase = (draft.aiOutput.proposalTitle || 'propuesta-starteria')
+  const narrative = inferPublicDraftNarrative(draft.inputText, draft.aiOutput);
+  const filenameBase = narrative.title
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

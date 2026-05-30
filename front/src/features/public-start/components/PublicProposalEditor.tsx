@@ -1,18 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, FileText, Loader2, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Circle,
+  FileText,
+  HelpCircle,
+  Loader2,
+  PenLine,
+  Sparkles,
+  Wand2,
+} from 'lucide-react';
 import type { PublicDraft, PublicDraftOutput } from '../domain/types';
-import { finishPublicDraft, generateMockPublicDraftOutput, updatePublicDraftAnswers } from '../services/publicDraftService';
+import { finishPublicDraft, generateMockPublicDraftOutput, normalizePublicProposalTitle } from '../services/publicDraftService';
 import { updatePublicDraft } from '../services/publicDraftStorage';
 import { buildPublicProposalMarkdown } from '../services/publicProposalExportService';
-import { PublicAIAssistPanel, type PublicAISuggestion } from './PublicAIAssistPanel';
-import { PublicFieldDropdown } from './PublicFieldDropdown';
 import { PublicOnePagerPreview } from './PublicOnePagerPreview';
 import type { PublicEditorQuestionStatus } from './PublicQuestionCard';
-import { AutofillField } from '../../../app/components/autofill/AutofillField';
-import { AutofillLocalPersistenceProvider, selectProposal, useAutofillContext } from '../../../app/context/AutofillContext';
-import { isPdfAutofillEnabled } from '../../../app/services/featureFlags';
-import { STEP0_FIELD_PATH } from '../domain/step0FieldPath';
+import { usePublicDraftAutoSeed } from '../hooks/usePublicDraftAutoSeed';
 
 type EditableField = keyof Pick<
   PublicDraftOutput,
@@ -20,214 +27,282 @@ type EditableField = keyof Pick<
 >;
 type ContextStatus = 'idle' | 'classifying' | 'classified' | 'applied';
 
-const FIELDS: Array<{ id: EditableField; label: string; question: string; helper: string; placeholder: string; required?: boolean }> = [
-  { id: 'proposalTitle', label: 'Nombre de la iniciativa', question: 'Como se llama esta iniciativa?', helper: 'Usa un nombre concreto que ayude a entender el cambio que quieres mover.', placeholder: 'Ej. Reducir demoras en aprobaciones internas', required: true },
-  { id: 'whatToMove', label: 'Que quieres mover', question: 'Que objetivo, problema u oportunidad quieres mover?', helper: 'Describe el cambio que buscas provocar, sin cerrar todavia la solucion.', placeholder: 'Ej. Reducir el tiempo de aprobacion de solicitudes internas...', required: true },
-  { id: 'whyNow', label: 'Por que importa ahora', question: 'Por que importa resolverlo ahora?', helper: 'Conecta urgencia, costo de esperar o ventana de oportunidad.', placeholder: 'Ej. Si se posterga, el equipo seguira perdiendo seguimiento...', required: true },
-  { id: 'impactedAudience', label: 'A quien impacta', question: 'A quien impacta esta iniciativa?', helper: 'Nombra personas, equipos, clientes o areas afectadas directamente.', placeholder: 'Ej. Equipo comercial, operaciones y personas que esperan aprobaciones.', required: true },
-  { id: 'initialEvidence', label: 'Que respaldo o senal tienes', question: 'Que evidencia o senal tienes hoy?', helper: 'No inventes evidencia. Puedes describir que senal falta buscar.', placeholder: 'Ej. Reclamos, tiempo perdido, feedback interno, dato de reporte...' },
-  { id: 'supportNeeded', label: 'Que apoyo necesitas', question: 'Que apoyo o decision necesitas para avanzar?', helper: 'Aclara si necesitas feedback, permiso para validar, acceso a datos o sponsor.', placeholder: 'Ej. Permiso para validar con usuarios y acceso a datos del proceso.' },
+interface FieldConfig {
+  id: EditableField;
+  label: string;
+  question: string;
+  helper: string;
+  placeholder: string;
+  required?: boolean;
+}
+
+interface FieldSuggestion {
+  questionId: EditableField;
+  currentValue: string;
+  suggestedValue: string;
+  rationale: string;
+  fromInitialInfo: boolean;
+  version: number;
+}
+
+const FIELDS: FieldConfig[] = [
+  {
+    id: 'proposalTitle',
+    label: 'Nombre de la iniciativa',
+    question: 'Nombre de la iniciativa',
+    helper: 'Ponle un nombre simple y entendible. No tiene que ser definitivo.',
+    placeholder: 'Ej. Organizar la carga de proyectos en Tax & Legal',
+    required: true,
+  },
+  {
+    id: 'whatToMove',
+    label: 'Qué quieres cambiar, mejorar o explorar',
+    question: 'Qué quieres cambiar, mejorar o explorar',
+    helper: 'Resume qué situación quieres ordenar: un problema, una oportunidad o algo que necesitas entender mejor.',
+    placeholder: 'Ej. Ordenar la gestión de proyectos simultáneos entre Tax & Legal y Precios de Transferencia.',
+    required: true,
+  },
+  {
+    id: 'whyNow',
+    label: 'Por qué importa ahora',
+    question: 'Por qué importa ahora',
+    helper: 'Explica qué pasa si esto sigue igual o qué oportunidad se puede perder.',
+    placeholder: 'Ej. La carga actual puede generar retrasos, dependencia excesiva de una persona y menor calidad en la entrega.',
+    required: true,
+  },
+  {
+    id: 'impactedAudience',
+    label: 'A quién impacta',
+    question: 'A quién impacta',
+    helper: 'Indica qué personas, equipos, áreas, clientes o procesos se ven afectados.',
+    placeholder: 'Ej. Equipo de Tax & Legal, área de Precios de Transferencia, practicante/asistente y clientes internos.',
+    required: true,
+  },
+  {
+    id: 'initialEvidence',
+    label: 'Qué te hace pensar que esto importa',
+    question: 'Qué te hace pensar que esto importa',
+    helper:
+      'Puede ser una demora, reclamo, sobrecarga, retrabajo, dato, conversación o una intuición basada en experiencia. No necesitas evidencia perfecta.',
+    placeholder: 'Ej. Hay demasiados proyectos simultáneos, poca capacidad de apoyo y varias tareas terminan dependiendo de mí.',
+  },
+  {
+    id: 'supportNeeded',
+    label: 'Qué decisión o apoyo necesitas',
+    question: 'Qué decisión o apoyo necesitas',
+    helper: 'Indica qué necesitas para avanzar: priorización, tiempo, datos, apoyo de otra área, validación o autorización.',
+    placeholder: 'Ej. Necesito priorizar proyectos, definir responsabilidades y acordar apoyo con el área involucrada.',
+  },
 ];
 
-const REQUIRED_FIELDS: EditableField[] = ['proposalTitle', 'whatToMove', 'whyNow', 'impactedAudience'];
 const GENERIC = new Set(['no se', 'no sé', 'por definir', 'pendiente', 'n/a', 'na', 'ninguno', 'no aplica']);
-const DESTINATIONS: Array<{ field: EditableField; label: string }> = [
-  { field: 'impactedAudience', label: 'impacto' },
-  { field: 'initialEvidence', label: 'evidencia' },
-  { field: 'whyNow', label: 'urgencia' },
-  { field: 'supportNeeded', label: 'decision' },
+const SIGNAL_CHIPS = [
+  'Hay sobrecarga de trabajo',
+  'Hay demoras visibles',
+  'Hay retrabajo',
+  'Hay dependencia de una persona',
+  'Hay reclamos o presión interna',
+  'Es una hipótesis por validar',
+  'No tengo evidencia aún',
 ];
+const DESTINATIONS: Array<{ field: EditableField; label: string }> = [
+  { field: 'impactedAudience', label: 'Impacto' },
+  { field: 'initialEvidence', label: 'Señal actual' },
+  { field: 'whyNow', label: 'Urgencia' },
+  { field: 'supportNeeded', label: 'Decisión o apoyo' },
+];
+
+const STATUS_COPY: Record<PublicEditorQuestionStatus, { label: string; className: string; icon: 'check' | 'circle' | 'edit' }> = {
+  review: { label: 'Revisar', className: 'border-sky-200 bg-sky-50 text-sky-700', icon: 'circle' },
+  missing: { label: 'Falta aclarar', className: 'border-amber-200 bg-amber-50 text-amber-700', icon: 'circle' },
+  confirmed: { label: 'Confirmado', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: 'check' },
+  ai_refined: { label: 'Mejorado con IA', className: 'border-violet-200 bg-violet-50 text-violet-700', icon: 'check' },
+  suggestion_available: { label: 'Sugerencia disponible', className: 'border-violet-200 bg-violet-50 text-violet-700', icon: 'edit' },
+};
 
 function clean(value: string | undefined) {
   return (value ?? '').trim();
 }
 
-function fieldStatus(value: string | undefined, aiRefined: boolean): PublicEditorQuestionStatus {
-  if (aiRefined) return 'ai_refined';
-  const normalized = clean(value);
-  if (!normalized) return 'missing';
-  if (normalized.length <= 15 || GENERIC.has(normalized.toLowerCase())) return 'needs_improvement';
-  return 'complete';
+function isTooGeneric(value: string | undefined) {
+  const normalized = clean(value).toLowerCase();
+  return !normalized || normalized.length <= 15 || GENERIC.has(normalized);
 }
 
-function isComplete(value: string | undefined) {
-  return fieldStatus(value, false) === 'complete';
+function fieldStatus(
+  field: EditableField,
+  value: string | undefined,
+  confirmedFields: Set<string>,
+  aiRefinedFields: Set<string>,
+  suggestionField: string | null,
+): PublicEditorQuestionStatus {
+  if (suggestionField === field) return 'suggestion_available';
+  if (confirmedFields.has(field)) return 'confirmed';
+  if (aiRefinedFields.has(field)) return 'ai_refined';
+  if (isTooGeneric(value)) return 'missing';
+  return 'review';
 }
 
 function missingRequired(output: PublicDraftOutput) {
-  return FIELDS.filter(field => field.required && !isComplete(String(output[field.id] ?? '')));
+  return FIELDS.filter(field => field.required && isTooGeneric(String(output[field.id] ?? '')));
 }
 
-function precisionFields(output: PublicDraftOutput) {
-  return FIELDS.filter(field => fieldStatus(String(output[field.id] ?? ''), false) !== 'complete');
+function needsClarity(output: PublicDraftOutput, confirmedFields: Set<string>, aiRefinedFields: Set<string>, suggestionField: string | null) {
+  return FIELDS.filter(field => fieldStatus(field.id, String(output[field.id] ?? ''), confirmedFields, aiRefinedFields, suggestionField) === 'missing');
 }
 
-function missingLabels(output: PublicDraftOutput) {
-  return precisionFields(output).map(field => field.label);
+function missingLabels(output: PublicDraftOutput, confirmedFields: Set<string>, aiRefinedFields: Set<string>, suggestionField: string | null) {
+  return needsClarity(output, confirmedFields, aiRefinedFields, suggestionField).map(field => field.label);
 }
 
 function risks(output: PublicDraftOutput) {
-  const items = ['La propuesta sigue siendo temporal y aun no equivale a una validacion.'];
-  if (!isComplete(output.initialEvidence)) items.push('Falta evidencia o una senal inicial para sostener mejor la conversacion.');
-  if (!isComplete(output.supportNeeded) && !isComplete(output.decisionRequested)) items.push('Aun no esta claro que decision permitira avanzar.');
+  const items = ['La propuesta sigue siendo preliminar y aún no equivale a una validación.'];
+  if (!clean(output.initialEvidence) || /no tengo evidencia aún|hipótesis por validar/i.test(output.initialEvidence ?? '')) {
+    items.push('La evidencia está pendiente de confirmar con señales, datos o conversaciones.');
+  }
+  if (!clean(output.supportNeeded) && !clean(output.decisionRequested)) items.push('Aún falta aclarar qué decisión o apoyo permitiría avanzar.');
   return items;
 }
 
 function nextAction(output: PublicDraftOutput) {
-  const missing = missingRequired(output);
-    if (missing.length === 0) return 'Revisa el one-pager y decide si quieres seguir construyendo esta iniciativa.';
-  return `Completa primero: ${missing.map(field => field.label).join(', ')}.`;
+  const text = `${output.proposalTitle} ${output.whatToMove}`;
+  if (/tax\s*&\s*legal|precios de transferencia/i.test(text)) {
+    return 'Mapear proyectos activos, responsables, fechas límite, urgencia, tareas pendientes y dependencias con otras áreas.';
+  }
+  if (/ventas|producto nuevo/i.test(text)) {
+    return 'Revisar conversaciones comerciales recientes, objeciones frecuentes y ejemplos de clientes que sí entendieron el valor del producto.';
+  }
+  if (/aprobaci[oó]n|solicitudes internas/i.test(text)) {
+    return 'Revisar el flujo actual de aprobación, tiempos promedio, responsables y puntos donde se pierde seguimiento.';
+  }
+  return 'Continuar ordenando la propuesta con las personas involucradas y revisar qué señales permiten decidir el siguiente paso.';
 }
 
 function inferDestination(value: string): EditableField {
-  if (/(reclamo|venta|tiempo|feedback|reporte|dato|metrica|observacion|evidencia)/i.test(value)) return 'initialEvidence';
-  if (/(decision|permiso|presupuesto|sponsor|acceso|validar|feedback)/i.test(value)) return 'supportNeeded';
+  if (/(reclamo|tiempo|feedback|reporte|dato|métrica|observación|evidencia|hipótesis|sobrecarga|retrabajo)/i.test(value)) return 'initialEvidence';
+  if (/(decisión|permiso|presupuesto|líder|responsable|acceso|validar|autorización)/i.test(value)) return 'supportNeeded';
   if (/(ahora|urgente|demora|costo|riesgo|oportunidad|mes|semana)/i.test(value)) return 'whyNow';
   return 'impactedAudience';
 }
 
-function buildSuggestion(field: EditableField, value: string): PublicAISuggestion {
+function buildSuggestion(field: EditableField, value: string, fallback: PublicDraftOutput, version = 1): FieldSuggestion {
+  const current = value.trim();
+  const fromInitialInfo = current.length === 0;
+  const titleBase = normalizePublicProposalTitle(current || fallback.proposalTitle || fallback.whatToMove, 'Organizar una iniciativa preliminar');
   const suggestions: Record<EditableField, string> = {
-    proposalTitle: value.trim() || 'Propuesta para mover una friccion critica',
-    whatToMove: value.trim().length > 15 ? `${value.trim()} El primer foco sera entender la friccion principal, su impacto y una senal observable para decidir si conviene avanzar.` : 'Queremos aterrizar el problema u oportunidad en una primera senal observable antes de disenar una solucion.',
-    whyNow: value.trim().length > 15 ? `${value.trim()} Si se posterga, puede seguir generando retrabajo, demora o perdida de oportunidad.` : 'Importa resolverlo ahora porque esperar puede aumentar retrabajo, demoras o perdida de oportunidad.',
-    impactedAudience: value.trim().length > 15 ? value.trim() : 'Impacta a las personas que ejecutan o dependen del proceso afectado y al equipo que debe priorizar recursos.',
-    initialEvidence: value.trim().length > 15 ? value.trim() : 'Aun no tengo evidencia documentada. El siguiente paso es buscar datos de tiempo, casos repetidos, feedback de usuarios o una entrevista breve.',
-    supportNeeded: value.trim().length > 15 ? `${value.trim()} La decision minima es confirmar si vale la pena seguir construyendo esta iniciativa.` : 'Necesito feedback, acceso a informacion inicial y permiso para validar si vale la pena desarrollar esta iniciativa.',
-    decisionRequested: value.trim().length > 15 ? value.trim() : 'Confirmar si esta propuesta debe convertirse en iniciativa para seguir avanzando.',
+    proposalTitle: titleBase,
+    whatToMove: fromInitialInfo
+      ? clean(fallback.whatToMove) || 'Ordenar la situación actual, aclarar qué está pasando y definir qué debe revisarse antes de decidir una solución.'
+      : current,
+    whyNow: fromInitialInfo
+      ? clean(fallback.whyNow) || 'Si esto sigue igual, puede mantenerse la sobrecarga, la pérdida de seguimiento o la dificultad para priorizar correctamente.'
+      : current,
+    impactedAudience: fromInitialInfo
+      ? clean(fallback.impactedAudience) || 'Personas, equipos, áreas o procesos que dependen de que esta situación se ordene.'
+      : current,
+    initialEvidence: fromInitialInfo
+      ? clean(fallback.initialEvidence) || 'No tengo evidencia aún. La señal inicial debe validarse con datos, conversaciones o revisión del proceso.'
+      : current,
+    supportNeeded: fromInitialInfo
+      ? clean(fallback.supportNeeded) || 'Necesito priorización, tiempo, datos o apoyo de una persona que pueda desbloquear la decisión.'
+      : current,
+    decisionRequested: fromInitialInfo
+      ? clean(fallback.decisionRequested) || 'Definir si esta propuesta debe convertirse en iniciativa para seguir ordenándola en Starteria.'
+      : current,
   };
+
+  const refinementPrefix = version > 1 && !fromInitialInfo ? 'Versión alternativa: ' : '';
   return {
     questionId: field,
     currentValue: value,
-    suggestedValue: suggestions[field],
-    rationale: 'Hace la respuesta mas especifica y accionable sin asumir evidencia ni aprobacion.',
+    suggestedValue: `${refinementPrefix}${suggestions[field]}`.trim(),
+    fromInitialInfo,
+    version,
+    rationale: fromInitialInfo
+      ? 'Sugerencia generada a partir de la información inicial para que tengas una base editable.'
+      : 'Aclara la redacción para que el punto sea más concreto, revisable y útil dentro de la propuesta preliminar.',
   };
 }
 
-const STATUS_COPY: Record<PublicEditorQuestionStatus, { label: string; className: string }> = {
-  complete: { label: 'Completo', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-  missing: { label: 'Falta completar', className: 'border-amber-200 bg-amber-50 text-amber-700' },
-  needs_improvement: { label: 'Necesita precision', className: 'border-sky-200 bg-sky-50 text-sky-700' },
-  ai_refined: { label: 'Afinado con IA', className: 'border-violet-200 bg-violet-50 text-violet-700' },
-};
-
+function pluralPoint(count: number) {
+  if (count === 0) return 'Sin puntos pendientes';
+  if (count === 1) return '1 punto necesita más claridad';
+  return `${count} puntos necesitan más claridad`;
+}
 
 export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDraft }) {
   const navigate = useNavigate();
-  const autofillOn = isPdfAutofillEnabled();
+  const editorPanelRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const highlightTimerRef = useRef<number | null>(null);
   const [draft, setDraft] = useState(initialDraft);
   const [activeField, setActiveField] = useState<EditableField>('proposalTitle');
   const [activeValue, setActiveValue] = useState(String(initialDraft.aiOutput.proposalTitle ?? ''));
+  const [confirmedFields, setConfirmedFields] = useState<Set<string>>(() => new Set());
   const [aiRefinedFields, setAiRefinedFields] = useState<Set<string>>(() => new Set());
+  const [showEvidenceHelp, setShowEvidenceHelp] = useState(false);
   const [showOriginalIdea, setShowOriginalIdea] = useState(false);
   const [originalIdeaDraft, setOriginalIdeaDraft] = useState(initialDraft.inputText);
   const [originalIdeaStatus, setOriginalIdeaStatus] = useState<'synced' | 'dirty' | 'updating'>('synced');
   const [contextInput, setContextInput] = useState('');
   const [contextStatus, setContextStatus] = useState<ContextStatus>('idle');
   const [selectedDestination, setSelectedDestination] = useState<EditableField>('impactedAudience');
-  const [suggestion, setSuggestion] = useState<PublicAISuggestion | null>(null);
+  const [suggestion, setSuggestion] = useState<FieldSuggestion | null>(null);
+  const [suggestionLoading, setSuggestionLoading] = useState(false);
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
+  const [previewHighlight, setPreviewHighlight] = useState<EditableField | null>(null);
 
-  // ---- Auto-seed aiOutput from AutofillContext proposals -----------------
-  //
-  // After a PDF upload on /public/start, the agent extracts step0 fields and
-  // proposals are merged into AutofillContext keyed by this draft.id. The
-  // chips on the per-field editor on the left would normally drive the
-  // one-pager preview on the right only AFTER the user confirms each chip —
-  // but the user expects the preview to populate immediately, the chips
-  // becoming "Afinado con IA" markers they can still tweak.
-  //
-  // This effect bridges proposals → draft.aiOutput on mount and whenever the
-  // proposals slice for this draftId changes. It only seeds fields whose
-  // current aiOutput value is empty/whitespace, so user edits are never
-  // overwritten.
-  const { state: autofillState } = useAutofillContext();
-  // Stable signature derived from the proposals we care about: rebuilds the
-  // effect only when a relevant field's effective value (final ?? proposed)
-  // actually changes. Keying off `state.byInitiative[draft.id]` reference
-  // alone would also work, but a value-based signature makes the dependency
-  // boring and impossible to accidentally retrigger from unrelated dispatches.
-  const proposalSignature = useMemo(() => {
-    const slice = autofillState.byInitiative[draft.id];
-    if (!slice) return '';
-    const parts: string[] = [];
-    for (const field of FIELDS) {
-      const path = STEP0_FIELD_PATH[field.id];
-      if (!path) continue;
-      const p = slice[path];
-      if (!p) continue;
-      const effective = (p.finalValue ?? p.proposedValue) as unknown;
-      parts.push(`${field.id}:${typeof effective === 'string' ? effective : ''}`);
-    }
-    return parts.join('|');
-  }, [autofillState.byInitiative, draft.id]);
+  // Auto-seed step0.* fields from PDF-autofill proposals (feature-flagged via
+  // AutofillContext). Idempotent: only fills empty fields, never overwrites a
+  // user edit. Keeps the PDF-upload → editor pipeline intact after the
+  // master-detail redesign. See [[usePublicDraftAutoSeed]].
+  usePublicDraftAutoSeed(draft.id, draft, refreshed => {
+    setDraft(refreshed);
+    setActiveValue(prev => (prev.trim() ? prev : String(refreshed.aiOutput[activeField] ?? '')));
+  });
+
+  const suggestionField = suggestion?.questionId ?? null;
+  const requiredMissing = useMemo(() => missingRequired(draft.aiOutput), [draft.aiOutput]);
+  const clarityMissing = useMemo(
+    () => needsClarity(draft.aiOutput, confirmedFields, aiRefinedFields, suggestionField),
+    [draft.aiOutput, confirmedFields, aiRefinedFields, suggestionField],
+  );
+  const reviewedCount = confirmedFields.size + aiRefinedFields.size;
+  const canContinue = requiredMissing.length === 0;
+  const canExport = canContinue && clarityMissing.length <= 2;
+  const activeConfig = FIELDS.find(field => field.id === activeField) ?? FIELDS[0];
+  const canAdjustFromBar = contextInput.trim().length > 0;
 
   useEffect(() => {
-    const patch: Partial<Record<EditableField, string>> = {};
-    const newlyRefined: EditableField[] = [];
-    for (const field of FIELDS) {
-      const path = STEP0_FIELD_PATH[field.id];
-      if (!path) continue;
-      const proposal = selectProposal(autofillState, draft.id, path);
-      if (!proposal) continue;
-      const raw = (proposal.finalValue ?? proposal.proposedValue) as unknown;
-      if (typeof raw !== 'string') continue;
-      const trimmed = raw.trim();
-      if (!trimmed) continue;
-      const current = String(draft.aiOutput[field.id] ?? '').trim();
-      if (current) continue; // user-set or already seeded: do not overwrite
-      patch[field.id] = trimmed;
-      newlyRefined.push(field.id);
-    }
-    if (newlyRefined.length === 0) return;
+    textareaRef.current?.focus({ preventScroll: true });
+  }, [activeField]);
 
-    setDraft(prev => ({
-      ...prev,
-      aiOutput: { ...prev.aiOutput, ...patch },
-    }));
-    setAiRefinedFields(prev => {
-      const next = new Set(prev);
-      for (const id of newlyRefined) next.add(id);
-      return next;
-    });
-    // Sync the editor textarea on the left only when it's still empty for the
-    // currently active field — never fight an in-progress user edit.
-    if (newlyRefined.includes(activeField) && !activeValue.trim()) {
-      const seeded = patch[activeField];
-      if (seeded) setActiveValue(seeded);
-    }
-    // Persist the patch through the existing storage helper so a reload
-    // within the draft's lifespan keeps the seeded values.
-    updatePublicDraftAnswers(draft.id, patch as Record<string, string>);
-    // We intentionally exclude `draft.aiOutput`, `activeField`, `activeValue`
-    // from deps: the effect must only run when the proposals slice changes.
-    // `proposalSignature` is value-based, so re-runs stop once the slice
-    // stabilises and the guard (`current` non-empty) is idempotent on top.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proposalSignature, draft.id]);
-
-  const requiredMissing = useMemo(() => missingRequired(draft.aiOutput), [draft.aiOutput]);
-  const precisionMissing = useMemo(() => precisionFields(draft.aiOutput), [draft.aiOutput]);
-  const completedCount = FIELDS.length - precisionMissing.length;
-  const canContinue = requiredMissing.length === 0;
-  const canExport = canContinue && precisionMissing.length <= 2;
-  const activeConfig = FIELDS.find(field => field.id === activeField) ?? FIELDS[0];
-  const activeFieldChanged = activeValue.trim() !== String(draft.aiOutput[activeField] ?? '').trim();
-  const canRefineFromBar = contextInput.trim().length > 0 || completedCount === FIELDS.length || activeFieldChanged;
-  const missingCopy = requiredMissing.length > 0
-    ? `Faltan ${requiredMissing.map(field => field.label.toLowerCase()).join(' y ')}`
-    : precisionMissing.length > 0
-      ? `${precisionMissing.length} campos necesitan precision`
-      : 'Lista para guardar';
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    };
+  }, []);
 
   const persistDraft = (patch: Partial<PublicDraft>) => {
     const updated = updatePublicDraft(draft.id, patch);
     if (updated) setDraft(updated);
   };
 
-  const persistOutput = (output: PublicDraftOutput) => {
+  const showSaved = (message: string) => {
+    setSavedNotice(message);
+    window.setTimeout(() => setSavedNotice(null), 2400);
+  };
+
+  const persistOutput = (
+    output: PublicDraftOutput,
+    nextConfirmedFields = confirmedFields,
+    nextAiRefinedFields = aiRefinedFields,
+    nextSuggestionField = suggestionField,
+  ) => {
     const nextOutput = {
       ...output,
-      missingCriticalFields: missingLabels(output),
+      proposalTitle: normalizePublicProposalTitle(output.proposalTitle || output.whatToMove, 'Propuesta preliminar de iniciativa'),
+      missingCriticalFields: missingLabels(output, nextConfirmedFields, nextAiRefinedFields, nextSuggestionField),
       risks: risks(output),
       nextRecommendedAction: nextAction(output),
     };
@@ -235,8 +310,8 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
       status: 'edited',
       aiOutput: nextOutput,
       aiRecommendation: {
-        summary: 'La propuesta se esta afinando con tus respuestas. Aun no se considera validada.',
-        goodPoints: ['La propuesta ya tiene una estructura editable.', 'Los faltantes quedan visibles para decidir el siguiente paso.'],
+        summary: 'La propuesta se está ajustando como borrador preliminar. Todavía requiere revisión del usuario.',
+        goodPoints: ['La idea ya tiene una estructura conversable.', 'Los puntos pendientes ayudan a definir la siguiente conversación.'],
         missing: nextOutput.missingCriticalFields,
         nextAction: nextOutput.nextRecommendedAction,
         confidenceScore: nextOutput.confidenceScore,
@@ -244,36 +319,78 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
     });
   };
 
-  const updateField = (field: EditableField, value: string) => {
+  const updateField = (
+    field: EditableField,
+    value: string,
+    options: { confirmed?: boolean; aiRefined?: boolean; message?: string } = {},
+  ) => {
     const nextOutput = { ...draft.aiOutput, [field]: value };
-    if (field === 'supportNeeded' && !draft.aiOutput.decisionRequested?.trim()) nextOutput.decisionRequested = value;
-    persistOutput(nextOutput);
+    if (field === 'whatToMove' && !clean(draft.aiOutput.proposalTitle)) nextOutput.proposalTitle = normalizePublicProposalTitle(value);
+    if (field === 'supportNeeded' && !clean(draft.aiOutput.decisionRequested)) nextOutput.decisionRequested = value;
+
+    const nextConfirmedFields = new Set(confirmedFields);
+    const nextAiRefinedFields = new Set(aiRefinedFields);
+    if (options.confirmed) nextConfirmedFields.add(field);
+    if (options.aiRefined) nextAiRefinedFields.add(field);
+    setConfirmedFields(nextConfirmedFields);
+    setAiRefinedFields(nextAiRefinedFields);
+
+    persistOutput(nextOutput, nextConfirmedFields, nextAiRefinedFields, null);
+    showSaved(options.message ?? 'La propuesta se actualizó con este ajuste.');
   };
 
   const selectField = (field: EditableField) => {
     setActiveField(field);
     setActiveValue(String(draft.aiOutput[field] ?? ''));
+    setSuggestion(null);
+    setSavedNotice(null);
+    setPreviewHighlight(field);
+    window.setTimeout(() => {
+      textareaRef.current?.focus({ preventScroll: true });
+      editorPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 0);
+    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = window.setTimeout(() => setPreviewHighlight(null), 800);
   };
 
   const saveActiveField = () => {
-    updateField(activeField, activeValue);
+    updateField(activeField, activeValue, { confirmed: true, message: 'Cambio guardado. La propuesta se actualizó con este ajuste.' });
   };
 
   const useExample = () => {
     setActiveValue(buildSuggestion(activeField, '', draft.aiOutput).suggestedValue);
   };
 
-  const refineActiveField = () => {
-    setSuggestion(buildSuggestion(activeField, activeValue, draft.aiOutput));
+  const adjustActiveField = (version = 1) => {
+    setSuggestionLoading(true);
+    setSuggestion(null);
+    window.setTimeout(() => {
+      setSuggestion(buildSuggestion(activeField, activeValue, draft.aiOutput, version));
+      setSuggestionLoading(false);
+    }, 450);
   };
 
   const applySuggestion = () => {
     if (!suggestion) return;
-    const field = suggestion.questionId as EditableField;
-    updateField(field, suggestion.suggestedValue);
+    const field = suggestion.questionId;
+    updateField(field, suggestion.suggestedValue, { aiRefined: true, message: 'Sugerencia aplicada. El punto quedó mejorado con IA.' });
     if (field === activeField) setActiveValue(suggestion.suggestedValue);
-    setAiRefinedFields(prev => new Set(prev).add(field));
     setSuggestion(null);
+  };
+
+  const regenerateSuggestion = () => {
+    adjustActiveField((suggestion?.version ?? 1) + 1);
+  };
+
+  const appendSignalChip = (chip: string) => {
+    const currentLines = activeValue
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    if (currentLines.some(line => line.toLowerCase() === chip.toLowerCase())) return;
+
+    setActiveValue(currentLines.length > 0 ? `${currentLines.join('\n')}\n${chip}` : chip);
   };
 
   const updateOriginalIdea = (value: string) => {
@@ -297,6 +414,7 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
       setActiveField('proposalTitle');
       setActiveValue(generated.proposalTitle);
       setOriginalIdeaStatus('synced');
+      showSaved('La propuesta se actualizó desde la idea original.');
     }, 450);
   };
 
@@ -312,7 +430,7 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
   const applyContext = () => {
     const current = String(draft.aiOutput[selectedDestination] ?? '').trim();
     const nextValue = current ? `${current}\n${contextInput.trim()}` : contextInput.trim();
-    updateField(selectedDestination, nextValue);
+    updateField(selectedDestination, nextValue, { message: 'La propuesta general se actualizó con tu contexto.' });
     if (selectedDestination === activeField) setActiveValue(nextValue);
     setContextInput('');
     setContextStatus('applied');
@@ -329,105 +447,194 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
   };
 
   return (
-    <AutofillLocalPersistenceProvider>
-    <div className="mx-auto flex min-h-[calc(100vh-96px)] max-w-[1560px] flex-col gap-4 px-3 pb-28 pt-3 lg:px-5">
+    <div className="mx-auto flex min-h-[calc(100vh-96px)] max-w-[1540px] flex-col gap-5 px-2 pb-44 pt-4 sm:px-4 lg:px-6">
       <header className="rounded-3xl bg-white/80 px-4 py-3 shadow-sm ring-1 ring-slate-200/80 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-lg text-slate-950" style={{ fontWeight: 900 }}>Propuesta de iniciativa</h1>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">Borrador en edicion</span>
-          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">{completedCount}/{FIELDS.length} campos completos</span>
-          <span className="ml-auto text-xs text-slate-500" style={{ fontWeight: 750 }}>{missingCopy}</span>
+          <h1 className="text-lg text-slate-950" style={{ fontWeight: 900 }}>Propuesta preliminar</h1>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">Borrador para revisar</span>
+          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">{reviewedCount}/{FIELDS.length} puntos revisados</span>
+          <span className="ml-auto text-xs text-slate-500" style={{ fontWeight: 750 }}>{pluralPoint(clarityMissing.length)}</span>
         </div>
       </header>
 
-      <div className="grid flex-1 gap-5 xl:grid-cols-[minmax(280px,30fr)_minmax(0,70fr)]">
-        <section className="space-y-4">
-          <div className="rounded-3xl bg-white/78 p-4 shadow-sm ring-1 ring-slate-200/80">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-base text-slate-950" style={{ fontWeight: 900 }}>Completa lo esencial</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">Elige un campo, guardalo y revisa como cambia el one-pager.</p>
+      <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(520px,34%)_minmax(0,1fr)] xl:gap-7">
+        <section className="min-w-0">
+          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 lg:sticky lg:top-24">
+            <h2 className="text-base text-slate-950" style={{ fontWeight: 900 }}>Complementa tu idea</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Revisa cada punto, ajusta lo necesario y confirma lo que sí representa tu caso.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              No tiene que estar perfecto. Buscamos suficiente claridad para iniciar una buena conversación.
+            </p>
+
+            <div className="mt-4 grid gap-2">
+              {FIELDS.map(field => {
+                const status = fieldStatus(field.id, String(draft.aiOutput[field.id] ?? ''), confirmedFields, aiRefinedFields, suggestionField);
+                const statusCopy = STATUS_COPY[status];
+                const Icon = statusCopy.icon === 'check' ? CheckCircle2 : statusCopy.icon === 'edit' ? PenLine : Circle;
+                const isActive = activeField === field.id;
+                return (
+                  <button
+                    key={field.id}
+                    type="button"
+                    onClick={() => selectField(field.id)}
+                    className={`group grid min-h-14 w-full grid-cols-[24px_minmax(0,1fr)_112px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all ${
+                      isActive
+                        ? 'border-violet-300 bg-violet-50 text-violet-950 shadow-sm shadow-violet-100/70 ring-2 ring-violet-100'
+                        : 'border-transparent bg-transparent text-slate-700 hover:border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Icon size={16} className={`shrink-0 justify-self-center ${isActive ? 'text-violet-600' : statusCopy.icon === 'check' ? 'text-emerald-500' : 'text-slate-300'}`} />
+                    <span className="min-w-0 text-sm leading-5 line-clamp-2" style={{ fontWeight: 800 }}>
+                      {field.label}
+                    </span>
+                    <span className={`w-[112px] justify-self-end rounded-full border px-2 py-1 text-center text-[11px] ${isActive ? 'border-violet-200 bg-violet-600 text-white' : statusCopy.className}`} style={{ fontWeight: 800 }}>
+                      {isActive ? 'Editando' : statusCopy.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div ref={editorPanelRef} className="mt-4 scroll-mt-28 rounded-[1.35rem] border border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-4 shadow-inner">
+              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-2.5 py-1 text-[11px] uppercase text-indigo-700" style={{ fontWeight: 900, letterSpacing: '0.06em' }}>
+                <PenLine size={12} /> Estás editando
+              </p>
+              <h3 className="mt-3 text-lg text-slate-950" style={{ fontWeight: 900 }}>{activeConfig.question}</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Completa o ajusta este punto para mejorar la claridad de la propuesta.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{activeConfig.helper}</p>
+
+              {activeField === 'initialEvidence' && (
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2">
+                  <button type="button" onClick={() => setShowEvidenceHelp(prev => !prev)} className="flex w-full items-center justify-between gap-2 text-left text-xs text-slate-700" style={{ fontWeight: 850 }}>
+                    <span className="inline-flex items-center gap-2"><HelpCircle size={14} />¿Por qué pedimos esto?</span>
+                    {showEvidenceHelp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                  {showEvidenceHelp && (
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      Esto ayuda a distinguir una idea suelta de una situación que vale la pena revisar. No buscamos que pruebes todo ahora; solo queremos entender qué señales muestran que el tema existe.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <textarea
+                ref={textareaRef}
+                value={activeValue}
+                onChange={event => setActiveValue(event.target.value)}
+                rows={5}
+                placeholder={activeConfig.placeholder}
+                className="mt-4 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition-all focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100"
+              />
+
+              {activeField === 'initialEvidence' && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {SIGNAL_CHIPS.map(chip => {
+                    const isSelected = activeValue
+                      .split('\n')
+                      .map(line => line.trim().toLowerCase())
+                      .includes(chip.toLowerCase());
+
+                    return (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => appendSignalChip(chip)}
+                        aria-pressed={isSelected}
+                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                          isSelected
+                            ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700'
+                        }`}
+                        style={{ fontWeight: 750 }}
+                      >
+                        {chip}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {suggestionLoading && (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl border border-violet-200 bg-white px-4 py-3 text-sm text-violet-700">
+                  <Loader2 size={15} className="animate-spin" />
+                  Generando sugerencia para este punto...
+                </div>
+              )}
+
+              {suggestion && suggestion.questionId === activeField && (
+                <div className="mt-3 rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="inline-flex items-center gap-2 text-sm text-violet-950" style={{ fontWeight: 900 }}><Wand2 size={15} />Sugerencia IA</p>
+                      {suggestion.fromInitialInfo && (
+                        <p className="mt-1 text-xs text-violet-700">Sugerencia generada a partir de la información inicial.</p>
+                      )}
+                    </div>
+                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] text-violet-700" style={{ fontWeight: 800 }}>No se aplica sola</span>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-500" style={{ fontWeight: 800 }}>Tu versión actual</p>
+                      <p className="mt-1 rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-700">{suggestion.currentValue || 'Sin respuesta todavía.'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-violet-700" style={{ fontWeight: 800 }}>Propuesta sugerida por IA</p>
+                      <p className="mt-1 rounded-xl bg-violet-50 p-3 text-sm leading-6 text-violet-950">{suggestion.suggestedValue}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500" style={{ fontWeight: 800 }}>Por qué esta sugerencia mejora claridad</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-700">{suggestion.rationale}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    <button type="button" onClick={applySuggestion} className="rounded-xl bg-violet-700 px-3 py-2 text-xs text-white hover:bg-violet-800" style={{ fontWeight: 850 }}>Aplicar sugerencia</button>
+                    <button type="button" onClick={() => setSuggestion(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 850 }}>Mantener mi versión</button>
+                    <button type="button" onClick={regenerateSuggestion} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-700 hover:bg-violet-100" style={{ fontWeight: 850 }}>Regenerar</button>
+                  </div>
+                </div>
+              )}
+
+              {savedNotice && (
+                <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700" style={{ fontWeight: 800 }}>
+                  {savedNotice}
+                </div>
+              )}
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => adjustActiveField()} className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs text-violet-700 hover:bg-violet-50" style={{ fontWeight: 850 }}><Sparkles size={13} />Ajustar con IA</button>
+                <button type="button" onClick={useExample} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 800 }}>Usar ejemplo</button>
+                <button type="button" onClick={saveActiveField} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-700" style={{ fontWeight: 850 }}><CheckCircle2 size={13} />Guardar cambio</button>
               </div>
             </div>
-            <div className="mt-3">
-              <PublicFieldDropdown
-                items={FIELDS.map(field => ({
-                  id: field.id,
-                  label: field.label,
-                  status: fieldStatus(String(draft.aiOutput[field.id] ?? ''), aiRefinedFields.has(field.id)),
-                }))}
-                activeId={activeField}
-                onSelect={selectField}
-              />
-            </div>
-          </div>
 
-          <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
-            <p className="text-xs uppercase text-indigo-600" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>{activeConfig.label}</p>
-            <h3 className="mt-2 text-xl text-slate-950" style={{ fontWeight: 900 }}>{activeConfig.question}</h3>
-            <p className="mt-1 text-xs leading-5 text-slate-500">{activeConfig.helper}</p>
-            <div className="mt-4">
-              <AutofillField
-                fieldPath={STEP0_FIELD_PATH[activeField] ?? `step0.${activeField}`}
-                initiativeId={draft.id}
-                value={activeValue}
-                label={activeConfig.label}
-                onChange={value => {
-                  const next = String(value ?? '');
-                  setActiveValue(next);
-                  // With autofill on, this onChange fires only on confirm/edit
-                  // of a proposal (the input is read-only while unconfirmed), so
-                  // persisting here is correct. With the flag off, AutofillField
-                  // is a pure passthrough and fires onChange on every keystroke —
-                  // we keep the original "Guardar cambio" UX (persist on button).
-                  if (autofillOn) updateField(activeField, next);
-                }}
-              >
-                {({ value, onChange, readOnly }) => (
-                  <textarea
-                    value={value as string}
-                    onChange={event => onChange(event.target.value)}
-                    readOnly={readOnly}
-                    rows={7}
-                    placeholder={activeConfig.placeholder}
-                    className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition-all focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                  />
-                )}
-              </AutofillField>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" onClick={refineActiveField} className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-700 hover:bg-violet-100" style={{ fontWeight: 850 }}><Sparkles size={13} />Afinar con IA</button>
-              <button type="button" onClick={useExample} className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 800 }}>Usar ejemplo</button>
-              <button type="button" onClick={saveActiveField} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-700" style={{ fontWeight: 850 }}><CheckCircle2 size={13} />Guardar cambio</button>
-            </div>
-          </div>
-
-          <div className="rounded-3xl bg-white/70 p-4 shadow-sm ring-1 ring-slate-200/80">
-            <button type="button" onClick={() => setShowOriginalIdea(prev => !prev)} className="flex w-full items-center justify-between gap-3 text-left">
-              <span>
-                <span className="flex items-center gap-2 text-sm text-slate-950" style={{ fontWeight: 850 }}><FileText size={15} className="text-slate-400" />Idea original</span>
-                <span className="mt-1 block text-xs text-slate-500">Ver / editar idea original</span>
-              </span>
-              {showOriginalIdea ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            {showOriginalIdea && (
-              <div className="mt-4">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className={`rounded-full border px-2.5 py-1 text-xs ${originalIdeaStatus === 'dirty' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`} style={{ fontWeight: 800 }}>
+            <div className="mt-4 rounded-3xl bg-white/70 p-4 ring-1 ring-slate-200/80">
+              <button type="button" onClick={() => setShowOriginalIdea(prev => !prev)} className="flex w-full items-center justify-between gap-3 text-left">
+                <span>
+                  <span className="flex items-center gap-2 text-sm text-slate-950" style={{ fontWeight: 850 }}><FileText size={15} className="text-slate-400" />Idea original</span>
+                  <span className="mt-1 block text-xs text-slate-500">Ver o editar la idea con la que empezaste</span>
+                </span>
+                {showOriginalIdea ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              {showOriginalIdea && (
+                <div className="mt-4">
+                  <span className={`mb-2 inline-flex rounded-full border px-2.5 py-1 text-xs ${originalIdeaStatus === 'dirty' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`} style={{ fontWeight: 800 }}>
                     {originalIdeaStatus === 'dirty' ? 'Cambios sin aplicar' : originalIdeaStatus === 'updating' ? 'Reestructurando...' : 'Propuesta actualizada'}
                   </span>
+                  <textarea value={originalIdeaDraft} onChange={event => updateOriginalIdea(event.target.value)} rows={4} className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100" />
+                  <button type="button" onClick={restructureFromOriginal} disabled={originalIdeaStatus !== 'dirty' || originalIdeaDraft.trim().length < 30} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45" style={{ fontWeight: 850 }}>
+                    {originalIdeaStatus === 'updating' ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}Reestructurar propuesta con IA
+                  </button>
                 </div>
-                <textarea value={originalIdeaDraft} onChange={event => updateOriginalIdea(event.target.value)} rows={4} className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100" />
-                <button type="button" onClick={restructureFromOriginal} disabled={originalIdeaStatus !== 'dirty' || originalIdeaDraft.trim().length < 30} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45" style={{ fontWeight: 850 }}>
-                  {originalIdeaStatus === 'updating' ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}Reestructurar propuesta con IA
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </section>
 
         <PublicOnePagerPreview
           draft={draft}
+          highlightedField={previewHighlight}
           canExport={canExport}
           canContinue={canContinue}
           missingCount={Math.max(1, requiredMissing.length)}
@@ -439,7 +646,19 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
 
       {contextStatus === 'classified' && (
         <div className="fixed bottom-24 left-1/2 z-40 w-[min(720px,calc(100vw-24px))] -translate-x-1/2 rounded-2xl border border-violet-200 bg-white p-4 shadow-2xl">
-          <p className="text-xs text-violet-900" style={{ fontWeight: 900 }}>Starteria sugiere usar este dato en:</p>
+          <p className="text-sm text-violet-950" style={{ fontWeight: 900 }}>Sugerencia para la propuesta general</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-800">
+              <strong>Qué está bien:</strong> agregaste contexto que puede mejorar el borrador.
+            </div>
+            <div className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+              <strong>Qué falta:</strong> ubicarlo en el punto correcto antes de aplicarlo.
+            </div>
+            <div className="rounded-xl bg-violet-50 p-3 text-xs leading-5 text-violet-800">
+              <strong>Sugerencia:</strong> Starteria recomienda integrarlo en una sección específica.
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-violet-900" style={{ fontWeight: 900 }}>Ubicar este ajuste en:</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {DESTINATIONS.map(destination => (
               <button key={destination.field} type="button" onClick={() => setSelectedDestination(destination.field)} className={`rounded-xl border px-3 py-2 text-xs ${selectedDestination === destination.field ? 'border-violet-300 bg-violet-50 text-violet-800' : 'border-slate-200 text-slate-600'}`} style={{ fontWeight: 800 }}>
@@ -447,14 +666,17 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
               </button>
             ))}
           </div>
-          <button type="button" onClick={applyContext} className="mt-3 rounded-xl bg-violet-600 px-3 py-2 text-xs text-white hover:bg-violet-700" style={{ fontWeight: 900 }}>Aplicar sugerencia</button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={applyContext} className="rounded-xl bg-violet-600 px-3 py-2 text-xs text-white hover:bg-violet-700" style={{ fontWeight: 900 }}>Aplicar sugerencia</button>
+            <button type="button" onClick={() => setContextStatus('idle')} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 850 }}>Mantener mi versión</button>
+          </div>
         </div>
       )}
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur">
-        <div className="mx-auto grid max-w-[1536px] gap-3 lg:grid-cols-[280px_minmax(0,1fr)_auto] lg:items-center">
+        <div className="mx-auto grid max-w-[1540px] gap-3 lg:grid-cols-[300px_minmax(0,1fr)_auto] lg:items-center">
           <p className="text-xs text-slate-600" style={{ fontWeight: 800 }}>
-            {requiredMissing.length > 0 ? `Faltan ${requiredMissing.length} campos para tener una propuesta presentable` : 'Propuesta suficiente para crear una iniciativa'}
+            {requiredMissing.length > 0 ? pluralPoint(requiredMissing.length) : 'Borrador suficiente para iniciar una conversación'}
           </p>
           <div className="flex min-w-0 gap-2">
             <input
@@ -463,38 +685,29 @@ export function PublicProposalEditor({ initialDraft }: { initialDraft: PublicDra
                 setContextInput(event.target.value);
                 if (contextStatus === 'applied') setContextStatus('idle');
               }}
-              placeholder="Agrega contexto para mejorar la propuesta..."
+              placeholder="¿Quieres corregir la propuesta general? Escribe aquí algo que Starteria deba reinterpretar."
               className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-violet-300 focus:bg-white focus:ring-4 focus:ring-violet-100"
             />
             <button
               type="button"
-              onClick={() => {
-                if (contextInput.trim()) {
-                  classifyContext();
-                  return;
-                }
-                refineActiveField();
-              }}
-              disabled={!canRefineFromBar || contextStatus === 'classifying'}
-              title={!canRefineFromBar ? 'Agrega contexto o edita un campo para afinar la propuesta.' : undefined}
+              onClick={classifyContext}
+              disabled={!canAdjustFromBar || contextStatus === 'classifying'}
+              title={!canAdjustFromBar ? 'Agrega contexto general para reinterpretar la propuesta.' : undefined}
               className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-700 disabled:cursor-not-allowed disabled:opacity-45"
               style={{ fontWeight: 850 }}
             >
-              {contextStatus === 'classifying' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}Afinar con IA
+              {contextStatus === 'classifying' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}Ajustar propuesta con IA
             </button>
           </div>
           <div>
-            <button type="button" onClick={handleContinue} disabled={!canContinue} title={!canContinue ? `Completa ${requiredMissing.map(field => field.label.toLowerCase()).join(' y ')} para continuar.` : undefined} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45" style={{ fontWeight: 900 }}>
-              Seguir construyendo esta iniciativa
+            <button type="button" onClick={handleContinue} disabled={!canContinue} title={!canContinue ? `Aclara ${requiredMissing.map(field => field.label.toLowerCase()).join(' y ')} para continuar.` : undefined} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45" style={{ fontWeight: 900 }}>
+              Convertir en iniciativa y seguir en Starteria
               <ArrowRight size={14} />
             </button>
-            <p className="mt-1 text-center text-[11px] text-slate-500">Guarda esta propuesta y continúa desarrollándola con guía de Starteria.</p>
+            <p className="mt-1 text-center text-[11px] text-slate-500">Guarda este borrador y continúa ordenándolo con una guía paso a paso.</p>
           </div>
         </div>
       </div>
-
-      <PublicAIAssistPanel suggestion={suggestion} onApply={applySuggestion} onKeep={() => setSuggestion(null)} onEditManually={() => setSuggestion(null)} />
     </div>
-    </AutofillLocalPersistenceProvider>
   );
 }

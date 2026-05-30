@@ -1,26 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Copy,
   FileDown,
-  Link2,
-  Lock,
-  Map,
-  ShieldCheck,
-  Sparkles,
+  Loader2,
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
-import type { AuthError } from '../../services/api';
 import type { PublicDraft } from '../../../features/public-start/domain/types';
 import { getPublicDraft, isPublicDraftExpired } from '../../../features/public-start/services/publicDraftStorage';
-import { buildPublicProposalMarkdown, downloadPublicProposal } from '../../../features/public-start/services/publicProposalExportService';
-import { PublicCompletionAdvisor } from '../../../features/public-start/components/PublicCompletionAdvisor';
-import { usePublicDraftAutoSeed } from '../../../features/public-start/hooks/usePublicDraftAutoSeed';
-import { GoogleSignInButton } from '../../components/auth/GoogleSignInButton';
+import { inferPublicDraftNarrative } from '../../../features/public-start/services/publicDraftService';
+import { downloadPublicProposal } from '../../../features/public-start/services/publicProposalExportService';
+import {
+  getPilotInterestByDraftId,
+  submitPilotInterest,
+  trackPilotInterestEvent,
+  type PublicPilotLead,
+} from '../../../features/public-start/services/publicPilotLeadService';
 
 type ContinueState =
   | { status: 'loading' }
@@ -29,67 +26,8 @@ type ContinueState =
   | { status: 'discarded' }
   | { status: 'ready'; draft: PublicDraft };
 
-type AuthMode = 'register' | 'login';
-type UseIntent = 'develop_initiative' | 'save_for_later' | 'present_to_someone' | 'use_with_team';
-
-const PENDING_CONVERSION_KEY = 'starteria.publicStart.pendingConversion';
-
-const INTENT_OPTIONS: Array<{ value: UseIntent; label: string }> = [
-  { value: 'develop_initiative', label: 'Seguir desarrollándola' },
-  { value: 'save_for_later', label: 'Guardarla para más tarde' },
-  { value: 'present_to_someone', label: 'Presentarla a alguien' },
-  { value: 'use_with_team', label: 'Usarla con mi equipo' },
-];
-
-const BENEFITS = [
-  {
-    icon: ShieldCheck,
-    title: 'Tu iniciativa queda guardada',
-    description: 'Conserva el one-pager y el avance que ya construiste.',
-  },
-  {
-    icon: Map,
-    title: 'Guía paso a paso',
-    description: 'Sigue desarrollándola con estructura, evidencia y criterio.',
-  },
-  {
-    icon: FileDown,
-    title: 'One-pager compartible',
-    description: 'Prepara una versión clara para líder, sponsor o equipo.',
-  },
-];
-
 function validateEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function savePendingConversion(draftId: string, intent: UseIntent) {
-  window.sessionStorage.setItem(
-    PENDING_CONVERSION_KEY,
-    JSON.stringify({
-      draftId,
-      intent,
-      createdAt: new Date().toISOString(),
-      next: 'convert_to_project_step0',
-    }),
-  );
-}
-
-function formatAuthError(error: AuthError | undefined, fallback: string) {
-  if (!error) return fallback;
-  if (error.code === 'NETWORK_ERROR') return 'No pudimos conectar con el servidor. Revisa tu conexión e intenta nuevamente.';
-  if (error.code === 'AUTH_INVALID_CREDENTIALS') return 'El correo o la contraseña no coinciden. Revisa los datos e intenta nuevamente.';
-  return error.message || fallback;
-}
-
-function challengeTypeLabel(value: PublicDraft['aiOutput']['suggestedChallengeType']) {
-  if (value === 'growth') return 'Crecimiento';
-  if (value === 'exploration') return 'Exploración';
-  return 'Corrección';
-}
-
-function valueOrPending(value: string | undefined, fallback = 'Pendiente por completar.') {
-  return value?.trim() || fallback;
 }
 
 function EmptyContinueState({ title, description }: { title: string; description: string }) {
@@ -116,21 +54,18 @@ function EmptyContinueState({ title, description }: { title: string; description
 
 export function ProgressiveSignupPage() {
   const { draftId } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { authLoading, isAuthenticated, login, register, googleSignIn, user, createProjectFromPublicDraft } = useApp();
+  const startedTrackedRef = useRef(false);
   const [state, setState] = useState<ContinueState>({ status: 'loading' });
-  const [mode, setMode] = useState<AuthMode>('register');
-  const [intent, setIntent] = useState<UseIntent>('develop_initiative');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [conversionLoading, setConversionLoading] = useState(false);
-  const [conversionError, setConversionError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(searchParams.get('ready') === '1');
+  const [submittedLead, setSubmittedLead] = useState<PublicPilotLead | null>(null);
 
   useEffect(() => {
     if (!draftId) {
@@ -150,118 +85,66 @@ export function ProgressiveSignupPage() {
       setState({ status: 'expired' });
       return;
     }
+
+    const existingLead = getPilotInterestByDraftId(draftId);
+    if (existingLead) setSubmittedLead(existingLead);
     setState({ status: 'ready', draft });
   }, [draftId]);
 
+  useEffect(() => {
+    if (state.status === 'ready' && !startedTrackedRef.current) {
+      startedTrackedRef.current = true;
+      trackPilotInterestEvent('pilot_interest_started', { draftId: state.draft.id });
+    }
+  }, [state]);
+
   const draft = state.status === 'ready' ? state.draft : null;
-
-  // Defensive auto-seed — mirrors the editor's patching logic so that if the
-  // extractor dropped some step0.* proposals on the first hop, late values
-  // still land in the preview. See `usePublicDraftAutoSeed` for the why.
-  usePublicDraftAutoSeed(draftId, draft, refreshed => {
-    setState({ status: 'ready', draft: refreshed });
-  });
-
-  const canSubmit = useMemo(() => {
-    if (loadingSubmit) return false;
-    if (!validateEmail(email.trim())) return false;
-    if (!password.trim()) return false;
-    if (mode === 'register' && !name.trim()) return false;
-    return true;
-  }, [email, loadingSubmit, mode, name, password]);
-
-  const markPending = () => {
-    if (!draftId) return;
-    savePendingConversion(draftId, intent);
-    setSuccess(true);
-  };
-
-  const handleConvert = async () => {
-    if (!draftId) return;
-    setConversionError(null);
-
-    const latestDraft = getPublicDraft(draftId);
-    if (latestDraft?.status === 'converted' && latestDraft.convertedProjectId) {
-      navigate(`/projects/${latestDraft.convertedProjectId}/step/0`);
-      return;
-    }
-
-    markPending();
-    setConversionLoading(true);
-    try {
-      const project = await createProjectFromPublicDraft(draftId);
-      navigate(`/projects/${project.id}/step/0`);
-    } catch {
-      const convertedDraft = getPublicDraft(draftId);
-      if (convertedDraft?.status === 'converted' && convertedDraft.convertedProjectId) {
-        navigate(`/projects/${convertedDraft.convertedProjectId}/step/0`);
-        return;
-      }
-      setConversionError('No pudimos guardar tu iniciativa. Intenta nuevamente.');
-    } finally {
-      setConversionLoading(false);
-    }
-  };
+  const canSubmit = !loadingSubmit && Boolean(name.trim()) && validateEmail(email.trim()) && consentAccepted;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFieldError(null);
     setSubmitError(null);
 
+    if (!draftId) return;
+    if (!name.trim()) {
+      setFieldError('Escribe tu nombre para postular la iniciativa.');
+      return;
+    }
     if (!validateEmail(email.trim())) {
       setFieldError('El correo no tiene un formato válido.');
       return;
     }
-    if (!password.trim()) {
-      setFieldError('La contraseña es requerida.');
-      return;
-    }
-    if (mode === 'register' && !name.trim()) {
-      setFieldError('El nombre es requerido para crear tu cuenta.');
+    if (!consentAccepted) {
+      setFieldError('Necesitamos tu consentimiento para contactarte sobre el primer piloto.');
       return;
     }
 
     setLoadingSubmit(true);
-    const result = mode === 'register'
-      ? await register(name.trim(), email.trim(), password, { loadProjects: false })
-      : await login(email.trim(), password, { loadProjects: false });
-    setLoadingSubmit(false);
-
-    if (!result.success) {
-      setSubmitError(formatAuthError(result.error, mode === 'register' ? 'No pudimos crear tu cuenta.' : 'No pudimos iniciar sesión.'));
-      return;
+    try {
+      const lead = await submitPilotInterest(draftId, {
+        name,
+        email,
+        phone,
+        organization,
+        consentAccepted,
+      });
+      setSubmittedLead(lead);
+      const updatedDraft = getPublicDraft(draftId);
+      if (updatedDraft) setState({ status: 'ready', draft: updatedDraft });
+      trackPilotInterestEvent('pilot_interest_submitted', { draftId, leadId: lead.id });
+    } catch (error) {
+      setSubmitError('No pudimos registrar tu postulación. Intenta nuevamente.');
+      trackPilotInterestEvent('pilot_interest_failed', {
+        draftId,
+        reason: error instanceof Error ? error.message : 'unknown_error',
+      });
+    } finally {
+      setLoadingSubmit(false);
     }
-
-    markPending();
-    navigate(`/auth/continue/${draftId}?ready=1`, { replace: true });
   };
 
-  const handleGoogleSuccess = async (idToken: string) => {
-    setFieldError(null);
-    setSubmitError(null);
-    setLoadingSubmit(true);
-    const result = await googleSignIn(idToken, { loadProjects: false });
-    setLoadingSubmit(false);
-
-    if (!result.success) {
-      setSubmitError(formatAuthError(result.error, 'No pudimos completar el inicio con Google.'));
-      return;
-    }
-
-    markPending();
-    navigate(`/auth/continue/${draftId}?ready=1`, { replace: true });
-  };
-
-  const handleGoogleError = () => {
-    setSubmitError('Inicio con Google cancelado o bloqueado por el navegador. Verifica que cookies de terceros estén permitidas.');
-  };
-
-  const handleCopy = async () => {
-    if (!draft) return;
-    await navigator.clipboard.writeText(buildPublicProposalMarkdown(draft));
-  };
-
-  if (state.status === 'loading' || authLoading) {
+  if (state.status === 'loading') {
     return <div className="p-6 text-sm text-slate-500">Cargando propuesta...</div>;
   }
 
@@ -277,160 +160,84 @@ export function ProgressiveSignupPage() {
     return <EmptyContinueState title="Esta propuesta fue descartada." description="Puedes crear una nueva propuesta cuando quieras volver a ordenar una idea." />;
   }
 
-  if (draft?.status === 'converted') {
-    return (
-      <section className="mx-auto max-w-2xl rounded-3xl border border-emerald-200 bg-white p-7 text-center shadow-sm">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-          <CheckCircle2 size={22} />
-        </div>
-        <h1 className="text-2xl text-slate-950" style={{ fontWeight: 850 }}>Esta propuesta ya fue convertida.</h1>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">La iniciativa en borrador ya está lista en tu espacio de trabajo.</p>
-        <button
-          type="button"
-          onClick={() => draft.convertedProjectId && navigate(`/projects/${draft.convertedProjectId}/step/0`)}
-          disabled={!draft.convertedProjectId}
-          className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-45"
-          style={{ fontWeight: 850 }}
-        >
-          Abrir iniciativa
-          <ArrowRight size={15} />
-        </button>
-      </section>
-    );
-  }
-
   return (
-    <section className="mx-auto grid max-w-[1500px] gap-6 px-3 py-4 lg:grid-cols-[minmax(360px,44fr)_minmax(0,56fr)] lg:px-5">
-      <div className="space-y-5">
+    <section className="mx-auto grid max-w-[1180px] gap-6 px-3 py-4 lg:grid-cols-[minmax(420px,1.15fr)_minmax(320px,0.85fr)] lg:px-5">
+      <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200/80 md:p-8">
         <button
           type="button"
           onClick={() => draft && navigate(`/public/draft/${draft.id}/edit`)}
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
+          className="mb-7 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
           style={{ fontWeight: 750 }}
         >
           <ArrowLeft size={15} />
           Volver a la propuesta
         </button>
 
-        <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200/80">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-            <Lock size={22} />
-          </div>
-          <p className="text-xs uppercase text-indigo-600" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>Guardar propuesta</p>
-          <h1 className="mt-3 text-3xl text-slate-950 md:text-4xl" style={{ fontWeight: 900, lineHeight: 1.05 }}>
-            Tu propuesta está lista. Guárdala para seguir avanzando
-          </h1>
-          <p className="mt-4 text-base leading-7 text-slate-600">
-            Crea una cuenta para convertir este one-pager en una iniciativa editable, sumar evidencia y prepararla para presentar a un líder, sponsor o equipo.
-          </p>
-        </div>
+        <p className="text-xs uppercase text-indigo-600" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>Postulación al piloto</p>
+        <h1 className="mt-3 text-3xl text-slate-950 md:text-4xl" style={{ fontWeight: 900, lineHeight: 1.05 }}>
+          Tu propuesta inicial está lista.
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+          Postúlala al primer piloto de Starteria y te avisaremos cuando puedas trabajarla con IA, mentoría y próximos pasos claros.
+        </p>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          {BENEFITS.map(benefit => (
-            <div key={benefit.title} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                <benefit.icon size={17} />
-              </div>
-              <h2 className="text-sm text-slate-950" style={{ fontWeight: 850 }}>{benefit.title}</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500">{benefit.description}</p>
-            </div>
-          ))}
-        </div>
-
-        {success && isAuthenticated ? (
-          <ReadyToConvertCard
-            conversionError={conversionError}
-            conversionLoading={conversionLoading}
-            onConvert={handleConvert}
-          />
-        ) : isAuthenticated ? (
-          <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200/80">
-            <h2 className="text-lg text-slate-950" style={{ fontWeight: 850 }}>Continuar con tu cuenta actual</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Estás usando la cuenta de {user?.name ?? 'Starteria'}. Guardaremos esta propuesta como iniciativa editable.
-            </p>
-            <IntentSelector intent={intent} onChange={setIntent} />
-            {conversionError && <ErrorBox text={conversionError} />}
-            <PrimaryConvertButton
-              loading={conversionLoading}
-              onClick={handleConvert}
-              label="Continuar y guardar iniciativa"
-              loadingLabel="Guardando tu iniciativa..."
-            />
-          </div>
+        {submittedLead ? (
+          <SuccessState lead={submittedLead} />
         ) : (
-          <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200/80">
-            {/* Google Identity Services — only renders when VITE_GOOGLE_CLIENT_ID is baked in.
-                Mirrors the AuthPage UX so signup-from-public-draft and direct /auth share the same option. */}
-            <div className="mb-5 flex justify-center">
-              <GoogleSignInButton
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                text={mode === 'register' ? 'signup_with' : 'continue_with'}
-                theme="outline"
-                width={320}
-                disabled={loadingSubmit}
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+            <InputField label="Nombre" value={name} onChange={setName} placeholder="Tu nombre" autoComplete="name" required />
+            <InputField label="Correo" type="email" value={email} onChange={setEmail} placeholder="tu@empresa.com" autoComplete="email" required />
+            <InputField label="Celular / WhatsApp" type="tel" value={phone} onChange={setPhone} placeholder="+51 999 999 999" autoComplete="tel" />
+            <InputField label="Organización" value={organization} onChange={setOrganization} placeholder="Empresa, equipo o institución" autoComplete="organization" />
+
+            <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+              <input
+                type="checkbox"
+                checked={consentAccepted}
+                onChange={event => setConsentAccepted(event.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
-            </div>
+              <span style={{ fontWeight: 650 }}>Acepto que Starteria me contacte sobre el primer piloto.</span>
+            </label>
 
-            <div className="relative mb-5" aria-hidden="true">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-white px-3 text-xs text-slate-400" style={{ fontWeight: 500 }}>
-                  o continúa con email
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
-              {(['register', 'login'] as const).map(nextMode => (
-                <button
-                  key={nextMode}
-                  type="button"
-                  onClick={() => {
-                    setMode(nextMode);
-                    setFieldError(null);
-                    setSubmitError(null);
-                  }}
-                  className={`rounded-xl px-3 py-2 text-sm transition-colors ${mode === nextMode ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                  style={{ fontWeight: 850 }}
-                >
-                  {nextMode === 'register' ? 'Crear cuenta' : 'Iniciar sesión'}
-                </button>
-              ))}
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {mode === 'register' && <InputField label="Nombre" value={name} onChange={setName} placeholder="Ana Rodríguez" autoComplete="name" />}
-              <InputField label="Email" type="email" value={email} onChange={setEmail} placeholder="tu@empresa.com" autoComplete="email" />
-              <InputField label="Password" type="password" value={password} onChange={setPassword} placeholder="Mínimo 6 caracteres" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
-
-              {mode === 'register' && <IntentSelector intent={intent} onChange={setIntent} />}
-              {(fieldError || submitError) && <ErrorBox text={fieldError ?? submitError ?? ''} />}
-
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45"
-                style={{ fontWeight: 900 }}
-              >
-                {loadingSubmit ? (mode === 'register' ? 'Creando cuenta...' : 'Iniciando sesión...') : mode === 'register' ? 'Crear cuenta y guardar iniciativa' : 'Iniciar sesión y guardar iniciativa'}
-                <ArrowRight size={15} />
-              </button>
-              <p className="text-center text-xs leading-5 text-slate-500">
-                Te llevaremos a tu espacio de trabajo con esta propuesta precargada.
-              </p>
-            </form>
-          </div>
+            {(fieldError || submitError) && <ErrorBox text={fieldError ?? submitError ?? ''} />}
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45"
+              style={{ fontWeight: 900 }}
+            >
+              {loadingSubmit ? <Loader2 size={15} className="animate-spin" /> : null}
+              {loadingSubmit ? 'Registrando postulación...' : 'Postular iniciativa al piloto'}
+              <ArrowRight size={15} />
+            </button>
+          </form>
         )}
+
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <Checklist
+            title="Ya tienes:"
+            items={[
+              'Una propuesta preliminar ordenada',
+              'Un primer foco de trabajo',
+              'Próximos puntos por validar',
+            ]}
+          />
+          <Checklist
+            title="Después podrás:"
+            items={[
+              'Profundizar evidencia',
+              'Ordenar responsables y decisiones',
+              'Preparar una versión para tu líder o equipo',
+            ]}
+          />
+        </div>
       </div>
 
       {draft && (
-        <SignupOnePager
+        <CompactOnePager
           draft={draft}
-          onCopy={handleCopy}
+          onOpen={() => navigate(`/public/draft/${draft.id}/edit`)}
           onDownload={() => downloadPublicProposal(draft)}
         />
       )}
@@ -438,161 +245,94 @@ export function ProgressiveSignupPage() {
   );
 }
 
-function ReadyToConvertCard({
-  conversionError,
-  conversionLoading,
-  onConvert,
-}: {
-  conversionError: string | null;
-  conversionLoading: boolean;
-  onConvert: () => void;
-}) {
+function SuccessState({ lead }: { lead: PublicPilotLead }) {
   return (
-    <div className="rounded-[2rem] bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-200">
+    <div className="mt-7 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
       <div className="flex items-start gap-3">
         <CheckCircle2 size={22} className="mt-0.5 shrink-0 text-emerald-600" />
         <div>
-          <h2 className="text-lg text-emerald-950" style={{ fontWeight: 850 }}>Cuenta lista. Ahora guarda tu iniciativa.</h2>
-          <p className="mt-2 text-sm leading-6 text-emerald-800">Tu propuesta está intacta y lista para pasar a tu espacio de trabajo.</p>
+          <h2 className="text-lg text-emerald-950" style={{ fontWeight: 850 }}>Listo, tu propuesta quedó registrada para el piloto.</h2>
+          <p className="mt-2 text-sm leading-6 text-emerald-800">
+            Te enviaremos una confirmación a {lead.email}. Cuando abramos cupos, te avisaremos para continuar tu iniciativa dentro de Starteria.
+          </p>
         </div>
       </div>
-      {conversionError && <ErrorBox text={conversionError} />}
-      <PrimaryConvertButton loading={conversionLoading} onClick={onConvert} />
-    </div>
-  );
-}
-
-function PrimaryConvertButton({
-  loading,
-  onClick,
-  label = 'Continuar y guardar iniciativa',
-  loadingLabel = 'Guardando tu iniciativa...',
-}: {
-  loading: boolean;
-  onClick: () => void;
-  label?: string;
-  loadingLabel?: string;
-}) {
-  return (
-    <>
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={loading}
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-45"
-        style={{ fontWeight: 900 }}
-      >
-        {loading ? loadingLabel : label}
-        <ArrowRight size={15} />
-      </button>
-      <p className="mt-2 text-center text-xs leading-5 text-slate-500">
-        Te llevaremos a tu espacio de trabajo con esta propuesta precargada.
-      </p>
-    </>
-  );
-}
-
-function IntentSelector({ intent, onChange }: { intent: UseIntent; onChange: (intent: UseIntent) => void }) {
-  return (
-    <div className="mt-5">
-      <p className="mb-2 text-sm text-slate-700" style={{ fontWeight: 850 }}>¿Qué quieres hacer con esta propuesta?</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {INTENT_OPTIONS.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
-              intent === option.value ? 'border-indigo-300 bg-indigo-50 text-indigo-950' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white'
-            }`}
-            style={{ fontWeight: 800 }}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="mt-5 rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+        <p className="text-xs uppercase text-emerald-700" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>Código de postulación</p>
+        <p className="mt-1 text-xl text-emerald-950" style={{ fontWeight: 900 }}>{lead.id}</p>
       </div>
     </div>
   );
 }
 
-function SignupOnePager({ draft, onCopy, onDownload }: { draft: PublicDraft; onCopy: () => void; onDownload: () => void }) {
-  const output = draft.aiOutput;
-  const supportAndDecision = [output.supportNeeded, output.decisionRequested].filter(Boolean).join(' ');
+function CompactOnePager({ draft, onOpen, onDownload }: { draft: PublicDraft; onOpen: () => void; onDownload: () => void }) {
+  const narrative = inferPublicDraftNarrative(draft.inputText, draft.aiOutput);
 
   return (
-    <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
-      <PublicCompletionAdvisor draftId={draft.id} output={output} />
-
-      <div className="flex flex-wrap items-center gap-2 rounded-3xl bg-white/85 p-2.5 shadow-sm ring-1 ring-slate-200/80">
-        <button type="button" onClick={onCopy} className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 850 }}>
-          <Copy size={14} />
-          Copiar resumen
-        </button>
-        <button type="button" onClick={onDownload} className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs text-slate-700 hover:bg-slate-50" style={{ fontWeight: 850 }}>
-          <FileDown size={14} />
-          Descargar PDF
+    <aside className="self-start rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200/80 lg:sticky lg:top-4">
+      <p className="text-xs uppercase text-slate-400" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>Preview compacto del one-pager</p>
+      <div className="mt-4 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-950 to-indigo-950 p-5 text-white">
+        <p className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] uppercase text-indigo-100" style={{ fontWeight: 900, letterSpacing: '0.1em' }}>
+          Propuesta preliminar
+        </p>
+        <h2 className="mt-4 text-2xl" style={{ fontWeight: 900, lineHeight: 1.08 }}>{narrative.title}</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-200">{narrative.subtitle}</p>
+      </div>
+      <div className="mt-4 grid gap-3">
+        <PreviewLine label="Foco" value={narrative.focus} />
+        <PreviewLine label="Primer paso" value={narrative.nextStep} />
+        <PreviewLine label="Por validar" value={narrative.validationItems.slice(0, 2).join(' · ')} />
+      </div>
+      <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <button
+          type="button"
+          onClick={onOpen}
+          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+          style={{ fontWeight: 850 }}
+        >
+          Ver propuesta completa
         </button>
         <button
           type="button"
-          title="Crea una cuenta para compartir un enlace seguro."
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs text-slate-400"
+          onClick={onDownload}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
           style={{ fontWeight: 850 }}
         >
-          <Link2 size={14} />
-          Compartir enlace seguro
+          <FileDown size={15} />
+          Descargar PDF
         </button>
       </div>
-
-      <article className="overflow-hidden rounded-[2.25rem] bg-white shadow-2xl shadow-slate-200/80 ring-1 ring-slate-200/80">
-        <header className="relative overflow-hidden bg-slate-950 px-8 py-8 text-white">
-          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-indigo-500/35 to-transparent" />
-          <div className="relative">
-            <p className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] uppercase text-indigo-100" style={{ fontWeight: 900, letterSpacing: '0.12em' }}>
-              PROPUESTA DE INICIATIVA
-            </p>
-            <h2 className="mt-5 max-w-3xl text-4xl" style={{ fontWeight: 900, lineHeight: 1.04 }}>
-              {output.proposalTitle || 'Propuesta de iniciativa'}
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-200">
-              {valueOrPending(output.whatToMove, 'Una base inicial para ordenar el problema, el impacto y la decisión necesaria.')}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2 text-[11px] text-indigo-50">
-              <span className="rounded-full bg-white/12 px-3 py-1.5">Tipo sugerido: {challengeTypeLabel(output.suggestedChallengeType)}</span>
-              <span className="rounded-full bg-white/12 px-3 py-1.5">Estado: preliminar</span>
-              <span className="rounded-full bg-white/12 px-3 py-1.5">Claridad inicial</span>
-            </div>
-          </div>
-        </header>
-
-        <div className="grid gap-4 bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 p-6 xl:grid-cols-2">
-          <PreviewPanel title="Resumen ejecutivo" value={output.whatToMove} />
-          <PreviewPanel title="Insights Starteria" value={output.suggestedKpiOrSignal || output.nextRecommendedAction} />
-          <PreviewPanel title="Qué quiere mover" value={output.whatToMove} />
-          <PreviewPanel title="Por qué importa ahora" value={output.whyNow} />
-          <PreviewPanel title="A quién impacta" value={output.impactedAudience} />
-          <PreviewPanel title="Evidencia/señal" value={output.initialEvidence} fallback="Aún falta documentar evidencia o señales iniciales." />
-          <PreviewPanel title="Apoyo necesario" value={supportAndDecision} />
-          <PreviewPanel title="Siguiente paso" value={output.nextRecommendedAction} />
-        </div>
-        <footer className="border-t border-slate-200 px-6 py-4 text-xs text-slate-400">
-          Propuesta preliminar · No validada aún
-        </footer>
-      </article>
     </aside>
   );
 }
 
-function PreviewPanel({ title, value, fallback }: { title: string; value?: string; fallback?: string }) {
+function PreviewLine({ label, value }: { label: string; value: string }) {
   return (
-    <section className="rounded-3xl bg-white/78 p-5 shadow-sm ring-1 ring-slate-200/80">
-      <p className="text-xs uppercase text-slate-400" style={{ fontWeight: 900, letterSpacing: '0.08em' }}>{title}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{valueOrPending(value, fallback)}</p>
-    </section>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-xs text-slate-400" style={{ fontWeight: 850 }}>{label}</p>
+      <p className="mt-1 text-sm leading-5 text-slate-700">{value}</p>
+    </div>
+  );
+}
+
+function Checklist({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h2 className="text-sm text-slate-950" style={{ fontWeight: 900 }}>{title}</h2>
+      <ul className="mt-3 space-y-2">
+        {items.map(item => (
+          <li key={item} className="flex gap-2 text-sm leading-5 text-slate-600">
+            <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 function ErrorBox({ text }: { text: string }) {
-  return <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{text}</div>;
+  return <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{text}</div>;
 }
 
 function InputField({
@@ -602,6 +342,7 @@ function InputField({
   placeholder,
   type = 'text',
   autoComplete,
+  required = false,
 }: {
   label: string;
   value: string;
@@ -609,10 +350,14 @@ function InputField({
   placeholder: string;
   type?: string;
   autoComplete?: string;
+  required?: boolean;
 }) {
   return (
     <label className="block">
-      <span className="text-sm text-slate-700" style={{ fontWeight: 800 }}>{label}</span>
+      <span className="text-sm text-slate-700" style={{ fontWeight: 800 }}>
+        {label}
+        {required ? <span className="text-indigo-600"> *</span> : null}
+      </span>
       <input
         type={type}
         value={value}

@@ -1,4 +1,4 @@
-export type PublicDraftStatus = 'created' | 'edited' | 'converted' | 'expired' | 'discarded';
+export type PublicDraftStatus = 'created' | 'edited' | 'converted' | 'expired' | 'discarded' | 'pilot_interest_submitted';
 
 export type PublicDraftSourceType = 'text' | 'file' | 'demo';
 
