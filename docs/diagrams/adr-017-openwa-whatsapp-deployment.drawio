@@ -1,0 +1,128 @@
+<mxfile host="65bd71144e" modified="2026-05-31T00:00:00.000Z" agent="claude-code" version="24.0.0" type="device">
+  <diagram name="OpenWA WhatsApp Notification Deployment" id="adr-017-openwa-deployment">
+    <mxGraphModel dx="2400" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1700" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ====== Title + metadata ====== -->
+        <mxCell id="title" value="OpenWA &amp;mdash; Notificación de pilot lead por WhatsApp (Deployment)" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="18" width="1620" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="ADR-017  &amp;mdash;  Engine: whatsapp-web.js (NO oficial)  &amp;mdash;  Cluster: Rackspace Spot (k8s)  &amp;mdash;  Updated: 2026-05-31  &amp;mdash;  Status: proposed" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="40" y="56" width="1620" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ====== ARROWS (back layer) ====== -->
+        <!-- backend -> openwa send-text -->
+        <mxCell id="a-backend-openwa" value="HTTP POST /api/sessions/{id}/messages/send-text&#10;X-API-Key  ·  { chatId, text }" style="endArrow=classic;html=1;rounded=0;strokeColor=#1D4ED8;strokeWidth=2;fontSize=11;fontColor=#1D4ED8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="470" y="430" as="sourcePoint" />
+            <mxPoint x="690" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- chromium -> meta -->
+        <mxCell id="a-chromium-meta" value="WhatsApp Web (WSS)&#10;sesión vinculada" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#16A34A;strokeWidth=2;dashed=1;fontSize=11;fontColor=#15803D;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1230" y="430" as="sourcePoint" />
+            <mxPoint x="1420" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- meta -> team phone -->
+        <mxCell id="a-meta-team" value="entrega mensaje" style="endArrow=classic;html=1;rounded=0;strokeColor=#16A34A;strokeWidth=2;fontSize=11;fontColor=#15803D;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1510" y="540" as="sourcePoint" />
+            <mxPoint x="1510" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- openwa api -> chromium (internal) -->
+        <mxCell id="a-api-chromium" value="whatsapp-web.js" style="endArrow=classic;html=1;rounded=0;strokeColor=#6B7280;strokeWidth=2;fontSize=10;fontColor=#6B7280;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="900" y="470" as="sourcePoint" />
+            <mxPoint x="900" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- chromium -> pvc -->
+        <mxCell id="a-chromium-pvc" value="lee/escribe&#10;sesión (auth tokens)" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#B45309;strokeWidth=2;fontSize=10;fontColor=#B45309;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="900" y="680" as="sourcePoint" />
+            <mxPoint x="900" y="770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- api -> postgres -->
+        <mxCell id="a-api-pg" value="apikeys / sessions" style="endArrow=classic;html=1;rounded=0;strokeColor=#6B7280;strokeWidth=2;fontSize=10;fontColor=#6B7280;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1080" y="430" as="sourcePoint" />
+            <mxPoint x="1140" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- admin -> qr -->
+        <mxCell id="a-admin-qr" value="escanea QR&#10;(setup + re-link si cae)" style="endArrow=classic;html=1;rounded=0;strokeColor=#DC2626;strokeWidth=2;dashed=1;fontSize=10;fontColor=#DC2626;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="700" y="900" as="sourcePoint" />
+            <mxPoint x="820" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ====== Starteria Backend (existing) ====== -->
+        <mxCell id="backend-box" value="Starteria Backend&#10;(Express · k8s pod existente)&#10;&#10;PilotLeadService → notify()&#10;WhatsAppNotifier (nuevo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4338CA;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="240" y="350" width="230" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- ====== OpenWA namespace container ====== -->
+        <mxCell id="openwa-ns" value="OpenWA  (namespace dedicado · servicio STATEFUL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=2;fontSize=15;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=8;dashed=1;dashPattern=8 4;" vertex="1" parent="1">
+          <mxGeometry x="690" y="110" width="610" height="800" as="geometry" />
+        </mxCell>
+
+        <!-- OpenWA Deployment (pod) -->
+        <mxCell id="openwa-pod" value="Deployment: openwa-gateway  (1 réplica — NO escalable horizontalmente)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;fontSize=12;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="720" y="170" width="540" height="540" as="geometry" />
+        </mxCell>
+
+        <!-- NestJS API -->
+        <mxCell id="openwa-api" value="NestJS API  (:2785)&#10;REST · X-API-Key (roles)&#10;sessions · messages · webhooks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#15803D;fontSize=12;align=center;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="760" y="370" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- whatsapp-web.js + Chromium -->
+        <mxCell id="openwa-chromium" value="whatsapp-web.js + Puppeteer&#10;➜ Chromium headless&#10;&#10;⚠ RAM/CPU alto · 1 sesión por número" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#CA8A04;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="760" y="560" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- PVC -->
+        <mxCell id="openwa-pvc" value="PVC: session-data&#10;(PersistentVolume)&#10;SESSION_DATA_PATH&#10;tokens de WhatsApp Web" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#FEF3C7;strokeColor=#B45309;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="800" y="770" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Postgres for OpenWA -->
+        <mxCell id="openwa-pg" value="PostgreSQL (OpenWA)&#10;apikeys · sessions · webhooks&#10;[o SQLite en PVC]" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#E0E7FF;strokeColor=#4338CA;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="770" width="190" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- ====== External: Meta WhatsApp ====== -->
+        <mxCell id="meta-box" value="Meta — WhatsApp Web&#10;(servidores oficiales)&#10;&#10;⚠ ToS: riesgo de ban del número" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="350" width="200" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- Team phone -->
+        <mxCell id="team-phone" value="Equipo Starteria&#10;WhatsApp (número/grupo)&#10;recibe el aviso del lead" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;strokeWidth=2;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="660" width="220" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Admin / QR -->
+        <mxCell id="admin-box" value="Admin (operación manual)&#10;dashboard OpenWA :2886" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="560" y="880" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ====== Legend ====== -->
+        <mxCell id="legend-box" value="Leyenda / Riesgos clave" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#9CA3AF;fontSize=12;fontStyle=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="600" width="380" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-text" value="• STATEFUL: la sesión vive en un PVC; el pod NO escala (1 réplica). Reinicio sin PVC = re-escanear QR.&#10;&#10;• Chromium headless: alto consumo de RAM/CPU vs. el resto del cluster.&#10;&#10;• ToS: whatsapp-web.js NO es oficial; Meta puede banear el número. Usar un número DEDICADO, no personal.&#10;&#10;• Acoplamiento: si OpenWA cae, el WhatsAppNotifier degrada → el correo (PR #60) sigue siendo el canal primario.&#10;&#10;• Líneas punteadas = enlace externo / manual." style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#374151;spacingLeft=12;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="70" y="630" width="360" height="260" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
