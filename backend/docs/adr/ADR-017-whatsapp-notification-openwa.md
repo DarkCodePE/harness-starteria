@@ -33,9 +33,51 @@ La decisión de producto (turno 2026-05-31) es: **usar OpenWA**
 - Envío de texto: `POST /api/sessions/{sessionId}/messages/send-text`
   (header `X-API-Key`, body `{ chatId: "51999888777@c.us", text }`).
 
-**Decision question:** ¿Cómo integramos la notificación por WhatsApp con OpenVA
+**Decision question:** ¿Cómo integramos la notificación por WhatsApp con OpenWA
 self-hosted, asumiendo conscientemente los costes (servicio stateful con
 Chromium + PVC + sesión QR) y el riesgo de ToS del engine no oficial?
+
+## Deployment (vista rápida)
+
+> Fuente editable: `docs/diagrams/adr-017-openwa-whatsapp-deployment.drawio`.
+> Vista inline (Mermaid) para entender el costo stateful — Chromium + PVC + sesión:
+
+```mermaid
+flowchart LR
+    subgraph CL["Cluster Rackspace Spot (k8s)"]
+        BE["Starteria Backend<br/>(Express, pod existente)<br/>PilotLeadService → notify()<br/>+ WhatsAppNotifier (nuevo)"]
+        subgraph NS["namespace OpenWA · STATEFUL · 1 réplica"]
+            API["NestJS API :2785<br/>X-API-Key (roles)"]
+            CHR["whatsapp-web.js + Puppeteer<br/>➜ Chromium headless<br/>⚠ RAM/CPU alto · 1 sesión/número"]
+            PVC[("PVC session-data<br/>tokens de WhatsApp Web")]
+            PG[("DB OpenWA<br/>apikeys · sessions")]
+        end
+    end
+    META["Meta — WhatsApp Web<br/>⚠ ToS: riesgo de ban"]
+    TEAM["Equipo Starteria<br/>WhatsApp (número/grupo)"]
+    ADMIN["Admin · dashboard :2886"]
+
+    BE -->|"POST send-text · X-API-Key"| API
+    API --> CHR
+    API --- PG
+    CHR <-->|"lee/escribe sesión"| PVC
+    CHR <-->|"WhatsApp Web (WSS)<br/>sesión vinculada"| META
+    META -->|"entrega mensaje"| TEAM
+    ADMIN -.->|"escanea QR (setup + re-link)"| CHR
+
+    classDef warn fill:#FEF9C3,stroke:#CA8A04;
+    classDef ext fill:#DCFCE7,stroke:#16A34A;
+    classDef store fill:#FEF3C7,stroke:#B45309;
+    class CHR warn;
+    class META,TEAM ext;
+    class PVC,PG store;
+```
+
+**Por qué es stateful:** la sesión de WhatsApp vive en el **PVC**; sin él, cada
+reinicio del pod exige **re-escanear el QR**. El Deployment es de **1 réplica**
+(una sesión por número, no escala). Chromium headless consume RAM/CPU notable. Si
+OpenWA cae, el `WhatsAppNotifier` degrada y el **correo (PR #60) sigue como canal
+primario**.
 
 ## Decision
 
