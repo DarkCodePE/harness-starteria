@@ -1,0 +1,132 @@
+# DB Maintenance — manual, auditable pilot-lead cleanup (GitOps philosophy)
+#
+# Why a pipeline (not a local psql): the prod Postgres lives inside the cluster
+# and is only reachable with cluster credentials, which only CI holds (Rackspace
+# refresh token). So data ops follow the same path as deploys — triggered on
+# demand, run in CI, logged in the Actions history, and reproducible.
+#
+# Triggers: workflow_dispatch only. Never on push. Dry-run by default.
+#
+# Usage: Actions → "DB Maintenance" → Run workflow →
+#   pilot_codes: "ST-PILOT-B68D,ST-PILOT-FFA4"
+#   dry_run:     true  (preview the rows) → re-run with false to delete.
+#
+# Safety:
+#   - Only deletes PilotLead rows whose pilotCode is in the explicit list.
+#   - Each code must match ^ST-PILOT-[A-Z0-9]{4}$ — anything else aborts the run
+#     (also blocks SQL injection: only well-formed codes ever reach the query).
+#   - dry_run defaults to true: a SELECT preview runs first; DELETE only on false.
+name: DB Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      pilot_codes:
+        description: 'Comma-separated pilot codes to delete (e.g. ST-PILOT-B68D,ST-PILOT-FFA4)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Preview only (SELECT). Uncheck to actually DELETE.'
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: db-maintenance
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NAMESPACE: starteria
+
+jobs:
+  cleanup-pilot-leads:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate & build code list
+        id: codes
+        env:
+          PILOT_CODES: ${{ inputs.pilot_codes }}
+        run: |
+          set -euo pipefail
+          # Normalize to uppercase, split on commas, trim blanks.
+          raw=$(echo "$PILOT_CODES" | tr ',' '\n' | tr '[:lower:]' '[:upper:]' | sed 's/[[:space:]]//g' | grep -v '^$' || true)
+          if [ -z "$raw" ]; then
+            echo "::error::No pilot codes provided."
+            exit 1
+          fi
+          sql_list=""
+          count=0
+          while IFS= read -r code; do
+            if ! echo "$code" | grep -qE '^ST-PILOT-[A-Z0-9]{4}$'; then
+              echo "::error::Invalid pilot code format: '$code' (expected ST-PILOT-XXXX). Aborting."
+              exit 1
+            fi
+            [ -n "$sql_list" ] && sql_list="$sql_list,"
+            sql_list="$sql_list'$code'"
+            count=$((count+1))
+          done <<< "$raw"
+          echo "Validated $count code(s): $sql_list"
+          echo "sql_list=$sql_list" >> "$GITHUB_OUTPUT"
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Fetch kubeconfig from Rackspace Spot API
+        env:
+          RACKSPACE_REFRESH_TOKEN: ${{ secrets.RACKSPACE_REFRESH_TOKEN }}
+          RACKSPACE_ORG_NAME: ${{ secrets.RACKSPACE_ORG_NAME }}
+          RACKSPACE_CLOUDSPACE_NAME: ${{ secrets.RACKSPACE_CLOUDSPACE_NAME }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc \
+            --arg org "$RACKSPACE_ORG_NAME" \
+            --arg cs  "$RACKSPACE_CLOUDSPACE_NAME" \
+            --arg rt  "$RACKSPACE_REFRESH_TOKEN" \
+            '{organization_name:$org, cloudspace_name:$cs, refresh_token:$rt}')
+          http_status=$(curl -sS -o /tmp/spot-response.json -w '%{http_code}' \
+            -X POST 'https://spot.rackspace.com/apis/auth.ngpc.rxt.io/v1/generate-kubeconfig' \
+            -H 'Content-Type: application/json' \
+            --data "$payload")
+          if [ "$http_status" != "200" ]; then
+            echo "::error::Rackspace API returned HTTP $http_status. Refresh token may be expired."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/kube"
+          jq -er '.data.kubeconfig' /tmp/spot-response.json > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          rm -f /tmp/spot-response.json
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+
+      - name: Preview matching rows (SELECT)
+        env:
+          SQL_LIST: ${{ steps.codes.outputs.sql_list }}
+        run: |
+          set -euo pipefail
+          echo "Rows currently matching the requested codes:"
+          kubectl exec -n "$NAMESPACE" statefulset/starteria-db -- \
+            psql -U starteria -d starteria_db -P pager=off \
+            -c "SELECT \"pilotCode\", status, \"createdAt\" FROM \"PilotLead\" WHERE \"pilotCode\" IN ($SQL_LIST) ORDER BY \"createdAt\";"
+
+      - name: Delete rows (DELETE)
+        if: ${{ inputs.dry_run == false }}
+        env:
+          SQL_LIST: ${{ steps.codes.outputs.sql_list }}
+        run: |
+          set -euo pipefail
+          echo "dry_run=false → deleting…"
+          kubectl exec -n "$NAMESPACE" statefulset/starteria-db -- \
+            psql -U starteria -d starteria_db -P pager=off \
+            -c "DELETE FROM \"PilotLead\" WHERE \"pilotCode\" IN ($SQL_LIST);"
+          echo "Remaining rows for those codes (should be none):"
+          kubectl exec -n "$NAMESPACE" statefulset/starteria-db -- \
+            psql -U starteria -d starteria_db -P pager=off -t -A \
+            -c "SELECT count(*) FROM \"PilotLead\" WHERE \"pilotCode\" IN ($SQL_LIST);"
+
+      - name: Dry-run notice
+        if: ${{ inputs.dry_run == true }}
+        run: echo "::notice::Dry-run only — no rows deleted. Re-run with dry_run unchecked to delete."

@@ -106,39 +106,105 @@ export function createEmailPilotLeadNotifier(options: EmailNotifierOptions = {})
  * applicant.
  */
 function buildConfirmationEmail(lead: PilotLeadNotice): { subject: string; text: string; html: string } {
-  const subject = `Tu postulación al piloto de Starteria · ${lead.pilotCode}`;
+  const subject = `Tu iniciativa en Starteria está en marcha · ${lead.pilotCode}`;
   // Link back to the "continue with your code" surface so the applicant can
   // resume the initiative. Base URL from the configured site origin.
   const siteUrl = (config.corsOrigin || '').replace(/\/+$/, '');
   const resumeUrl = `${siteUrl}/public/continuar`;
+  const name = escapeHtml(lead.name);
+  const code = escapeHtml(lead.pilotCode);
+  const url = escapeHtml(resumeUrl);
 
   const text = [
-    `Hola ${lead.name},`,
+    `Hola ${lead.name}, ¡tu iniciativa ya está en marcha! 🚀`,
     '',
-    'Recibimos tu postulación al primer piloto de Starteria. Tu propuesta quedó registrada.',
+    'Recibimos tu postulación al primer piloto de Starteria y tu propuesta quedó registrada.',
     '',
-    `Código de postulación: ${lead.pilotCode}`,
+    `TU CÓDIGO DE POSTULACIÓN: ${lead.pilotCode}`,
     '',
-    `Para continuar tu iniciativa cuando quieras, entra a ${resumeUrl} e ingresa tu código.`,
+    `Continúa tu iniciativa cuando quieras: entra a ${resumeUrl} e ingresa tu código.`,
     '',
-    'Cuando abramos cupos te avisaremos para llevarla más lejos con IA, mentoría y próximos pasos claros.',
+    'Al continuar podrás:',
+    '  • Trabajarla con IA — ordena y profundiza tu propuesta.',
+    '  • Mentoría y foco — claridad sobre el siguiente paso.',
+    '  • Próximos pasos claros — lista para tu líder o equipo.',
+    '',
+    'Cuando abramos cupos te avisaremos para llevarla más lejos.',
     '',
     'Nota: no compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.',
     '',
     '— Equipo Starteria',
   ].join('\n');
 
-  const html = `
-    <h2>Tu postulación quedó registrada</h2>
-    <p>Hola ${escapeHtml(lead.name)},</p>
-    <p>Recibimos tu postulación al primer piloto de Starteria. Tu propuesta quedó registrada.</p>
-    <p><strong>Código de postulación:</strong> ${escapeHtml(lead.pilotCode)}</p>
-    <p><a href="${escapeHtml(resumeUrl)}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Continuar mi iniciativa</a></p>
-    <p style="color:#555;font-size:13px">O entra a <a href="${escapeHtml(resumeUrl)}">${escapeHtml(resumeUrl)}</a> e ingresa tu código <strong>${escapeHtml(lead.pilotCode)}</strong>.</p>
-    <p>Cuando abramos cupos te avisaremos para llevarla más lejos con IA, mentoría y próximos pasos claros.</p>
-    <p style="color:#888;font-size:12px">No compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.</p>
-    <p>— Equipo Starteria</p>
-  `.trim();
+  // Bulletproof email HTML: table-based layout, inline styles, web-safe colors.
+  // No external images or SVG (Gmail strips SVG; remote images need hosting),
+  // so it renders consistently across Gmail/Outlook/Apple Mail out of the box.
+  const preheader = 'Tu propuesta quedó registrada. Aquí está tu código para continuar tu iniciativa.';
+  const benefit = (emoji: string, title: string, desc: string): string => `
+                  <tr>
+                    <td style="padding:10px 0;vertical-align:top;width:34px;font-size:20px;line-height:24px">${emoji}</td>
+                    <td style="padding:10px 0;vertical-align:top">
+                      <div style="font-size:15px;font-weight:700;color:#0f172a">${title}</div>
+                      <div style="font-size:14px;line-height:21px;color:#64748b">${desc}</div>
+                    </td>
+                  </tr>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(preheader)}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9"><tr><td align="center" style="padding:28px 16px">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,0.08)">
+      <!-- Header band -->
+      <tr><td style="background:#4f46e5;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);padding:26px 32px">
+        <span style="font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-0.2px">⚡ Starteria</span>
+        <span style="font-size:12px;color:#dbeafe;float:right;padding-top:5px">Primer piloto</span>
+      </td></tr>
+      <!-- Body -->
+      <tr><td style="padding:36px 32px 8px">
+        <div style="font-size:12px;font-weight:800;letter-spacing:1px;color:#6366f1;text-transform:uppercase">Postulación al piloto</div>
+        <h1 style="margin:8px 0 0;font-size:26px;line-height:32px;font-weight:850;color:#0f172a">¡Tu iniciativa está en marcha, ${name}! 🚀</h1>
+        <p style="margin:14px 0 0;font-size:15px;line-height:23px;color:#475569">Recibimos tu postulación al primer piloto de Starteria y tu propuesta quedó registrada. Guarda este código — es tu llave para retomarla cuando quieras.</p>
+      </td></tr>
+      <!-- Code ticket -->
+      <tr><td style="padding:22px 32px 4px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px dashed #c7d2fe;border-radius:14px"><tr><td style="padding:18px 22px;text-align:center">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#94a3b8;text-transform:uppercase">Tu código de postulación</div>
+          <div style="margin-top:6px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:26px;font-weight:800;letter-spacing:2px;color:#4338ca">${code}</div>
+        </td></tr></table>
+      </td></tr>
+      <!-- CTA -->
+      <tr><td style="padding:22px 32px 8px;text-align:center">
+        <a href="${url}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:14px 30px;border-radius:12px">Continuar mi iniciativa →</a>
+        <p style="margin:14px 0 0;font-size:13px;line-height:20px;color:#94a3b8">o entra a <a href="${url}" style="color:#6366f1;text-decoration:none">${url}</a> e ingresa tu código.</p>
+      </td></tr>
+      <!-- Divider -->
+      <tr><td style="padding:14px 32px"><div style="height:1px;background:#e2e8f0"></div></td></tr>
+      <!-- Benefits -->
+      <tr><td style="padding:4px 32px 8px">
+        <div style="font-size:15px;font-weight:800;color:#0f172a">Al continuar, podrás:</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+${benefit('🤖', 'Trabajarla con IA', 'Ordena, profundiza y fortalece tu propuesta en minutos.')}
+${benefit('🧭', 'Mentoría y foco', 'Claridad sobre el siguiente paso y qué señales validar.')}
+${benefit('✅', 'Próximos pasos claros', 'Una versión lista para compartir con tu líder o equipo.')}
+        </table>
+      </td></tr>
+      <!-- Reassurance -->
+      <tr><td style="padding:8px 32px 4px">
+        <p style="margin:0;font-size:14px;line-height:21px;color:#475569">Cuando abramos cupos te avisaremos para llevar tu iniciativa más lejos. Mientras tanto, puedes seguir ordenándola con tu código.</p>
+      </td></tr>
+      <!-- Privacy -->
+      <tr><td style="padding:16px 32px 28px">
+        <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8">🔒 No compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.</p>
+      </td></tr>
+      <!-- Footer -->
+      <tr><td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0">
+        <div style="font-size:13px;font-weight:700;color:#475569">Starteria</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px">Convierte tu idea en una iniciativa lista para avanzar.</div>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
 
   return { subject, text, html };
 }

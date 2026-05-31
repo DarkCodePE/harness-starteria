@@ -89,6 +89,11 @@ describe('createApplicantConfirmationNotifier', () => {
     // The applicant confirmation must NOT leak internal ids/draft.
     expect(msg.text).not.toContain('lead-1');
     expect(msg.text).not.toContain('draft-1');
+    // Marketing email: prominent code + a working "continue" CTA to the resume surface.
+    expect(msg.html).toContain('ST-PILOT-AB12');
+    expect(msg.html).toContain('/public/continuar');
+    expect(msg.html).toContain('Continuar mi iniciativa');
+    expect(msg.html).not.toContain('lead-1');
   });
 
   it('does not send when the mailer is disabled', async () => {
