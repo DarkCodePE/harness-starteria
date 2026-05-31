@@ -12,7 +12,11 @@ import { Router, Request, Response, NextFunction, RequestHandler } from 'express
 import { prisma } from '../../shared/db/prisma';
 import { AppError } from '../../shared/errors/AppError';
 import { PilotLeadService, type PilotLeadStore } from './pilot-lead.service';
-import { createEmailPilotLeadNotifier } from './pilot-lead.notifier';
+import {
+  createEmailPilotLeadNotifier,
+  createApplicantConfirmationNotifier,
+  combinePilotLeadNotifiers,
+} from './pilot-lead.notifier';
 import { PilotLeadController } from './pilot-lead.controller';
 
 interface RateLimitEntry {
@@ -71,13 +75,19 @@ export function buildPilotLeadRouter(
 }
 
 /**
- * Production notifier (issue #54): emails the team inbox (PILOT_LEAD_NOTIFY_TO)
- * via SMTP. Degrades to a non-PII log line when SMTP/recipients are unset
- * (dev/test default) — see `createEmailPilotLeadNotifier`.
+ * Production notifier (issue #54): on each new lead, fires two best-effort
+ * emails over SMTP — (1) the team inbox (PILOT_LEAD_NOTIFY_TO) gets an actionable
+ * notification, (2) the applicant gets a confirmation of their submission (the
+ * UI's "te enviaremos una confirmación" promise). Each is independent: one
+ * failing never blocks the other. Both degrade to a non-PII log line when
+ * SMTP/recipients are unset (dev/test default).
  */
 export const pilotLeadService = new PilotLeadService(
   prisma as unknown as PilotLeadStore,
-  createEmailPilotLeadNotifier(),
+  combinePilotLeadNotifiers(
+    createEmailPilotLeadNotifier(),
+    createApplicantConfirmationNotifier(),
+  ),
 );
 
 export const pilotLeadRouter = buildPilotLeadRouter(pilotLeadService);

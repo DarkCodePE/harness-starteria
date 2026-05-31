@@ -16,6 +16,9 @@ import { logger } from '../../shared/utils/logger';
 import { mailer, type Mailer } from '../../shared/mail/mailer';
 import type { PilotLeadNotice, PilotLeadNotifier } from './pilot-lead.service';
 
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 function buildEmail(lead: PilotLeadNotice): { subject: string; text: string; html: string } {
   const org = lead.organization ?? '—';
   const phone = lead.phone ?? '—';
@@ -90,6 +93,97 @@ export function createEmailPilotLeadNotifier(options: EmailNotifierOptions = {})
       // Logged (no PII) but not rethrown beyond the service's fire-and-forget guard.
       logger.error({ pilotLeadId: lead.id, err }, 'Failed to email pilot lead notification');
       throw err;
+    }
+  };
+}
+
+/**
+ * Applicant-facing confirmation email (the UI promises "te enviaremos una
+ * confirmación a <su correo>"). Sent to the lead's own address — so the lead
+ * receiving their own contact details is by-design, not a PII leak. Friendly,
+ * sets expectations (we'll reach out when slots open), and carries the pilot
+ * code so the applicant has a reference. No internal ids/draft leak to the
+ * applicant.
+ */
+function buildConfirmationEmail(lead: PilotLeadNotice): { subject: string; text: string; html: string } {
+  const subject = `Tu postulación al piloto de Starteria · ${lead.pilotCode}`;
+
+  const text = [
+    `Hola ${lead.name},`,
+    '',
+    'Recibimos tu postulación al primer piloto de Starteria. Tu propuesta quedó registrada.',
+    '',
+    `Código de postulación: ${lead.pilotCode}`,
+    '',
+    'Cuando abramos cupos te avisaremos para continuar tu iniciativa con IA, mentoría y próximos pasos claros.',
+    '',
+    'Nota: no compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.',
+    '',
+    '— Equipo Starteria',
+  ].join('\n');
+
+  const html = `
+    <h2>Tu postulación quedó registrada</h2>
+    <p>Hola ${escapeHtml(lead.name)},</p>
+    <p>Recibimos tu postulación al primer piloto de Starteria. Tu propuesta quedó registrada.</p>
+    <p><strong>Código de postulación:</strong> ${escapeHtml(lead.pilotCode)}</p>
+    <p>Cuando abramos cupos te avisaremos para continuar tu iniciativa con IA, mentoría y próximos pasos claros.</p>
+    <p style="color:#888;font-size:12px">No compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.</p>
+    <p>— Equipo Starteria</p>
+  `.trim();
+
+  return { subject, text, html };
+}
+
+export interface ConfirmationNotifierOptions {
+  /** Mailer to use (defaults to the shared SMTP mailer). DI for tests. */
+  mailer?: Mailer;
+}
+
+/**
+ * Build a notifier that emails the APPLICANT a confirmation of their pilot
+ * submission. Falls back to a non-PII log line when the mailer is disabled.
+ * Independent of the team notification: each is sent on a best-effort basis.
+ */
+export function createApplicantConfirmationNotifier(
+  options: ConfirmationNotifierOptions = {},
+): PilotLeadNotifier {
+  const transport = options.mailer ?? mailer;
+
+  return async (lead: PilotLeadNotice): Promise<void> => {
+    if (!transport.enabled || !lead.email) {
+      logger.warn(
+        { pilotLeadId: lead.id, mailerEnabled: transport.enabled },
+        'Pilot lead confirmation not emailed (mailer disabled or no applicant email)',
+      );
+      return;
+    }
+
+    const { subject, text, html } = buildConfirmationEmail(lead);
+    try {
+      await transport.send({ to: lead.email, subject, text, html });
+      logger.info({ pilotLeadId: lead.id }, 'Pilot lead confirmation emailed to applicant');
+    } catch (err) {
+      logger.error({ pilotLeadId: lead.id, err }, 'Failed to email pilot lead confirmation');
+      throw err;
+    }
+  };
+}
+
+/**
+ * Compose several notifiers into one, isolating failures: every notifier runs
+ * even if a sibling throws (so a failed applicant confirmation never blocks the
+ * team notification, and vice versa). Errors are logged per-notifier; the
+ * combined notifier never rethrows — the service's fire-and-forget guard already
+ * swallows, and here we explicitly want all-or-some delivery, not all-or-none.
+ */
+export function combinePilotLeadNotifiers(...notifiers: PilotLeadNotifier[]): PilotLeadNotifier {
+  return async (lead: PilotLeadNotice): Promise<void> => {
+    const results = await Promise.allSettled(notifiers.map((n) => n(lead)));
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        logger.error({ pilotLeadId: lead.id, err: result.reason }, 'A pilot lead notifier failed');
+      }
     }
   };
 }
