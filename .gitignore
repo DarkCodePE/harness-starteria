@@ -45,7 +45,9 @@ ruvector.db
 skills-lock.json
 
 # Project-specific ignores
-backend/docs/
+# Ignore generated backend docs, but ALWAYS track the ADR records.
+backend/docs/*
+!backend/docs/adr/
 BHIL-AI-First-Development-Toolkit/
 image copy.png
 k8s/image.png
