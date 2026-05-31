@@ -42,6 +42,10 @@ const cjsBackendPackages = [
   // (`front/` instead of `front/node_modules/dotenv/`). Externalize to use
   // the real CJS loader.
   'dotenv',
+  // nodemailer is CJS and does relative requires (`require('./lib/...')`);
+  // vite-node bundles it with a synthesized __filename and those requires
+  // fail. Externalize so Node's real CJS loader is used.
+  'nodemailer',
 ];
 
 function externalizeCjsBackendPackages(): Plugin {

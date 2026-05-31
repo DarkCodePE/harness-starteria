@@ -148,7 +148,7 @@ describe('POST /api/v1/public/pilot-leads', () => {
     expect(serialized).not.toContain(VALID.name);
   });
 
-  it('fires the notifier with non-PII metadata on success', async () => {
+  it('fires the notifier with the lead contact so the team can follow up (issue #54)', async () => {
     const notify = vi.fn();
     const { app } = makeApp(ctx.store, notify);
     await request(app).post('/api/v1/public/pilot-leads').send(VALID);
@@ -156,6 +156,10 @@ describe('POST /api/v1/public/pilot-leads', () => {
     expect(notify).toHaveBeenCalledTimes(1);
     const arg = notify.mock.calls[0][0];
     expect(arg.pilotCode).toMatch(/^ST-PILOT-/);
-    expect(arg).not.toHaveProperty('email');
+    // The notification IS actionable: it carries contact PII (consented purpose).
+    expect(arg.name).toBe(VALID.name);
+    expect(arg.email).toBe(VALID.email);
+    expect(arg.phone).toBe(VALID.phone);
+    expect(arg.organization).toBe(VALID.organization);
   });
 });

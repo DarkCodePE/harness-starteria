@@ -25,7 +25,8 @@ spec:
         - containerPort: 3001
         envFrom:
         # Secret synced by .github/workflows/cd.yml at deploy time.
-        # Provides: DATABASE_URL, JWT_SECRET, AI_SERVICE_TOKEN, AI_SERVICE_URL, BRIDGE_SHARED_SECRET.
+        # Provides: DATABASE_URL, JWT_SECRET, AI_SERVICE_TOKEN, AI_SERVICE_URL,
+        # BRIDGE_SHARED_SECRET, SMTP_HOST, SMTP_USER, SMTP_PASS, PILOT_LEAD_NOTIFY_FROM.
         - secretRef:
             name: starteria-backend-secrets
         env:
@@ -41,6 +42,15 @@ spec:
           value: "https://starter-ia.com"
         - name: LOG_LEVEL
           value: "info"
+        # Pilot-lead email notification (issue #54). Non-secret config; SMTP
+        # credentials + from-address come from the synced Secret above. The team
+        # inbox below receives the new-lead notification — edit to the real address.
+        - name: SMTP_PORT
+          value: "587"
+        - name: SMTP_SECURE
+          value: "false"
+        - name: PILOT_LEAD_NOTIFY_TO
+          value: "okuanb@gmail.com"
         resources:
           requests:
             cpu: "200m"

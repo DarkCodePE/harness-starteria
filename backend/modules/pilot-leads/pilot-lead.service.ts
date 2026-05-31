@@ -40,10 +40,20 @@ export interface PilotLeadStore {
   };
 }
 
+/**
+ * Payload handed to the notifier. Unlike the AuditLog (which stays PII-free),
+ * this DOES carry the lead's contact details: the team notification's purpose is
+ * to let a human follow up — exactly what the lead consented to
+ * ("…para contactarte sobre el primer piloto"). Recipients are a trusted
+ * internal inbox (issue #54). Notifiers MUST still keep PII out of logs.
+ */
 export interface PilotLeadNotice {
   id: string;
   pilotCode: string;
   draftId: string;
+  name: string;
+  email: string;
+  phone?: string | null;
   organization?: string | null;
 }
 export type PilotLeadNotifier = (lead: PilotLeadNotice) => void | Promise<void>;
@@ -124,7 +134,15 @@ export class PilotLeadService {
     // Fire-and-forget notification (channel TBD — issue #54). Never blocks/throws
     // the user's submit on a notification failure.
     try {
-      await this.notify({ id: lead.id, pilotCode: lead.pilotCode, draftId: lead.draftId, organization: lead.organization ?? null });
+      await this.notify({
+        id: lead.id,
+        pilotCode: lead.pilotCode,
+        draftId: lead.draftId,
+        name: input.name,
+        email: input.email,
+        phone: input.phone ?? null,
+        organization: input.organization ?? null,
+      });
     } catch {
       /* swallow: a notification failure must not fail lead capture */
     }
