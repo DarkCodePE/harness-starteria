@@ -45,4 +45,20 @@ export const config = {
   // OAuth: GIS (Google Identity Services) audience. Backend uses google-auth-library
   // to verify ID tokens against this client id. Empty string = Google login disabled.
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  // SPEC-003 / issue #54: SMTP transport for the pilot-lead notification email.
+  // No SMTP_HOST → mailer disabled (dev/test default): the notifier degrades to a
+  // non-PII log line instead of sending.
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.PILOT_LEAD_NOTIFY_FROM || '',
+  },
+  // Comma-separated recipient(s) notified when a new pilot lead is captured.
+  pilotLeadNotifyTo: (process.env.PILOT_LEAD_NOTIFY_TO || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean),
 } as const;

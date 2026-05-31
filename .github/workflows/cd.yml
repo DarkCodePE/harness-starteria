@@ -213,6 +213,12 @@ jobs:
           AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
           BRIDGE_SHARED_SECRET: ${{ secrets.STARTERIA_BRIDGE_SHARED_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          # Pilot-lead email notification (issue #54). Optional: if SMTP_HOST is
+          # empty the backend mailer stays disabled and just logs (no failure).
+          SMTP_HOST: ${{ secrets.STARTERIA_SMTP_HOST }}
+          SMTP_USER: ${{ secrets.STARTERIA_SMTP_USER }}
+          SMTP_PASS: ${{ secrets.STARTERIA_SMTP_PASS }}
+          PILOT_LEAD_NOTIFY_FROM: ${{ secrets.STARTERIA_PILOT_LEAD_NOTIFY_FROM }}
         run: |
           set -euo pipefail
           # Postgres host/db match k8s/postgres-service.yaml + postgres-statefulset.yaml.
@@ -225,6 +231,10 @@ jobs:
             --from-literal=AI_SERVICE_TOKEN="$AI_SERVICE_TOKEN" \
             --from-literal=AI_SERVICE_URL="http://starteria-ai-service:8001" \
             --from-literal=BRIDGE_SHARED_SECRET="$BRIDGE_SHARED_SECRET" \
+            --from-literal=SMTP_HOST="${SMTP_HOST:-}" \
+            --from-literal=SMTP_USER="${SMTP_USER:-}" \
+            --from-literal=SMTP_PASS="${SMTP_PASS:-}" \
+            --from-literal=PILOT_LEAD_NOTIFY_FROM="${PILOT_LEAD_NOTIFY_FROM:-}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Sync ai-service Secret

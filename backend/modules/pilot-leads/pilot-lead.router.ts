@@ -10,13 +10,9 @@
  */
 import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { prisma } from '../../shared/db/prisma';
-import { logger } from '../../shared/utils/logger';
 import { AppError } from '../../shared/errors/AppError';
-import {
-  PilotLeadService,
-  type PilotLeadStore,
-  type PilotLeadNotifier,
-} from './pilot-lead.service';
+import { PilotLeadService, type PilotLeadStore } from './pilot-lead.service';
+import { createEmailPilotLeadNotifier } from './pilot-lead.notifier';
 import { PilotLeadController } from './pilot-lead.controller';
 
 interface RateLimitEntry {
@@ -75,19 +71,13 @@ export function buildPilotLeadRouter(
 }
 
 /**
- * Default notifier — logs ids/metadata only (no PII). Channel/email destination
- * is an open product decision (issue #54); wire it here when decided.
+ * Production notifier (issue #54): emails the team inbox (PILOT_LEAD_NOTIFY_TO)
+ * via SMTP. Degrades to a non-PII log line when SMTP/recipients are unset
+ * (dev/test default) — see `createEmailPilotLeadNotifier`.
  */
-const defaultNotifier: PilotLeadNotifier = lead => {
-  logger.info(
-    { pilotLeadId: lead.id, pilotCode: lead.pilotCode, draftId: lead.draftId, organization: lead.organization ?? undefined },
-    'New pilot lead captured',
-  );
-};
-
 export const pilotLeadService = new PilotLeadService(
   prisma as unknown as PilotLeadStore,
-  defaultNotifier,
+  createEmailPilotLeadNotifier(),
 );
 
 export const pilotLeadRouter = buildPilotLeadRouter(pilotLeadService);
