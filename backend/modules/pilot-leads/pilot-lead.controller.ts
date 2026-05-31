@@ -6,7 +6,7 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '../../shared/types/api.types';
-import { pilotLeadBodySchema } from './pilot-lead.schemas';
+import { pilotLeadBodySchema, pilotCodeParamSchema } from './pilot-lead.schemas';
 import { PilotLeadService } from './pilot-lead.service';
 
 export class PilotLeadController {
@@ -21,6 +21,20 @@ export class PilotLeadController {
         userAgent: req.get('user-agent') ?? undefined,
       });
       res.status(201).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  /** GET /api/v1/public/pilot-leads/:pilotCode — redeem a code to resume. */
+  resume = async (req: Request, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
+    try {
+      const { pilotCode } = pilotCodeParamSchema.parse(req.params);
+      const result = await this.service.resume(pilotCode, {
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent') ?? undefined,
+      });
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }

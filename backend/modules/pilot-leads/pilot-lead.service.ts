@@ -20,19 +20,41 @@ export interface PilotLeadDTO {
   createdAt: string;
 }
 
+/**
+ * What redeeming a pilotCode returns. Deliberately carries the PUBLIC proposal
+ * (the one-pager, so the initiative can be resumed) + low-risk personalization
+ * (name, organization), but NOT the contactable PII (email/phone): the pilotCode
+ * is a short bearer token, so a public lookup must not become a PII-harvesting
+ * oracle. The applicant re-confirms contact details on resume.
+ */
+export interface PilotResumeDTO {
+  pilotCode: string;
+  status: string;
+  name: string;
+  organization?: string | null;
+  proposal: unknown;
+  createdAt: string;
+}
+
 interface PilotLeadRecord {
   id: string;
   draftId: string;
   pilotCode: string;
   status: string;
+  name: string;
+  email: string;
+  phone?: string | null;
   organization?: string | null;
+  proposal?: unknown;
   createdAt: Date | string;
 }
 
 /** Minimal Prisma surface this service needs (DI-friendly, hermetic tests). */
 export interface PilotLeadStore {
   pilotLead: {
-    findUnique(args: { where: { draftId: string } }): Promise<PilotLeadRecord | null>;
+    findUnique(
+      args: { where: { draftId: string } | { pilotCode: string } },
+    ): Promise<PilotLeadRecord | null>;
     create(args: { data: Record<string, unknown> }): Promise<PilotLeadRecord>;
   };
   auditLog: {
@@ -107,6 +129,10 @@ export class PilotLeadService {
           status: 'submitted',
           source: 'public_landing',
           retentionUntil,
+          // Persist the one-pager snapshot so the pilotCode can later be redeemed
+          // to resume the initiative. Omit when absent (legacy/partial captures)
+          // so the nullable Json column stays NULL without a Prisma null sentinel.
+          ...(input.proposal ? { proposal: input.proposal } : {}),
         },
       });
     } catch (err) {
@@ -148,5 +174,41 @@ export class PilotLeadService {
     }
 
     return toDto(lead);
+  }
+
+  /**
+   * Redeem a pilotCode to resume the initiative. Returns the persisted public
+   * proposal + light personalization so the frontend can rehydrate the
+   * one-pager. Unknown code → 404 PILOT_CODE_NOT_FOUND. Audited (non-PII).
+   */
+  async resume(
+    pilotCode: string,
+    ctx: { ipAddress?: string; userAgent?: string } = {},
+  ): Promise<PilotResumeDTO> {
+    const lead = await this.store.pilotLead.findUnique({ where: { pilotCode } });
+    if (!lead) {
+      throw AppError.notFound('Código de postulación', 'PILOT_CODE_NOT_FOUND');
+    }
+
+    await this.store.auditLog.create({
+      data: {
+        action: 'pilot.lead.resumed',
+        resource: 'PilotLead',
+        resourceId: lead.id,
+        details: { pilotCode: lead.pilotCode, hasProposal: lead.proposal != null },
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      },
+    });
+
+    const created = lead.createdAt instanceof Date ? lead.createdAt : new Date(lead.createdAt);
+    return {
+      pilotCode: lead.pilotCode,
+      status: lead.status,
+      name: lead.name,
+      organization: lead.organization ?? null,
+      proposal: lead.proposal ?? null,
+      createdAt: created.toISOString(),
+    };
   }
 }

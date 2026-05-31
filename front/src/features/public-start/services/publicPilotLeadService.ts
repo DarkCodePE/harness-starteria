@@ -10,7 +10,14 @@
 /* ------------------------------------------------------------------ */
 
 import axios from 'axios';
-import { updatePublicDraft } from './publicDraftStorage';
+import {
+  updatePublicDraft,
+  getPublicDraft,
+  savePublicDraft,
+  getAnonymousSessionId,
+  createPublicDraftId,
+} from './publicDraftStorage';
+import type { PublicDraft, PublicDraftOutput, PublicDraftSourceType } from '../domain/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const PILOT_LEADS_KEY = 'starteria.publicPilot.leads';
@@ -52,6 +59,46 @@ interface PilotLeadDto {
   pilotCode: string;
   status: PilotInterestStatus;
   createdAt: string;
+}
+
+/** Snapshot of the one-pager sent WITH the lead so the code can be redeemed. */
+interface ProposalSnapshot {
+  inputText?: string;
+  sourceType?: string;
+  title?: string;
+  aiOutput?: PublicDraftOutput;
+}
+
+/** What the backend returns when a pilotCode is redeemed (no contact PII). */
+interface PilotResumeDto {
+  pilotCode: string;
+  status: string;
+  name: string;
+  organization?: string | null;
+  proposal: ProposalSnapshot | null;
+  createdAt: string;
+}
+
+/** Outcome of redeeming a code: the lead metadata + the rehydrated draft (if any). */
+export interface PilotResumeResult {
+  pilotCode: string;
+  name: string;
+  organization?: string | null;
+  /** A fresh sessionStorage draftId to continue at `/auth/continue/:draftId`, or null when the proposal wasn't recoverable (legacy lead). */
+  draftId: string | null;
+  createdAt: string;
+}
+
+/** Build the proposal snapshot from the locally-stored draft, if present. */
+function snapshotFromDraft(draftId: string): ProposalSnapshot | undefined {
+  const draft = getPublicDraft(draftId);
+  if (!draft) return undefined;
+  return {
+    inputText: draft.inputText,
+    sourceType: draft.sourceType,
+    title: draft.aiOutput?.proposalTitle,
+    aiOutput: draft.aiOutput,
+  };
 }
 
 function getStorage(): Storage | null {
@@ -111,6 +158,9 @@ export async function submitPilotInterest(
     phone: payload.phone?.trim() || undefined,
     organization: payload.organization?.trim() || undefined,
     consentAccepted: payload.consentAccepted,
+    // Capture the one-pager WITH the lead so the pilotCode can later be redeemed
+    // to resume the initiative (the draft otherwise dies with the tab session).
+    proposal: snapshotFromDraft(draftId),
   };
 
   const { data: response } = await publicApi.post<ApiResponse<PilotLeadDto>>('/public/pilot-leads', body);
@@ -137,4 +187,47 @@ export async function submitPilotInterest(
 /** Read a previously-submitted lead from the local idempotency cache. */
 export function getPilotInterestByDraftId(draftId: string): PublicPilotLead | null {
   return readLeads().find(lead => lead.draftId === draftId) ?? null;
+}
+
+/**
+ * Redeem a pilotCode (`ST-PILOT-XXXX`) to resume the initiative. Looks up the
+ * lead server-side and, when the proposal snapshot is available, rehydrates it
+ * into a fresh sessionStorage draft so the user can continue at
+ * `/auth/continue/:draftId`. Rejects on network/validation/404 so the caller
+ * can surface "código no encontrado".
+ */
+export async function resumeWithPilotCode(rawCode: string): Promise<PilotResumeResult> {
+  const code = rawCode.trim().toUpperCase();
+  const { data: response } = await publicApi.get<ApiResponse<PilotResumeDto>>(
+    `/public/pilot-leads/${encodeURIComponent(code)}`,
+  );
+  const dto = response.data;
+
+  let draftId: string | null = null;
+  if (dto.proposal?.aiOutput) {
+    draftId = createPublicDraftId();
+    const nowIso = new Date().toISOString();
+    const draft: PublicDraft = {
+      id: draftId,
+      anonymousSessionId: getAnonymousSessionId(),
+      mode: 'initiative',
+      inputText: dto.proposal.inputText ?? '',
+      sourceType: (dto.proposal.sourceType as PublicDraftSourceType) ?? 'text',
+      aiOutput: dto.proposal.aiOutput,
+      status: 'edited',
+      createdAt: dto.createdAt,
+      updatedAt: nowIso,
+      // 24h to continue the resumed session; matches the public-draft TTL spirit.
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+    savePublicDraft(draft);
+  }
+
+  return {
+    pilotCode: dto.pilotCode,
+    name: dto.name,
+    organization: dto.organization ?? null,
+    draftId,
+    createdAt: dto.createdAt,
+  };
 }

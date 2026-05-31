@@ -71,6 +71,9 @@ export function buildPilotLeadRouter(
   const router = Router();
   const limiter = createIpRateLimiter(options.windowMs ?? 10 * 60_000, options.maxRequests ?? 15);
   router.post('/', limiter, controller.create);
+  // Redeem a pilotCode to resume the initiative. Same per-IP limiter guards
+  // against enumeration of the short ST-PILOT-XXXX code space.
+  router.get('/:pilotCode', limiter, controller.resume);
   return router;
 }
 

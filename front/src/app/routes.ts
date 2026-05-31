@@ -31,6 +31,7 @@ import { PublicInitiativeStartPage } from './pages/public/PublicInitiativeStartP
 import { PublicProposalEditorPage } from './pages/public/PublicProposalEditorPage';
 import { PublicProposalResultPage } from './pages/public/PublicProposalResultPage';
 import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
+import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePage';
 
 export const router = createBrowserRouter([
   {
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
         children: [
           { path: 'start', Component: PublicStartPage },
           { path: 'start/initiative', Component: PublicInitiativeStartPage },
+          { path: 'continuar', Component: PublicResumeWithCodePage },
           { path: 'draft/:draftId/edit', Component: PublicProposalEditorPage },
           { path: 'draft/:draftId/result', Component: PublicProposalResultPage },
         ],

@@ -107,6 +107,10 @@ export function createEmailPilotLeadNotifier(options: EmailNotifierOptions = {})
  */
 function buildConfirmationEmail(lead: PilotLeadNotice): { subject: string; text: string; html: string } {
   const subject = `Tu postulación al piloto de Starteria · ${lead.pilotCode}`;
+  // Link back to the "continue with your code" surface so the applicant can
+  // resume the initiative. Base URL from the configured site origin.
+  const siteUrl = (config.corsOrigin || '').replace(/\/+$/, '');
+  const resumeUrl = `${siteUrl}/public/continuar`;
 
   const text = [
     `Hola ${lead.name},`,
@@ -115,7 +119,9 @@ function buildConfirmationEmail(lead: PilotLeadNotice): { subject: string; text:
     '',
     `Código de postulación: ${lead.pilotCode}`,
     '',
-    'Cuando abramos cupos te avisaremos para continuar tu iniciativa con IA, mentoría y próximos pasos claros.',
+    `Para continuar tu iniciativa cuando quieras, entra a ${resumeUrl} e ingresa tu código.`,
+    '',
+    'Cuando abramos cupos te avisaremos para llevarla más lejos con IA, mentoría y próximos pasos claros.',
     '',
     'Nota: no compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.',
     '',
@@ -127,7 +133,9 @@ function buildConfirmationEmail(lead: PilotLeadNotice): { subject: string; text:
     <p>Hola ${escapeHtml(lead.name)},</p>
     <p>Recibimos tu postulación al primer piloto de Starteria. Tu propuesta quedó registrada.</p>
     <p><strong>Código de postulación:</strong> ${escapeHtml(lead.pilotCode)}</p>
-    <p>Cuando abramos cupos te avisaremos para continuar tu iniciativa con IA, mentoría y próximos pasos claros.</p>
+    <p><a href="${escapeHtml(resumeUrl)}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Continuar mi iniciativa</a></p>
+    <p style="color:#555;font-size:13px">O entra a <a href="${escapeHtml(resumeUrl)}">${escapeHtml(resumeUrl)}</a> e ingresa tu código <strong>${escapeHtml(lead.pilotCode)}</strong>.</p>
+    <p>Cuando abramos cupos te avisaremos para llevarla más lejos con IA, mentoría y próximos pasos claros.</p>
     <p style="color:#888;font-size:12px">No compartas información sensible por este medio. Para trabajar con información confidencial, crea una cuenta y usa un espacio seguro.</p>
     <p>— Equipo Starteria</p>
   `.trim();

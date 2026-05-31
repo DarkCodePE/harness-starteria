@@ -31,6 +31,7 @@ interface Row {
   status: string;
   source: string;
   retentionUntil: Date;
+  proposal?: unknown;
   createdAt: Date;
 }
 
@@ -40,7 +41,12 @@ function makeStore() {
   let seq = 0;
   const store: PilotLeadStore = {
     pilotLead: {
-      findUnique: vi.fn(async ({ where }) => rows.find(r => r.draftId === where.draftId) ?? null),
+      findUnique: vi.fn(async ({ where }) =>
+        rows.find(r =>
+          ('draftId' in where && r.draftId === where.draftId) ||
+          ('pilotCode' in where && r.pilotCode === where.pilotCode),
+        ) ?? null,
+      ),
       create: vi.fn(async ({ data }) => {
         const row = { id: `lead-${++seq}`, createdAt: new Date('2026-05-29T12:00:00Z'), ...(data as object) } as Row;
         rows.push(row);
@@ -161,5 +167,83 @@ describe('POST /api/v1/public/pilot-leads', () => {
     expect(arg.email).toBe(VALID.email);
     expect(arg.phone).toBe(VALID.phone);
     expect(arg.organization).toBe(VALID.organization);
+  });
+
+  it('persists the proposal snapshot so the code can later be redeemed', async () => {
+    const { app } = makeApp(ctx.store);
+    const proposal = { title: 'Protocolo de Autonomía', aiOutput: { whatToMove: 'ordenar el proceso' } };
+    await request(app).post('/api/v1/public/pilot-leads').send({ ...VALID, proposal });
+
+    expect(ctx.rows[0].proposal).toEqual(proposal);
+  });
+});
+
+describe('GET /api/v1/public/pilot-leads/:pilotCode (resume)', () => {
+  let ctx: ReturnType<typeof makeStore>;
+  beforeEach(() => {
+    ctx = makeStore();
+  });
+
+  const PROPOSAL = { title: 'Protocolo de Autonomía', aiOutput: { whatToMove: 'ordenar el proceso' } };
+
+  async function captureCode(app: express.Express): Promise<string> {
+    const res = await request(app).post('/api/v1/public/pilot-leads').send({ ...VALID, proposal: PROPOSAL });
+    return res.body.data.pilotCode as string;
+  }
+
+  it('redeems a known code → 200 with the proposal + name/org, NO contact PII', async () => {
+    const { app } = makeApp(ctx.store);
+    const code = await captureCode(app);
+
+    const res = await request(app).get(`/api/v1/public/pilot-leads/${code}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.pilotCode).toBe(code);
+    expect(res.body.data.proposal).toEqual(PROPOSAL);
+    expect(res.body.data.name).toBe(VALID.name);
+    expect(res.body.data.organization).toBe(VALID.organization);
+    // The short code is a bearer token — a public lookup must not leak contact PII.
+    const serialized = JSON.stringify(res.body.data);
+    expect(serialized).not.toContain(VALID.email);
+    expect(serialized).not.toContain(VALID.phone);
+  });
+
+  it('accepts a lowercase code (normalized) and still resolves', async () => {
+    const { app } = makeApp(ctx.store);
+    const code = await captureCode(app);
+
+    const res = await request(app).get(`/api/v1/public/pilot-leads/${code.toLowerCase()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.pilotCode).toBe(code);
+  });
+
+  it('unknown code → 404 PILOT_CODE_NOT_FOUND', async () => {
+    const { app } = makeApp(ctx.store);
+    const res = await request(app).get('/api/v1/public/pilot-leads/ST-PILOT-ZZZZ');
+
+    expect(res.status).toBe(404);
+    expect(res.body.error?.code).toBe('PILOT_CODE_NOT_FOUND');
+  });
+
+  it('malformed code → 400 (Zod boundary), never hits the store', async () => {
+    const { app } = makeApp(ctx.store);
+    const res = await request(app).get('/api/v1/public/pilot-leads/not-a-code');
+
+    expect(res.status).toBe(400);
+  });
+
+  it('audits the resume with ids/metadata only (no PII)', async () => {
+    const { app } = makeApp(ctx.store);
+    const code = await captureCode(app);
+    ctx.audits.length = 0; // drop the capture audit; focus on resume
+    await request(app).get(`/api/v1/public/pilot-leads/${code}`);
+
+    const resume = ctx.audits.find(a => a.action === 'pilot.lead.resumed');
+    expect(resume).toBeTruthy();
+    const serialized = JSON.stringify(resume);
+    expect(serialized).not.toContain(VALID.email);
+    expect(serialized).not.toContain(VALID.phone);
   });
 });
