@@ -29,6 +29,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { StatusChip } from '../components/StatusChip';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
+import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 
 type ModuleId = 'overview' | 'A' | 'B' | 'C';
 type Audiencia =
@@ -1171,6 +1172,10 @@ ${meetingOwner} / ${meetingRole}
           </button>
 
           {mobileTabs}
+
+          <div className="mb-5">
+            <LeaderFeedbackStatusCard project={project} updateProject={updateProject} variant="step4" compact stronger />
+          </div>
 
           <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl mb-5 text-xs text-emerald-700">
             <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />

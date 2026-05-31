@@ -74,6 +74,7 @@ export const router = createBrowserRouter([
           { path: 'projects/:projectId/step/2', Component: Step2Page },
           { path: 'projects/:projectId/step/3', Component: Step3Page },
           { path: 'projects/:projectId/step/4', Component: Step4Page },
+          { path: 'evidencias', Component: EvidenciasPage },
           { path: 'projects/:projectId/evidencias', Component: EvidenciasPage },
           { path: 'mentor', Component: MentorPanelPage },
           { path: 'admin', Component: AdminCohorte },
