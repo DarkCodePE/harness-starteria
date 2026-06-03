@@ -17,7 +17,6 @@ import {
   getAnonymousSessionId,
   createPublicDraftId,
 } from './publicDraftStorage';
-import api from '../../../app/services/api';
 import type { PublicDraft, PublicDraftOutput, PublicDraftSourceType } from '../domain/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
@@ -235,6 +234,9 @@ export async function issuePilotClaim(rawCode: string): Promise<PilotClaimInfo> 
 export async function consumePilotClaim(
   claimToken: string,
 ): Promise<{ projectId: string; alreadyExisted: boolean }> {
+  // Lazy import: keeps this module free of app/services/api's module-level side
+  // effects (axios interceptors) so suites that mock axios can load it.
+  const { default: api } = await import('../../../app/services/api');
   const { data: response } = await api.post<ApiResponse<{ projectId: string; alreadyExisted: boolean }>>(
     '/public/pilot-leads/consume-claim',
     { claimToken },
