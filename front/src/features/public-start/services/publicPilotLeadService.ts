@@ -21,6 +21,7 @@ import type { PublicDraft, PublicDraftOutput, PublicDraftSourceType } from '../d
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const PILOT_LEADS_KEY = 'starteria.publicPilot.leads';
+const PILOT_CLAIM_KEY = 'starteria.pilotClaim';
 
 // Bare axios instance: no Authorization header, no 401-refresh redirect.
 // Anonymous visitors must never be bounced to /auth.
@@ -187,6 +188,81 @@ export async function submitPilotInterest(
 /** Read a previously-submitted lead from the local idempotency cache. */
 export function getPilotInterestByDraftId(draftId: string): PublicPilotLead | null {
   return readLeads().find(lead => lead.draftId === draftId) ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Pilot-claim flow (ADR-018): redeem code → claim token → auth →      */
+/*  create project → dashboard. The claim token binds the lead server-  */
+/*  side; the email is never exposed to the client.                     */
+/* ------------------------------------------------------------------ */
+
+export interface PilotClaimInfo {
+  claimToken: string;
+  expiresAt: string;
+  name: string;
+  organization: string | null;
+  hasProposal: boolean;
+}
+
+interface PilotClaimDto extends PilotClaimInfo {
+  proposal: unknown;
+}
+
+/**
+ * Redeem a pilot code for a single-use claim token (anonymous). Returns only
+ * non-PII personalization — never the lead's email/phone. Rejects on 404/422.
+ */
+export async function issuePilotClaim(rawCode: string): Promise<PilotClaimInfo> {
+  const code = rawCode.trim().toUpperCase();
+  const { data: response } = await publicApi.post<ApiResponse<PilotClaimDto>>(
+    `/public/pilot-leads/${encodeURIComponent(code)}/claim`,
+  );
+  const dto = response.data;
+  return {
+    claimToken: dto.claimToken,
+    expiresAt: dto.expiresAt,
+    name: dto.name,
+    organization: dto.organization ?? null,
+    hasProposal: dto.hasProposal,
+  };
+}
+
+/**
+ * Consume a claim AFTER authentication → creates/returns the user's Project.
+ * Uses the authenticated api client (Bearer token). Idempotent server-side.
+ */
+export async function consumePilotClaim(
+  claimToken: string,
+): Promise<{ projectId: string; alreadyExisted: boolean }> {
+  // Lazy import: keeps this module free of app/services/api's module-level side
+  // effects (axios interceptors) so suites that mock axios can load it.
+  const { default: api } = await import('../../../app/services/api');
+  const { data: response } = await api.post<ApiResponse<{ projectId: string; alreadyExisted: boolean }>>(
+    '/public/pilot-leads/consume-claim',
+    { claimToken },
+  );
+  return response.data;
+}
+
+/** Stash the pending claim across the redeem → auth → consume hops (sessionStorage). */
+export function setPendingPilotClaim(info: PilotClaimInfo): void {
+  const storage = getStorage();
+  storage?.setItem(PILOT_CLAIM_KEY, JSON.stringify(info));
+}
+
+export function getPendingPilotClaim(): PilotClaimInfo | null {
+  const storage = getStorage();
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(PILOT_CLAIM_KEY);
+    return raw ? (JSON.parse(raw) as PilotClaimInfo) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingPilotClaim(): void {
+  getStorage()?.removeItem(PILOT_CLAIM_KEY);
 }
 
 /**
