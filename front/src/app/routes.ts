@@ -32,6 +32,7 @@ import { PublicProposalEditorPage } from './pages/public/PublicProposalEditorPag
 import { PublicProposalResultPage } from './pages/public/PublicProposalResultPage';
 import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePage';
+import { ContinuePilotPage } from './pages/ContinuePilotPage';
 
 export const router = createBrowserRouter([
   {
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, loader: () => redirect('/dashboard') },
           { path: 'dashboard', Component: DashboardPage },
+          { path: 'continuar-piloto', Component: ContinuePilotPage },
           { path: 'retos/:challengeId', Component: ParticipantChallengeDetailPage },
           { path: 'projects/new', Component: CreateProjectPage },
           { path: 'projects/:projectId', Component: ProjectHomePage },

@@ -331,6 +331,9 @@ model Project {
   currentStep        Int           @default(0)
   step0Status        Step0Status   @default(NOT_STARTED)
   step0Data          Json?
+  // Set when this project was created by redeeming a pilot code (ADR-018).
+  // @unique enforces one project per pilot lead → the claim flow is idempotent.
+  pilotLeadId        String?       @unique
   mentorCredits      Int           @default(3)
   riskLevel          RiskLevel?
   isArchived         Boolean       @default(false)
@@ -873,4 +876,24 @@ model PilotLead {
   @@index([email])
   @@index([createdAt])
   @@index([retentionUntil])
+}
+
+// ─── Pilot claim tokens (ADR-018) ─────────────────────────────────────────────
+// Short-lived, single-use token minted when a pilot code is redeemed. It binds
+// the lead server-side so its proposal can be imported into whoever authenticates,
+// WITHOUT ever returning the lead's email/PII to the client. Only the SHA-256
+// hash is stored (mirrors RefreshToken.tokenHash); the raw token lives client-side
+// for the flow's duration. `consumedAt` + `createdProjectId` give single-use +
+// idempotency. No relation fields kept intentionally (scalar FK + index suffice).
+model PilotClaimToken {
+  id              String    @id @default(uuid())
+  tokenHash       String    @unique
+  pilotLeadId     String
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdProjectId String?
+  createdAt       DateTime  @default(now())
+
+  @@index([pilotLeadId])
+  @@index([expiresAt])
 }

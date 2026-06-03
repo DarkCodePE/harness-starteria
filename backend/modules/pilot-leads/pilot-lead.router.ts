@@ -11,6 +11,8 @@
 import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { prisma } from '../../shared/db/prisma';
 import { AppError } from '../../shared/errors/AppError';
+import { authenticate } from '../auth/auth.middleware';
+import { ProjectService } from '../projects/project.service';
 import { PilotLeadService, type PilotLeadStore } from './pilot-lead.service';
 import {
   createEmailPilotLeadNotifier,
@@ -18,6 +20,17 @@ import {
   combinePilotLeadNotifiers,
 } from './pilot-lead.notifier';
 import { PilotLeadController } from './pilot-lead.controller';
+import {
+  PilotClaimService,
+  type PilotClaimStore,
+  type PilotProjectCreator,
+} from './pilot-claim.service';
+import { PilotClaimController } from './pilot-claim.controller';
+import {
+  mapProposalToStep0Data,
+  deriveProjectName,
+  type PilotProposalSnapshot,
+} from './pilot-proposal.mapper';
 
 interface RateLimitEntry {
   count: number;
@@ -62,10 +75,18 @@ export interface PilotLeadRouterOptions {
   windowMs?: number;
 }
 
+/** Optional claim-flow wiring (ADR-018). Injected so tests can stub auth + service. */
+export interface PilotLeadRouterDeps {
+  claimController?: PilotClaimController;
+  /** Auth middleware guarding the (authenticated) consume route. Defaults to the real one. */
+  authenticate?: RequestHandler;
+}
+
 /** Build the router around an injected service (tests inject a mocked store). */
 export function buildPilotLeadRouter(
   service: PilotLeadService,
   options: PilotLeadRouterOptions = {},
+  deps: PilotLeadRouterDeps = {},
 ): Router {
   const controller = new PilotLeadController(service);
   const router = Router();
@@ -74,6 +95,15 @@ export function buildPilotLeadRouter(
   // Redeem a pilotCode to resume the initiative. Same per-IP limiter guards
   // against enumeration of the short ST-PILOT-XXXX code space.
   router.get('/:pilotCode', limiter, controller.resume);
+
+  // Pilot-claim flow (ADR-018): redeem code → claim token → (auth) → create project.
+  if (deps.claimController) {
+    const auth = deps.authenticate ?? authenticate;
+    // Anonymous + rate-limited: mints a single-use claim token (no PII returned).
+    router.post('/:pilotCode/claim', limiter, deps.claimController.issue);
+    // Authenticated: consumes the claim and creates the user's project.
+    router.post('/consume-claim', auth, deps.claimController.consume);
+  }
   return router;
 }
 
@@ -93,4 +123,31 @@ export const pilotLeadService = new PilotLeadService(
   ),
 );
 
-export const pilotLeadRouter = buildPilotLeadRouter(pilotLeadService);
+/**
+ * Pilot-claim wiring (ADR-018). Creating the project reuses ProjectService
+ * (createProject + updateStep0) and the server-ported proposal→Step0 mapper;
+ * the project is stamped with `pilotLeadId` so the flow is idempotent.
+ */
+const projectService = new ProjectService(prisma as never);
+const createPilotProject: PilotProjectCreator = async (userId, role, lead) => {
+  const proposal = (lead.proposal ?? null) as PilotProposalSnapshot | null;
+  const project = await projectService.createProject(userId, { name: deriveProjectName(proposal) });
+  // Stamp the lead binding (Project.pilotLeadId @unique) for one-project-per-lead.
+  await (prisma as never as { project: { update: (a: unknown) => Promise<unknown> } }).project.update({
+    where: { id: project.id },
+    data: { pilotLeadId: lead.id },
+  });
+  const step0 = mapProposalToStep0Data(proposal);
+  if (step0) {
+    await projectService.updateStep0(project.id, userId, role as never, step0 as never, 'IN_PROGRESS' as never);
+  }
+  return project.id;
+};
+
+export const pilotClaimService = new PilotClaimService(
+  prisma as unknown as PilotClaimStore,
+  createPilotProject,
+);
+export const pilotClaimController = new PilotClaimController(pilotClaimService);
+
+export const pilotLeadRouter = buildPilotLeadRouter(pilotLeadService, {}, { claimController: pilotClaimController });

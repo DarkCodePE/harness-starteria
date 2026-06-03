@@ -3,24 +3,25 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { AlertCircle, ArrowLeft, ArrowRight, KeyRound, Loader2 } from 'lucide-react';
 import {
-  resumeWithPilotCode,
+  issuePilotClaim,
+  setPendingPilotClaim,
   trackPilotInterestEvent,
 } from '../../../features/public-start/services/publicPilotLeadService';
 
 const PILOT_CODE_REGEX = /^ST-PILOT-[A-Z0-9]{4}$/;
 
 /**
- * Public "continue with your code" entry: the applicant types the
- * `ST-PILOT-XXXX` code from their confirmation email to resume their
- * initiative. On success we rehydrate the one-pager into a fresh draft and
- * route into the existing `/auth/continue/:draftId` flow.
+ * Public "continue with your code" entry (ADR-018): the applicant types the
+ * `ST-PILOT-XXXX` code from their confirmation email. On success we mint a
+ * single-use claim token, stash it, and route to /auth — after they sign in /
+ * sign up, the claim is consumed to create their project and land them in the
+ * workspace. The email is never exposed to the client.
  */
 export function PublicResumeWithCodePage() {
   const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recovered, setRecovered] = useState<{ name: string } | null>(null);
 
   const normalized = code.trim().toUpperCase();
   const isValid = PILOT_CODE_REGEX.test(normalized);
@@ -32,52 +33,24 @@ export function PublicResumeWithCodePage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await resumeWithPilotCode(normalized);
-      trackPilotInterestEvent('pilot_interest_started', { source: 'resume_code', pilotCode: result.pilotCode });
-
-      if (result.draftId) {
-        navigate(`/auth/continue/${result.draftId}`);
-        return;
-      }
-      // Lead found but the proposal snapshot wasn't recoverable (legacy capture).
-      setRecovered({ name: result.name });
+      const info = await issuePilotClaim(normalized);
+      setPendingPilotClaim(info);
+      trackPilotInterestEvent('pilot_interest_started', { source: 'resume_code' });
+      // Hand off to auth; the post-auth step consumes the claim → /projects/:id.
+      navigate('/auth');
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 404) {
         setError('No encontramos ese código. Revisa que esté completo (ST-PILOT-XXXX) y vuelve a intentar.');
-      } else if (axios.isAxiosError(err) && err.response?.status === 400) {
+      } else if (axios.isAxiosError(err) && (err.response?.status === 400 || err.response?.status === 422)) {
         setError('El código no tiene el formato esperado (ST-PILOT-XXXX).');
+      } else if (axios.isAxiosError(err) && err.response?.status === 410) {
+        setError('Tu código expiró. Escríbenos para reactivar tu postulación.');
       } else {
-        setError('No pudimos recuperar tu iniciativa ahora mismo. Inténtalo de nuevo en un momento.');
+        setError('No pudimos continuar tu iniciativa ahora mismo. Inténtalo de nuevo en un momento.');
       }
     } finally {
       setLoading(false);
     }
-  }
-
-  if (recovered) {
-    return (
-      <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-          <AlertCircle size={22} />
-        </div>
-        <h1 className="text-2xl text-slate-950" style={{ fontWeight: 850 }}>
-          Encontramos tu postulación, {recovered.name}
-        </h1>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
-          Tu código es válido, pero esta postulación no guardó una copia de la propuesta para retomarla
-          automáticamente. Puedes crear una nueva propuesta — será rápido.
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate('/public/start')}
-          className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white transition-colors hover:bg-indigo-700"
-          style={{ fontWeight: 850 }}
-        >
-          <ArrowRight size={15} />
-          Crear nueva propuesta
-        </button>
-      </section>
-    );
   }
 
   return (

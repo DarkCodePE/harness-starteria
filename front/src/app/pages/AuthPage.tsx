@@ -4,6 +4,10 @@ import { Zap, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { AuthError } from '../services/api';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
+import { getPendingPilotClaim } from '../../features/public-start/services/publicPilotLeadService';
+
+/** When a pilot code is pending, route post-auth to the claim-consume page (ADR-018). */
+const claimRedirect = (): string | null => (getPendingPilotClaim() ? '/continuar-piloto' : null);
 
 type FieldErrors = {
   email?: string;
@@ -64,7 +68,10 @@ export function AuthPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    navigate(user?.role === 'portfolio_lead' ? '/portfolio/inicio' : '/dashboard', { replace: true });
+    navigate(
+      claimRedirect() ?? (user?.role === 'portfolio_lead' ? '/portfolio/inicio' : '/dashboard'),
+      { replace: true },
+    );
   }, [isAuthenticated, navigate, user?.role]);
 
   // Focus management on submit failure: prioriza el primer campo inválido,
@@ -157,7 +164,7 @@ export function AuthPage() {
     setLoading(false);
 
     if (result.success) {
-      navigate(email.toLowerCase() === 'portfolio@starteria.io' ? '/portfolio/inicio' : '/dashboard');
+      navigate(claimRedirect() ?? (email.toLowerCase() === 'portfolio@starteria.io' ? '/portfolio/inicio' : '/dashboard'));
       return;
     }
 
@@ -179,7 +186,7 @@ export function AuthPage() {
     setLoading(false);
 
     if (result.success) {
-      navigate('/dashboard');
+      navigate(claimRedirect() ?? '/dashboard');
       return;
     }
 
