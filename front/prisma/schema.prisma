@@ -332,8 +332,10 @@ model Project {
   step0Status        Step0Status   @default(NOT_STARTED)
   step0Data          Json?
   // Set when this project was created by redeeming a pilot code (ADR-018).
-  // @unique enforces one project per pilot lead → the claim flow is idempotent.
-  pilotLeadId        String?       @unique
+  // Plain index (NOT @unique): adding a unique constraint trips `prisma db push`'s
+  // data-loss guard and aborts the deploy. Idempotency is enforced in the claim
+  // service instead (claim.createdProjectId + a findFirst guard before creating).
+  pilotLeadId        String?
   mentorCredits      Int           @default(3)
   riskLevel          RiskLevel?
   isArchived         Boolean       @default(false)
@@ -360,6 +362,7 @@ model Project {
   @@index([ownerId])
   @@index([cohortId])
   @@index([status])
+  @@index([pilotLeadId])
 }
 
 model Step {

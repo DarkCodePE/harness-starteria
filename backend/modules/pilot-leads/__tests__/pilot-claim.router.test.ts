@@ -42,7 +42,7 @@ function makeStore() {
       }),
     },
     project: {
-      findUnique: vi.fn(async ({ where }: any) => projects.find((p) => p.pilotLeadId === where.pilotLeadId) ?? null),
+      findFirst: vi.fn(async ({ where }: any) => projects.find((p) => p.pilotLeadId === where.pilotLeadId) ?? null),
     },
     auditLog: { create: vi.fn(async ({ data }: any) => { audits.push(data); return data; }) },
   };

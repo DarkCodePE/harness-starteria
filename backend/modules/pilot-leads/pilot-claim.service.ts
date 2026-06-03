@@ -48,7 +48,8 @@ export interface PilotClaimStore {
     update(args: { where: { tokenHash: string }; data: Record<string, unknown> }): Promise<unknown>;
   };
   project: {
-    findUnique(args: { where: { pilotLeadId: string } }): Promise<ProjectRow | null>;
+    // findFirst (not findUnique): pilotLeadId is a plain index, not a unique key.
+    findFirst(args: { where: { pilotLeadId: string } }): Promise<ProjectRow | null>;
   };
   auditLog: {
     create(args: { data: Record<string, unknown> }): Promise<unknown>;
@@ -98,7 +99,7 @@ export class PilotClaimService {
     const rawToken = randomBytes(32).toString('hex');
     const tokenHash = hashRefreshToken(rawToken);
     // If a project already exists for this lead, pre-bind it so consume short-circuits.
-    const existingProject = await this.store.project.findUnique({ where: { pilotLeadId: lead.id } });
+    const existingProject = await this.store.project.findFirst({ where: { pilotLeadId: lead.id } });
     const expiresAt = new Date(this.now().getTime() + CLAIM_TTL_MS);
 
     await this.store.pilotClaimToken.create({
@@ -145,7 +146,7 @@ export class PilotClaimService {
     }
 
     // A project may already exist for this lead via another claim → reuse it.
-    const existing = await this.store.project.findUnique({ where: { pilotLeadId: claim.pilotLeadId } });
+    const existing = await this.store.project.findFirst({ where: { pilotLeadId: claim.pilotLeadId } });
     if (existing) {
       await this.store.pilotClaimToken.update({
         where: { tokenHash },
