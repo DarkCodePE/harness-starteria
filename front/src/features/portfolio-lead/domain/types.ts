@@ -265,6 +265,69 @@ export interface CreateStrategicFrontInput {
   notes?: string;
 }
 
+export type StrategicFrontQualityStatus = 'red' | 'yellow' | 'green';
+export type StrategicFrontQualityCriterionStatus = 'complete' | 'needs_improvement' | 'missing';
+
+export interface StrategicFrontQualityCriterion {
+  id:
+    | 'business_priority'
+    | 'not_solution'
+    | 'responsible_area'
+    | 'sponsor'
+    | 'progress_signal'
+    | 'metric_coherence'
+    | 'horizon'
+    | 'scope'
+    | 'actionable_challenges';
+  label: string;
+  status: StrategicFrontQualityCriterionStatus;
+  feedback: string;
+}
+
+export interface StrategicFrontQualityInput {
+  name: string;
+  strategicObjective: string;
+  sponsor: string;
+  sponsorEmail?: string;
+  mainKpi: string;
+  baseline: string;
+  target: string;
+  threshold?: string;
+  area?: string;
+  horizon: string;
+  endDate?: string;
+  priority: StrategicFrontPriority;
+  status: StrategicFrontStatus;
+  whyNow?: string;
+  notes?: string;
+}
+
+export interface StrategicFrontQualityEvaluation {
+  qualityStatus: StrategicFrontQualityStatus;
+  diagnosis: string;
+  nextBestAction: {
+    title: string;
+    description: string;
+  };
+  criteria: StrategicFrontQualityCriterion[];
+  warnings: string[];
+  missingCriticalFields: string[];
+  missingRecommendedFields: string[];
+  canGenerateChallenges: boolean;
+}
+
+export interface StrategicFrontQualityReview {
+  qualityStatus: StrategicFrontQualityStatus;
+  diagnosis: string;
+  strengths: string[];
+  risks: string[];
+  missingElements: string[];
+  suggestedRewrite?: string;
+  canGenerateChallenges: boolean;
+  suggestedChallenges: string[];
+  confidenceNote: string;
+}
+
 export interface ChallengeInvitation {
   id: string;
   value: string;
@@ -677,12 +740,79 @@ export interface PortfolioAttentionQueueItem {
   actionLabel: string;
   actionPath?: string;
   contextLabel?: string;
+  frontName?: string;
+  challengeName?: string;
+  initiativeName?: string;
+  alertType?: 'bloqueo' | 'decision' | 'baja_cobertura' | 'sin_owner' | 'falta_evidencia' | 'activacion';
+  severity?: 'Alta' | 'Media' | 'Baja';
+  recommendedAction?: string;
+}
+
+export interface StrategicObjectiveChallengeRow {
+  id: string;
+  name: string;
+  statusLabel: string;
+  severity: 'critical' | 'attention' | 'healthy' | 'neutral';
+  attentionLabel: string;
+  initiativesCount: number;
+  peopleCount: number;
+  ownerLabel: string;
+  progressPercent: number;
+  coverageLabel: string;
+  nextActionLabel: string;
+  blockerLabel?: string;
+  pendingDecisionLabel?: string;
+  actionPath: string;
+}
+
+export interface StrategicObjectiveFrontAlert {
+  id: string;
+  label: string;
+  actionLabel: string;
+  actionPath: string;
+  tone: 'rose' | 'violet' | 'amber' | 'slate';
+}
+
+export interface StrategicObjectiveFrontCard {
+  id: string;
+  name: string;
+  strategicObjective: string;
+  mainKpi: string;
+  baseline: string;
+  currentValue: string;
+  target: string;
+  progressPercent: number;
+  statusLabel: string;
+  statusTone: 'emerald' | 'amber' | 'rose' | 'violet' | 'slate';
+  healthStatus: 'requires_attention' | 'pending_decision' | 'tracking' | 'definition' | 'closed';
+  attentionPriorityScore: number;
+  sponsor: string;
+  horizon: string;
+  challengesCount: number;
+  initiativesCount: number;
+  blockersCount: number;
+  pendingDecisionsCount: number;
+  nextActionLabel: string;
+  nextActionDescription: string;
+  primaryActionLabel: string;
+  primaryActionPath: string;
+  alerts: StrategicObjectiveFrontAlert[];
+  viewPath: string;
+  createChallengePath: string;
+  importPath: string;
+  reportPath: string;
+  hiddenChallengesCount: number;
+  challenges: StrategicObjectiveChallengeRow[];
+}
+
+export interface PortfolioStrategicOverviewModel {
+  fronts: StrategicObjectiveFrontCard[];
 }
 
 export interface PortfolioWelcomeBannerActionGroup {
   primary: PortfolioHomeBannerAction;
   secondary: PortfolioHomeBannerAction;
-  tertiary: PortfolioHomeBannerAction;
+  tertiary?: PortfolioHomeBannerAction;
 }
 
 export interface PortfolioHomeExperienceModel {
@@ -692,6 +822,7 @@ export interface PortfolioHomeExperienceModel {
     actions: PortfolioWelcomeBannerActionGroup;
   };
   summaryCards: PortfolioHomeSummaryCard[];
+  strategicOverview: PortfolioStrategicOverviewModel;
   strategicFronts: PortfolioFrontOverviewCard[];
   importantChanges: PortfolioImportantChangeCard[];
   pendingDecisions: PortfolioPendingDecisionRow[];

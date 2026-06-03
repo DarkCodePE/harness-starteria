@@ -25,6 +25,9 @@ import type {
   PortfolioPendingDecisionRow,
   PortfolioRecentActivityItem,
   PortfolioWelcomeBannerActionGroup,
+  PortfolioStrategicOverviewModel,
+  StrategicObjectiveChallengeRow,
+  StrategicObjectiveFrontCard,
 } from '../../../features/portfolio-lead/domain/types';
 
 const bannerTone = {
@@ -78,6 +81,29 @@ const queueIconMap: Record<PortfolioAttentionQueueItem['iconKey'], React.Compone
   users: Users,
 };
 
+const challengeSeverityClasses: Record<StrategicObjectiveChallengeRow['severity'], { card: string; badge: string; action: string }> = {
+  critical: {
+    card: 'border-rose-200 bg-rose-50/80',
+    badge: 'border-rose-200 bg-rose-100 text-rose-800',
+    action: 'border-rose-200 bg-rose-50 text-rose-800',
+  },
+  attention: {
+    card: 'border-amber-200 bg-amber-50/80',
+    badge: 'border-amber-200 bg-amber-100 text-amber-800',
+    action: 'border-amber-200 bg-amber-50 text-amber-800',
+  },
+  healthy: {
+    card: 'border-emerald-200 bg-emerald-50/80',
+    badge: 'border-emerald-200 bg-emerald-100 text-emerald-800',
+    action: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  },
+  neutral: {
+    card: 'border-slate-200 bg-white/80',
+    badge: 'border-slate-200 bg-slate-100 text-slate-700',
+    action: 'border-slate-200 bg-white text-slate-700',
+  },
+};
+
 export function normalizePortfolioText(value?: string) {
   if (!value) return '';
   if (!/[ÃÂ]/.test(value)) return value;
@@ -118,7 +144,9 @@ export function PortfolioWelcomeBanner({
         <div className="flex w-full flex-col gap-2 lg:w-64">
           <BannerActionButton action={actions.primary} onNavigate={onNavigate} emphasis="primary" />
           <BannerActionButton action={actions.secondary} onNavigate={onNavigate} emphasis="secondary" />
-          <BannerActionButton action={actions.tertiary} onNavigate={onNavigate} emphasis="ghost" />
+          {actions.tertiary ? (
+            <BannerActionButton action={actions.tertiary} onNavigate={onNavigate} emphasis="ghost" />
+          ) : null}
         </div>
       </div>
     </section>
@@ -189,8 +217,8 @@ export function PortfolioPrimaryActionRail({
   ];
 
   return (
-    <section className="grid gap-3 xl:grid-cols-4">
-      {actions.map(action => (
+    <section className="grid gap-3 md:grid-cols-2">
+      {actions.filter(action => action.id === 'create-front' || action.id === 'import-initiatives').map(action => (
         <article key={action.id} className={`rounded-[24px] border p-5 shadow-sm ${action.tone === 'emerald'
           ? 'border-emerald-200 bg-emerald-50/70'
           : action.tone === 'rose'
@@ -299,9 +327,20 @@ export function PortfolioAttentionQueueSection({
                 </div>
 
                 <p className="mt-3 text-sm text-slate-700">{item.subtitle}</p>
-                {item.contextLabel ? (
-                  <p className="mt-2 text-xs text-slate-500">{item.contextLabel}</p>
-                ) : null}
+                <div className="mt-3 grid gap-2 rounded-2xl border border-white/70 bg-white/70 p-3 text-xs text-slate-600">
+                  <QueueMeta label="Frente" value={item.frontName ?? item.contextLabel ?? 'Sin frente visible'} />
+                  {item.challengeName ? <QueueMeta label="Reto" value={item.challengeName} /> : null}
+                  {item.initiativeName ? <QueueMeta label="Iniciativa" value={item.initiativeName} /> : null}
+                  <div className="flex flex-wrap gap-2">
+                    <DecisionBadge tone={item.tone === 'rose' ? 'rose' : item.tone === 'violet' ? 'violet' : item.tone === 'amber' ? 'amber' : 'slate'}>
+                      {formatAlertType(item.alertType)}
+                    </DecisionBadge>
+                    <DecisionBadge tone={item.severity === 'Alta' ? 'rose' : item.severity === 'Media' ? 'amber' : 'slate'}>
+                      Severidad {item.severity ?? 'Media'}
+                    </DecisionBadge>
+                  </div>
+                  <QueueMeta label="Acción recomendada" value={item.recommendedAction ?? item.actionLabel} />
+                </div>
 
                 {item.actionPath ? (
                   <Button
@@ -322,6 +361,561 @@ export function PortfolioAttentionQueueSection({
     </section>
   );
 }
+
+export function StrategicObjectivesOverview({
+  overview,
+  onNavigate,
+}: {
+  overview: PortfolioStrategicOverviewModel;
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <section className="rounded-[28px] border border-slate-200 bg-white p-6 md:p-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>OBJETIVOS ESTRATEGICOS</p>
+          <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>
+            Objetivos estrategicos priorizados
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Primero aparecen los frentes que requieren atencion, decisiones o desbloqueo.
+          </p>
+        </div>
+      </div>
+
+      {overview.fronts.length === 0 ? (
+        <div className="mt-5">
+          <PortfolioLeadEmptyState
+            eyebrow="Portafolio en arranque"
+            title="Todavía no hay frentes estratégicos"
+            description="Crea el primer frente para ordenar prioridades, retos e iniciativas bajo una misma lectura ejecutiva."
+            steps={['Crear frente', 'Crear reto', 'Activar', 'Recibir iniciativas', 'Decidir']}
+            primaryAction={{ label: 'Crear nuevo frente', onClick: () => onNavigate('/portfolio/frentes-estrategicos') }}
+            secondaryAction={{
+              label: 'Importar iniciativas existentes',
+              onClick: () => onNavigate('/portfolio/iniciar?mode=import'),
+              helper: 'Ordena trabajo existente cuando ya haya iniciativas en marcha.',
+            }}
+          />
+        </div>
+      ) : (
+        <StrategicFrontsPriorityList fronts={overview.fronts} onNavigate={onNavigate} />
+      )}
+    </section>
+  );
+}
+
+export const PortfolioStrategicMap = StrategicObjectivesOverview;
+
+export function StrategicFrontsPriorityList({
+  fronts,
+  onNavigate,
+}: {
+  fronts: StrategicObjectiveFrontCard[];
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <div className="mt-5 flex flex-col gap-5">
+      {fronts.map((front, index) => (
+        <StrategicFrontExecutiveCard
+          key={front.id}
+          front={front}
+          onNavigate={onNavigate}
+          isPriorityFront={index === 0}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function StrategicFrontExecutiveCard({
+  front,
+  onNavigate,
+  isPriorityFront = false,
+}: {
+  front: StrategicObjectiveFrontCard;
+  onNavigate: (path: string) => void;
+  isPriorityFront?: boolean;
+}) {
+  const progressColor = front.statusTone === 'emerald'
+    ? 'emerald'
+    : front.statusTone === 'amber'
+      ? 'amber'
+      : front.statusTone === 'rose'
+        ? 'red'
+        : front.statusTone === 'violet'
+          ? 'indigo'
+          : 'auto';
+  const displayStatusLabel = getExecutiveFrontStatusLabel(front);
+  const hasAttention = front.healthStatus === 'requires_attention' || front.healthStatus === 'pending_decision';
+  const [expanded, setExpanded] = React.useState(isPriorityFront || hasAttention);
+  const showChallengeDetails = expanded || hasAttention;
+  const challengeSummary = front.challengesCount === 1 ? '1 reto en seguimiento' : `${front.challengesCount} retos en seguimiento`;
+  const actionButtons = showChallengeDetails
+    ? [
+      { label: 'Ver objetivo', path: front.viewPath },
+      { label: 'Crear reto', path: front.createChallengePath },
+      { label: 'Importar iniciativas', path: front.importPath },
+      { label: 'Generar reporte', path: front.reportPath },
+    ]
+    : [
+      { label: 'Ver objetivo', path: front.viewPath },
+      { label: 'Crear reto', path: front.createChallengePath },
+      { label: 'Ver mas', path: front.createChallengePath },
+    ];
+
+  if (showChallengeDetails) {
+    return (
+      <ExpandedStrategicFrontCard
+        front={front}
+        onNavigate={onNavigate}
+        onCollapse={() => setExpanded(false)}
+      />
+    );
+  }
+
+  return (
+    <CompactStrategicFrontCard
+      front={front}
+      onNavigate={onNavigate}
+      onExpand={() => setExpanded(true)}
+    />
+  );
+
+  return (
+    <article className={`rounded-[24px] border p-5 shadow-sm md:p-6 ${frontToneClasses[front.statusTone]}`}>
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Frente estrategico</p>
+            <h3 className="mt-2 text-lg text-slate-950 md:text-xl" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+              {normalizePortfolioText(front.name)}
+            </h3>
+            <p
+              className="mt-2 max-w-2xl overflow-hidden text-sm leading-6 text-slate-600"
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+            >
+              {normalizePortfolioText(front.strategicObjective)}
+            </p>
+          </div>
+          <span className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1 text-xs ${stateBadgeClasses(front.statusTone)}`}>
+            {normalizePortfolioText(displayStatusLabel)}
+          </span>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ExecutiveInfoBlock icon={Clock3} label="Horizonte" value={normalizePortfolioText(front.horizon)} />
+          <ExecutiveInfoBlock icon={Target} label="KPI principal" value={normalizePortfolioText(front.mainKpi)} />
+          <ExecutiveInfoBlock icon={Users} label="Sponsor" value={normalizePortfolioText(front.sponsor)} />
+        </div>
+
+        <div className="rounded-2xl border border-white/70 bg-white/85 p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ExecutiveMetricBlock label="Estado actual" value={front.currentValue} />
+            <ExecutiveMetricBlock label="Meta" value={front.target} />
+          </div>
+          <div className="mt-4">
+            <div className="flex items-end justify-between gap-3">
+              <p className="text-sm text-slate-700" style={{ fontWeight: 700 }}>Avance del frente</p>
+              <p className="text-sm text-slate-950" style={{ fontWeight: 700 }}>{front.progressPercent}%</p>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">
+              <span>Base: {normalizePortfolioText(front.baseline)}</span>
+              <span>Actual: {normalizePortfolioText(front.currentValue)}</span>
+              <span>Meta: {normalizePortfolioText(front.target)}</span>
+            </div>
+            <div className="mt-2">
+              <ProgressBar value={front.progressPercent} size="md" color={progressColor} showLabel={false} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-4">
+          <CompactMetricChip label="Retos" value={`${front.challengesCount}`} />
+          <CompactMetricChip label="Iniciativas" value={`${front.initiativesCount}`} />
+          <CompactMetricChip label="Bloqueos" value={`${front.blockersCount}`} tone={front.blockersCount > 0 ? 'rose' : 'slate'} />
+          <CompactMetricChip label="Decisiones" value={`${front.pendingDecisionsCount}`} tone={front.pendingDecisionsCount > 0 ? 'violet' : 'slate'} />
+        </div>
+
+        <div className="rounded-2xl border border-white/70 bg-white/85 p-4">
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Siguiente accion recomendada</p>
+          <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>
+            {normalizePortfolioText(front.nextActionLabel)}
+          </p>
+          <p className="mt-1 text-sm text-slate-600">{normalizePortfolioText(front.nextActionDescription)}</p>
+        </div>
+
+        {showChallengeDetails ? (
+        <div>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Retos asociados</p>
+          <div className="mt-3 space-y-2">
+            {front.challenges.length > 0 ? front.challenges.map(challenge => (
+              <ChallengeMiniCard key={challenge.id} challenge={challenge} onNavigate={onNavigate} />
+            )) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-4">
+                <p className="text-sm text-slate-700" style={{ fontWeight: 700 }}>Este frente aun no tiene retos definidos.</p>
+                <p className="mt-1 text-xs text-slate-500">Siguiente paso: crear el primer reto.</p>
+                <button
+                  type="button"
+                  onClick={() => onNavigate(front.createChallengePath)}
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+                  style={{ fontWeight: 700 }}
+                >
+                  Crear primer reto
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {front.hiddenChallengesCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(front.createChallengePath)}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+              style={{ fontWeight: 700 }}
+            >
+              Ver +{front.hiddenChallengesCount} retos
+              <ArrowRight size={13} />
+            </button>
+          ) : null}
+        </div>
+        ) : (
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/85 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Retos asociados</p>
+              <p className="mt-1 text-sm text-slate-800" style={{ fontWeight: 700 }}>{challengeSummary}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+                style={{ fontWeight: 700 }}
+              >
+                Ver retos
+                <ArrowRight size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate(front.createChallengePath)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+                style={{ fontWeight: 700 }}
+              >
+                Ver detalle
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+        <div className={`grid gap-2 sm:grid-cols-2 ${showChallengeDetails ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
+          {actionButtons.map(action => (
+            <FrontActionButton key={action.label} label={action.label} path={action.path} onNavigate={onNavigate} />
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function CompactStrategicFrontCard({
+  front,
+  onNavigate,
+  onExpand,
+}: {
+  front: StrategicObjectiveFrontCard;
+  onNavigate: (path: string) => void;
+  onExpand: () => void;
+}) {
+  return (
+    <article className={`rounded-[20px] border px-4 py-3 shadow-sm ${frontToneClasses[front.statusTone]}`}>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(180px,0.65fr)_auto] lg:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] ${stateBadgeClasses(front.statusTone)}`}>
+              {normalizePortfolioText(getExecutiveFrontStatusLabel(front))}
+            </span>
+            <h3 className="truncate text-base text-slate-950" style={{ fontWeight: 800 }}>
+              {normalizePortfolioText(front.name)}
+            </h3>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600">
+            <span>KPI: {normalizePortfolioText(front.mainKpi)}</span>
+            <span>{normalizePortfolioText(front.currentValue)} a meta {normalizePortfolioText(front.target)}</span>
+          </div>
+          <p className="mt-2 text-xs text-slate-600">
+            {front.challengesCount} reto{front.challengesCount === 1 ? '' : 's'} · {front.initiativesCount} iniciativa{front.initiativesCount === 1 ? '' : 's'} · {getFrontAttentionSummary(front)}
+          </p>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-slate-500">Avance</span>
+            <span className="text-lg text-slate-950" style={{ fontWeight: 800 }}>{front.progressPercent}%</span>
+          </div>
+          <ProgressBar value={front.progressPercent} size="sm" color={getFrontProgressColor(front)} showLabel={false} />
+        </div>
+
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          {front.alerts.length > 0 ? (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 transition-colors hover:bg-amber-100"
+              style={{ fontWeight: 800 }}
+            >
+              Revisar alertas
+              <ArrowRight size={13} />
+            </button>
+          ) : null}
+          {front.challengesCount === 0 || front.healthStatus === 'definition' ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(front.createChallengePath)}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+              style={{ fontWeight: 800 }}
+            >
+              Crear reto
+              <ArrowRight size={13} />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => onNavigate(front.primaryActionPath || front.viewPath)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+            style={{ fontWeight: 800 }}
+          >
+            {normalizePortfolioText(front.primaryActionLabel || 'Ver frente')}
+            <ArrowRight size={13} />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function ExpandedStrategicFrontCard({
+  front,
+  onNavigate,
+  onCollapse,
+}: {
+  front: StrategicObjectiveFrontCard;
+  onNavigate: (path: string) => void;
+  onCollapse: () => void;
+}) {
+  const alerts = front.alerts.length > 0 ? front.alerts : [{
+    id: 'no-alerts',
+    label: 'Sin alertas criticas',
+    actionLabel: 'Ver frente',
+    actionPath: front.viewPath,
+    tone: 'slate' as const,
+  }];
+
+  return (
+    <article className={`rounded-[22px] border p-4 shadow-sm md:p-5 ${frontToneClasses[front.statusTone]}`}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_220px] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg text-slate-950 md:text-xl" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+              {normalizePortfolioText(front.name)}
+            </h3>
+            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] ${stateBadgeClasses(front.statusTone)}`}>
+              {normalizePortfolioText(getExecutiveFrontStatusLabel(front))}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-600">
+            KPI: {normalizePortfolioText(front.mainKpi)} · {normalizePortfolioText(front.currentValue)} a meta {normalizePortfolioText(front.target)}
+          </p>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-slate-500">Avance</span>
+            <span className="text-xl text-slate-950" style={{ fontWeight: 800 }}>{front.progressPercent}%</span>
+          </div>
+          <ProgressBar value={front.progressPercent} size="md" color={getFrontProgressColor(front)} showLabel={false} />
+        </div>
+      </div>
+
+      <p className="mt-3 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-sm text-slate-700">
+        {front.challengesCount} retos · {front.initiativesCount} iniciativas · {front.blockersCount} bloqueo{front.blockersCount === 1 ? '' : 's'} · {front.pendingDecisionsCount} decision{front.pendingDecisionsCount === 1 ? '' : 'es'}
+      </p>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.2fr)]">
+        <div>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 800 }}>Atencion</p>
+          <div className="mt-2 space-y-2">
+            {alerts.slice(0, 2).map(alert => (
+              <button
+                key={alert.id}
+                type="button"
+                onClick={() => onNavigate(alert.actionPath)}
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/85 px-3 py-2 text-left text-xs text-slate-700 transition-colors hover:bg-white"
+              >
+                <span className="line-clamp-1">{normalizePortfolioText(alert.label)}</span>
+                <span className="shrink-0 text-slate-950" style={{ fontWeight: 800 }}>{alert.actionLabel}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 800 }}>Retos</p>
+          <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white/80">
+            {front.challenges.length > 0 ? front.challenges.map(challenge => (
+              <ChallengeDashboardRow key={challenge.id} challenge={challenge} onNavigate={onNavigate} />
+            )) : (
+              <button
+                type="button"
+                onClick={() => onNavigate(front.createChallengePath)}
+                className="flex w-full items-center justify-between px-3 py-3 text-left text-sm text-slate-700"
+              >
+                <span>Sin retos definidos</span>
+                <span style={{ fontWeight: 800 }}>Crear reto</span>
+              </button>
+            )}
+          </div>
+          {front.hiddenChallengesCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(front.createChallengePath)}
+              className="mt-2 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 transition-colors hover:bg-slate-50"
+              style={{ fontWeight: 800 }}
+            >
+              Ver +{front.hiddenChallengesCount} retos
+              <ArrowRight size={13} />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <FrontActionButton label="Ver frente" path={front.viewPath} onNavigate={onNavigate} />
+        <FrontActionButton label="Crear reto" path={front.createChallengePath} onNavigate={onNavigate} />
+        {front.healthStatus === 'requires_attention' || front.healthStatus === 'pending_decision' ? (
+          <FrontActionButton label="Importar iniciativas" path={front.importPath} onNavigate={onNavigate} />
+        ) : null}
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+          style={{ fontWeight: 700 }}
+        >
+          Compactar
+        </button>
+      </div>
+    </article>
+  );
+}
+
+export function ChallengeDashboardRow({
+  challenge,
+  onNavigate,
+}: {
+  challenge: StrategicObjectiveChallengeRow;
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(challenge.actionPath)}
+      className="grid w-full gap-2 border-b border-slate-100 px-3 py-2.5 text-left last:border-b-0 md:grid-cols-[minmax(0,1fr)_120px_120px_auto] md:items-center"
+    >
+      <div className="min-w-0">
+        <p className="truncate text-sm text-slate-950" style={{ fontWeight: 800 }}>{normalizePortfolioText(challenge.name)}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{normalizePortfolioText(resolveChallengeCompactStatus(challenge))}</p>
+      </div>
+      <div>
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="text-slate-500">Avance</span>
+          <span className="text-slate-900" style={{ fontWeight: 800 }}>{challenge.progressPercent}%</span>
+        </div>
+        <ProgressBar value={challenge.progressPercent} size="sm" color="auto" showLabel={false} />
+      </div>
+      <span className="text-xs text-slate-600">{getChallengeAlertSummary(challenge)}</span>
+      <span className="text-xs text-slate-950 md:text-right" style={{ fontWeight: 800 }}>{getChallengeCtaLabel(challenge)}</span>
+    </button>
+  );
+}
+
+export function ChallengeMiniCard({
+  challenge,
+  onNavigate,
+}: {
+  challenge: StrategicObjectiveChallengeRow;
+  onNavigate: (path: string) => void;
+}) {
+  const severity = challengeSeverityClasses[challenge.severity];
+  const progressColor = challenge.severity === 'critical'
+    ? 'red'
+    : challenge.severity === 'attention'
+      ? 'amber'
+      : challenge.severity === 'healthy'
+        ? 'emerald'
+        : 'auto';
+
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(challenge.actionPath)}
+      className={`w-full rounded-2xl border p-4 text-left transition-colors hover:bg-white ${severity.card}`}
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm text-slate-950" style={{ fontWeight: 700 }}>{normalizePortfolioText(challenge.name)}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <DecisionBadge tone="slate">{normalizePortfolioText(challenge.statusLabel)}</DecisionBadge>
+            <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs ${severity.badge}`}>
+              {normalizePortfolioText(challenge.attentionLabel)}
+            </span>
+          </div>
+        </div>
+        <div className="w-full md:w-36">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-slate-500">Avance</span>
+            <span className="text-xs text-slate-900" style={{ fontWeight: 700 }}>{challenge.progressPercent}%</span>
+          </div>
+          <div className="mt-2">
+            <ProgressBar value={challenge.progressPercent} size="sm" color={progressColor} showLabel={false} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <ChallengeMetric label="Iniciativas" value={`${challenge.initiativesCount}`} />
+        <ChallengeMetric label="Equipo" value={`${challenge.peopleCount} persona${challenge.peopleCount === 1 ? '' : 's'}`} />
+        <ChallengeMetric label="Responsable" value={normalizePortfolioText(challenge.ownerLabel)} />
+      </div>
+
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        <p className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-700">
+          {normalizePortfolioText(challenge.coverageLabel)}
+        </p>
+        <p className={`rounded-xl border px-3 py-2 text-xs ${severity.action}`}>
+          Siguiente: {normalizePortfolioText(challenge.nextActionLabel)}
+        </p>
+      </div>
+
+      {(challenge.blockerLabel || challenge.pendingDecisionLabel) ? (
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {challenge.blockerLabel ? (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+              Bloqueo: {normalizePortfolioText(challenge.blockerLabel)}
+            </p>
+          ) : null}
+          {challenge.pendingDecisionLabel ? (
+            <p className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-800">
+              Decision pendiente: {normalizePortfolioText(challenge.pendingDecisionLabel)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </button>
+  );
+}
+
+export const StrategicFrontStatusCard = StrategicFrontExecutiveCard;
+export const ChallengeMiniRow = ChallengeMiniCard;
 
 export function StrategicFrontOverviewCard({
   front,
@@ -633,6 +1227,170 @@ function FrontStat({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>{value}</p>
     </div>
   );
+}
+
+function ExecutiveInfoBlock({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex min-h-20 items-start gap-3 rounded-2xl border border-white/60 bg-white/80 p-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+        <Icon size={16} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+        <p className="mt-1 line-clamp-2 text-sm text-slate-900" style={{ fontWeight: 700 }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ExecutiveMetricBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-2 text-lg text-slate-950" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+        {normalizePortfolioText(value)}
+      </p>
+    </div>
+  );
+}
+
+function CompactMetricChip({
+  label,
+  value,
+  tone = 'slate',
+}: {
+  label: string;
+  value: string;
+  tone?: 'slate' | 'rose' | 'violet';
+}) {
+  const toneClass = tone === 'rose'
+    ? 'border-rose-200 bg-rose-50 text-rose-800'
+    : tone === 'violet'
+      ? 'border-violet-200 bg-violet-50 text-violet-800'
+      : 'border-slate-200 bg-white text-slate-700';
+
+  return (
+    <div className={`rounded-2xl border px-3 py-3 ${toneClass}`}>
+      <p className="text-[11px]" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-1 text-base" style={{ fontWeight: 800 }}>{value}</p>
+    </div>
+  );
+}
+
+function ChallengeMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
+      <p className="text-[11px] text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-1 truncate text-xs text-slate-800" style={{ fontWeight: 700 }}>{value}</p>
+    </div>
+  );
+}
+
+function MetricValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>{label}</p>
+      <p className="mt-1 text-sm text-slate-950" style={{ fontWeight: 700 }}>{normalizePortfolioText(value)}</p>
+    </div>
+  );
+}
+
+function FrontActionButton({
+  label,
+  path,
+  onNavigate,
+}: {
+  label: string;
+  path: string;
+  onNavigate: (path: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(path)}
+      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors hover:bg-slate-50"
+      style={{ fontWeight: 700 }}
+    >
+      {label}
+      <ArrowRight size={14} />
+    </button>
+  );
+}
+
+function QueueMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="text-slate-500">{label}: </span>
+      <span className="text-slate-800" style={{ fontWeight: 700 }}>{normalizePortfolioText(value)}</span>
+    </div>
+  );
+}
+
+function formatAlertType(type: PortfolioAttentionQueueItem['alertType']) {
+  const labels = {
+    bloqueo: 'Bloqueo',
+    decision: 'Decisión',
+    baja_cobertura: 'Baja cobertura',
+    sin_owner: 'Sin owner',
+    falta_evidencia: 'Falta evidencia',
+    activacion: 'Activación',
+  };
+  return type ? labels[type] : 'Alerta';
+}
+
+function getExecutiveFrontStatusLabel(front: StrategicObjectiveFrontCard) {
+  if (front.challengesCount === 0) return 'Sin retos';
+  if (front.statusTone === 'rose') return 'Requiere atención';
+  if (front.statusTone === 'violet') return 'Pendiente de decisión';
+  if (/cerrado/i.test(normalizePortfolioText(front.statusLabel))) return 'Cerrado';
+  if (front.statusTone === 'amber') return 'Requiere atención';
+  if (front.statusTone === 'emerald') return 'En seguimiento';
+  return normalizePortfolioText(front.statusLabel);
+}
+
+function getFrontProgressColor(front: StrategicObjectiveFrontCard): 'indigo' | 'emerald' | 'amber' | 'red' | 'auto' {
+  if (front.statusTone === 'rose') return 'red';
+  if (front.statusTone === 'amber') return 'amber';
+  if (front.statusTone === 'emerald') return 'emerald';
+  if (front.statusTone === 'violet') return 'indigo';
+  return 'auto';
+}
+
+function getFrontAttentionSummary(front: StrategicObjectiveFrontCard) {
+  const parts: string[] = [];
+  if (front.blockersCount > 0) parts.push(`${front.blockersCount} bloqueo${front.blockersCount === 1 ? '' : 's'}`);
+  if (front.pendingDecisionsCount > 0) parts.push(`${front.pendingDecisionsCount} decision${front.pendingDecisionsCount === 1 ? '' : 'es'}`);
+  if (front.alerts.some(alert => /cobertura/i.test(alert.label))) parts.push('sin cobertura');
+  if (parts.length === 0) return 'sin alertas';
+  return parts.join(' · ');
+}
+
+function getChallengeAlertSummary(challenge: StrategicObjectiveChallengeRow) {
+  if (challenge.blockerLabel) return '1 bloqueo';
+  if (challenge.pendingDecisionLabel) return '1 decision';
+  if (/sin cobertura/i.test(challenge.coverageLabel)) return 'sin cobertura';
+  if (challenge.severity === 'attention') return 'requiere atencion';
+  return 'sin alertas';
+}
+
+function getChallengeCtaLabel(challenge: StrategicObjectiveChallengeRow) {
+  if (challenge.blockerLabel) return 'Revisar';
+  if (challenge.pendingDecisionLabel) return 'Revisar';
+  if (challenge.nextActionLabel === 'Activar reto') return 'Activar';
+  return 'Ver reto';
+}
+
+function resolveChallengeCompactStatus(challenge: StrategicObjectiveChallengeRow) {
+  if (/sin cobertura/i.test(challenge.coverageLabel)) return 'Sin cobertura';
+  return challenge.statusLabel;
 }
 
 function BlockText({ label, value }: { label: string; value: string }) {

@@ -14,7 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
+import { PortfolioLeadProvider, usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 
 const ROLE_LABELS = {
   owner: 'Participante',
@@ -25,6 +25,14 @@ const ROLE_LABELS = {
 } as const;
 
 export function PortfolioLeadLayout() {
+  return (
+    <PortfolioLeadProvider>
+      <PortfolioLeadLayoutContent />
+    </PortfolioLeadProvider>
+  );
+}
+
+function PortfolioLeadLayoutContent() {
   const { isAuthenticated, logout, setUserRole, user } = useApp();
   const { initiatives } = usePortfolioLead();
   const location = useLocation();
