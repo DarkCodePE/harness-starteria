@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Lightbulb, Target, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
+import { HeroTunnel } from '../components/landing/HeroTunnel';
 import dashboardImage from '../../assets/starteria-dashboard.webp';
 
 // Landing público absorbido desde la carpeta landing/ (export de Figma) — ver
@@ -47,6 +48,8 @@ export function LandingPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 via-white to-transparent"></div>
+        {/* Túnel de rayos WebGL (sutil, azul de marca) — ver HeroTunnel. */}
+        <HeroTunnel />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-3xl"></div>
 
         <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-32 md:pt-24 md:pb-40">
