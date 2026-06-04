@@ -1,5 +1,6 @@
 import { createBrowserRouter, redirect } from 'react-router';
 import { RootLayout } from './layout/RootLayout';
+import { LandingPage } from './pages/LandingPage';
 import { AppLayout } from './layout/AppLayout';
 import { PortfolioLeadLayout } from './layout/PortfolioLeadLayout';
 import { PublicLayout } from './layout/PublicLayout';
@@ -42,6 +43,12 @@ export const router = createBrowserRouter([
     ErrorBoundary: RouteErrorBoundary,
     children: [
       {
+        // Landing público (ADR-019). Index de RootLayout → fuera del guard de
+        // AppLayout, visible para todos. `/` ya no rebota a /dashboard/login.
+        index: true,
+        Component: LandingPage,
+      },
+      {
         path: '/auth',
         Component: AuthPage,
       },
@@ -64,24 +71,25 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: '/',
+        // AppLayout es pathless (sin `path`) para que `/` lo gane el landing
+        // (index de RootLayout, ADR-019). Sus hijos usan rutas absolutas y el
+        // guard de auth de AppLayout sigue protegiéndolos igual que antes.
         Component: AppLayout,
         children: [
-          { index: true, loader: () => redirect('/dashboard') },
-          { path: 'dashboard', Component: DashboardPage },
-          { path: 'continuar-piloto', Component: ContinuePilotPage },
-          { path: 'retos/:challengeId', Component: ParticipantChallengeDetailPage },
-          { path: 'projects/new', Component: CreateProjectPage },
-          { path: 'projects/:projectId', Component: ProjectHomePage },
-          { path: 'projects/:projectId/step/0', Component: Step0Page },
-          { path: 'projects/:projectId/step/1', Component: Step1Page },
-          { path: 'projects/:projectId/step/2', Component: Step2Page },
-          { path: 'projects/:projectId/step/3', Component: Step3Page },
-          { path: 'projects/:projectId/step/4', Component: Step4Page },
-          { path: 'projects/:projectId/evidencias', Component: EvidenciasPage },
-          { path: 'mentor', Component: MentorPanelPage },
-          { path: 'admin', Component: AdminCohorte },
-          { path: 'perfil', Component: PerfilPage },
+          { path: '/dashboard', Component: DashboardPage },
+          { path: '/continuar-piloto', Component: ContinuePilotPage },
+          { path: '/retos/:challengeId', Component: ParticipantChallengeDetailPage },
+          { path: '/projects/new', Component: CreateProjectPage },
+          { path: '/projects/:projectId', Component: ProjectHomePage },
+          { path: '/projects/:projectId/step/0', Component: Step0Page },
+          { path: '/projects/:projectId/step/1', Component: Step1Page },
+          { path: '/projects/:projectId/step/2', Component: Step2Page },
+          { path: '/projects/:projectId/step/3', Component: Step3Page },
+          { path: '/projects/:projectId/step/4', Component: Step4Page },
+          { path: '/projects/:projectId/evidencias', Component: EvidenciasPage },
+          { path: '/mentor', Component: MentorPanelPage },
+          { path: '/admin', Component: AdminCohorte },
+          { path: '/perfil', Component: PerfilPage },
         ],
       },
       {
