@@ -304,6 +304,10 @@ model User {
   lockedUntil         DateTime?
   cohortId            String?
   cohort              Cohort?   @relation(fields: [cohortId], references: [id])
+  // ADR-022: primary B2B organization (denormalized convenience pointer). Plain
+  // scalar (NOT a relation, NOT @unique) — additive & safe for `prisma db push`
+  // (ADR-018). Authoritative membership lives in OrganizationMember.
+  organizationId      String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -321,6 +325,7 @@ model User {
   @@index([role])
   @@index([cohortId])
   @@index([googleId])
+  @@index([organizationId])
 }
 
 model Project {
@@ -804,7 +809,7 @@ model PdfExtractionRun {
   pdfId       String
   pdf         InitiativePdf       @relation(fields: [pdfId], references: [id], onDelete: Cascade)
   projectId   String
-  aiRunId     String?             // ai-service's own runId (RunRegistry); used to poll upstream
+  aiRunId     String? // ai-service's own runId (RunRegistry); used to poll upstream
   status      ExtractionRunStatus @default(PENDING)
   startedAt   DateTime?
   finishedAt  DateTime?
@@ -889,14 +894,146 @@ model PilotLead {
 // for the flow's duration. `consumedAt` + `createdProjectId` give single-use +
 // idempotency. No relation fields kept intentionally (scalar FK + index suffice).
 model PilotClaimToken {
-  id              String    @id @default(uuid())
-  tokenHash       String    @unique
-  pilotLeadId     String
-  expiresAt       DateTime
-  consumedAt      DateTime?
+  id               String    @id @default(uuid())
+  tokenHash        String    @unique
+  pilotLeadId      String
+  expiresAt        DateTime
+  consumedAt       DateTime?
   createdProjectId String?
-  createdAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
 
   @@index([pilotLeadId])
   @@index([expiresAt])
+}
+
+// ─── Billing & Entitlements (ADR-020/021/022, PRD-005/SPEC-005) ────────────────
+// Additive-only. `@unique` appears ONLY on brand-new tables (Plan.code,
+// UsageEvent.dedupeKey) — never on User/Project — so `prisma db push`'s data-loss
+// guard never trips (ADR-018). Logical uniqueness on existing tables is enforced
+// in services (findFirst-guard), mirroring Project.pilotLeadId and RefreshToken.
+
+enum BillingProvider {
+  CULQI
+  STRIPE
+  YAPE
+  MERCADO_PAGO
+  MANUAL // admin-granted / grandfathered pilots
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PlanInterval {
+  MONTH
+  YEAR
+}
+
+// Catalog. New table → @unique on `code` is SAFE (no existing rows).
+model Plan {
+  id         String       @id @default(cuid())
+  code       String       @unique // "free" | "starter" | "team" | "enterprise" | "pilot"
+  name       String
+  interval   PlanInterval @default(MONTH)
+  priceCents Int          @default(0)
+  currency   String       @default("PEN")
+  isActive   Boolean      @default(true)
+  // Typed JSON limit map: { "ai_refine": 40, "pdf_extract": 1, "project_create": 1,
+  // "mentor_credit": 0, "seats": 1, "exec_export": 0 }. -1 = unlimited.
+  limits     Json         @default("{}")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  subscriptions Subscription[]
+}
+
+// Held by EITHER a user OR an organization (B2B), never both. Exactly-one-active
+// enforcement lives in SubscriptionService (no partial unique index — db push
+// can't add one to a table that may hold rows post-launch).
+model Subscription {
+  id                 String             @id @default(cuid())
+  planId             String
+  plan               Plan               @relation(fields: [planId], references: [id])
+  userId             String? // nullable scalar FK → User (no inverse relation, ADR-022)
+  organizationId     String? // nullable FK → Organization (additive)
+  organization       Organization?      @relation(fields: [organizationId], references: [id])
+  status             SubscriptionStatus @default(TRIALING)
+  provider           BillingProvider    @default(MANUAL)
+  providerCustomerId String?
+  providerSubId      String? // provider subscription ref (indexed, NOT unique)
+  currentPeriodStart DateTime           @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  canceledAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  usageCounters UsageCounter[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([provider, providerSubId])
+}
+
+// Per-feature usage within a billing period. Reset is implicit via periodKey.
+// No @@unique (avoid db-push guard once rows exist); service upserts via
+// findFirst-guard + atomic increment (ADR-020).
+model UsageCounter {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  feature        String // "ai_refine" | "pdf_extract" | "project_create" | ...
+  periodKey      String // "2026-06" (month) — the reset boundary
+  used           Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+
+  @@index([subscriptionId, feature, periodKey])
+}
+
+// Idempotency ledger for billable runs / credit spends. New table → @unique on
+// dedupeKey is SAFE. A webhook re-delivery or double-submit counts ONCE.
+model UsageEvent {
+  id             String   @id @default(cuid())
+  subscriptionId String?
+  feature        String
+  qty            Int      @default(1)
+  dedupeKey      String   @unique // "ai_refine:<requestId>" / "pdf_extract:<aiRunId>"
+  sourceId       String?
+  createdAt      DateTime @default(now())
+
+  @@index([subscriptionId, feature])
+}
+
+// Optional B2B owner of seats / a cohort. New table. `slug` uniqueness enforced
+// in OrgService (findFirst guard), NOT @unique (deploy discipline).
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  seatLimit Int      @default(1)
+  cohortId  String? // links a paid org to an existing Cohort (seat pool = members)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+  members       OrganizationMember[]
+
+  @@index([cohortId])
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String // scalar FK; no inverse relation on User (ADR-022)
+  role           String       @default("member") // "owner" | "admin" | "member"
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
 }

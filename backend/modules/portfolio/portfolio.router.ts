@@ -4,6 +4,7 @@ import { PortfolioController } from './portfolio.controller';
 import { PortfolioService } from './portfolio.service';
 import { validate } from '../../shared/middleware/validate';
 import { authenticate, requireRole } from '../auth/auth.middleware';
+import { requireEntitlement } from '../billing/entitlement.middleware';
 import {
   createStrategicFrontSchema,
   updateStrategicFrontSchema,
@@ -149,9 +150,12 @@ portfolioRouter.get(
   controller.listExecutiveOutputs,
 );
 
+// PRD-005 / ADR-020: meter `exec_export` — the board-facing executive output is a
+// high-value gated deliverable. Shadow mode by default.
 portfolioRouter.post(
   '/challenges/:challengeId/executive-outputs',
   requireRole('admin', 'mentor'),
+  requireEntitlement('exec_export'),
   validate(createExecutiveOutputSchema),
   controller.createExecutiveOutput,
 );

@@ -25,6 +25,7 @@ import { publicPdfRouter } from './modules/initiative-pdfs/public-pdf.router';
 import { pilotLeadRouter } from './modules/pilot-leads';
 import { refineFieldRouter } from './modules/public-ai';
 import { createAiWebhookRouter } from './modules/initiative-pdfs/webhook.router';
+import { billingRouter } from './modules/billing/billing.router';
 
 export function createApp() {
   const app = express();
@@ -73,6 +74,10 @@ export function createApp() {
   // Lets ai-service notify backend the moment an extraction finishes so the DB is
   // updated even when no frontend client is actively polling.
   app.use('/api/v1/internal/ai/webhooks', createAiWebhookRouter(initiativePdfService));
+  // PRD-005 / ADR-021: provider-agnostic billing webhooks (Culqi/MercadoPago/Yape/
+  // Manual). Internal class (X-Internal-Token + per-provider signature), no JWT —
+  // same auth class as the ai-service webhook above. Idempotent (ADR-020).
+  app.use('/api/v1/internal/billing', billingRouter);
 
   // 404 handler
   app.use((_req, _res, next) => {

@@ -6,6 +6,7 @@ import { validate } from '../../shared/middleware/validate';
 import { createProjectSchema, updateProjectSchema, updateStep0Schema, updateSponsorDataSchema } from './project.schemas';
 
 import { authenticate } from '../auth/auth.middleware';
+import { requireEntitlement } from '../billing/entitlement.middleware';
 const service = new ProjectService(prisma);
 const controller = new ProjectController(service);
 
@@ -14,7 +15,17 @@ export const projectRouter = Router();
 projectRouter.use(authenticate);
 
 projectRouter.get('/', controller.list);
-projectRouter.post('/', validate(createProjectSchema), controller.create);
+// PRD-005 / ADR-020: gate project creation on the plan's `project_create` limit
+// (resource count = the user's active, non-archived projects). Shadow mode by default.
+projectRouter.post(
+  '/',
+  requireEntitlement('project_create', {
+    resourceCount: (req) =>
+      prisma.project.count({ where: { ownerId: req.user!.id, isArchived: false } }),
+  }),
+  validate(createProjectSchema),
+  controller.create,
+);
 projectRouter.get('/:id', controller.getById);
 projectRouter.patch('/:id', validate(updateProjectSchema), controller.update);
 projectRouter.delete('/:id', controller.archive);
