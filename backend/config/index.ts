@@ -45,6 +45,15 @@ export const config = {
   // OAuth: GIS (Google Identity Services) audience. Backend uses google-auth-library
   // to verify ID tokens against this client id. Empty string = Google login disabled.
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  // PRD-005 / ADR-020: entitlement enforcement flag. Default OFF → shadow mode
+  // (usage is METERED but never BLOCKED), so we collect real usage distributions
+  // before turning the paywall on. Set BILLING_ENFORCEMENT_ENABLED=true to enforce.
+  billingEnforcementEnabled: process.env.BILLING_ENFORCEMENT_ENABLED === 'true',
+  // ADR-021: shared secret for the internal billing webhook receiver
+  // (POST /api/v1/internal/billing/webhooks/:provider). Same auth class as the
+  // ai-service webhook (ADR-013). Per-provider signature verification layers on top.
+  billingWebhookSecret:
+    process.env.BILLING_WEBHOOK_SECRET || process.env.BRIDGE_SHARED_SECRET || 'dev-billing-secret-do-not-use-in-prod',
   // SPEC-003 / issue #54: SMTP transport for the pilot-lead notification email.
   // No SMTP_HOST → mailer disabled (dev/test default): the notifier degrades to a
   // non-PII log line instead of sending.

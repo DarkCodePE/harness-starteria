@@ -14,6 +14,7 @@ import express, { Router } from 'express';
 import { prisma } from '../../shared/db/prisma';
 import { config } from '../../config';
 import { authenticate } from '../auth/auth.middleware';
+import { requireEntitlement } from '../billing/entitlement.middleware';
 import { validate } from '../../shared/middleware/validate';
 import { LocalDiskPdfStorage } from './storage.service';
 import { AiServiceClient } from './ai-client';
@@ -48,8 +49,12 @@ pdfRouter.post(
 );
 
 // 2. Trigger extraction against the ai-service.
+// PRD-005 / ADR-020: meter `pdf_extract` (real LLM cost). Shadow mode by default —
+// metered on a successful (2xx) trigger response; ideal terminal-webhook metering
+// is a future hardening (SPEC-005 §metering).
 pdfRouter.post(
   '/:id/pdfs/:pdfId/extract',
+  requireEntitlement('pdf_extract'),
   validate(extractRequestSchema),
   controller.startExtraction,
 );

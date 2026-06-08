@@ -6,6 +6,7 @@ import { validate } from '../../shared/middleware/validate';
 import { updateProfileSchema, inviteMemberSchema, updateMemberRoleSchema } from './user.schemas';
 
 import { authenticate } from '../auth/auth.middleware';
+import { requireEntitlement } from '../billing/entitlement.middleware';
 const service = new UserService(prisma);
 const controller = new UserController(service);
 
@@ -21,7 +22,17 @@ export const teamRouter = Router();
 teamRouter.use(authenticate);
 
 teamRouter.get('/:projectId/team', controller.getTeam);
-teamRouter.post('/:projectId/team/invite', validate(inviteMemberSchema), controller.inviteMember);
+// PRD-005 / ADR-022: gate collaborator invites on the plan's `seats` limit
+// (resource count = current team members of this project). Shadow mode by default.
+teamRouter.post(
+  '/:projectId/team/invite',
+  requireEntitlement('seats', {
+    resourceCount: (req) =>
+      prisma.teamMember.count({ where: { projectId: req.params.projectId } }),
+  }),
+  validate(inviteMemberSchema),
+  controller.inviteMember,
+);
 teamRouter.patch(
   '/:projectId/team/:memberId',
   validate(updateMemberRoleSchema),
