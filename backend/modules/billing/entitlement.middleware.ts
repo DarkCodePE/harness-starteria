@@ -24,13 +24,12 @@
  *   seats           → users/user.router.ts         POST /:projectId/team/invite [LIVE, resource]
  *   pdf_extract     → initiative-pdfs/pdf.router.ts POST /:id/pdfs/:pdfId/extract [LIVE, metered]
  *   exec_export     → portfolio/portfolio.router.ts POST …/executive-outputs     [LIVE, metered]
- *   ai_refine       → authenticated AI invoke path  [PENDING: no authenticated /ai
- *                     route is mounted yet; the public /refine-field path is
- *                     unauthenticated so it can't be attributed to a user. Wire when
- *                     the authenticated AI bridge lands.]
- *   mentor_credit   → participante mentor-booking route [PENDING: only mentor-side
- *                     /mentor/reviews exists today; wire on the booking endpoint
- *                     when it lands, alongside the Project.mentorCredits decrement.]
+ *   ai_refine       → ai/ai.router.ts  POST /api/v1/ai/refine-field   [LIVE, metered]
+ *                     (authenticated AI bridge — issue #85; the public
+ *                     /refine-field path stays anonymous & unmetered.)
+ *   mentor_credit   → steps/step.router.ts POST /:projectId/steps/:number/session
+ *                     [LIVE, metered] (issue #85; also decrements
+ *                     Project.mentorCredits in step.service.requestMentorSession.)
  */
 import type { Request, Response, NextFunction } from 'express';
 import { entitlementService } from './entitlement.service';

@@ -190,6 +190,15 @@ export class StepService {
       },
     });
 
+    // PRD-005 / issue #85: consume one mentor credit on a successful booking.
+    // Atomic + floored at 0 (updateMany is a no-op when none match, so it never
+    // throws and never goes negative). Hard-blocking at 0 credits is deferred to
+    // the enforcement flip (issue #84); the shadow phase only tracks consumption.
+    await this.prisma.project.updateMany({
+      where: { id: projectId, mentorCredits: { gt: 0 } },
+      data: { mentorCredits: { decrement: 1 } },
+    });
+
     return { sessionId: session.id };
   }
 }
