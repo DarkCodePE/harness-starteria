@@ -13,6 +13,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { BannerPorDefinir } from '../components/BannerPorDefinir';
 import { EvidenceUploader } from '../components/EvidenceUploader';
 import { AutosaveIndicator } from '../components/AutosaveIndicator';
+import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import { useAutosave } from '../hooks/useAutosave';
 import { AutofillField } from '../components/autofill/AutofillField';
 import * as stepService from '../services/stepService';
@@ -1072,6 +1073,10 @@ export function Step1Page() {
       {/* Main content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto">
+          <div className="mb-5">
+            <LeaderFeedbackStatusCard project={project} updateProject={updateProject} variant="step1" compact />
+          </div>
+
           {/* Mobile back */}
           <button onClick={() => navigate(`/projects/${projectId}`)} className="flex md:hidden items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-4 transition-colors">
             <ArrowLeft size={14} /> Volver al proyecto

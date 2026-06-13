@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Plus, X, AlertCircle, CheckCircle2, Users, ChevronDown } from 'lucide-react';
 import { createTeamMember, useApp } from '../context/AppContext';
@@ -33,6 +33,27 @@ export function CreateProjectPage() {
   );
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+  // #96: when creating an iniciativa from a reto, pre-fill the team invites with the
+  // reto's assigned squad (only members whose value is a valid email — the squad can
+  // also hold plain names). Runs once; the user can still add/remove before creating.
+  const squadPrefilledRef = useRef(false);
+  useEffect(() => {
+    if (squadPrefilledRef.current) return;
+    const squad = linkedChallenge?.assignedSquad ?? [];
+    const squadInvites: Invite[] = squad
+      .filter(member => validateEmail(member.value))
+      .map(member => ({
+        id: `squad-${member.id}`,
+        email: member.value,
+        role: 'Editor',
+        status: 'Pendiente',
+      }));
+    if (squadInvites.length > 0) {
+      setInvites(squadInvites);
+      squadPrefilledRef.current = true;
+    }
+  }, [linkedChallenge]);
 
   const addInvite = () => {
     if (!inviteEmail.trim()) return;
@@ -119,6 +140,11 @@ export function CreateProjectPage() {
                 <p className="mt-2 text-xs text-sky-700">
                   Tipo de reto: {challengeTypeLabel(linkedChallenge.challengeType)}. En Step 0 veras el contexto heredado del reto.
                 </p>
+                {linkedChallenge.assignedSquad?.some(member => validateEmail(member.value)) && (
+                  <p className="mt-2 text-xs text-sky-700" style={{ fontWeight: 600 }}>
+                    El squad del reto se precargó como invitaciones del equipo (paso 2). Puedes ajustarlo.
+                  </p>
+                )}
               </div>
             )}
             <div>

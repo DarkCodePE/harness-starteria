@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
+import * as portfolioService from '../services/portfolioService';
+import type { InitiativeMeta } from '../services/portfolioService';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Participante',
@@ -20,6 +22,22 @@ export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // #93: resolve which reto/frente the active iniciativa belongs to (persisted link
+  // from #92) so the Steps portal can show a Frente › Reto › Iniciativa breadcrumb.
+  const [initiativeMeta, setInitiativeMeta] = useState<InitiativeMeta | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentProject?.id) {
+      setInitiativeMeta(null);
+      return;
+    }
+    portfolioService
+      .getInitiativeMeta(currentProject.id)
+      .then((meta) => { if (!cancelled) setInitiativeMeta(meta); })
+      .catch(() => { if (!cancelled) setInitiativeMeta(null); });
+    return () => { cancelled = true; };
+  }, [currentProject?.id]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -66,12 +84,15 @@ export function AppLayout() {
 
   if (!isAuthenticated) return null;
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) => {
+    if (path === '/evidencias' && matchPath('/projects/:projectId/evidencias', location.pathname)) return true;
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
   const canOpenProjectSteps = user?.role !== 'sponsor';
 
   const ownerLinks = [
     { icon: LayoutDashboard, label: 'Mis proyectos', path: '/dashboard' },
-    { icon: FolderOpen, label: 'Evidencias', path: currentProject ? `/projects/${currentProject.id}/evidencias` : '/dashboard', disabled: !currentProject },
+    { icon: FolderOpen, label: 'Evidencias', path: '/evidencias' },
     { icon: User, label: 'Mi perfil', path: '/perfil' },
   ];
 
@@ -132,6 +153,21 @@ export function AppLayout() {
       {/* Project context (if in project) */}
       {currentProject && (
         <div className="mx-3 mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+          {/* #93: Frente › Reto › Iniciativa breadcrumb — only when the iniciativa is
+              linked to a reto. Clicking returns to the Portfolio Lead dashboard. */}
+          {initiativeMeta?.challenge && (
+            <button
+              type="button"
+              onClick={() => navigate('/portfolio/iniciativas')}
+              title="Ver en Portfolio Lead"
+              className="mb-1 block max-w-full truncate text-left text-[11px] text-indigo-400 hover:text-indigo-600 transition-colors"
+            >
+              {initiativeMeta.challenge.strategicFront?.name
+                ? `${initiativeMeta.challenge.strategicFront.name} › `
+                : ''}
+              {initiativeMeta.challenge.name ?? initiativeMeta.challenge.title}
+            </button>
+          )}
           <p className="text-xs text-indigo-500 mb-0.5" style={{ fontWeight: 600 }}>PROYECTO ACTIVO</p>
           <p className="text-sm text-indigo-800 truncate" style={{ fontWeight: 500 }}>{currentProject.name}</p>
 

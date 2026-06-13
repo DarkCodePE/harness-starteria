@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, ChevronRight, Copy, CreditCard, Download, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, ChevronRight, Copy, CreditCard, Download, Loader2, Sparkles, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MentorVirtualPanel } from '../components/MentorVirtualPanel';
 import { MentorSupportModal } from '../components/MentorSupportModal';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
+import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import {
-  ADDITIONAL_STAKEHOLDER_OPTIONS,
   CLARITY_OPTIONS,
   CONTRIBUTION_OPTIONS,
   EVIDENCE_TYPE_OPTIONS,
@@ -15,26 +15,89 @@ import {
   PRIMARY_OBJECTIVE_OPTIONS,
   buildInheritedChallengeContext,
   getConsequenceHelper,
-  getDescriptionHelper,
   getDynamicDescriptionLabel,
   getRequiredFieldKeys,
   getStep0Mode,
-  getSummaryBlocks,
-  getSummaryTitle,
   isFilled,
   normalizeStep0Data,
   syncLegacyFields,
 } from '../step0/step0Config';
 import type { Step0Data } from '../context/AppContext';
-import { getStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
+import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 import { AutofillField } from '../components/autofill/AutofillField';
 
-const IA_FEEDBACK = {
-  claro: ['La base ya deja mas claro que se quiere mover.', 'La solicitud de apoyo se entiende mejor.', 'La conversacion con sponsor u owner ya tiene mejor foco.'],
-  faltaPrecisar: ['Refuerza la evidencia actual.', 'Haz mas concreta la decision que estas pidiendo.', 'Aterriza mejor el destrabe minimo.'],
-  preguntas: ['Que senal justificaria seguir?', 'Que parte del reto o del negocio se moveria primero?', 'Que apoyo minimo necesitas para no quedarte solo en diagnostico?'],
-  siguienteAccion: 'Refuerza evidencia y decision solicitada para que el Step 0 quede realmente conversable.',
+type ModuleId = 'start' | 'impact' | 'decision';
+type ModuleState = 'No iniciado' | 'En progreso' | 'Listo' | 'Necesita ajuste';
+
+const MODULE_ORDER: ModuleId[] = ['start', 'impact', 'decision'];
+const MODULE_TITLES: Record<ModuleId, string> = {
+  start: 'Punto de partida',
+  impact: 'Impacto y urgencia',
+  decision: 'Apoyo y decisión',
 };
+
+const MODULE_DESCRIPTIONS: Record<ModuleId, string> = {
+  start: 'Define desde dónde nace la iniciativa y cómo quieres enmarcarla.',
+  impact: 'Explica qué está pasando, a quién afecta y por qué conviene moverlo ahora.',
+  decision: 'Define qué señales existen hoy, quién debe escucharlo y qué decisión buscas.',
+};
+
+const MODULE_REQUIRED: Record<ModuleId, Array<keyof Step0Data>> = {
+  start: ['initiativeTitle', 'initiativeFrame', 'primaryObjective'],
+  impact: ['quePasaQueQuieres', 'impactWho', 'whyNowText'],
+  decision: ['evidenceType', 'quienEscuchar', 'decisionRequested'],
+};
+
+const FIELD_LABELS: Partial<Record<keyof Step0Data, string>> = {
+  initiativeTitle: 'Nombre de la iniciativa',
+  initiativeFrame: 'Tipo de iniciativa',
+  primaryObjective: 'Objetivo de negocio',
+  quePasaQueQuieres: 'Qué está pasando hoy',
+  impactWho: 'A quién impacta',
+  whyNowText: 'Por qué importa ahora',
+  evidenceType: 'Señales actuales',
+  quienEscuchar: 'Primer interlocutor',
+  decisionRequested: 'Decisión buscada',
+};
+
+const IA_FEEDBACK = {
+  claro: [
+    'La iniciativa ya conecta con una prioridad de negocio.',
+    'La decisión que buscas empieza a quedar clara.',
+    'El siguiente paso hacia Step 1 se entiende mejor.',
+  ],
+  faltaPrecisar: [
+    'Falta indicar qué señales existen hoy.',
+    'Falta explicar qué confirmarás en Step 1.',
+    'Falta concretar qué decisión quieres pedir.',
+  ],
+  preguntas: [
+    '¿Qué señal haría que valga la pena investigar más?',
+    '¿Qué líder o área puede destrabar la conversación?',
+    '¿Qué información no deberíamos inventar todavía?',
+  ],
+  siguienteAccion: 'Ordena la redacción sin agregar datos, métricas, evidencia, entrevistas ni sponsors que no hayas mencionado.',
+};
+
+const IMPACT_OPTIONS = ['Clientes', 'Equipo interno', 'Área comercial', 'Operaciones', 'Atención o soporte', 'Tecnología', 'Finanzas', 'Liderazgo', 'Otro'];
+const URGENCY_OPTIONS = ['Está generando demoras', 'Está aumentando costos', 'Está afectando clientes', 'Está frenando ventas', 'Está generando retrabajo', 'Hay presión del negocio', 'Hay riesgo operativo o legal', 'Hay una oportunidad que puede perderse'];
+const SUPPORT_OPTIONS = ['Acceso a datos', 'Tiempo con usuarios o equipos internos', 'Sponsor', 'Aprobación para investigar', 'Prioridad en agenda', 'Apoyo de tecnología', 'Presupuesto inicial', 'Dueño del proceso', 'Feedback de un líder', 'Otro'];
+const DECISION_OPTIONS = ['Aprobación para investigar', 'Feedback para enfocar mejor', 'Acceso a información', 'Conectar con stakeholders clave', 'Priorizar la iniciativa', 'Definir si vale la pena continuar', 'Conseguir sponsor'];
+
+const ALIGNMENT_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pendiente de conversación' },
+  { value: 'scheduled', label: 'Reunión pactada' },
+  { value: 'feedback_received', label: 'Feedback recibido' },
+  { value: 'aligned', label: 'Alineado para investigar' },
+  { value: 'aligned_with_observations', label: 'Alineado con observaciones' },
+  { value: 'not_aligned', label: 'No alineado todavía' },
+  { value: 'unknown', label: 'Desconocido / por confirmar' },
+] as const;
+const ALIGNMENT_DECISION_OPTIONS = ['Avanzar a investigación', 'Ajustar enfoque antes de investigar', 'Buscar más respaldo', 'Buscar otro sponsor', 'Pausar por ahora', 'No hubo decisión todavía'];
+const ALIGNMENT_EVIDENCE_OPTIONS = ['Nota', 'Minuta', 'Correo', 'Link', 'Archivo', 'Captura'];
+const IMPORT_ALIGNMENT_OPTIONS = ['Ya fue alineada con líder/sponsor', 'Fue conversada informalmente', 'No fue alineada todavía', 'No aplica', 'Desconocido / por confirmar'];
+
+type AlignmentStatus = NonNullable<Step0Data['alignmentStatus']>;
 
 function hasText(value: unknown): boolean {
   if (Array.isArray(value)) return value.some(item => hasText(item));
@@ -43,7 +106,6 @@ function hasText(value: unknown): boolean {
 
 function isStep0DataMissingPublicFields(data?: Partial<Step0Data>): boolean {
   if (!data) return true;
-
   return ![
     data.initiativeTitle,
     data.quePasaQueQuieres,
@@ -53,12 +115,24 @@ function isStep0DataMissingPublicFields(data?: Partial<Step0Data>): boolean {
   ].some(hasText);
 }
 
-function Field({ label, helper, children }: { label: string; helper?: string; children: React.ReactNode }) {
+function appendText(current: string | undefined, value: string) {
+  if (!value) return current ?? '';
+  const clean = (current ?? '').trim();
+  if (!clean) return value;
+  return clean.includes(value) ? clean : `${clean}; ${value}`;
+}
+
+function Field({ id, label, helper, highlight, children }: { id?: string; label: string; helper?: string; highlight?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-2">
+    <div id={id} className={`space-y-2 rounded-2xl transition-colors ${highlight ? 'border border-orange-300 bg-orange-50 p-4 shadow-[0_0_0_4px_rgba(251,146,60,0.16)] ring-1 ring-orange-300' : ''}`}>
+      {highlight && (
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-2.5 py-1 text-[11px] uppercase tracking-[0.08em] text-white" style={{ fontWeight: 800 }}>
+          <AlertCircle size={12} /> Campo clave pendiente
+        </div>
+      )}
       <div>
-        <p className="text-sm text-slate-900" style={{ fontWeight: 600 }}>{label}</p>
-        {helper && <p className="mt-1 text-xs text-slate-500">{helper}</p>}
+        <p className={`text-sm ${highlight ? 'text-orange-950' : 'text-slate-900'}`} style={{ fontWeight: 700 }}>{label}</p>
+        {helper && <p className={`mt-1 text-xs ${highlight ? 'text-orange-700' : 'text-slate-500'}`}>{helper}</p>}
       </div>
       {children}
     </div>
@@ -91,13 +165,203 @@ function ChoiceGroup<T extends string>({
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${selected ? 'border-indigo-500 bg-indigo-50 text-indigo-900' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'}`}
+            className={`rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${selected ? 'border-indigo-500 bg-indigo-50 text-indigo-900' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'}`}
             style={{ fontWeight: 600 }}
           >
             {option.label}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function QuickPickGroup({ values, options, onChange }: { values: string[]; options: string[]; onChange: (values: string[]) => void }) {
+  const toggle = (option: string) => onChange(values.includes(option) ? values.filter(item => item !== option) : [...values, option]);
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map(option => {
+        const selected = values.includes(option);
+        return (
+          <button
+            key={option}
+            type="button"
+            onClick={() => toggle(option)}
+            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${selected ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200'}`}
+            style={{ fontWeight: 600 }}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function getOptionLabel(options: Array<{ value: string; label: string }>, value?: string) {
+  return options.find(option => option.value === value)?.label ?? value ?? '';
+}
+
+function moduleCompletedCount(form: Step0Data, moduleId: ModuleId) {
+  return MODULE_REQUIRED[moduleId].filter(key => isFilled(form[key])).length;
+}
+
+function getModuleState(form: Step0Data, moduleId: ModuleId): ModuleState {
+  const done = moduleCompletedCount(form, moduleId);
+  if (done === MODULE_REQUIRED[moduleId].length) return 'Listo';
+  if (done > 0) return 'En progreso';
+  return 'No iniciado';
+}
+
+function firstMissingInModule(form: Step0Data, moduleId: ModuleId) {
+  return MODULE_REQUIRED[moduleId].find(key => !isFilled(form[key])) ?? null;
+}
+
+function buildModuleSummary(form: Step0Data, moduleId: ModuleId, projectName: string) {
+  if (moduleId === 'start') {
+    const title = form.initiativeTitle || projectName;
+    const frame = getOptionLabel(FRAME_OPTIONS, form.initiativeFrame);
+    const objective = getOptionLabel(PRIMARY_OBJECTIVE_OPTIONS, form.primaryObjective);
+    return [title, frame, objective].filter(Boolean).join(' · ') || 'Falta definir tipo y objetivo de negocio.';
+  }
+  if (moduleId === 'impact') {
+    if (!isFilled(form.quePasaQueQuieres) || !isFilled(form.whyNowText)) return 'Falta describir qué está pasando y por qué importa.';
+    return [form.impactWho, form.whyNowText].filter(Boolean).join(' · ');
+  }
+  if (!isFilled(form.evidenceType) || !isFilled(form.quienEscuchar) || !isFilled(form.decisionRequested)) {
+    return 'Falta definir señales, interlocutor y decisión buscada.';
+  }
+  return [getOptionLabel(EVIDENCE_TYPE_OPTIONS, form.evidenceType), form.quienEscuchar, form.decisionRequested].filter(Boolean).join(' · ');
+}
+
+function buildAlignmentOutput(form: Step0Data, summaryBlocks: Array<{ label: string; value: string }>) {
+  const find = (label: string) => summaryBlocks.find(block => block.label === label)?.value ?? '';
+  return [
+    { title: '1. Resumen de la iniciativa', value: find('Qué quiere mover') },
+    { title: '2. Encaje con negocio', value: getOptionLabel(PRIMARY_OBJECTIVE_OPTIONS, form.primaryObjective) || 'Falta conectar esto con una prioridad de negocio.' },
+    { title: '3. Impacto esperado', value: find('A quién impacta') },
+    { title: '4. Urgencia', value: `${find('Por qué importa')}${form.ifNotNowConsequence ? ` ${form.ifNotNowConsequence}` : ''}` },
+    { title: '5. Señales actuales', value: find('Qué señales existen') },
+    { title: '6. Decisión que se busca', value: find('Qué decisión busca') },
+    { title: '7. Próximo paso hacia investigación', value: form.validationSignal || 'En Step 1 se definirá qué evidencia, fuente o conversación hay que buscar primero.' },
+    { title: '8. Conexión con Step 1', value: 'El siguiente paso será buscar evidencia, fuentes, entrevistas, señales, datos y validación más profunda.' },
+  ];
+}
+
+function pendingValue(value?: string) {
+  const clean = value?.trim();
+  return clean ? clean : '[pendiente por completar]';
+}
+
+function getExecutiveSections(form: Step0Data) {
+  return [
+    { title: 'Qué se quiere mover', value: pendingValue(form.quePasaQueQuieres || form.initiativeTitle) },
+    { title: 'Por qué importa ahora', value: pendingValue(form.whyNowText) },
+    { title: 'A quién impacta', value: pendingValue(form.impactWho || form.impacta?.join(', ')) },
+    { title: 'Qué señales existen', value: pendingValue(getOptionLabel(EVIDENCE_TYPE_OPTIONS, form.evidenceType) || form.currentEvidence) },
+    { title: 'Qué decisión se busca', value: pendingValue(form.decisionRequested) },
+    { title: 'Qué debería validarse en Step 1', value: pendingValue(form.validationSignal || 'Buscar evidencia, fuentes, entrevistas, señales, datos y validación más profunda.') },
+  ];
+}
+
+function getAlignmentLabel(value?: AlignmentStatus) {
+  return ALIGNMENT_STATUS_OPTIONS.find(option => option.value === value)?.label ?? 'Pendiente de conversación';
+}
+
+function hasImportMetadata(project: unknown) {
+  const record = project as { origin?: string; source?: string; metadata?: Record<string, unknown>; importMetadata?: unknown };
+  return record.origin === 'imported'
+    || record.origin === 'linked_existing'
+    || record.source === 'imported'
+    || Boolean(record.importMetadata)
+    || Boolean(record.metadata?.imported)
+    || Boolean(record.metadata?.import);
+}
+
+function buildPptPrompt(form: Step0Data) {
+  return `Crea una presentación breve de 3 a 5 slides para presentar esta iniciativa a un líder o sponsor. La presentación debe ser ejecutiva, clara y orientada a decisión.
+
+Contenido de la iniciativa:
+- Nombre: ${pendingValue(form.initiativeTitle)}
+- Qué se quiere mover: ${pendingValue(form.quePasaQueQuieres)}
+- Por qué importa ahora: ${pendingValue(form.whyNowText)}
+- A quién impacta: ${pendingValue(form.impactWho || form.impacta?.join(', '))}
+- Señales actuales: ${pendingValue(getOptionLabel(EVIDENCE_TYPE_OPTIONS, form.evidenceType) || form.currentEvidence)}
+- Decisión que se busca: ${pendingValue(form.decisionRequested)}
+- Próximo paso recomendado: ${pendingValue(form.validationSignal || 'Validar en Step 1 con evidencia, fuentes, entrevistas y datos.')}
+
+Estructura sugerida:
+Slide 1: Contexto y oportunidad/problema
+Slide 2: Impacto y urgencia
+Slide 3: Señales iniciales y supuestos
+Slide 4: Decisión solicitada
+Slide 5: Próximo paso hacia validación`;
+}
+
+function buildLeaderMessage(form: Step0Data) {
+  return `Hola [nombre], estoy ordenando una iniciativa sobre ${pendingValue(form.quePasaQueQuieres || form.initiativeTitle)}.
+Creo que puede ser relevante porque ${pendingValue(form.whyNowText)} e impacta principalmente a ${pendingValue(form.impactWho || form.impacta?.join(', '))}.
+Me gustaría compartirte una base inicial para recibir feedback y confirmar si vale la pena avanzar a una validación más profunda.
+La decisión que busco por ahora es: ${pendingValue(form.decisionRequested)}.`;
+}
+
+function OptionalToggle({ open, label, onClick }: { open: boolean; label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="text-sm text-indigo-600 hover:text-indigo-700" style={{ fontWeight: 600 }}>
+      {open ? '- Ocultar contexto adicional' : `+ ${label}`}
+    </button>
+  );
+}
+
+function ModuleShell({
+  moduleId,
+  active,
+  form,
+  projectName,
+  onOpen,
+  children,
+}: {
+  moduleId: ModuleId;
+  active: boolean;
+  form: Step0Data;
+  projectName: string;
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
+  const state = getModuleState(form, moduleId);
+  const done = moduleCompletedCount(form, moduleId);
+  const total = MODULE_REQUIRED[moduleId].length;
+  const complete = state === 'Listo';
+
+  if (!active) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={`text-sm ${complete ? 'text-emerald-700' : 'text-slate-800'}`} style={{ fontWeight: 700 }}>
+              {complete ? '✓' : '○'} {complete ? `${MODULE_TITLES[moduleId]} listo` : MODULE_TITLES[moduleId]}
+            </p>
+            <p className="mt-1 truncate text-sm text-slate-500">{buildModuleSummary(form, moduleId, projectName)}</p>
+            <p className="mt-2 text-xs text-slate-400">{state} · {done}/{total} campos clave</p>
+          </div>
+          <button onClick={onOpen} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50" style={{ fontWeight: 600 }}>
+            {complete ? 'Editar' : 'Completar'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-indigo-200 bg-white p-5 ring-1 ring-indigo-100">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.08em] text-indigo-500" style={{ fontWeight: 700 }}>{state} · {done}/{total}</p>
+          <h2 className="mt-1 text-base text-slate-900" style={{ fontWeight: 700 }}>{MODULE_TITLES[moduleId]}</h2>
+          <p className="mt-1 text-sm text-slate-500">{MODULE_DESCRIPTIONS[moduleId]}</p>
+        </div>
+      </div>
+      {children}
     </div>
   );
 }
@@ -114,8 +378,19 @@ export function Step0Page() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [analysisState, setAnalysisState] = useState<'idle' | 'loading' | 'done'>('idle');
-  const [copied, setCopied] = useState(false);
+  const [copiedAction, setCopiedAction] = useState<'ppt' | 'leader' | null>(null);
+  const [showLeaderMessage, setShowLeaderMessage] = useState(false);
+  const [showProposalOnePager, setShowProposalOnePager] = useState(false);
+  const [showPromptPreview, setShowPromptPreview] = useState(false);
+  const [showPendingWarning, setShowPendingWarning] = useState(false);
   const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
+  const [publicDraftCardDismissed, setPublicDraftCardDismissed] = useState(false);
+  const [activeModule, setActiveModule] = useState<ModuleId>('start');
+  const [optionalOpen, setOptionalOpen] = useState<Record<ModuleId, boolean>>({ start: false, impact: false, decision: false });
+  const [highlightField, setHighlightField] = useState<keyof Step0Data | null>(null);
+  const moduleRefs = useRef<Record<ModuleId, HTMLDivElement | null>>({ start: null, impact: null, decision: null });
+  const executiveCardRef = useRef<HTMLDivElement | null>(null);
+  const alignmentCardRef = useRef<HTMLDivElement | null>(null);
   const projectForInit = project ?? {
     id: '',
     name: '',
@@ -135,7 +410,6 @@ export function Step0Page() {
   useEffect(() => {
     if (!projectId || !project) return;
     if (!isStep0DataMissingPublicFields(project.step0Data)) return;
-
     const prefill = getStep0Prefill(projectId);
     if (!prefill) return;
 
@@ -157,24 +431,54 @@ export function Step0Page() {
 
   const mode = form.mode ?? getStep0Mode(project);
   const inherited = buildInheritedChallengeContext(project, challenges, strategicFronts);
-  const summaryBlocks = getSummaryBlocks(form, inherited);
   const requiredKeys = getRequiredFieldKeys(mode, form);
   const completed = requiredKeys.filter(key => isFilled(form[key])).length;
-  const progress = Math.round((completed / requiredKeys.length) * 100);
+  const usefulStart = [form.initiativeTitle, project.name, form.rolArea].some(isFilled) ? 1 : 0;
+  const progress = Math.max(Math.round((completed / requiredKeys.length) * 100), usefulStart ? 8 : 0);
   const missing = requiredKeys.filter(key => !isFilled(form[key]));
   const canSave = missing.length === 0;
-  const summaryTitle = getSummaryTitle(mode);
-  const previewCount = Math.min(summaryBlocks.length, Math.round((completed / requiredKeys.length) * summaryBlocks.length));
+  const readyBlocks = MODULE_ORDER.filter(moduleId => getModuleState(form, moduleId) === 'Listo').length;
   const descriptionLabel = getDynamicDescriptionLabel(form.initiativeFrame ?? '', mode);
-  const descriptionHelper = getDescriptionHelper(form.initiativeFrame ?? '', form.primaryObjective ?? '');
   const consequenceHelper = getConsequenceHelper(form.primaryObjective ?? '');
+  const shouldShowPublicDraftCard = !publicDraftCardDismissed && !!projectId && (recoveredFromPublicDraft || hasStep0Prefill(projectId));
+  const nextMissing = missing[0] ?? null;
+  const nextMissingModule = MODULE_ORDER.find(moduleId => nextMissing ? MODULE_REQUIRED[moduleId].includes(nextMissing) : false) ?? activeModule;
+  const previewMissing = missing.slice(0, 3);
+  const readyLabels = requiredKeys.filter(key => isFilled(form[key])).slice(0, 4);
+  const executiveSections = getExecutiveSections(form);
+  const alignmentStatus = form.alignmentStatus;
+  const alignmentStatusLabel = getAlignmentLabel(alignmentStatus);
+  const alignmentIsReady = alignmentStatus === 'aligned';
+  const leaderFeedbackComplete = ['feedback_received', 'approved_to_investigate', 'aligned_with_conditions', 'not_prioritized', 'not_applicable'].includes(form.leaderFeedbackStatus ?? '');
+  const alignmentHasContext = Boolean(alignmentStatus && alignmentStatus !== 'pending' && alignmentStatus !== 'unknown') || leaderFeedbackComplete;
+  const feedbackReceived = Boolean(form.alignmentFeedback?.trim()) || alignmentStatus === 'feedback_received' || alignmentStatus === 'aligned_with_observations';
+  const isImportedInitiative = hasImportMetadata(project);
+  const leaderMessage = buildLeaderMessage(form);
+  const pptPrompt = buildPptPrompt(form);
 
   const analysisText = useMemo(
-    () => [summaryTitle, ...summaryBlocks.map(block => `${block.label}: ${block.value}`)].join('\n'),
-    [summaryBlocks, summaryTitle],
+    () => ['Propuesta de iniciativa para tu líder', ...executiveSections.map(block => `${block.title}: ${block.value}`)].join('\n'),
+    [executiveSections],
   );
 
-  const setField = <K extends keyof Step0Data>(key: K, value: Step0Data[K]) => setForm(prev => ({ ...prev, [key]: value }));
+  const setField = <K extends keyof Step0Data>(key: K, value: Step0Data[K]) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+    if (highlightField === key) setHighlightField(null);
+  };
+
+  const scrollToModule = (moduleId: ModuleId, field?: keyof Step0Data | null) => {
+    setActiveModule(moduleId);
+    setHighlightField(field ?? null);
+    window.setTimeout(() => {
+      moduleRefs.current[moduleId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (field) document.getElementById(`step0-${String(field)}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 60);
+  };
+
+  const focusFirstBlock = () => {
+    setPublicDraftCardDismissed(true);
+    scrollToModule('start');
+  };
 
   const openIA = () => {
     setShowIAPanel(true);
@@ -182,29 +486,33 @@ export function Step0Page() {
     window.setTimeout(() => setIaLoading(false), 1200);
   };
 
-  const handleSave = async () => {
-    const synced = syncLegacyFields({ ...form, mode });
+  const persistStep0 = async (overrides: Partial<Step0Data> = {}) => {
+    const nextForm = { ...form, ...overrides };
+    const synced = syncLegacyFields({ ...nextForm, mode });
     setSaving(true);
     await new Promise(resolve => window.setTimeout(resolve, 450));
     if ((synced.initiativeTitle ?? '').trim() && synced.initiativeTitle!.trim() !== project.name.trim()) {
       updateProject(project.id, { name: synced.initiativeTitle!.trim() });
     }
     updateStep0(project.id, synced, 'Completado');
+    if (Object.keys(overrides).length > 0) {
+      setForm(prev => ({ ...prev, ...overrides }));
+    }
     setSaving(false);
     setSaved(true);
-    window.setTimeout(() => navigate(`/projects/${project.id}`), 600);
+    setAnalysisState('done');
   };
 
   const runAnalysis = () => {
     if (!canSave) return;
     setAnalysisState('loading');
-    window.setTimeout(() => setAnalysisState('done'), 1500);
+    window.setTimeout(() => setAnalysisState('done'), 900);
   };
 
-  const copySummary = async () => {
-    await navigator.clipboard.writeText(analysisText);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+  const goToStep1 = async (overrides: Partial<Step0Data> = {}) => {
+    if (!canSave) return;
+    if (!saved || Object.keys(overrides).length > 0) await persistStep0(overrides);
+    navigate(`/projects/${project.id}/step/1`);
   };
 
   const downloadSummary = () => {
@@ -216,6 +524,57 @@ export function Step0Page() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const copyPptPrompt = async () => {
+    await navigator.clipboard.writeText(pptPrompt);
+    setCopiedAction('ppt');
+    window.setTimeout(() => setCopiedAction(null), 1600);
+  };
+
+  const copyLeaderMessage = async () => {
+    await navigator.clipboard.writeText(leaderMessage);
+    setCopiedAction('leader');
+    window.setTimeout(() => setCopiedAction(null), 1600);
+  };
+
+  const openAlignmentCard = () => {
+    window.setTimeout(() => alignmentCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
+
+  const requestStep1WithPendingAlignment = () => {
+    if (!alignmentHasContext && !alignmentIsReady) {
+      setShowPendingWarning(true);
+      return;
+    }
+    void goToStep1();
+  };
+
+  const handlePrimaryAction = async () => {
+    if (analysisState === 'done') {
+      setShowProposalOnePager(true);
+      return;
+    }
+    const missingInActive = firstMissingInModule(form, activeModule);
+    if (missingInActive) {
+      scrollToModule(activeModule, missingInActive);
+      return;
+    }
+    const currentIndex = MODULE_ORDER.indexOf(activeModule);
+    const nextModule = MODULE_ORDER[currentIndex + 1];
+    if (nextModule) {
+      scrollToModule(nextModule, firstMissingInModule(form, nextModule));
+      return;
+    }
+    await persistStep0();
+  };
+
+  const primaryLabel = (() => {
+    if (analysisState === 'done') return 'Ver propuesta';
+    if (firstMissingInModule(form, activeModule)) return 'Continuar este bloque';
+    if (activeModule === 'start') return 'Pasar a impacto y urgencia';
+    if (activeModule === 'impact') return 'Pasar a apoyo y decisión';
+    return 'Generar propuesta para líder';
+  })();
 
   return (
     <div className="flex h-full flex-col">
@@ -234,9 +593,9 @@ export function Step0Page() {
                     {mode === 'linked_to_challenge' ? 'Iniciativa dentro de reto' : 'Proyecto independiente'}
                   </span>
                 </div>
-                <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>Base estrategica inicial</h1>
+                <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>Alinea tu iniciativa con el negocio</h1>
                 <p className="mt-1 max-w-3xl text-sm text-slate-500">
-                  Este paso construye una base breve pero estrategica para justificar por que esta iniciativa merece luz verde, profundidad o destrabe.
+                  Antes de investigar, ordena tu iniciativa para que un líder entienda qué quieres mover, por qué importa y qué decisión necesitas.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -246,28 +605,58 @@ export function Step0Page() {
                 <AutosaveIndicator state={saveState} />
               </div>
             </div>
+
+            <div className="mt-5 grid gap-2 md:grid-cols-3">
+              {MODULE_ORDER.map(moduleId => {
+                const state = getModuleState(form, moduleId);
+                const done = moduleCompletedCount(form, moduleId);
+                const active = activeModule === moduleId;
+                return (
+                  <button
+                    key={moduleId}
+                    onClick={() => scrollToModule(moduleId, firstMissingInModule(form, moduleId))}
+                    className={`rounded-xl border px-4 py-3 text-left transition-colors ${active ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{MODULE_TITLES[moduleId]}</p>
+                      <span className={`h-2.5 w-2.5 rounded-full ${state === 'Listo' ? 'bg-emerald-500' : done > 0 ? 'bg-indigo-500' : 'bg-slate-300'}`} />
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{state} · {done}/{MODULE_REQUIRED[moduleId].length}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {recoveredFromPublicDraft && (
-          <div className="border-b border-sky-100 bg-sky-50 px-5 py-3">
-            <div className="mx-auto flex max-w-[1480px] items-start gap-3 text-sm text-sky-800">
-              <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-sky-600" />
-              <p>
-                Recuperamos la información de tu propuesta pública. Revísala y complétala antes de enviarla a revisión.
-              </p>
+        {shouldShowPublicDraftCard && (
+          <div className="border-b border-indigo-100 bg-indigo-50/60 px-5 py-4">
+            <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-indigo-600" />
+                <div>
+                  <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Partimos de tu borrador inicial</p>
+                  <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                    Puedes usarlo como base y ajustarlo en este paso. No necesitas evidencia perfecta todavía; eso viene en Step 1.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={focusFirstBlock} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white" style={{ fontWeight: 600 }}>Continuar con este borrador</button>
+                <button onClick={focusFirstBlock} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" style={{ fontWeight: 600 }}>Editar antes de avanzar</button>
+              </div>
             </div>
           </div>
         )}
 
         <div className="mx-auto grid max-w-[1480px] items-start gap-6 px-5 py-6 min-[1280px]:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-6">
+          <div className="space-y-4">
             {mode === 'linked_to_challenge' && inherited.items.length > 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Bloque 0 - Contexto heredado del reto</h2>
+                <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Contexto heredado del reto</h2>
                 <p className="mt-1 text-sm text-slate-500">Este contexto viene del reto padre y se muestra solo como ancla.</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {inherited.items.map(item => (
+                  {inherited.items.slice(0, 6).map(item => (
                     <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                       <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{item.label}</p>
                       <p className="mt-2 text-sm text-slate-800" style={{ fontWeight: 600 }}>{item.value}</p>
@@ -277,193 +666,326 @@ export function Step0Page() {
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
-              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{mode === 'linked_to_challenge' ? 'Bloque 1 - Encaje con el reto padre' : 'Bloque 1 - Punto de partida'}</h2>
-              <Field label="¿Como se llama tu iniciativa?">
-                <AutofillField fieldPath="step0.initiativeTitle" initiativeId={projectId} value={form.initiativeTitle ?? project.name} onChange={v => setField('initiativeTitle', v as string)} label="¿Como se llama tu iniciativa?">
-                  {({ value, onChange, readOnly }) => <Input value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Desde que rol y area estas viendo este reto?' : '¿Desde que rol y area estas viendo esta iniciativa?'}>
-                <AutofillField fieldPath="step0.rolArea" initiativeId={projectId} value={form.rolArea ?? ''} onChange={v => setField('rolArea', v as string)} label="Rol y area">
-                  {({ value, onChange, readOnly }) => <Input value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              {mode === 'linked_to_challenge' && (
-                <Field label="¿Que parte especifica del reto estas buscando mover con esta iniciativa?">
-                  <AutofillField fieldPath="step0.specificChallengePart" initiativeId={projectId} value={form.specificChallengePart ?? ''} onChange={v => setField('specificChallengePart', v as string)} label="Parte especifica del reto">
-                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                  </AutofillField>
-                </Field>
-              )}
-              {mode === 'linked_to_challenge' && (
-                <Field label="¿Como se conecta esta iniciativa con el objetivo o KPI que ya persigue este reto?">
-                  <AutofillField fieldPath="step0.challengeGoalConnection" initiativeId={projectId} value={form.challengeGoalConnection ?? ''} onChange={v => setField('challengeGoalConnection', v as string)} label="Conexion con objetivo o KPI">
-                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                  </AutofillField>
-                </Field>
-              )}
-              <Field label="¿Como quieres enmarcar esta iniciativa hoy?">
-                <AutofillField fieldPath="step0.initiativeFrame" initiativeId={projectId} value={form.initiativeFrame ?? ''} onChange={v => setField('initiativeFrame', v as Step0Data['initiativeFrame'])} label="Encuadre de la iniciativa">
-                  {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['initiativeFrame']) ?? ''} options={FRAME_OPTIONS} onChange={onChange} />}
-                </AutofillField>
-              </Field>
-              <Field label="¿Que objetivo principal ayudaria a mover esta iniciativa?">
-                <AutofillField fieldPath="step0.primaryObjective" initiativeId={projectId} value={form.primaryObjective ?? ''} onChange={v => setField('primaryObjective', v as Step0Data['primaryObjective'])} label="Objetivo principal">
-                  {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['primaryObjective']) ?? ''} options={PRIMARY_OBJECTIVE_OPTIONS} onChange={onChange} />}
-                </AutofillField>
-              </Field>
-              <Field label="¿Con que nivel de claridad llegas hoy?">
-                <AutofillField fieldPath="step0.clarityLevel" initiativeId={projectId} value={form.clarityLevel ?? ''} onChange={v => setField('clarityLevel', v as Step0Data['clarityLevel'])} label="Nivel de claridad">
-                  {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['clarityLevel']) ?? ''} options={CLARITY_OPTIONS} onChange={onChange} />}
-                </AutofillField>
-              </Field>
-              {mode === 'linked_to_challenge' && (
-                <Field label="¿Que tipo de aporte crees que puede hacer esta iniciativa dentro del reto?">
-                  <AutofillField fieldPath="step0.linkedContributionType" initiativeId={projectId} value={form.linkedContributionType ?? ''} onChange={v => setField('linkedContributionType', v as Step0Data['linkedContributionType'])} label="Tipo de aporte">
-                    {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['linkedContributionType']) ?? ''} options={CONTRIBUTION_OPTIONS} onChange={onChange} />}
-                  </AutofillField>
-                </Field>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
-              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Bloque 2 - Justificacion de la iniciativa</h2>
-              <Field label={descriptionLabel} helper={descriptionHelper}>
-                <AutofillField fieldPath="step0.quePasaQueQuieres" initiativeId={projectId} value={form.quePasaQueQuieres ?? ''} onChange={v => setField('quePasaQueQuieres', v as string)} label={descriptionLabel}>
-                  {({ value, onChange, readOnly }) => <Area rows={5} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿A quien impacta mas directamente esta parte del reto?' : '¿A quien impacta mas directamente esta iniciativa?'}>
-                <AutofillField fieldPath="step0.impactWho" initiativeId={projectId} value={form.impactWho ?? ''} onChange={v => setField('impactWho', v as string)} label="A quien impacta">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Donde o en que momento se hace mas visible esta parte del reto?' : '¿Donde o en que momento se hace mas visible este reto?'}>
-                <AutofillField fieldPath="step0.visibleMoment" initiativeId={projectId} value={form.visibleMoment ?? ''} onChange={v => setField('visibleMoment', v as string)} label="Momento visible">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Por que vale la pena mover esta iniciativa ahora dentro del reto?' : '¿Por que conviene mover esto ahora?'}>
-                <AutofillField fieldPath="step0.whyNowText" initiativeId={projectId} value={form.whyNowText ?? ''} onChange={v => setField('whyNowText', v as string)} label="Por que ahora">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? 'Si esta parte del reto no se aborda, ¿que efecto tendria sobre el objetivo o KPI del reto?' : 'Si esto no se aborda en los proximos 3 meses, ¿cual seria la consecuencia principal?'} helper={consequenceHelper}>
-                <AutofillField fieldPath="step0.ifNotNowConsequence" initiativeId={projectId} value={form.ifNotNowConsequence ?? ''} onChange={v => setField('ifNotNowConsequence', v as string)} label="Consecuencia si no se aborda">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Que evidencia, senales o referencias respaldan hoy esta iniciativa?' : '¿Que respaldo tienes hoy para sostener esta iniciativa?'}>
-                <div className="space-y-3">
-                  <AutofillField fieldPath="step0.evidenceType" initiativeId={projectId} value={form.evidenceType ?? ''} onChange={v => setField('evidenceType', v as Step0Data['evidenceType'])} label="Tipo de evidencia">
-                    {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['evidenceType']) ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={onChange} />}
-                  </AutofillField>
-                  <AutofillField fieldPath="step0.currentEvidence" initiativeId={projectId} value={form.currentEvidence ?? ''} onChange={v => setField('currentEvidence', v as string)} label="Evidencia actual">
-                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                  </AutofillField>
+            <div ref={node => { moduleRefs.current.start = node; }}>
+              <ModuleShell moduleId="start" active={activeModule === 'start'} form={form} projectName={project.name} onOpen={() => scrollToModule('start')}>
+                <div className="space-y-5">
+                  <Field id="step0-initiativeTitle" label="¿Cómo se llama tu iniciativa?" helper="Usa un nombre simple. Podrás ajustarlo después." highlight={highlightField === 'initiativeTitle'}>
+                    <Input value={form.initiativeTitle ?? project.name} onChange={event => setField('initiativeTitle', event.target.value)} />
+                  </Field>
+                  <Field id="step0-initiativeFrame" label="¿Cómo quieres enmarcar esta iniciativa hoy?" highlight={highlightField === 'initiativeFrame'}>
+                    <ChoiceGroup value={form.initiativeFrame ?? ''} options={FRAME_OPTIONS} onChange={value => setField('initiativeFrame', value)} />
+                  </Field>
+                  <Field id="step0-primaryObjective" label="¿Qué objetivo principal ayudaría a mover esta iniciativa?" highlight={highlightField === 'primaryObjective'}>
+                    <ChoiceGroup value={form.primaryObjective ?? ''} options={PRIMARY_OBJECTIVE_OPTIONS} onChange={value => setField('primaryObjective', value)} />
+                  </Field>
+                  <OptionalToggle open={optionalOpen.start} label="Agregar más contexto" onClick={() => setOptionalOpen(prev => ({ ...prev, start: !prev.start }))} />
+                  {optionalOpen.start && (
+                    <div className="space-y-5 border-t border-slate-100 pt-5">
+                      <Field label="¿Desde qué rol o área estás viendo esta iniciativa?" helper="Esto ayuda a entender desde qué perspectiva nace la necesidad.">
+                        <Input value={form.rolArea} onChange={event => setField('rolArea', event.target.value)} />
+                      </Field>
+                      <Field label="¿Con qué nivel de claridad llegas hoy?">
+                        <ChoiceGroup value={form.clarityLevel ?? ''} options={CLARITY_OPTIONS} onChange={value => setField('clarityLevel', value)} />
+                      </Field>
+                      {mode === 'linked_to_challenge' && <Field label="¿Qué parte específica del reto estás buscando mover?"><Area rows={3} value={form.specificChallengePart ?? ''} onChange={event => setField('specificChallengePart', event.target.value)} /></Field>}
+                      {mode === 'linked_to_challenge' && <Field label="¿Cómo se conecta con el objetivo o KPI del reto?"><Area rows={3} value={form.challengeGoalConnection ?? ''} onChange={event => setField('challengeGoalConnection', event.target.value)} /></Field>}
+                      {mode === 'linked_to_challenge' && <Field label="¿Qué tipo de aporte crees que puede hacer dentro del reto?"><ChoiceGroup value={form.linkedContributionType ?? ''} options={CONTRIBUTION_OPTIONS} onChange={value => setField('linkedContributionType', value)} /></Field>}
+                    </div>
+                  )}
                 </div>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Que senal te haria pensar que esta iniciativa si merece seguir avanzando dentro del reto?' : '¿Que senal te haria decir que vale la pena seguir avanzando?'}>
-                <AutofillField fieldPath="step0.validationSignal" initiativeId={projectId} value={form.validationSignal ?? ''} onChange={v => setField('validationSignal', v as string)} label="Senal de validacion">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
+              </ModuleShell>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-5">
-              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{mode === 'linked_to_challenge' ? 'Bloque 3 - Decision y destrabe real' : 'Bloque 3 - Respaldo y siguiente paso'}</h2>
-              {mode === 'independent' && (
-                <Field label="¿Que area, lider o sponsor tendria mas sentido que escuche esto primero?">
-                  <AutofillField fieldPath="step0.quienEscuchar" initiativeId={projectId} value={form.quienEscuchar ?? ''} onChange={v => setField('quienEscuchar', v as string)} label="Quien deberia escuchar">
-                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                  </AutofillField>
-                </Field>
-              )}
-              {mode === 'independent' && (
-                <Field label="¿Por que esa persona o area deberia interesarse en esta iniciativa?">
-                  <AutofillField fieldPath="step0.sponsorInterestReason" initiativeId={projectId} value={form.sponsorInterestReason ?? ''} onChange={v => setField('sponsorInterestReason', v as string)} label="Razon de interes del sponsor">
-                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                  </AutofillField>
-                </Field>
-              )}
-              {mode === 'linked_to_challenge' && (
-                <Field label="Ademas del sponsor y owner ya definidos, ¿hay alguien mas que conviene involucrar desde el inicio?">
-                  <AutofillField fieldPath="step0.additionalStakeholders" initiativeId={projectId} value={form.additionalStakeholders ?? ''} onChange={v => setField('additionalStakeholders', v as Step0Data['additionalStakeholders'])} label="Stakeholders adicionales">
-                    {({ value, onChange }) => <ChoiceGroup value={(value as Step0Data['additionalStakeholders']) ?? ''} options={ADDITIONAL_STAKEHOLDER_OPTIONS} onChange={onChange} />}
-                  </AutofillField>
-                </Field>
-              )}
-              {mode === 'linked_to_challenge' && form.additionalStakeholders === 'si' && (
-                <Field label="¿A quien mas conviene involucrar y para que?">
-                  <AutofillField fieldPath="step0.additionalStakeholdersDetail" initiativeId={projectId} value={form.additionalStakeholdersDetail ?? ''} onChange={v => setField('additionalStakeholdersDetail', v as string)} label="Detalle de stakeholders adicionales">
-                    {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                  </AutofillField>
-                </Field>
-              )}
-              <Field label={mode === 'linked_to_challenge' ? '¿Que apoyo minimo necesitas del sponsor o owner ya definido para avanzar?' : '¿Que apoyo minimo necesitas para que esto avance?'}>
-                <AutofillField fieldPath="step0.supportNeeded" initiativeId={projectId} value={form.supportNeeded ?? ''} onChange={v => setField('supportNeeded', v as string)} label="Apoyo minimo necesario">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label={mode === 'linked_to_challenge' ? '¿Que decision puntual estas buscando en esta etapa?' : '¿Que decision estas buscando en esta etapa?'}>
-                <AutofillField fieldPath="step0.decisionRequested" initiativeId={projectId} value={form.decisionRequested ?? ''} onChange={v => setField('decisionRequested', v as string)} label="Decision solicitada">
-                  {({ value, onChange, readOnly }) => <Area rows={3} value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
-              <Field label="¿A que correo te envio el one-pager listo para compartir?">
-                <AutofillField fieldPath="step0.deliveryEmail" initiativeId={projectId} value={form.deliveryEmail ?? ''} onChange={v => setField('deliveryEmail', v as string)} label="Correo de entrega">
-                  {({ value, onChange, readOnly }) => <Input type="email" value={value as string} onChange={event => onChange(event.target.value)} readOnly={readOnly} />}
-                </AutofillField>
-              </Field>
+            <div ref={node => { moduleRefs.current.impact = node; }}>
+              <ModuleShell moduleId="impact" active={activeModule === 'impact'} form={form} projectName={project.name} onOpen={() => scrollToModule('impact')}>
+                <div className="space-y-5">
+                  <Field id="step0-quePasaQueQuieres" label={descriptionLabel} helper="No necesitas tenerlo perfecto. Solo deja claro qué quieres mover." highlight={highlightField === 'quePasaQueQuieres'}>
+                    <Area rows={5} value={form.quePasaQueQuieres} onChange={event => setField('quePasaQueQuieres', event.target.value)} />
+                  </Field>
+                  <Field id="step0-impactWho" label="¿A quién impacta más directamente esta iniciativa?" highlight={highlightField === 'impactWho'}>
+                    <div className="space-y-3">
+                      <QuickPickGroup
+                        values={form.impacta ?? []}
+                        options={IMPACT_OPTIONS}
+                        onChange={values => setForm(prev => ({ ...prev, impacta: values, impactWho: values.length ? values.join(', ') : prev.impactWho }))}
+                      />
+                      <Area rows={2} value={form.impactWho ?? ''} onChange={event => setField('impactWho', event.target.value)} placeholder="Describe brevemente cómo les impacta." />
+                    </div>
+                  </Field>
+                  <Field id="step0-whyNowText" label="¿Por qué importa ahora?" helper="Elige señales rápidas o escríbelo con tus palabras." highlight={highlightField === 'whyNowText'}>
+                    <div className="space-y-3">
+                      <QuickPickGroup values={[]} options={URGENCY_OPTIONS} onChange={values => setField('whyNowText', appendText(form.whyNowText, values[values.length - 1] ?? ''))} />
+                      <Area rows={3} value={form.whyNowText ?? ''} onChange={event => setField('whyNowText', event.target.value)} />
+                    </div>
+                  </Field>
+                  <OptionalToggle open={optionalOpen.impact} label="Agregar más contexto de impacto" onClick={() => setOptionalOpen(prev => ({ ...prev, impact: !prev.impact }))} />
+                  {optionalOpen.impact && (
+                    <div className="space-y-5 border-t border-slate-100 pt-5">
+                      <Field label="¿Dónde se hace visible el reto?" helper="Puede ser en un proceso, canal, reporte, decisión o momento operativo.">
+                        <Area rows={3} value={form.visibleMoment ?? ''} onChange={event => setField('visibleMoment', event.target.value)} />
+                      </Field>
+                      <Field label="¿Qué costo tendría no hacer nada?" helper={consequenceHelper}>
+                        <Area rows={3} value={form.ifNotNowConsequence ?? ''} onChange={event => setField('ifNotNowConsequence', event.target.value)} />
+                      </Field>
+                    </div>
+                  )}
+                </div>
+              </ModuleShell>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{summaryTitle}</h2>
-              <p className="mt-1 text-sm text-slate-500">Convierte lo que ya escribiste en una base breve para compartir o seguir refinando.</p>
-              <div className="mt-4 space-y-4">
-                {analysisState === 'idle' && (
-                  <>
-                    {missing.length > 0 && <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700"><AlertCircle size={14} className="mt-0.5 shrink-0" /> Completa los campos visibles para generar el resumen inicial.</div>}
-                    <button onClick={runAnalysis} disabled={!canSave} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Generar resumen inicial</button>
-                  </>
-                )}
-                {analysisState === 'loading' && <div className="flex flex-col items-center gap-3 py-8 text-sm text-slate-600"><Loader2 size={28} className="animate-spin text-indigo-500" />Ordenando tu base estrategica...</div>}
-                {analysisState === 'done' && (
-                  <>
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900" style={{ fontWeight: 600 }}>
-                      {mode === 'linked_to_challenge' ? 'La iniciativa ya tiene una base clara para justificarse dentro del reto.' : 'La iniciativa ya tiene una base clara para abrir conversacion y buscar respaldo inicial.'}
+            <div ref={node => { moduleRefs.current.decision = node; }}>
+              <ModuleShell moduleId="decision" active={activeModule === 'decision'} form={form} projectName={project.name} onOpen={() => scrollToModule('decision')}>
+                <div className="space-y-5">
+                  <Field id="step0-evidenceType" label="¿Qué señales tienes hoy?" helper="Puede ser una hipótesis. Step 0 no exige evidencia robusta." highlight={highlightField === 'evidenceType'}>
+                    <ChoiceGroup value={form.evidenceType ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={value => setField('evidenceType', value)} />
+                  </Field>
+                  <Field id="step0-quienEscuchar" label="¿Quién debería escuchar esto primero?" helper="Puede ser un líder, sponsor, área dueña del proceso o persona que pueda destrabar la conversación." highlight={highlightField === 'quienEscuchar'}>
+                    <Area rows={3} value={form.quienEscuchar} onChange={event => setField('quienEscuchar', event.target.value)} />
+                  </Field>
+                  <Field id="step0-decisionRequested" label="¿Qué decisión estás buscando en esta etapa?" highlight={highlightField === 'decisionRequested'}>
+                    <div className="space-y-3">
+                      <QuickPickGroup values={[]} options={DECISION_OPTIONS} onChange={values => setField('decisionRequested', values[values.length - 1] ?? form.decisionRequested ?? '')} />
+                      <Area rows={3} value={form.decisionRequested ?? ''} onChange={event => setField('decisionRequested', event.target.value)} />
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-white">
-                      {summaryBlocks.map(block => <div key={block.label} className="border-b border-slate-100 px-4 py-3 text-xs text-slate-700 last:border-b-0"><span style={{ fontWeight: 700 }}>{block.label}: </span>{block.value}</div>)}
+                  </Field>
+                  <OptionalToggle open={optionalOpen.decision} label="Agregar apoyo, confirmaciones o datos de contacto" onClick={() => setOptionalOpen(prev => ({ ...prev, decision: !prev.decision }))} />
+                  {optionalOpen.decision && (
+                    <div className="space-y-5 border-t border-slate-100 pt-5">
+                      <Field label="Describe brevemente la señal o respaldo disponible.">
+                        <Area rows={3} value={form.currentEvidence ?? ''} onChange={event => setField('currentEvidence', event.target.value)} />
+                      </Field>
+                      <Field label="¿Qué necesitarías confirmar para seguir avanzando?" helper="Esto se trabajará con más profundidad en Step 1.">
+                        <Area rows={3} value={form.validationSignal ?? ''} onChange={event => setField('validationSignal', event.target.value)} />
+                      </Field>
+                      <Field label="¿Por qué le debería importar?">
+                        <Area rows={3} value={form.sponsorInterestReason ?? ''} onChange={event => setField('sponsorInterestReason', event.target.value)} />
+                      </Field>
+                      <Field label="¿Qué apoyo mínimo necesitas para que esto avance?">
+                        <div className="space-y-3">
+                          <QuickPickGroup
+                            values={form.siMinimo ?? []}
+                            options={SUPPORT_OPTIONS}
+                            onChange={values => setForm(prev => ({ ...prev, siMinimo: values, supportNeeded: values.length ? values.join(', ') : prev.supportNeeded }))}
+                          />
+                          <Area rows={3} value={form.supportNeeded ?? ''} onChange={event => setField('supportNeeded', event.target.value)} />
+                        </div>
+                      </Field>
+                      <Field label="¿A qué correo te envío el one-pager listo para compartir?">
+                        <Input type="email" value={form.deliveryEmail ?? ''} onChange={event => setField('deliveryEmail', event.target.value)} />
+                      </Field>
                     </div>
-                    <div className="flex flex-wrap gap-3">
-                      <button onClick={downloadSummary} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}><Download size={14} className="mr-2 inline" />Descargar resumen</button>
-                      <button onClick={copySummary} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}><Copy size={14} className="mr-2 inline" />{copied ? 'Copiado' : 'Copiar resumen'}</button>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
+              </ModuleShell>
+            </div>
+
+            {analysisState !== 'done' && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Propuesta de iniciativa para tu líder</h2>
+                <p className="mt-1 text-sm text-slate-500">Cuando completes los campos clave, podrás generar una propuesta breve para compartir con un líder.</p>
+                <button onClick={runAnalysis} disabled={!canSave} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}>
+                  <Sparkles size={14} className="mr-2 inline" />Generar propuesta para líder
+                </button>
               </div>
-            </div>
+            )}
+
+            {analysisState === 'loading' && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">
+                <Loader2 size={28} className="mx-auto mb-3 animate-spin text-indigo-500" />Ordenando tu propuesta para líder...
+              </div>
+            )}
+
+            {analysisState === 'done' && (
+              <>
+                <div ref={executiveCardRef} className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-emerald-600" style={{ fontWeight: 700 }}>Propuesta para líder</p>
+                      <h2 className="mt-1 text-lg text-slate-900" style={{ fontWeight: 700 }}>Tu propuesta de iniciativa para tu líder está lista</h2>
+                      <p className="mt-1 max-w-2xl text-sm text-slate-500">Úsala para conversar con tu jefe, gerente, sponsor o persona con poder de decisión mientras avanzas a buscar evidencia.</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 700 }}>Artefacto listo</span>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {executiveSections.map(section => (
+                        <div key={section.title} className="rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="text-xs uppercase tracking-[0.08em] text-slate-400" style={{ fontWeight: 700 }}>{section.title}</p>
+                          <p className="mt-2 text-sm text-slate-800">{section.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+                    <p className="text-sm text-indigo-900" style={{ fontWeight: 700 }}>Tu iniciativa ya tiene base para abrir conversación</p>
+                    <p className="mt-1 text-sm text-indigo-700">Ahora el siguiente paso es validar si el dolor, oportunidad o apuesta tiene respaldo real.</p>
+                    <ul className="mt-3 grid gap-2 text-xs text-indigo-800 md:grid-cols-2">
+                      <li>¿Qué tan frecuente o importante es este reto?</li>
+                      <li>¿Quiénes lo viven directamente?</li>
+                      <li>¿Qué datos o señales lo confirman?</li>
+                      <li>¿Qué causa o hipótesis puede estar detrás?</li>
+                      <li>¿Qué tan viable es avanzar?</li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button onClick={() => setShowProposalOnePager(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Ver propuesta</button>
+                    <button onClick={requestStep1WithPendingAlignment} className="rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-sm text-indigo-700 hover:bg-indigo-50" style={{ fontWeight: 700 }}>Avanzar a Step 1</button>
+                    <button onClick={() => setShowPromptPreview(true)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}><Copy size={14} className="mr-2 inline" />Copiar prompt para PPT/Gamma</button>
+                    <button onClick={downloadSummary} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}><Download size={14} className="mr-2 inline" />Descargar propuesta</button>
+                    <button onClick={() => setShowLeaderMessage(prev => !prev)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Preparar mensaje para líder</button>
+                  </div>
+
+                  {showLeaderMessage && (
+                    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Mensaje para líder</p>
+                        <button onClick={copyLeaderMessage} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600" style={{ fontWeight: 600 }}>{copiedAction === 'leader' ? 'Copiado' : 'Copiar mensaje'}</button>
+                      </div>
+                      <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{leaderMessage}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div ref={alignmentCardRef}>
+                  <LeaderFeedbackStatusCard project={{ ...project, step0Data: form }} updateProject={(id, updates) => {
+                    updateProject(id, updates);
+                    if (updates.step0Data) setForm(prev => ({ ...prev, ...updates.step0Data }));
+                  }} variant="step0" />
+                </div>
+                <div className="hidden rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>
+                        {isImportedInitiative ? 'Alineación previa de esta iniciativa' : 'Alineación con líder o sponsor'}
+                      </h2>
+                      <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                        {isImportedInitiative
+                          ? 'Esta iniciativa puede haber avanzado antes de entrar a Starteria. Registra si ya tuvo respaldo, feedback o revisión de un líder.'
+                          : 'Registra si esta base ya fue conversada, enviada o revisada por una persona con poder de decisión.'}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600" style={{ fontWeight: 700 }}>{alignmentStatusLabel}</span>
+                  </div>
+
+                  {form.alignmentAdvancedPending && (
+                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      Avanzaste a Step 1 con alineación pendiente.
+                    </div>
+                  )}
+
+                  {isImportedInitiative && (
+                    <div className="mt-5">
+                      <p className="mb-2 text-sm text-slate-900" style={{ fontWeight: 600 }}>Estado previo conocido</p>
+                      <QuickPickGroup values={form.alignmentEvidenceType ? [form.alignmentEvidenceType] : []} options={IMPORT_ALIGNMENT_OPTIONS} onChange={values => setField('alignmentEvidenceType', values[values.length - 1] ?? '')} />
+                    </div>
+                  )}
+
+                  <div className="mt-5 space-y-5">
+                    <Field label="Estado de alineación">
+                      <ChoiceGroup value={alignmentStatus ?? ''} options={[...ALIGNMENT_STATUS_OPTIONS]} onChange={value => setField('alignmentStatus', value)} />
+                    </Field>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="¿Con quién lo conversarás o conversaste?">
+                        <Input value={form.alignmentPerson ?? ''} onChange={event => setField('alignmentPerson', event.target.value)} />
+                      </Field>
+                      <Field label="Cargo o área">
+                        <Input value={form.alignmentRoleArea ?? ''} onChange={event => setField('alignmentRoleArea', event.target.value)} />
+                      </Field>
+                    </div>
+                    <Field label="Fecha de conversación o reunión">
+                      <Input type="date" value={form.alignmentDate ?? ''} onChange={event => setField('alignmentDate', event.target.value)} />
+                    </Field>
+                    <Field label="¿Qué feedback, observación o condición dejó?">
+                      <Area rows={4} value={form.alignmentFeedback ?? ''} onChange={event => setField('alignmentFeedback', event.target.value)} />
+                    </Field>
+                    <Field label="¿Qué decisión inicial se obtuvo?">
+                      <QuickPickGroup values={form.alignmentInitialDecision ? [form.alignmentInitialDecision] : []} options={ALIGNMENT_DECISION_OPTIONS} onChange={values => setField('alignmentInitialDecision', values[values.length - 1] ?? '')} />
+                    </Field>
+                    <Field label="Evidencia de conversación, opcional" helper="Puedes registrar una nota, minuta, correo, link, archivo o captura. No se exige subir evidencia en Step 0.">
+                      <div className="space-y-3">
+                        <QuickPickGroup values={form.alignmentEvidenceType && !IMPORT_ALIGNMENT_OPTIONS.includes(form.alignmentEvidenceType) ? [form.alignmentEvidenceType] : []} options={ALIGNMENT_EVIDENCE_OPTIONS} onChange={values => setField('alignmentEvidenceType', values[values.length - 1] ?? '')} />
+                        <Area rows={3} value={form.alignmentEvidenceNote ?? ''} onChange={event => setField('alignmentEvidenceNote', event.target.value)} placeholder="Pega una nota, resumen o link si ya lo tienes." />
+                      </div>
+                    </Field>
+                    <div className="flex flex-wrap gap-3">
+                      <button onClick={() => persistStep0()} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Guardar alineación</button>
+                      <button onClick={requestStep1WithPendingAlignment} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Ir a Step 1 con este contexto</button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="hidden min-[1280px]:block">
-            <div className="sticky top-4 space-y-3">
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <div className="bg-indigo-600 px-4 py-3.5">
-                  <p className="text-xs text-indigo-200" style={{ fontWeight: 700 }}>PREVIEW DEL RESUMEN</p>
-                  <p className="mt-0.5 text-sm text-white" style={{ fontWeight: 700 }}>{summaryTitle}</p>
+            <div className="sticky top-4 max-h-[calc(100vh-120px)] space-y-3 overflow-y-auto pr-1">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Propuesta para líder</p>
+                {analysisState === 'done' ? (
+                  <>
+                    <p className="mt-1 text-sm text-slate-500">Base lista. Compártela con tu líder o registra una conversación antes de avanzar a Step 1.</p>
+                    <div className="mt-4 space-y-2 rounded-xl bg-slate-50 p-3">
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-slate-500">Base generada</span>
+                        <span className="text-emerald-700" style={{ fontWeight: 700 }}>Lista</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-slate-500">Feedback del líder</span>
+                        <span className={alignmentIsReady ? 'text-emerald-700' : 'text-amber-700'} style={{ fontWeight: 700 }}>{alignmentStatusLabel}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-slate-500">Feedback</span>
+                        <span className={feedbackReceived ? 'text-emerald-700' : 'text-slate-500'} style={{ fontWeight: 700 }}>{feedbackReceived ? 'Recibido' : 'Pendiente'}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setShowProposalOnePager(true)} className="mt-4 w-full rounded-lg bg-slate-900 px-3 py-2 text-xs text-white" style={{ fontWeight: 600 }}>
+                      Ver propuesta
+                    </button>
+                  </>
+                ) : (
+                  <>
+                <p className="mt-1 text-sm text-slate-500">
+                  {canSave
+                        ? 'Ya puedes generar una primera propuesta para líder.'
+                    : `Te falta${missing.length === 1 ? '' : 'n'} ${missing.length} dato${missing.length === 1 ? '' : 's'} clave para generar una primera versión.`}
+                </p>
+                    <div className={`mt-4 rounded-xl p-3 ${nextMissing ? 'border border-orange-200 bg-orange-50' : 'bg-slate-50'}`}>
+                      <p className={`text-xs ${nextMissing ? 'text-orange-600' : 'text-slate-400'}`} style={{ fontWeight: 800 }}>SIGUIENTE FALTANTE</p>
+                      <p className={`mt-1 text-sm ${nextMissing ? 'text-orange-950' : 'text-slate-800'}`} style={{ fontWeight: 800 }}>{nextMissing ? FIELD_LABELS[nextMissing] : 'Base mínima lista'}</p>
+                      {nextMissing && (
+                        <button onClick={() => scrollToModule(nextMissingModule, nextMissing)} className="mt-3 rounded-lg bg-orange-600 px-3 py-1.5 text-xs text-white shadow-sm hover:bg-orange-700" style={{ fontWeight: 700 }}>
+                          Completar ahora
+                        </button>
+                      )}
                 </div>
-                <div className="space-y-3 p-4">
-                  {mode === 'linked_to_challenge' && inherited.items.length > 0 && <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-700">{inherited.items.slice(0, 4).map(item => `${item.label}: ${item.value}`).join(' | ')}</div>}
-                  {summaryBlocks.map(block => <div key={block.label}><p className="text-xs text-slate-400" style={{ fontWeight: 700 }}>{block.label.toUpperCase()}</p><p className="mt-0.5 text-xs text-slate-700">{block.value}</p></div>)}
+                <div className="mt-4">
+                  <p className="text-xs text-slate-400" style={{ fontWeight: 700 }}>LO QUE YA TENEMOS</p>
+                  <div className="mt-2 space-y-1.5">
+                    {readyLabels.length > 0 ? readyLabels.map(key => (
+                      <p key={String(key)} className="text-xs text-emerald-700">✓ {FIELD_LABELS[key] ?? String(key)}</p>
+                    )) : <p className="text-xs text-slate-500">Empieza por el tipo de iniciativa y objetivo.</p>}
+                  </div>
                 </div>
-                <div className="px-4 pb-4">
-                  <div className="mb-1.5 flex justify-between text-xs text-slate-400"><span>Bloques listos</span><span className="text-indigo-600" style={{ fontWeight: 700 }}>{previewCount}/{summaryBlocks.length}</span></div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${(previewCount / summaryBlocks.length) * 100}%` }} /></div>
+                {previewMissing.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-slate-400" style={{ fontWeight: 700 }}>FALTANTES IMPORTANTES</p>
+                    <div className="mt-2 space-y-1.5">
+                      {previewMissing.map(key => <p key={String(key)} className="text-xs text-slate-600">○ {FIELD_LABELS[key] ?? String(key)}</p>)}
+                    </div>
+                  </div>
+                )}
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <div className="mb-1.5 flex justify-between text-xs text-slate-400"><span>Módulos listos</span><span className="text-indigo-600" style={{ fontWeight: 700 }}>{readyBlocks}/3</span></div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${(readyBlocks / 3) * 100}%` }} /></div>
                 </div>
+                  </>
+                )}
               </div>
-              <button onClick={openIA} className="w-full rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-left text-sm text-violet-700 hover:bg-violet-100" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Mejorar claridad con IA</button>
+              <button onClick={openIA} className="w-full rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-left text-sm text-violet-700 hover:bg-violet-100" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Hacerlo más claro sin inventar</button>
+              <p className="text-xs text-slate-500">La IA puede mejorar redacción y estructura, pero no agregará evidencia que no hayas dado.</p>
             </div>
           </div>
         </div>
@@ -471,19 +993,123 @@ export function Step0Page() {
 
       <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4">
         <div className="mx-auto flex max-w-[1480px] flex-wrap items-center gap-3">
-          <button onClick={handleSave} disabled={!canSave || saving || saved} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}>
-            {saved ? <><CheckCircle2 size={14} className="mr-2 inline" />Guardado</> : saving ? 'Guardando...' : <>Guardar y continuar <ChevronRight size={14} className="ml-1 inline" /></>}
+          <button onClick={handlePrimaryAction} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}>
+            {saving ? 'Guardando...' : <>{primaryLabel} <ChevronRight size={14} className="ml-1 inline" /></>}
           </button>
-          <button onClick={openIA} className="rounded-xl border border-violet-200 px-4 py-2.5 text-sm text-violet-600" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Mejorar claridad con IA</button>
+          {analysisState === 'done' && (
+            <button onClick={requestStep1WithPendingAlignment} className="rounded-xl border border-indigo-200 px-4 py-2.5 text-sm text-indigo-700 hover:bg-indigo-50" style={{ fontWeight: 700 }}>
+              Avanzar a Step 1
+            </button>
+          )}
+          <button onClick={openIA} className="rounded-xl border border-violet-200 px-4 py-2.5 text-sm text-violet-600" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Hacerlo más claro sin inventar</button>
+          {nextMissing && (
+            <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800">
+              <AlertCircle size={14} className="shrink-0 text-orange-600" />
+              <span><span style={{ fontWeight: 800 }}>Te falta 1 campo clave:</span> {FIELD_LABELS[nextMissing]}</span>
+              <button onClick={() => scrollToModule(nextMissingModule, nextMissing)} className="rounded-lg bg-orange-600 px-2.5 py-1 text-white shadow-sm hover:bg-orange-700" style={{ fontWeight: 700 }}>Completar ahora</button>
+            </div>
+          )}
           <div className="ml-auto hidden items-center gap-3 sm:flex">
-            {project.mentorCredits !== undefined && <div className="flex items-center gap-1.5 text-xs text-slate-400"><CreditCard size={12} /><span>{project.mentorCredits} creditos disponibles</span></div>}
+            {project.mentorCredits !== undefined && <div className="flex items-center gap-1.5 text-xs text-slate-400"><CreditCard size={12} /><span>{project.mentorCredits} créditos disponibles</span></div>}
             <AutosaveIndicator state={saveState} />
           </div>
         </div>
       </div>
 
-      <MentorVirtualPanel open={showIAPanel} onClose={() => setShowIAPanel(false)} context="Paso 0 · Base estrategica inicial" feedback={IA_FEEDBACK} loading={iaLoading} />
-      {showMentorModal && <MentorSupportModal onClose={() => setShowMentorModal(false)} context="Paso 0 · Base estrategica inicial" mentorCredits={project.mentorCredits ?? 3} onOpenIA={() => { setShowMentorModal(false); openIA(); }} />}
+      {showProposalOnePager && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 px-4 py-6">
+          <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-emerald-600" style={{ fontWeight: 800 }}>Propuesta para líder</p>
+                <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 800 }}>{form.initiativeTitle || project.name}</h2>
+                <p className="mt-1 max-w-2xl text-sm text-slate-500">One-pager para abrir conversación, pedir feedback y decidir si vale la pena investigar con más profundidad.</p>
+              </div>
+              <button onClick={() => setShowProposalOnePager(false)} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100" aria-label="Cerrar propuesta">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  {executiveSections.map(section => (
+                    <div key={section.title} className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400" style={{ fontWeight: 800 }}>{section.title}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-800">{section.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-[1fr_0.8fr]">
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
+                  <p className="text-sm text-indigo-950" style={{ fontWeight: 800 }}>Conversación sugerida</p>
+                  <p className="mt-2 text-sm leading-relaxed text-indigo-900">
+                    Presenta la iniciativa como una hipótesis ordenada, no como una solución cerrada. Pide feedback sobre prioridad, restricciones y qué evidencia conviene buscar primero.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>Decisión que quieres abrir</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{pendingValue(form.decisionRequested)}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap justify-end gap-3">
+                <button onClick={() => setShowProposalOnePager(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 700 }}>Cerrar</button>
+                <button onClick={() => { void navigator.clipboard.writeText(analysisText); }} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 700 }}><Copy size={14} className="mr-2 inline" />Copiar propuesta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPromptPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
+          <div className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-800 bg-[#151515] shadow-2xl">
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-400" style={{ fontWeight: 800 }}>Vista previa del prompt</p>
+                <h2 className="mt-1 text-base text-white" style={{ fontWeight: 800 }}>Prompt para PPT/Gamma/Canva</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={copyPptPrompt} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-white hover:bg-white/15" style={{ fontWeight: 700 }}>
+                  <Copy size={14} className="mr-1 inline" />{copiedAction === 'ppt' ? 'Copiado' : 'Copiar'}
+                </button>
+                <button onClick={() => setShowPromptPreview(false)} className="rounded-xl p-2 text-slate-400 hover:bg-white/10" aria-label="Cerrar prompt">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[70vh] overflow-auto p-6">
+              <pre className="whitespace-pre-wrap font-mono text-sm leading-7 text-white">{pptPrompt}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPendingWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-amber-50 p-2 text-amber-600"><AlertCircle size={18} /></div>
+              <div>
+                <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>Feedback del sponsor pendiente</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Puedes avanzar a Step 1 y seguir trabajando. Todavía no has registrado el resultado del feedback del sponsor o líder; cuando lo tengas, súbelo para ajustar la validación y mantener la iniciativa alineada al negocio.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap justify-end gap-3">
+              <button onClick={() => { setShowPendingWarning(false); openAlignmentCard(); }} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Registrar feedback ahora</button>
+              <button onClick={() => { setShowPendingWarning(false); void goToStep1({ alignmentStatus: 'pending', alignmentAdvancedPending: true, leaderFeedbackStatus: form.leaderFeedbackStatus ?? 'pending' }); }} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Avanzar a Step 1</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <MentorVirtualPanel open={showIAPanel} onClose={() => setShowIAPanel(false)} context="Paso 0 · Propuesta para líder" feedback={IA_FEEDBACK} loading={iaLoading} />
+      {showMentorModal && <MentorSupportModal onClose={() => setShowMentorModal(false)} context="Paso 0 · Propuesta para líder" mentorCredits={project.mentorCredits ?? 3} onOpenIA={() => { setShowMentorModal(false); openIA(); }} />}
     </div>
   );
 }
