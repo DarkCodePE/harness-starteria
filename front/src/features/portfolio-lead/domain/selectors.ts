@@ -25,10 +25,13 @@ import type {
   PortfolioLeadState,
   PortfolioLeadSummary,
   PortfolioNextAction,
+  PortfolioStrategicOverviewModel,
   PortfolioImportantChangeCard,
   PortfolioPendingDecisionRow,
   PortfolioRecentActivityItem,
   ReadyToActivateChallengeCard,
+  StrategicObjectiveChallengeRow,
+  StrategicObjectiveFrontCard,
   StrategicFrontCardModel,
   StrategicFrontFocusRecommendation,
   StrategicFrontsSummary,
@@ -496,6 +499,13 @@ export function getAttentionQueue(state: PortfolioLeadState): PortfolioAttention
   };
 
   getPortfolioAlerts(state).forEach(alert => {
+    const challenge = alert.challengeId ? state.challenges.find(item => item.id === alert.challengeId) : null;
+    const initiative = alert.initiativeId ? state.initiatives.find(item => item.id === alert.initiativeId) : null;
+    const front = alert.frontId ? state.strategicFronts.find(item => item.id === alert.frontId) : challenge
+      ? state.strategicFronts.find(item => item.id === challenge.strategicFrontId)
+      : initiative
+        ? state.strategicFronts.find(item => item.id === initiative.strategicFrontId)
+        : null;
     const iconKey = alert.type === 'activation'
       ? 'rocket'
       : alert.type === 'coverage'
@@ -524,6 +534,24 @@ export function getAttentionQueue(state: PortfolioLeadState): PortfolioAttention
       actionLabel: alert.actionLabel ?? 'Revisar',
       actionPath: alert.actionPath,
       contextLabel: alert.contextLabel,
+      frontName: front?.name,
+      challengeName: challenge?.name,
+      initiativeName: initiative?.name,
+      alertType: alert.type === 'blocker'
+        ? 'bloqueo'
+        : alert.type === 'decision'
+          ? 'decision'
+          : alert.type === 'coverage'
+            ? 'baja_cobertura'
+            : alert.type === 'stakeholder'
+              ? 'sin_owner'
+              : 'activacion',
+      severity: alert.tone === 'rose' || alert.type === 'blocker'
+        ? 'Alta'
+        : alert.tone === 'amber' || alert.tone === 'violet'
+          ? 'Media'
+          : 'Baja',
+      recommendedAction: alert.recommendedAction ?? alert.description,
     });
   });
 
@@ -538,6 +566,11 @@ export function getAttentionQueue(state: PortfolioLeadState): PortfolioAttention
       actionLabel: card.actionLabel,
       actionPath: card.actionPath,
       contextLabel: card.frontName,
+      frontName: card.frontName,
+      challengeName: card.name,
+      alertType: 'activacion',
+      severity: 'Media',
+      recommendedAction: 'Activar el reto para que el frente empiece a recibir trabajo visible.',
     });
   });
 
@@ -552,6 +585,12 @@ export function getAttentionQueue(state: PortfolioLeadState): PortfolioAttention
       actionLabel: card.actionLabel,
       actionPath: card.actionPath,
       contextLabel: card.frontName,
+      frontName: card.frontName,
+      challengeName: card.challengeName,
+      initiativeName: card.initiativeName,
+      alertType: 'decision',
+      severity: card.urgency === 'Alta' ? 'Alta' : 'Media',
+      recommendedAction: card.suggestedRoute,
     });
   });
 
@@ -569,6 +608,10 @@ export function getAttentionQueue(state: PortfolioLeadState): PortfolioAttention
         actionLabel: card.actionLabel,
         actionPath: card.actionPath,
         contextLabel: card.areaLabel,
+        frontName: card.name,
+        alertType: 'baja_cobertura',
+        severity: card.coverageStatus === 'sin_cobertura' ? 'Alta' : 'Media',
+        recommendedAction: card.nextActionDescription,
       });
     });
 
@@ -656,6 +699,30 @@ function getFrontProgressEstimate(front: StrategicFront, challenges: Challenge[]
   score -= Math.min(blockedInitiatives * 10, 20);
 
   return clamp(Math.round(score), 8, 96);
+}
+
+function getChallengeProgressEstimate(challenge: Challenge, initiatives: Initiative[]) {
+  const relatedInitiatives = getInitiativesByChallengeId(initiatives, challenge.id);
+  if (normalizeChallengeStatus(challenge.status) === 'closed') return 100;
+
+  const visibleScore = challenge.visibleToParticipants ? 24 : 8;
+  const initiativeScore = Math.min(relatedInitiatives.length * 12, 36);
+  const readyScore = relatedInitiatives.some(initiative => isInitiativeReadyForDecision(initiative)) ? 18 : 0;
+  const stepScore = relatedInitiatives.reduce((sum, initiative) => {
+    const stepWeight: Record<string, number> = {
+      'Step 0': 4,
+      'Step 1': 8,
+      'Step 2': 12,
+      'Step 3': 16,
+      'Step 4': 20,
+    };
+    return sum + (stepWeight[initiative.currentStep] ?? 0);
+  }, 0);
+  const blockerPenalty = relatedInitiatives.some(
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
+  ) ? 16 : 0;
+
+  return clamp(Math.round(visibleScore + initiativeScore + Math.min(stepScore, 24) + readyScore - blockerPenalty), 6, 96);
 }
 
 function getFrontExecutiveState(front: StrategicFront, challenges: Challenge[], initiatives: Initiative[]) {
@@ -746,6 +813,351 @@ function getFrontAlertLabels(front: StrategicFront, challenges: Challenge[], ini
   }
 
   return alerts.slice(0, 3);
+}
+
+function getFrontCurrentValue(front: StrategicFront, challenges: Challenge[]) {
+  const visibleMetric = challenges
+    .map(challenge => challenge.currentMetricValue?.trim())
+    .find(value => value && !/sin medici/i.test(value));
+
+  return visibleMetric ?? front.baseline;
+}
+
+function getChallengePeopleCount(challenge: Challenge, initiatives: Initiative[]) {
+  const people = new Set<string>();
+  challenge.selectedPeople.forEach(person => {
+    if (person.value.trim()) people.add(person.value.trim());
+  });
+  challenge.assignedSquad.forEach(person => {
+    if (person.value.trim()) people.add(person.value.trim());
+  });
+  initiatives.forEach(initiative => {
+    initiative.teamMembers.forEach(person => {
+      if (person.trim()) people.add(person.trim());
+    });
+  });
+  return people.size;
+}
+
+function getChallengeOwnerLabel(challenge: Challenge) {
+  const owner = challenge.challengeOwner.trim();
+  if (!owner && challenge.challengeOwnerStatus === 'confirmado') return 'Equipo asignado';
+  if (!owner) return challenge.challengeOwnerStatus === 'definido' ? 'Owner pendiente' : 'Sin owner';
+  return `Owner: ${owner}`;
+}
+
+function getChallengeNextActionLabel(
+  challenge: Challenge,
+  initiatives: Initiative[],
+  blockedInitiative: Initiative | undefined,
+  pendingDecision: Initiative | undefined,
+) {
+  if (blockedInitiative) return 'Revisar bloqueo';
+  if (pendingDecision) return 'Revisar decision';
+  if (!challenge.challengeOwner.trim() || challenge.challengeOwnerStatus !== 'confirmado') return 'Asignar owner';
+  if (!challenge.visibleToParticipants) return 'Activar reto';
+  if (initiatives.length === 0) return 'Importar iniciativas';
+  return 'Ver avance';
+}
+
+function getChallengeSeverity(
+  challenge: Challenge,
+  coverage: ChallengeCoverageStatus,
+  initiatives: Initiative[],
+  progressPercent: number,
+) {
+  const normalizedStatus = normalizeChallengeStatus(challenge.status);
+  const normalizedCoverage = normalizeChallengeCoverageStatus(coverage);
+  const hasBlockedInitiatives = initiatives.some(
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
+  );
+  const hasPendingDecision = getPendingDecisions(initiatives).some(
+    initiative => normalizeInitiativeStatus(initiative.status) !== 'blocked',
+  );
+  const isActiveWithoutOwner = challenge.visibleToParticipants && (!challenge.challengeOwner.trim() || challenge.challengeOwnerStatus !== 'confirmado');
+
+  if (hasBlockedInitiatives || isActiveWithoutOwner || (hasPendingDecision && normalizedStatus === 'pending_decision')) {
+    return 'critical' as const;
+  }
+
+  if (
+    normalizedStatus === 'ready_to_activate'
+    || !challenge.visibleToParticipants
+    || normalizedCoverage === 'partial'
+    || normalizedCoverage === 'needs_reformulation'
+    || challenge.challengeOwnerStatus !== 'confirmado'
+    || progressPercent < 25
+  ) {
+    return 'attention' as const;
+  }
+
+  if (
+    ['sufficient', 'ready_for_decision', 'overlapped'].includes(normalizedCoverage)
+    && initiatives.length > 0
+    && !hasBlockedInitiatives
+  ) {
+    return 'healthy' as const;
+  }
+
+  if (normalizedStatus === 'draft' || initiatives.length === 0) return 'neutral' as const;
+
+  return 'healthy' as const;
+}
+
+function getChallengeAttentionLabel(severity: StrategicObjectiveChallengeRow['severity']) {
+  const labels = {
+    critical: 'Necesita atencion',
+    attention: 'En observacion',
+    healthy: 'Sano',
+    neutral: 'Sin datos suficientes',
+  };
+  return labels[severity];
+}
+
+export function getFrontHealthStatus(
+  front: StrategicFront,
+  challenges: Challenge[],
+  initiatives: Initiative[],
+): StrategicObjectiveFrontCard['healthStatus'] {
+  if (normalizeStrategicFrontStatus(front.status) === 'closed') return 'closed';
+  if (getPendingDecisions(initiatives).length > 0 || normalizeStrategicFrontStatus(front.status) === 'pending_decision') return 'pending_decision';
+  if (
+    initiatives.some(initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker))
+    || challenges.some(challenge => !challenge.visibleToParticipants || challenge.challengeOwnerStatus !== 'confirmado')
+    || challenges.some(challenge => {
+      const coverage = normalizeChallengeCoverageStatus(getChallengeCoverageStatus(challenge, initiatives));
+      return coverage === 'no_coverage' || coverage === 'partial' || coverage === 'needs_reformulation';
+    })
+  ) {
+    return 'requires_attention';
+  }
+  if (challenges.length === 0) return 'definition';
+  return 'tracking';
+}
+
+export function getFrontPriorityScore(
+  front: StrategicFront,
+  challenges: Challenge[],
+  initiatives: Initiative[],
+  progressPercent: number,
+) {
+  const pendingDecisions = getPendingDecisions(initiatives);
+  const blockedInitiatives = initiatives.filter(
+    initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
+  );
+  const challengesWithoutOwner = challenges.filter(challenge => challenge.visibleToParticipants && challenge.challengeOwnerStatus !== 'confirmado');
+  const lowCoverageChallenges = challenges.filter(challenge => {
+    const coverage = normalizeChallengeCoverageStatus(getChallengeCoverageStatus(challenge, initiatives));
+    return coverage === 'no_coverage' || coverage === 'partial' || coverage === 'needs_reformulation';
+  });
+  const readyButInactiveChallenges = challenges.filter(challenge => !challenge.visibleToParticipants || normalizeChallengeStatus(challenge.status) === 'ready_to_activate');
+  const horizonIsNear = front.endDate ? ((new Date(front.endDate).getTime() - Date.now()) / 86400000) <= 45 : false;
+
+  let score = 0;
+  if (blockedInitiatives.length > 0) score += 50;
+  if (pendingDecisions.length > 0) score += 40;
+  if (challengesWithoutOwner.length > 0) score += 35;
+  if (lowCoverageChallenges.length > 0) score += 30;
+  if (blockedInitiatives.length > 0) score += 25;
+  if (normalizeStrategicFrontStatus(front.status) === 'pending_decision') score += 20;
+  if (progressPercent < 35 && horizonIsNear) score += 15;
+  if (readyButInactiveChallenges.length > 0) score += 10;
+
+  return score;
+}
+
+export function sortFrontsByAttention(fronts: StrategicObjectiveFrontCard[]) {
+  const statusOrder: Record<StrategicObjectiveFrontCard['healthStatus'], number> = {
+    requires_attention: 5,
+    pending_decision: 4,
+    tracking: 3,
+    definition: 2,
+    closed: 1,
+  };
+
+  return fronts.sort((left, right) => {
+    if (right.attentionPriorityScore !== left.attentionPriorityScore) {
+      return right.attentionPriorityScore - left.attentionPriorityScore;
+    }
+    if (statusOrder[right.healthStatus] !== statusOrder[left.healthStatus]) {
+      return statusOrder[right.healthStatus] - statusOrder[left.healthStatus];
+    }
+    return right.progressPercent - left.progressPercent;
+  });
+}
+
+export function getFrontAlerts(
+  challengeRows: StrategicObjectiveChallengeRow[],
+  blockersCount: number,
+  pendingDecisionsCount: number,
+  createChallengePath: string,
+) {
+  const alerts: StrategicObjectiveFrontCard['alerts'] = [];
+  const blockedChallenge = challengeRows.find(challenge => challenge.blockerLabel);
+  const decisionChallenge = challengeRows.find(challenge => challenge.pendingDecisionLabel);
+  const lowCoverageChallenge = challengeRows.find(challenge => /sin cobertura|cobertura parcial|reformular/i.test(challenge.coverageLabel));
+  const activationChallenge = challengeRows.find(challenge => challenge.nextActionLabel === 'Activar reto');
+
+  if (blockedChallenge && blockersCount > 0) {
+    alerts.push({
+      id: `blocker-${blockedChallenge.id}`,
+      label: `Bloqueo: ${blockedChallenge.blockerLabel}`,
+      actionLabel: 'Revisar',
+      actionPath: blockedChallenge.actionPath,
+      tone: 'rose',
+    });
+  }
+
+  if (decisionChallenge && pendingDecisionsCount > 0) {
+    alerts.push({
+      id: `decision-${decisionChallenge.id}`,
+      label: `Decision pendiente: ${decisionChallenge.pendingDecisionLabel}`,
+      actionLabel: 'Revisar',
+      actionPath: decisionChallenge.actionPath,
+      tone: 'violet',
+    });
+  }
+
+  if (lowCoverageChallenge) {
+    alerts.push({
+      id: `coverage-${lowCoverageChallenge.id}`,
+      label: `Reto sin cobertura: ${lowCoverageChallenge.name}`,
+      actionLabel: 'Ver reto',
+      actionPath: lowCoverageChallenge.actionPath,
+      tone: 'amber',
+    });
+  }
+
+  if (activationChallenge) {
+    alerts.push({
+      id: `activation-${activationChallenge.id}`,
+      label: `Reto listo para activar: ${activationChallenge.name}`,
+      actionLabel: 'Activar',
+      actionPath: activationChallenge.actionPath || createChallengePath,
+      tone: 'amber',
+    });
+  }
+
+  return alerts.slice(0, 2);
+}
+
+export function getFrontPrimaryAction(card: Pick<StrategicObjectiveFrontCard, 'alerts' | 'healthStatus' | 'challengesCount' | 'viewPath' | 'createChallengePath'>) {
+  if (card.alerts.length > 0) {
+    return { label: 'Revisar alertas', path: card.alerts[0].actionPath };
+  }
+  if (card.challengesCount === 0 || card.healthStatus === 'definition') {
+    return { label: 'Activar reto', path: card.createChallengePath };
+  }
+  if (card.healthStatus === 'tracking') {
+    return { label: 'Mantener seguimiento', path: card.viewPath };
+  }
+  return { label: 'Ver frente', path: card.viewPath };
+}
+
+function getStrategicObjectiveChallengeRows(
+  challenges: Challenge[],
+  initiatives: Initiative[],
+): StrategicObjectiveChallengeRow[] {
+  return challenges.map(challenge => {
+    const relatedInitiatives = getInitiativesByChallengeId(initiatives, challenge.id);
+    const blockedInitiative = relatedInitiatives.find(
+      initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
+    );
+    const pendingDecision = getPendingDecisions(relatedInitiatives).find(
+      initiative => normalizeInitiativeStatus(initiative.status) !== 'blocked',
+    );
+    const coverage = getChallengeCoverageStatus(challenge, initiatives);
+    const progressPercent = getChallengeProgressEstimate(challenge, initiatives);
+    const severity = getChallengeSeverity(challenge, coverage, relatedInitiatives, progressPercent);
+
+    return {
+      id: challenge.id,
+      name: challenge.name,
+      statusLabel: challengeStatusLabel(challenge.status),
+      severity,
+      attentionLabel: getChallengeAttentionLabel(severity),
+      initiativesCount: relatedInitiatives.length,
+      peopleCount: getChallengePeopleCount(challenge, relatedInitiatives),
+      ownerLabel: getChallengeOwnerLabel(challenge),
+      progressPercent,
+      coverageLabel: coverageLabel(coverage),
+      nextActionLabel: getChallengeNextActionLabel(challenge, relatedInitiatives, blockedInitiative, pendingDecision),
+      blockerLabel: blockedInitiative ? blockedInitiative.mainBlocker || blockedInitiative.mainAlert : undefined,
+      pendingDecisionLabel: pendingDecision ? pendingDecision.name : undefined,
+      actionPath: `/portfolio/retos?challengeId=${encodeURIComponent(challenge.id)}`,
+    };
+  }).sort((left, right) => {
+    const severityWeight = { critical: 4, attention: 3, neutral: 2, healthy: 1 };
+    const leftScore = severityWeight[left.severity] + (left.blockerLabel || left.pendingDecisionLabel ? 1 : 0);
+    const rightScore = severityWeight[right.severity] + (right.blockerLabel || right.pendingDecisionLabel ? 1 : 0);
+    if (rightScore !== leftScore) return rightScore - leftScore;
+    return left.progressPercent - right.progressPercent;
+  });
+}
+
+export function getStrategicObjectivesOverviewModel(state: PortfolioLeadState): PortfolioStrategicOverviewModel {
+  const fronts: StrategicObjectiveFrontCard[] = state.strategicFronts.map(front => {
+    const frontChallenges = getChallengesByFrontId(state.challenges, front.id);
+    const frontInitiatives = getInitiativesByFrontId(state.initiatives, front.id);
+    const blockedInitiatives = frontInitiatives.filter(
+      initiative => normalizeInitiativeStatus(initiative.status) === 'blocked' || hasTechnicalBlocker(initiative.mainBlocker),
+    );
+    const pendingDecisions = getPendingDecisions(frontInitiatives);
+    const action = getFrontActionModel(front, frontChallenges, frontInitiatives);
+    const executiveState = getFrontExecutiveState(front, state.challenges, state.initiatives);
+    const progressPercent = getFrontProgressEstimate(front, state.challenges, frontInitiatives);
+    const challengeRows = getStrategicObjectiveChallengeRows(frontChallenges, state.initiatives);
+    const healthStatus = getFrontHealthStatus(front, frontChallenges, frontInitiatives);
+    const attentionPriorityScore = getFrontPriorityScore(front, frontChallenges, frontInitiatives, progressPercent);
+    const viewPath = '/portfolio/frentes-estrategicos';
+    const createChallengePath = `/portfolio/retos?frontId=${encodeURIComponent(front.id)}`;
+    const importPath = `/portfolio/iniciar?mode=import&frontId=${encodeURIComponent(front.id)}`;
+    const reportPath = `/portfolio/reportes?frontId=${encodeURIComponent(front.id)}`;
+    const alerts = getFrontAlerts(challengeRows, blockedInitiatives.length, pendingDecisions.length, createChallengePath);
+    const primaryAction = getFrontPrimaryAction({
+      alerts,
+      healthStatus,
+      challengesCount: frontChallenges.length,
+      viewPath,
+      createChallengePath,
+    });
+
+    return {
+      id: front.id,
+      name: front.name,
+      strategicObjective: front.strategicObjective,
+      mainKpi: front.mainKpi,
+      baseline: front.baseline,
+      currentValue: getFrontCurrentValue(front, frontChallenges),
+      target: front.target,
+      progressPercent,
+      statusLabel: executiveState.label,
+      statusTone: executiveState.tone,
+      healthStatus,
+      attentionPriorityScore,
+      sponsor: front.sponsor,
+      horizon: front.horizon,
+      challengesCount: frontChallenges.length,
+      initiativesCount: frontInitiatives.length,
+      blockersCount: blockedInitiatives.length,
+      pendingDecisionsCount: pendingDecisions.length,
+      nextActionLabel: action.label,
+      nextActionDescription: action.description,
+      primaryActionLabel: primaryAction.label,
+      primaryActionPath: primaryAction.path,
+      alerts,
+      viewPath,
+      createChallengePath,
+      importPath,
+      reportPath,
+      hiddenChallengesCount: Math.max(challengeRows.length - 2, 0),
+      challenges: challengeRows.slice(0, 2),
+    };
+  });
+
+  return {
+    fronts: sortFrontsByAttention(fronts),
+  };
 }
 
 function getHomeSummaryCards(state: PortfolioLeadState): PortfolioHomeSummaryCard[] {
@@ -1017,15 +1429,15 @@ function getHomeRecentActivity(state: PortfolioLeadState): PortfolioRecentActivi
 export function getPortfolioHomeExperienceModel(state: PortfolioLeadState, firstName = 'Valeria'): PortfolioHomeExperienceModel {
   return {
     banner: {
-      title: `Hola, ${firstName}. Este es el estado de tus frentes estratégicos.`,
-      subtitle: 'Revisa el avance de cada objetivo, detecta bloqueos y decide dónde intervenir primero.',
+      title: `Hola, ${firstName}. Así avanzan tus objetivos estratégicos.`,
+      subtitle: 'Revisa avance, cobertura, bloqueos y decisiones por cada frente estratégico.',
       actions: {
         primary: { label: 'Crear nuevo frente', path: '/portfolio/frentes-estrategicos', tone: 'primary' },
-        secondary: { label: 'Revisar decisiones', path: '/portfolio/decisiones', tone: 'secondary' },
-        tertiary: { label: 'Generar reporte', path: '/portfolio/reportes', tone: 'ghost' },
+        secondary: { label: 'Importar iniciativas existentes', path: '/portfolio/iniciar?mode=import', tone: 'secondary' },
       },
     },
     summaryCards: getHomeSummaryCards(state),
+    strategicOverview: getStrategicObjectivesOverviewModel(state),
     strategicFronts: getHomeFrontCards(state),
     importantChanges: getHomeImportantChanges(state),
     pendingDecisions: getHomePendingDecisions(state),

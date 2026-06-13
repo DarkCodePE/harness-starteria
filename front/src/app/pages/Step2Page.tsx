@@ -12,6 +12,7 @@ import { EvidenceUploader } from '../components/EvidenceUploader';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
 import { StepWorkspaceShell } from '../components/layout/StepWorkspaceShell';
 import * as stepService from '../services/stepService';
+import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 
 type ModuleId = 'A' | 'B' | 'C' | 'D';
 
@@ -807,6 +808,9 @@ export function Step2Page() {
       }
     >
         {mobileBackButton}
+          <div className="mb-5">
+            <LeaderFeedbackStatusCard project={project} updateProject={updateProject} variant="step2" compact />
+          </div>
           {activeModule !== 'A' && (
             <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-5 text-xs text-indigo-700">
               <p style={{ fontWeight: 600 }}>Ancla del reto validado</p>

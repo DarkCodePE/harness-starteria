@@ -31,25 +31,27 @@ export interface InheritedChallengeContext {
 }
 
 export const FRAME_OPTIONS: Step0Option<Exclude<Step0Frame, ''>>[] = [
-  { value: 'correccion', label: 'Quiero corregir una friccion o problema' },
+  { value: 'correccion', label: 'Quiero corregir una fricción o problema' },
   { value: 'crecimiento', label: 'Quiero capturar una oportunidad' },
-  { value: 'exploracion', label: 'Quiero explorar una apuesta o reducir una incertidumbre' },
+  { value: 'exploracion', label: 'Quiero explorar una apuesta o reducir incertidumbre' },
+  { value: 'mejora_proceso', label: 'Quiero mejorar un proceso existente' },
 ];
 
 export const CLARITY_OPTIONS: Step0Option<Exclude<Step0ClarityLevel, ''>>[] = [
-  { value: 'observacion_inicial', label: 'Tengo una observacion inicial' },
-  { value: 'algunas_senales', label: 'Ya reuni algunas senales' },
-  { value: 'hipotesis_clara', label: 'Tengo una hipotesis bastante clara' },
-  { value: 'idea_pensada', label: 'Ya tengo una idea o solucion pensada' },
+  { value: 'observacion_inicial', label: 'Solo tengo una observación inicial' },
+  { value: 'algunas_senales', label: 'Tengo señales, pero falta ordenarlas' },
+  { value: 'hipotesis_clara', label: 'Tengo una hipótesis clara' },
+  { value: 'idea_pensada', label: 'Ya tengo una solución pensada' },
+  { value: 'decision_por_destrabar', label: 'Tengo una decisión que necesito destrabar' },
 ];
 
 export const PRIMARY_OBJECTIVE_OPTIONS: Step0Option<Exclude<Step0PrimaryObjective, ''>>[] = [
   { value: 'eficiencia', label: 'Eficiencia, tiempos o costos' },
   { value: 'experiencia_cliente', label: 'Experiencia del cliente' },
-  { value: 'ingresos', label: 'Ingresos, crecimiento o adopcion' },
+  { value: 'ingresos', label: 'Ingresos, crecimiento o adopción' },
   { value: 'riesgo', label: 'Riesgo o cumplimiento' },
-  { value: 'productividad', label: 'Productividad o clima interno' },
-  { value: 'aprendizaje', label: 'Aprendizaje para decidir una apuesta' },
+  { value: 'productividad', label: 'Productividad interna' },
+  { value: 'aprendizaje', label: 'Aprendizaje para decidir' },
   { value: 'otro', label: 'Otro' },
 ];
 
@@ -69,58 +71,68 @@ export const ADDITIONAL_STAKEHOLDER_OPTIONS: Step0Option<Exclude<Step0Additional
 
 export const EVIDENCE_TYPE_OPTIONS: Step0Option<Exclude<Step0EvidenceType, ''>>[] = [
   { value: 'datos', label: 'Datos internos' },
-  { value: 'testimonios', label: 'Testimonios o feedback directo' },
-  { value: 'benchmark', label: 'Referencias o comparaciones externas' },
-  { value: 'hipotesis', label: 'Aun es una hipotesis por validar' },
-  { value: 'otro', label: 'Otro respaldo' },
+  { value: 'feedback_clientes', label: 'Feedback de clientes' },
+  { value: 'feedback_equipo', label: 'Feedback del equipo' },
+  { value: 'reclamos_tickets', label: 'Reclamos o tickets' },
+  { value: 'demoras', label: 'Demoras observadas' },
+  { value: 'retrabajo', label: 'Retrabajo visible' },
+  { value: 'benchmark', label: 'Comparación externa' },
+  { value: 'hipotesis', label: 'Aún es una hipótesis' },
+  { value: 'sin_senales', label: 'No tengo señales claras todavía' },
+  { value: 'otro', label: 'Otro' },
 ];
 
 export const FRAME_COPY: Record<Exclude<Step0Frame, ''>, { noun: string; action: string; helper: string }> = {
   correccion: {
     noun: 'problema',
     action: 'corregir',
-    helper: 'Describe la friccion concreta, donde se rompe hoy y por que vale la pena intervenirla.',
+    helper: 'Describe la fricción concreta, dónde se rompe hoy y por qué vale la pena investigarla.',
   },
   crecimiento: {
     noun: 'oportunidad',
     action: 'capturar',
-    helper: 'Describe la oportunidad visible, la ventana que se abre y por que conviene moverla ahora.',
+    helper: 'Describe la oportunidad visible, la ventana que se abre y por qué conviene investigarla ahora.',
   },
   exploracion: {
     noun: 'apuesta',
     action: 'explorar',
-    helper: 'Describe la incertidumbre o apuesta, que estas viendo y que necesitas aprender antes de comprometerte.',
+    helper: 'Describe la incertidumbre o apuesta, qué estás viendo y qué necesitas aprender antes de comprometerte.',
+  },
+  mejora_proceso: {
+    noun: 'proceso',
+    action: 'mejorar',
+    helper: 'Describe el proceso actual, qué podría mejorar y por qué vale la pena revisarlo.',
   },
 };
 
 export const OBJECTIVE_COPY: Record<Exclude<Step0PrimaryObjective, ''>, { helper: string; consequence: string }> = {
   eficiencia: {
-    helper: 'Ayuda a aterrizar tiempos, costos, capacidad o reprocesos que hoy justifican mover esta iniciativa.',
-    consequence: 'Explica que ineficiencia, tiempo o costo seguiria creciendo si esto no se mueve pronto.',
+    helper: 'Ayuda a conectar la iniciativa con tiempos, costos, capacidad o retrabajo.',
+    consequence: 'Explica qué ineficiencia, tiempo o costo seguiría creciendo si esto no se mueve pronto.',
   },
   experiencia_cliente: {
     helper: 'Ayuda a conectar la iniciativa con fricciones del cliente, calidad de servicio o experiencia percibida.',
-    consequence: 'Explica como se seguiria deteriorando la experiencia o la relacion con el cliente si se deja igual.',
+    consequence: 'Explica cómo se seguiría deteriorando la experiencia o relación con el cliente si se deja igual.',
   },
   ingresos: {
-    helper: 'Ayuda a vincular la iniciativa con crecimiento, conversion, adopcion o captura de valor.',
-    consequence: 'Explica que oportunidad comercial o de adopcion se seguiria perdiendo en los proximos 3 meses.',
+    helper: 'Ayuda a vincular la iniciativa con crecimiento, conversión, adopción o captura de valor.',
+    consequence: 'Explica qué oportunidad comercial o de adopción se seguiría perdiendo.',
   },
   riesgo: {
     helper: 'Ayuda a enfocar riesgo operativo, regulatorio, reputacional o de cumplimiento.',
-    consequence: 'Explica que riesgo seguiria abierto o podria escalar si no se interviene a tiempo.',
+    consequence: 'Explica qué riesgo seguiría abierto o podría escalar si no se atiende.',
   },
   productividad: {
-    helper: 'Ayuda a aterrizar productividad, carga operativa, coordinacion o clima interno.',
-    consequence: 'Explica que sobrecarga, retrabajo o desgaste seguiria afectando al equipo si esto se posterga.',
+    helper: 'Ayuda a aterrizar productividad, carga operativa, coordinación o dinámica interna.',
+    consequence: 'Explica qué sobrecarga, retrabajo o desgaste seguiría afectando al equipo.',
   },
   aprendizaje: {
-    helper: 'Ayuda a justificar por que aprender ahora vale mas que esperar a tener certeza perfecta.',
-    consequence: 'Explica que decision seguiria postergada o que incertidumbre seguiria abierta si no se aprende pronto.',
+    helper: 'Ayuda a justificar por qué aprender ahora vale más que esperar certeza perfecta.',
+    consequence: 'Explica qué decisión seguiría postergada o qué incertidumbre seguiría abierta.',
   },
   otro: {
-    helper: 'Ayuda a explicar con tus palabras que objetivo principal buscas mover con esta iniciativa.',
-    consequence: 'Explica cual seria la consecuencia principal de no moverla en el corto plazo.',
+    helper: 'Ayuda a explicar con tus palabras qué objetivo principal buscas mover.',
+    consequence: 'Explica cuál sería la consecuencia principal de no hacer nada.',
   },
 };
 
@@ -160,6 +172,7 @@ export function legacyOriginFrom(frame: Step0Frame, clarity: Step0ClarityLevel):
   if (frame === 'correccion') return 'problema';
   if (frame === 'crecimiento') return 'oportunidad';
   if (frame === 'exploracion') return 'explorando';
+  if (frame === 'mejora_proceso') return 'problema';
   return '';
 }
 
@@ -249,6 +262,39 @@ export function normalizeStep0Data(input: Partial<Step0Data> | undefined, projec
     deliveryEmail: input?.deliveryEmail ?? userEmail,
     additionalStakeholders: input?.additionalStakeholders ?? '',
     additionalStakeholdersDetail: input?.additionalStakeholdersDetail ?? '',
+    alignmentStatus: input?.alignmentStatus,
+    alignmentPerson: input?.alignmentPerson ?? '',
+    alignmentRoleArea: input?.alignmentRoleArea ?? '',
+    alignmentDate: input?.alignmentDate ?? '',
+    alignmentFeedback: input?.alignmentFeedback ?? '',
+    alignmentInitialDecision: input?.alignmentInitialDecision ?? '',
+    alignmentEvidenceType: input?.alignmentEvidenceType ?? '',
+    alignmentEvidenceNote: input?.alignmentEvidenceNote ?? '',
+    alignmentAdvancedPending: input?.alignmentAdvancedPending ?? false,
+    leaderFeedbackStatus: input?.leaderFeedbackStatus ?? (
+      input?.alignmentStatus === 'scheduled'
+        ? 'meeting_scheduled'
+        : input?.alignmentStatus === 'feedback_received'
+          ? 'feedback_received'
+          : input?.alignmentStatus === 'aligned'
+            ? 'approved_to_investigate'
+            : input?.alignmentStatus === 'aligned_with_observations'
+              ? 'aligned_with_conditions'
+              : input?.alignmentStatus === 'not_aligned'
+                ? 'not_prioritized'
+                : input?.alignmentStatus === 'unknown'
+                  ? 'pending'
+                  : undefined
+    ),
+    leaderFeedbackPerson: input?.leaderFeedbackPerson ?? input?.alignmentPerson ?? '',
+    leaderFeedbackRoleArea: input?.leaderFeedbackRoleArea ?? input?.alignmentRoleArea ?? '',
+    leaderFeedbackDate: input?.leaderFeedbackDate ?? input?.alignmentDate ?? '',
+    leaderFeedbackComment: input?.leaderFeedbackComment ?? input?.alignmentFeedback ?? '',
+    leaderFeedbackInitialDecision: input?.leaderFeedbackInitialDecision ?? input?.alignmentInitialDecision ?? '',
+    leaderFeedbackEvidenceType: input?.leaderFeedbackEvidenceType ?? input?.alignmentEvidenceType ?? '',
+    leaderFeedbackEvidenceNote: input?.leaderFeedbackEvidenceNote ?? input?.alignmentEvidenceNote ?? '',
+    leaderFeedbackTopic: input?.leaderFeedbackTopic ?? '',
+    leaderFeedbackClosedPending: input?.leaderFeedbackClosedPending ?? false,
   };
 }
 
@@ -264,7 +310,7 @@ export function syncLegacyFields(data: Step0Data): Step0Data {
     respaldo: data.evidenceType ?? '',
     impacta: impactList.length > 0 ? impactList : data.impacta,
     parteProceso: mapVisibleMomentToLegacyStage(data.visibleMoment, data.parteProceso),
-    quienEscuchar: data.mode === 'linked_to_challenge' ? data.additionalStakeholdersDetail ?? '' : data.quienEscuchar,
+    quienEscuchar: data.mode === 'linked_to_challenge' ? data.quienEscuchar || data.additionalStakeholdersDetail || '' : data.quienEscuchar,
     siMinimo: supportList.length > 0 ? supportList : data.siMinimo,
   };
 }
@@ -292,93 +338,78 @@ export function getDynamicDescriptionLabel(frame: Step0Frame, mode: Step0Mode) {
       case 'crecimiento':
         return 'Cuentalo con tus palabras: que estas viendo y por que esta oportunidad merece abrirse dentro de este reto?';
       case 'exploracion':
-        return 'Cuentalo con tus palabras: que incertidumbre o apuesta estas viendo y por que merece abrirse dentro de este reto?';
+        return 'Cuéntalo con tus palabras: ¿qué incertidumbre o apuesta estás viendo y por qué merece abrirse dentro de este reto?';
+      case 'mejora_proceso':
+        return '¿Qué proceso quieres mejorar y qué está pasando hoy?';
       default:
-        return 'Cuentalo con tus palabras: que estas viendo y por que esta iniciativa merece abrirse dentro de este reto?';
+        return '¿Qué está pasando hoy?';
     }
   }
 
   switch (frame) {
     case 'crecimiento':
-      return 'Cuentamelo con tus palabras: que oportunidad ves y que quieres mover?';
+      return '¿Qué está pasando hoy?';
     case 'exploracion':
-      return 'Cuentamelo con tus palabras: que quieres explorar o que incertidumbre quieres reducir?';
+      return '¿Qué está pasando hoy?';
+    case 'mejora_proceso':
+      return '¿Qué está pasando hoy?';
     default:
-      return 'Cuentamelo con tus palabras: que esta pasando, que oportunidad ves o que quieres validar?';
+      return '¿Qué está pasando hoy?';
   }
 }
 
 export function getDescriptionHelper(frame: Step0Frame, objective: Step0PrimaryObjective) {
-  const frameHelper = frame ? FRAME_COPY[frame].helper : 'Describe con ejemplos o senales reales lo que hoy estas viendo.';
-  const objectiveHelper = objective ? OBJECTIVE_COPY[objective].helper : 'Si puedes, conecta esta descripcion con el objetivo principal que buscas mover.';
+  const frameHelper = frame ? FRAME_COPY[frame].helper : 'Describe el problema, oportunidad o apuesta que quieres abordar. No necesitas tenerlo perfecto.';
+  const objectiveHelper = objective ? OBJECTIVE_COPY[objective].helper : 'Si puedes, conecta esta descripción con el objetivo principal que buscas mover.';
   return `${frameHelper} ${objectiveHelper}`;
 }
 
 export function getConsequenceHelper(objective: Step0PrimaryObjective) {
-  return objective ? OBJECTIVE_COPY[objective].consequence : 'Explica la consecuencia principal de dejar esto igual durante los proximos 3 meses.';
+  return objective ? OBJECTIVE_COPY[objective].consequence : 'Describe la consecuencia principal: tiempo perdido, dinero, riesgo, clientes, desgaste del equipo o pérdida de oportunidad.';
 }
 
 export function getSummaryTitle(mode: Step0Mode) {
   return mode === 'linked_to_challenge'
     ? 'Base para justificar esta iniciativa dentro del reto ya priorizado'
-    : 'Base para abrir conversacion y conseguir respaldo inicial';
+    : 'Base para abrir conversación y conseguir respaldo inicial';
 }
 
 export function getSummaryBlocks(data: Step0Data, inherited: InheritedChallengeContext) {
   if (data.mode === 'linked_to_challenge') {
     return [
-      { label: 'Parte del reto que ataca', value: data.specificChallengePart || 'Aterriza que parte concreta del reto buscas mover con esta iniciativa.' },
-      { label: 'Conexion con objetivo o KPI', value: data.challengeGoalConnection || 'Explica como esta iniciativa se conecta con el objetivo o KPI del reto.' },
-      { label: 'Por que merece atencion ahora', value: data.whyNowText || 'Aterriza por que conviene mover esta iniciativa ahora dentro del reto.' },
-      { label: 'Evidencia o senales actuales', value: data.currentEvidence || 'Describe evidencia, senales o referencias que hoy respaldan abrir esta iniciativa.' },
-      { label: 'Senal para seguir avanzando', value: data.validationSignal || 'Aclara que te haria pensar que vale la pena seguir avanzando dentro del reto.' },
-      { label: 'Apoyo del sponsor u owner', value: data.supportNeeded || 'Especifica el destrabe minimo que necesitas del sponsor o owner ya definido.' },
-      { label: 'Decision puntual solicitada', value: data.decisionRequested || 'Explica que decision puntual estas buscando en esta etapa.' },
+      { label: 'Qué quiere mover', value: data.specificChallengePart || data.quePasaQueQuieres || 'Falta aclarar qué quieres mover.' },
+      { label: 'Por qué importa', value: data.whyNowText || 'Falta conectar esto con una prioridad de negocio.' },
+      { label: 'A quién impacta', value: data.impactWho || data.impacta?.join(', ') || 'Falta indicar a quién impacta.' },
+      { label: 'Qué señales existen', value: data.currentEvidence || data.evidenceType || 'Falta aclarar qué señales tienes hoy.' },
+      { label: 'Qué falta confirmar', value: data.validationSignal || 'Falta definir qué necesitas confirmar en Step 1.' },
+      { label: 'Quién debería escucharlo', value: data.quienEscuchar || data.additionalStakeholdersDetail || inherited.items.find(item => item.label === 'Owner del reto')?.value || 'Falta indicar quién debería escuchar esta propuesta.' },
+      { label: 'Qué decisión busca', value: data.decisionRequested || 'Falta definir qué decisión quieres pedir.' },
     ];
   }
 
   return [
-    { label: 'Que quiere mover', value: data.quePasaQueQuieres || 'Describe que quieres mover o validar con esta iniciativa.' },
-    { label: 'Por que importa', value: data.whyNowText || 'Explica por que conviene mover esto ahora.' },
-    { label: 'A quien impacta', value: data.impactWho || 'Aclara a quien impacta de forma mas directa.' },
-    { label: 'Que respaldo existe', value: data.currentEvidence || 'Resume la evidencia o senales que hoy sostienen la iniciativa.' },
-    { label: 'Quien deberia escucharlo', value: data.quienEscuchar || 'Identifica el area, lider o sponsor que deberia escuchar esto primero.' },
-    { label: 'Que apoyo minimo necesita', value: data.supportNeeded || 'Define el destrabe minimo que necesitas para avanzar.' },
-    { label: 'Decision que buscas', value: data.decisionRequested || 'Explica que decision estas buscando en esta etapa.' },
+    { label: 'Qué quiere mover', value: data.quePasaQueQuieres || 'Falta aclarar qué quieres mover.' },
+    { label: 'Por qué importa', value: data.whyNowText || 'Falta conectar esto con una prioridad de negocio.' },
+    { label: 'A quién impacta', value: data.impactWho || data.impacta?.join(', ') || 'Falta indicar a quién impacta.' },
+    { label: 'Qué señales existen', value: data.currentEvidence || data.evidenceType || 'Falta aclarar qué señales tienes hoy.' },
+    { label: 'Qué falta confirmar', value: data.validationSignal || 'Falta definir qué necesitas confirmar en Step 1.' },
+    { label: 'Quién debería escucharlo', value: data.quienEscuchar || 'Falta indicar quién debería escuchar esta propuesta.' },
+    { label: 'Qué decisión busca', value: data.decisionRequested || 'Falta definir qué decisión quieres pedir.' },
   ];
 }
 
 export function getRequiredFieldKeys(mode: Step0Mode, data: Step0Data) {
   const base = [
-    'initiativeTitle',
-    'rolArea',
     'initiativeFrame',
     'primaryObjective',
-    'clarityLevel',
     'quePasaQueQuieres',
     'impactWho',
-    'visibleMoment',
     'whyNowText',
-    'ifNotNowConsequence',
-    'currentEvidence',
-    'validationSignal',
-    'supportNeeded',
+    'evidenceType',
+    'quienEscuchar',
     'decisionRequested',
-    'deliveryEmail',
   ] as Array<keyof Step0Data>;
-
-  if (mode === 'linked_to_challenge') {
-    const linked = [
-      'specificChallengePart',
-      'challengeGoalConnection',
-      'linkedContributionType',
-      'additionalStakeholders',
-    ] as Array<keyof Step0Data>;
-    if (data.additionalStakeholders === 'si') linked.push('additionalStakeholdersDetail');
-    return [...base, ...linked];
-  }
-
-  return [...base, 'quienEscuchar', 'sponsorInterestReason'] as Array<keyof Step0Data>;
+  return base;
 }
 
 export function isFilled(value: unknown) {

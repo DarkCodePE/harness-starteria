@@ -1,6 +1,8 @@
+import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '../.env'), override: false });
 
 const nodeEnv = process.env.NODE_ENV || 'development';
 const jwtSecret = process.env.JWT_SECRET ?? '';

@@ -25,6 +25,45 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const DUMMY_PASSWORD_HASH =
   '$2b$12$bYvQg0n/JmnjjzZw9Vvj7uqQfL5WvB5kEcc0iH6m8YwJ4gI8xT0Xm';
 
+const DEMO_PASSWORD = 'demo123';
+const DEMO_USERS: Record<string, SafeUser> = {
+  'participante@starteria.io': {
+    id: 'demo-participante',
+    name: 'Ana Rodriguez',
+    email: 'participante@starteria.io',
+    role: 'participante',
+    initials: 'AR',
+  },
+  'mentor@starteria.io': {
+    id: 'demo-mentor',
+    name: 'Carlos Mendez',
+    email: 'mentor@starteria.io',
+    role: 'mentor',
+    initials: 'CM',
+  },
+  'admin@starteria.io': {
+    id: 'demo-admin',
+    name: 'Laura Perez',
+    email: 'admin@starteria.io',
+    role: 'admin',
+    initials: 'LP',
+  },
+  'portfolio@starteria.io': {
+    id: 'demo-portfolio',
+    name: 'Valeria Castro',
+    email: 'portfolio@starteria.io',
+    role: 'viewer',
+    initials: 'VC',
+  },
+  'sponsor@starteria.io': {
+    id: 'demo-sponsor',
+    name: 'Roberto Jimenez',
+    email: 'sponsor@starteria.io',
+    role: 'sponsor',
+    initials: 'RJ',
+  },
+};
+
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -37,6 +76,39 @@ interface SafeUser {
   role: string;
   initials: string;
   cohort?: string | null;
+}
+
+function isDevelopment(): boolean {
+  return process.env.NODE_ENV !== 'production';
+}
+
+function isLikelyDatabaseConnectionError(err: unknown): boolean {
+  const code = (err as { code?: unknown })?.code;
+  const message = String((err as { message?: unknown })?.message ?? '').toLowerCase();
+
+  return (
+    code === 'P1000' ||
+    code === 'P1001' ||
+    code === 'P1002' ||
+    code === 'P1017' ||
+    message.includes("can't reach database") ||
+    message.includes('connect') ||
+    message.includes('connection')
+  );
+}
+
+function issueDevTokenPair(user: SafeUser): AuthTokens {
+  const payload: TokenPayload = {
+    sub: user.id,
+    role: user.role as TokenPayload['role'],
+    email: user.email,
+    ...(user.cohort ? { cohort: user.cohort } : {}),
+  };
+
+  return {
+    accessToken: generateAccessToken(payload),
+    refreshToken: generateRefreshToken(),
+  };
 }
 
 function computeInitials(name: string): string {
@@ -63,11 +135,30 @@ export class AuthService {
       throw AppError.registerRoleForbidden();
     }
 
-    const existing = await this.prisma.user.findUnique({
-      where: { email: data.email.toLowerCase() },
-    });
-    if (existing) {
-      throw AppError.emailTaken();
+    let existing;
+    try {
+      existing = await this.prisma.user.findUnique({
+        where: { email: data.email.toLowerCase() },
+      });
+      if (existing) {
+        throw AppError.emailTaken();
+      }
+    } catch (err) {
+      if (isDevelopment() && isLikelyDatabaseConnectionError(err)) {
+        const user: SafeUser = {
+          id: `demo-${data.email.toLowerCase()}`,
+          name: data.name,
+          email: data.email.toLowerCase(),
+          role: data.role,
+          initials: computeInitials(data.name),
+        };
+
+        logger.warn({ email: user.email }, 'Database unavailable; using development auth fallback for registration');
+
+        return { user, tokens: issueDevTokenPair(user) };
+      }
+
+      throw err;
     }
 
     const passwordHash = await hashPassword(data.password);
@@ -108,9 +199,20 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<{ user: SafeUser; tokens: AuthTokens }> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    let user;
+    try {
+      user = await this.prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+    } catch (err) {
+      const demoUser = DEMO_USERS[email.toLowerCase()];
+      if (isDevelopment() && isLikelyDatabaseConnectionError(err) && demoUser && password === DEMO_PASSWORD) {
+        logger.warn({ email: demoUser.email }, 'Database unavailable; using development auth fallback for login');
+        return { user: demoUser, tokens: issueDevTokenPair(demoUser) };
+      }
+
+      throw err;
+    }
 
     if (!user) {
       // Timing-oracle guard: run a dummy bcrypt compare so the response time
@@ -378,6 +480,10 @@ export class AuthService {
    * Get user profile by ID (without sensitive fields).
    */
   async getUserById(userId: string): Promise<SafeUser | null> {
+    if (isDevelopment() && userId.startsWith('demo-')) {
+      return Object.values(DEMO_USERS).find((user) => user.id === userId) ?? null;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });

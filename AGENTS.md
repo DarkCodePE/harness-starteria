@@ -38,3 +38,11 @@ La lógica detallada del producto está en:
 - docs/starteria-step-logic.md
 - docs/starteria-ux-writing.md
 - docs/starteria-review-rules.md
+
+## Reglas técnicas de texto y codificación
+- Todos los archivos de texto deben mantenerse en UTF-8.
+- No introducir emojis ni símbolos decorativos dentro de strings visibles en la UI.
+- No usar caracteres Unicode decorativos hardcodeados en labels, títulos, badges o pills.
+- Si se necesita un ícono visual, usar componentes de ícono, no texto pegado.
+- No reescribir copy existente fuera de la sección solicitada.
+- Si se modifican strings en español, validar que no aparezcan secuencias corruptas como: Ã, Â, â, ð, œ, �.

@@ -16,12 +16,13 @@ export type Role = 'owner' | 'mentor' | 'admin' | 'sponsor' | 'portfolio_lead';
 
 export type Step0Status = 'No iniciado' | 'En progreso' | 'Completado';
 export type Step0Mode = 'independent' | 'linked_to_challenge';
-export type Step0Frame = 'correccion' | 'crecimiento' | 'exploracion' | '';
+export type Step0Frame = 'correccion' | 'crecimiento' | 'exploracion' | 'mejora_proceso' | '';
 export type Step0ClarityLevel =
   | 'observacion_inicial'
   | 'algunas_senales'
   | 'hipotesis_clara'
   | 'idea_pensada'
+  | 'decision_por_destrabar'
   | '';
 export type Step0PrimaryObjective =
   | 'eficiencia'
@@ -40,7 +41,28 @@ export type Step0ContributionType =
   | 'no_claro'
   | '';
 export type Step0AdditionalStakeholders = 'no' | 'si' | 'no_claro' | '';
-export type Step0EvidenceType = '' | 'datos' | 'testimonios' | 'benchmark' | 'hipotesis' | 'otro';
+export type LeaderFeedbackStatus =
+  | 'pending'
+  | 'proposal_sent'
+  | 'meeting_scheduled'
+  | 'feedback_received'
+  | 'approved_to_investigate'
+  | 'aligned_with_conditions'
+  | 'not_prioritized'
+  | 'not_applicable';
+export type Step0EvidenceType =
+  | ''
+  | 'datos'
+  | 'testimonios'
+  | 'feedback_clientes'
+  | 'feedback_equipo'
+  | 'reclamos_tickets'
+  | 'demoras'
+  | 'retrabajo'
+  | 'benchmark'
+  | 'hipotesis'
+  | 'sin_senales'
+  | 'otro';
 
 export type ProjectStatus =
   | 'Draft'
@@ -82,7 +104,7 @@ export interface Step0Data {
   impacta: string[];
   parteProceso: '' | 'antes' | 'durante' | 'despues' | 'transversal' | 'otra';
   impacto3meses: '' | 'ingresos' | 'costos' | 'riesgo' | 'cliente' | 'productividad' | 'no_claro' | 'otro';
-  respaldo: '' | 'datos' | 'testimonios' | 'benchmark' | 'hipotesis' | 'otro';
+  respaldo: Step0EvidenceType;
   quienEscuchar: string;
   siMinimo: string[];
   mode?: Step0Mode;
@@ -106,6 +128,25 @@ export interface Step0Data {
   deliveryEmail?: string;
   additionalStakeholders?: Step0AdditionalStakeholders;
   additionalStakeholdersDetail?: string;
+  alignmentStatus?: 'pending' | 'scheduled' | 'feedback_received' | 'aligned' | 'aligned_with_observations' | 'not_aligned' | 'unknown';
+  alignmentPerson?: string;
+  alignmentRoleArea?: string;
+  alignmentDate?: string;
+  alignmentFeedback?: string;
+  alignmentInitialDecision?: string;
+  alignmentEvidenceType?: string;
+  alignmentEvidenceNote?: string;
+  alignmentAdvancedPending?: boolean;
+  leaderFeedbackStatus?: LeaderFeedbackStatus;
+  leaderFeedbackPerson?: string;
+  leaderFeedbackRoleArea?: string;
+  leaderFeedbackDate?: string;
+  leaderFeedbackComment?: string;
+  leaderFeedbackInitialDecision?: string;
+  leaderFeedbackEvidenceType?: string;
+  leaderFeedbackEvidenceNote?: string;
+  leaderFeedbackTopic?: string;
+  leaderFeedbackClosedPending?: boolean;
 }
 
 export interface ProjectChallengeLink {

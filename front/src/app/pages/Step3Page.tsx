@@ -13,6 +13,7 @@ import { FeedbackIAPanel } from '../components/FeedbackIAPanel';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
 import { useStepData } from '../hooks/useStepData';
 import * as stepService from '../services/stepService';
+import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 
 type ModuleId = 'A' | 'B' | 'C';
 type GoNoGoDecision = 'Go' | 'Iterar' | 'No-Go' | 'Pivote' | null;
@@ -998,6 +999,10 @@ export function Step3Page() {
                     {m.label}
                   </button>
                 ))}
+              </div>
+
+              <div className="mb-5">
+                <LeaderFeedbackStatusCard project={project} updateProject={updateProject} variant="step3" compact />
               </div>
 
               <div className="mb-5 min-[1280px]:hidden">

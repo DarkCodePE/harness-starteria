@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:backend": "tsx watch backend/server.ts",
+    "dev:backend": "set NODE_PATH=./node_modules&& tsx watch ../backend/server.ts",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "build": "vite build",
     "build:backend": "tsc -p tsconfig.backend.json",

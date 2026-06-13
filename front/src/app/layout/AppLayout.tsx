@@ -66,12 +66,15 @@ export function AppLayout() {
 
   if (!isAuthenticated) return null;
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) => {
+    if (path === '/evidencias' && matchPath('/projects/:projectId/evidencias', location.pathname)) return true;
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
   const canOpenProjectSteps = user?.role !== 'sponsor';
 
   const ownerLinks = [
     { icon: LayoutDashboard, label: 'Mis proyectos', path: '/dashboard' },
-    { icon: FolderOpen, label: 'Evidencias', path: currentProject ? `/projects/${currentProject.id}/evidencias` : '/dashboard', disabled: !currentProject },
+    { icon: FolderOpen, label: 'Evidencias', path: '/evidencias' },
     { icon: User, label: 'Mi perfil', path: '/perfil' },
   ];
 

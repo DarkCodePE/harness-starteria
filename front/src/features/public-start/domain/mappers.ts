@@ -29,7 +29,7 @@ function evidenceTypeFromText(value: string | undefined): Step0Data['evidenceTyp
   const normalized = value?.toLowerCase() ?? '';
   if (!normalized) return '';
   if (normalized.includes('dato') || normalized.includes('metrica') || normalized.includes('métrica')) return 'datos';
-  if (normalized.includes('entrevista') || normalized.includes('cliente') || normalized.includes('usuario')) return 'testimonios';
+  if (normalized.includes('entrevista') || normalized.includes('cliente') || normalized.includes('usuario')) return 'feedback_clientes';
   if (normalized.includes('benchmark') || normalized.includes('referencia')) return 'benchmark';
   return 'hipotesis';
 }

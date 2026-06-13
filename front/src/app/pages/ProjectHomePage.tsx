@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
-  ArrowLeft, Lock, CheckCircle2, ChevronRight, Users, AlertTriangle,
+  ArrowLeft, Lock, CheckCircle2, ChevronRight, Users, AlertTriangle, User,
   FileText, Clock, History, X, ChevronDown, UserPlus,
   Sparkles, Calendar, MessageSquare, ClipboardList,
 } from 'lucide-react';
@@ -46,6 +46,145 @@ const INTRO_STEP_SUMMARY = [
   { number: '4', title: 'Presentar propuesta', description: 'Organiza aprendizajes y sustenta mejor.' },
 ] as const;
 
+type ProjectStepOverviewStatus = 'current' | 'completed' | 'available' | 'locked' | 'review_pending' | 'blocked';
+
+const PROJECT_STEPS_OVERVIEW = [
+  {
+    step: 0,
+    title: 'Base estratégica inicial',
+    shortTitle: 'Base inicial',
+    shortDescription: 'Ordena el punto de partida de tu iniciativa.',
+    whatItSolves: 'Aclarar qué quieres mover, por qué importa ahora, a quién impacta y qué evidencia inicial tienes.',
+    output: 'Card inicial de iniciativa lista para compartir o usar como base del Step 1.',
+    requirements: 'Completar los campos clave de base, impacto y decisión.',
+    ctaStart: 'Empezar Paso 0',
+    ctaContinue: 'Continuar Paso 0',
+  },
+  {
+    step: 1,
+    title: 'Definir y validar el foco',
+    shortTitle: 'Definir foco',
+    shortDescription: 'Aterriza el problema, oportunidad o exploración con evidencia.',
+    whatItSolves: 'Evitar avanzar con una iniciativa demasiado amplia, débil o basada solo en intuición.',
+    output: 'Foco validado, evidencia inicial, actores involucrados, restricciones y criterio de éxito.',
+    requirements: 'Tener una base inicial completa y empezar a buscar evidencia real.',
+    ctaStart: 'Empezar Paso 1',
+    ctaContinue: 'Continuar Paso 1',
+  },
+  {
+    step: 2,
+    title: 'Diseñar apuesta y experimento',
+    shortTitle: 'Diseñar apuesta',
+    shortDescription: 'Convierte el foco validado en una hipótesis y una prueba medible.',
+    whatItSolves: 'Pasar de una idea general a una solución priorizada que pueda probarse en pequeño.',
+    output: 'HMW, idea seleccionada, hipótesis, experimento, métrica y umbral Go/No-Go.',
+    requirements: 'Tener el Step 1 aprobado para diseñar desde evidencia.',
+    ctaStart: 'Empezar Paso 2',
+    ctaContinue: 'Continuar Paso 2',
+  },
+  {
+    step: 3,
+    title: 'Ejecutar, aprender y decidir',
+    shortTitle: 'Ejecutar prueba',
+    shortDescription: 'Registra la prueba, evidencia y aprendizajes.',
+    whatItSolves: 'Entender si la apuesta funcionó, qué señal apareció y qué decisión corresponde tomar.',
+    output: 'Evidencia de ejecución, resultados contra métrica, aprendizajes y recomendación.',
+    requirements: 'Tener el experimento diseñado y aprobado en Step 2.',
+    ctaStart: 'Empezar Paso 3',
+    ctaContinue: 'Continuar Paso 3',
+  },
+  {
+    step: 4,
+    title: 'Cerrar y presentar propuesta',
+    shortTitle: 'Presentar',
+    shortDescription: 'Convierte el aprendizaje en una historia clara para sponsor o comité.',
+    whatItSolves: 'Preparar una salida ejecutiva defendible, con evidencia, recomendación y siguiente paso.',
+    output: 'Narrativa final, evidencia seleccionada, decisión solicitada y plan de acción.',
+    requirements: 'Tener aprendizajes y resultados del Step 3.',
+    ctaStart: 'Empezar Paso 4',
+    ctaContinue: 'Continuar Paso 4',
+  },
+] as const;
+
+function getJourneySubtitle(step: number) {
+  switch (step) {
+    case 0:
+      return 'Empieza ordenando la base inicial para avanzar con claridad.';
+    case 1:
+      return 'Ahora valida el foco antes de diseñar una solución.';
+    case 2:
+      return 'Convierte el foco validado en una apuesta testeable.';
+    case 3:
+      return 'Ejecuta la prueba, captura evidencia y decide.';
+    case 4:
+      return 'Prepara una propuesta clara para sponsor, comité o siguiente decisión.';
+    default:
+      return 'Sigue el recorrido paso a paso sin perder de vista qué viene después.';
+  }
+}
+
+const STEP_STATUS_COPY: Record<ProjectStepOverviewStatus, { label: string; badge: string; card: string; dot: string }> = {
+  current: {
+    label: 'Estás aquí',
+    badge: 'bg-indigo-100 text-indigo-700',
+    card: 'border-indigo-300 bg-indigo-50 ring-1 ring-indigo-100',
+    dot: 'bg-indigo-600 text-white',
+  },
+  completed: {
+    label: 'Completado',
+    badge: 'bg-emerald-100 text-emerald-700',
+    card: 'border-emerald-200 bg-emerald-50',
+    dot: 'bg-emerald-600 text-white',
+  },
+  available: {
+    label: 'Disponible',
+    badge: 'bg-slate-100 text-slate-700',
+    card: 'border-slate-200 bg-white hover:border-indigo-200',
+    dot: 'bg-white text-slate-700 border border-slate-200',
+  },
+  locked: {
+    label: 'Bloqueado',
+    badge: 'bg-slate-100 text-slate-500',
+    card: 'border-slate-200 bg-slate-50',
+    dot: 'bg-white text-slate-400 border border-slate-200',
+  },
+  review_pending: {
+    label: 'Pendiente de validación',
+    badge: 'bg-amber-100 text-amber-700',
+    card: 'border-amber-200 bg-amber-50',
+    dot: 'bg-amber-500 text-white',
+  },
+  blocked: {
+    label: 'Bloqueado',
+    badge: 'bg-red-100 text-red-700',
+    card: 'border-red-200 bg-red-50',
+    dot: 'bg-red-500 text-white',
+  },
+};
+
+function InfoBlock({ title, items, tone }: { title: string; items: string[]; tone: 'indigo' | 'emerald' | 'amber' | 'slate' }) {
+  const toneClasses = {
+    indigo: 'border-indigo-100 bg-indigo-50 text-indigo-900',
+    emerald: 'border-emerald-100 bg-emerald-50 text-emerald-900',
+    amber: 'border-amber-100 bg-amber-50 text-amber-900',
+    slate: 'border-slate-200 bg-white text-slate-800',
+  }[tone];
+
+  return (
+    <div className={`rounded-2xl border p-4 ${toneClasses}`}>
+      <p className="text-xs uppercase tracking-[0.08em]" style={{ fontWeight: 800 }}>{title}</p>
+      <ul className="mt-3 space-y-2">
+        {items.map(item => (
+          <li key={item} className="flex gap-2 text-sm leading-relaxed">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ProjectHomePage() {
   const { projectId } = useParams();
   const { projects, setCurrentProject, user, updateProject, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment } = useApp();
@@ -62,6 +201,7 @@ export function ProjectHomePage() {
   const [sponsorError, setSponsorError] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [alignmentCopied, setAlignmentCopied] = useState(false);
+  const [selectedJourneyStep, setSelectedJourneyStep] = useState<number | null>(null);
 
   const project = projects.find(p => p.id === projectId);
   if (!project) return (
@@ -334,6 +474,69 @@ export function ProjectHomePage() {
     ...step0SummaryBlocks.slice(0, 6).map(block => `${block.label}: ${block.value}`),
     step0ContactHint ? `Contacto clave sugerido: ${step0ContactHint}` : null,
   ].filter(Boolean).join('\n');
+  const currentJourneyStep = !step0Complete ? 0 : Math.min(Math.max(project.currentStep ?? 1, 1), 4);
+  const selectedStepNumber = selectedJourneyStep ?? currentJourneyStep;
+  const getStepOverviewState = (stepNumber: number) => {
+    const config = PROJECT_STEPS_OVERVIEW.find(item => item.step === stepNumber) ?? PROJECT_STEPS_OVERVIEW[0];
+    const appStep = project.steps.find(item => item.number === stepNumber);
+    let status: ProjectStepOverviewStatus = 'locked';
+    let lockReason = stepNumber === 0 ? '' : BLOCK_REASONS[String(stepNumber)] ?? 'Se desbloquea al completar el paso anterior.';
+
+    if (stepNumber === 0) {
+      status = step0Complete ? 'completed' : 'current';
+      lockReason = '';
+    } else if (appStep?.status === 'Aprobado') {
+      status = 'completed';
+    } else if (appStep?.status === 'Enviado' || appStep?.status === 'Feedback IA' || appStep?.status === 'SesiÃ³n experto pendiente') {
+      status = 'review_pending';
+    } else if (appStep?.status === 'Bloqueado') {
+      status = canAccessStep(stepNumber) ? 'blocked' : 'locked';
+    } else if (canAccessStep(stepNumber)) {
+      status = currentJourneyStep === stepNumber || appStep?.status === 'En progreso' ? 'current' : 'available';
+    }
+
+    const completedModules = stepNumber === 0
+      ? step0Complete
+        ? ['Base inicial completada', ...(step0SummaryChips.length ? step0SummaryChips : ['Contexto inicial ordenado'])]
+        : []
+      : appStep?.modules.filter(module => module.status === 'Completado' || module.status === 'Aprobado').map(module => module.name) ?? [];
+    const pendingModules = stepNumber === 0
+      ? step0Complete
+        ? step0Data.leaderFeedbackStatus && step0Data.leaderFeedbackStatus !== 'pending'
+          ? []
+          : ['Feedback del líder pendiente o por actualizar']
+        : ['Completar base, impacto y decisión inicial']
+      : appStep?.modules.filter(module => module.status !== 'Completado' && module.status !== 'Aprobado').map(module => module.name) ?? [];
+
+    return {
+      config,
+      appStep,
+      status,
+      lockReason,
+      completionBullets: completedModules,
+      pendingBullets: pendingModules,
+      canNavigate: stepNumber === 0 ? !isSponsorViewer : canAccessStep(stepNumber) && !isSponsorViewer,
+    };
+  };
+  const journeySteps = PROJECT_STEPS_OVERVIEW.map(item => getStepOverviewState(item.step));
+  const selectedStepOverview = getStepOverviewState(selectedStepNumber);
+  const selectedStepStyle = STEP_STATUS_COPY[selectedStepOverview.status];
+  const selectedStepIsComplete = selectedStepOverview.status === 'completed';
+  const selectedStepCta = selectedStepOverview.status === 'completed'
+    ? `Editar Paso ${selectedStepNumber}`
+    : selectedStepOverview.appStep?.status === 'En progreso' || project.step0Status === 'En progreso'
+      ? selectedStepOverview.config.ctaContinue
+      : selectedStepOverview.config.ctaStart;
+  const navigateToJourneyStep = (stepNumber: number) => {
+    if (isSponsorViewer) return;
+    if (stepNumber === 0) {
+      openStep0();
+      return;
+    }
+    if (!canAccessStep(stepNumber)) return;
+    setCurrentProject(project);
+    navigate(`/projects/${project.id}/step/${stepNumber}`);
+  };
   const addSponsor = () => {
     const email = sponsorEmail.trim().toLowerCase();
     if (!email) return;
@@ -393,8 +596,14 @@ export function ProjectHomePage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div className="flex-1 min-w-0 pr-4">
+          <p className="mb-2 text-sm text-indigo-600" style={{ fontWeight: 600 }}>
+            {firstName ? `${firstName}, bienvenida a tu iniciativa` : 'Bienvenida a tu iniciativa'}
+          </p>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <StatusChip status={project.status} />
+            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs text-slate-500" style={{ fontWeight: 600 }}>
+              {overallProgress}% de avance
+            </span>
             {project.riskLevel === 'Alto' && (
               <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full">
                 <AlertTriangle size={10} /> Riesgo alto
@@ -405,6 +614,9 @@ export function ProjectHomePage() {
           {project.description && (
             <p className="text-sm text-slate-500 mt-1">{project.description}</p>
           )}
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+            Aquí vas a ordenar el contexto, diseñar una solución, probarla en pequeño y preparar una propuesta con mayor claridad. No necesitas tener todo resuelto desde el inicio.
+          </p>
         </div>
         <div className="flex gap-2 shrink-0 flex-wrap">
           {!isSponsorViewer && (
@@ -445,7 +657,7 @@ export function ProjectHomePage() {
         </div>
       )}
 
-      <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-6 mb-6">
+      <div className="hidden rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-6 mb-6">
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="rounded-full bg-white px-3 py-1 text-xs text-indigo-700 border border-indigo-100" style={{ fontWeight: 600 }}>
             {step0Complete
@@ -551,7 +763,158 @@ export function ProjectHomePage() {
         </div>
       )}
 
-      <div id="project-journey" className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+      {sponsorMembers.length === 0 ? (
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Sponsor</h3>
+              <p className="mt-1 max-w-2xl text-xs text-slate-500">
+                Puedes agregar una persona que acompañe momentos clave del proyecto y ayude a darle respaldo. No necesitas definirlo ahora.
+              </p>
+            </div>
+            {canManageSponsors && (
+              <div className="flex min-w-[280px] gap-2">
+                <input
+                  type="email"
+                  value={sponsorEmail}
+                  onChange={event => { setSponsorEmail(event.target.value); setSponsorError(null); }}
+                  onKeyDown={event => event.key === 'Enter' && addSponsor()}
+                  placeholder="sponsor@empresa.com"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button onClick={addSponsor} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-700" style={{ fontWeight: 700 }}>
+                  Agregar
+                </button>
+              </div>
+            )}
+          </div>
+          {sponsorError && <p className="mt-2 text-xs text-red-600">{sponsorError}</p>}
+        </div>
+      ) : (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {sponsorMembers.map(member => (
+            <button
+              key={member.email}
+              onClick={() => setShowTeamModal(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                <User size={15} />
+              </span>
+              <span>
+                <span className="block text-xs text-slate-900" style={{ fontWeight: 700 }}>{member.name}</span>
+                <span className="block text-[11px] text-slate-500">Sponsor · {member.status}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div id="project-journey" className="rounded-2xl border border-slate-200 bg-white p-5 mb-6">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>Recorrido del proyecto</h2>
+            <p className="mt-1 text-sm text-slate-500">{getJourneySubtitle(currentJourneyStep)}</p>
+          </div>
+          <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 700 }}>
+            Paso actual: {currentJourneyStep}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          {journeySteps.map(({ config, status, canNavigate }) => {
+            const style = STEP_STATUS_COPY[status];
+            const selected = selectedStepNumber === config.step;
+            return (
+              <button
+                key={config.step}
+                type="button"
+                onClick={() => {
+                  setSelectedJourneyStep(config.step);
+                }}
+                className={`min-h-[132px] rounded-2xl border p-4 text-left transition-all ${style.card} ${selected ? 'shadow-sm ring-2 ring-indigo-200' : ''}`}
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs ${style.dot}`} style={{ fontWeight: 800 }}>
+                    {status === 'completed' ? <CheckCircle2 size={16} /> : status === 'locked' || status === 'blocked' ? <Lock size={15} /> : config.step}
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] ${style.badge}`} style={{ fontWeight: 700 }}>
+                    {status === 'current' && config.step === 0 ? 'Comienza aquí' : style.label}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{config.shortTitle}</p>
+                {canNavigate && (status === 'current' || status === 'available') && (
+                  <span className="mt-3 inline-flex rounded-lg bg-white px-2.5 py-1 text-[11px] text-indigo-700 ring-1 ring-indigo-100" style={{ fontWeight: 700 }}>
+                    {status === 'current' ? 'Continuar' : 'Abrir'}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-5">
+          <div className={`rounded-2xl border p-5 ${selectedStepStyle.card}`}>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <span className={`rounded-full px-3 py-1 text-xs ${selectedStepStyle.badge}`} style={{ fontWeight: 700 }}>
+                  {selectedStepStyle.label}
+                </span>
+                <h3 className="mt-3 text-lg text-slate-900" style={{ fontWeight: 800 }}>
+                  {selectedStepIsComplete ? `Paso ${selectedStepNumber} completado` : `Paso ${selectedStepNumber}: ${selectedStepOverview.config.title}`}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">{selectedStepOverview.config.shortDescription}</p>
+              </div>
+              {selectedStepOverview.appStep?.progress ? (
+                <span className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200" style={{ fontWeight: 700 }}>
+                  {selectedStepOverview.appStep.progress}% avance
+                </span>
+              ) : null}
+            </div>
+
+            {selectedStepIsComplete ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                <InfoBlock title="Ya tienes" items={selectedStepOverview.completionBullets.length ? selectedStepOverview.completionBullets : ['Paso completado.']} tone="emerald" />
+                <InfoBlock title="Todavía podrías mejorar" items={selectedStepOverview.pendingBullets.length ? selectedStepOverview.pendingBullets : ['No hay pendientes críticos detectados.']} tone="slate" />
+                <InfoBlock title="Siguiente paso recomendado" items={[selectedStepNumber < 4 ? `Revisar el Paso ${selectedStepNumber + 1} y continuar el recorrido.` : 'Preparar el cierre ejecutivo y compartir la recomendación.']} tone="indigo" />
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-3">
+                <InfoBlock title="Qué vas a resolver" items={[selectedStepOverview.config.whatItSolves]} tone="indigo" />
+                <InfoBlock title="Output esperado" items={[selectedStepOverview.config.output]} tone="slate" />
+                <InfoBlock title="Para avanzar necesitas" items={[selectedStepOverview.status === 'locked' || selectedStepOverview.status === 'blocked' ? selectedStepOverview.lockReason || selectedStepOverview.config.requirements : selectedStepOverview.config.requirements]} tone={selectedStepOverview.status === 'locked' || selectedStepOverview.status === 'blocked' ? 'amber' : 'emerald'} />
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              {selectedStepOverview.canNavigate && selectedStepOverview.status !== 'locked' && selectedStepOverview.status !== 'blocked' ? (
+                <button
+                  onClick={() => navigateToJourneyStep(selectedStepNumber)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 transition-colors"
+                  style={{ fontWeight: 700 }}
+                >
+                  <ClipboardList size={15} /> {selectedStepCta}
+                </button>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-500">
+                  {selectedStepOverview.lockReason || 'Completa el paso anterior para desbloquearlo.'}
+                </div>
+              )}
+              {selectedStepOverview.canNavigate && selectedStepOverview.status === 'completed' && (
+                <button
+                  onClick={() => navigateToJourneyStep(selectedStepNumber)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                  style={{ fontWeight: 700 }}
+                >
+                  Ver resumen
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="legacy-project-journey" className="hidden bg-white rounded-2xl border border-slate-200 p-5 mb-6">
         <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
           <div>
             <h2 className="text-sm text-slate-900" style={{ fontWeight: 600 }}>Recorrido del proyecto</h2>
@@ -607,12 +970,21 @@ export function ProjectHomePage() {
               </div>
               <p className="text-sm text-slate-900" style={{ fontWeight: 600 }}>{step.title}</p>
               <p className="text-xs text-slate-500 mt-1">{step.description}</p>
+              {!step0Complete && step.number === '0' && (
+                <button
+                  onClick={openStep0}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-xs text-white hover:bg-indigo-700 transition-colors"
+                  style={{ fontWeight: 700 }}
+                >
+                  <ClipboardList size={14} /> Empezar Paso 0
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 mb-6">
+      <div className="hidden grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4 mb-6">
         <div className={`bg-white rounded-2xl border p-5 ${step0Complete ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-indigo-200 ring-1 ring-indigo-100'}`}>
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span className={`px-2.5 py-1 text-xs rounded-full ${step0Complete ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`} style={{ fontWeight: 700 }}>
@@ -799,7 +1171,7 @@ export function ProjectHomePage() {
       </div>
 
       {/* ── Steps list ── */}
-      <div className="space-y-3 mb-6">
+      <div className="hidden space-y-3 mb-6">
 
         {/* ── PASO 0 ── */}
         <div

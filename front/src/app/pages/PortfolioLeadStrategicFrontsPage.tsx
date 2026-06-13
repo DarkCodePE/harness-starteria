@@ -2,8 +2,10 @@ import React, { useMemo, useState } from 'react';
 import {
   Archive,
   ArrowRight,
+  AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  Circle,
   Eye,
   MoreVertical,
   PencilLine,
@@ -17,10 +19,14 @@ import {
 import { toast } from 'sonner';
 import {
   usePortfolioLead,
+  evaluateStrategicFrontQuality,
+  reviewStrategicFrontQuality,
 } from '../../features/portfolio-lead';
 import type {
   CreateStrategicFrontInput,
   StrategicFront,
+  StrategicFrontQualityEvaluation,
+  StrategicFrontQualityReview,
   StrategicFrontPriority,
   StrategicFrontStatus,
 } from '../../features/portfolio-lead';
@@ -47,13 +53,8 @@ type StrategicFrontFormState = {
   notes: string;
 };
 
-type ClarityInsight = {
-  goodPoints: string[];
-  missingPoints: string[];
-  nextStep: string;
-};
-
 type FrontFormErrors = Partial<Record<keyof StrategicFrontFormState, string>>;
+type ActiveFrontField = keyof StrategicFrontFormState | null;
 
 const STATUS_FILTER_OPTIONS: Array<{ value: StrategicFrontStatus | 'all'; label: string }> = [
   { value: 'all', label: 'Todos' },
@@ -137,11 +138,18 @@ export function PortfolioLeadStrategicFrontsPage() {
   const [activeFrontId, setActiveFrontId] = useState<string | null>(null);
   const [form, setForm] = useState<StrategicFrontFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FrontFormErrors>({});
-  const [aiInsight, setAiInsight] = useState<ClarityInsight | null>(null);
+  const [activeField, setActiveField] = useState<ActiveFrontField>(null);
+  const [qualityReview, setQualityReview] = useState<StrategicFrontQualityReview | null>(null);
+  const [pendingCreateStatus, setPendingCreateStatus] = useState<StrategicFrontStatus | null>(null);
 
   const activeFront = useMemo(
     () => strategicFronts.find(front => front.id === activeFrontId) ?? null,
     [activeFrontId, strategicFronts],
+  );
+
+  const qualityEvaluation = useMemo(
+    () => evaluateStrategicFrontQuality(mapFormToQualityInput(form)),
+    [form],
   );
 
   const filteredFronts = useMemo(() => {
@@ -184,7 +192,9 @@ export function PortfolioLeadStrategicFrontsPage() {
     setActiveFrontId(null);
     setForm(EMPTY_FORM);
     setErrors({});
-    setAiInsight(null);
+    setActiveField(null);
+    setQualityReview(null);
+    setPendingCreateStatus(null);
   };
 
   const openEditDrawer = (front: StrategicFront, intent: DrawerIntent = 'general') => {
@@ -193,7 +203,9 @@ export function PortfolioLeadStrategicFrontsPage() {
     setActiveFrontId(front.id);
     setForm(mapFrontToForm(front));
     setErrors({});
-    setAiInsight(null);
+    setActiveField(null);
+    setQualityReview(null);
+    setPendingCreateStatus(null);
   };
 
   const openViewDrawer = (front: StrategicFront) => {
@@ -201,7 +213,9 @@ export function PortfolioLeadStrategicFrontsPage() {
     setDrawerIntent('general');
     setActiveFrontId(front.id);
     setErrors({});
-    setAiInsight(null);
+    setActiveField(null);
+    setQualityReview(null);
+    setPendingCreateStatus(null);
   };
 
   const closeDrawer = () => {
@@ -210,13 +224,25 @@ export function PortfolioLeadStrategicFrontsPage() {
     setActiveFrontId(null);
     setForm(EMPTY_FORM);
     setErrors({});
-    setAiInsight(null);
+    setActiveField(null);
+    setQualityReview(null);
+    setPendingCreateStatus(null);
   };
 
-  const handleCreate = (status: StrategicFrontStatus) => {
+  const handleCreate = (status: StrategicFrontStatus, { force = false }: { force?: boolean } = {}) => {
     const nextErrors = validateFrontForm(form, { allowDraft: status === 'draft' });
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+
+    if (status !== 'draft' && !force && qualityEvaluation.qualityStatus !== 'green') {
+      setPendingCreateStatus(status);
+      setQualityReview(reviewStrategicFrontQuality(mapFormToQualityInput(form)));
+      return;
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      if (status !== 'draft') setPendingCreateStatus(status);
+      return;
+    }
 
     const created = createStrategicFront(mapFormToCreateInput(form, status));
     toast.success('Frente estratégico creado.');
@@ -242,7 +268,12 @@ export function PortfolioLeadStrategicFrontsPage() {
   };
 
   const handleImproveWithAi = () => {
-    setAiInsight(buildClarityInsight(form));
+    setQualityReview(reviewStrategicFrontQuality(mapFormToQualityInput(form)));
+  };
+
+  const handleFormChange: React.Dispatch<React.SetStateAction<StrategicFrontFormState>> = updater => {
+    setForm(prev => typeof updater === 'function' ? updater(prev) : updater);
+    setPendingCreateStatus(null);
   };
 
   return (
@@ -310,11 +341,17 @@ export function PortfolioLeadStrategicFrontsPage() {
           intent={drawerIntent}
           form={form}
           errors={errors}
-          aiInsight={aiInsight}
+          qualityEvaluation={qualityEvaluation}
+          qualityReview={qualityReview}
+          activeField={activeField}
+          pendingCreateStatus={pendingCreateStatus}
           onClose={closeDrawer}
-          onChange={setForm}
+          onChange={handleFormChange}
+          onFieldFocus={setActiveField}
           onCreateDraft={() => handleCreate('draft')}
           onCreateActive={() => handleCreate('active')}
+          onConfirmCreate={() => pendingCreateStatus ? handleCreate(pendingCreateStatus, { force: true }) : undefined}
+          onCancelCreateReview={() => setPendingCreateStatus(null)}
           onUpdate={handleUpdate}
           onImproveWithAi={handleImproveWithAi}
         />
@@ -545,11 +582,17 @@ function StrategicFrontFormDrawer({
   intent,
   form,
   errors,
-  aiInsight,
+  qualityEvaluation,
+  qualityReview,
+  activeField,
+  pendingCreateStatus,
   onClose,
   onChange,
+  onFieldFocus,
   onCreateDraft,
   onCreateActive,
+  onConfirmCreate,
+  onCancelCreateReview,
   onUpdate,
   onImproveWithAi,
 }: {
@@ -557,11 +600,17 @@ function StrategicFrontFormDrawer({
   intent: DrawerIntent;
   form: StrategicFrontFormState;
   errors: FrontFormErrors;
-  aiInsight: ClarityInsight | null;
+  qualityEvaluation: StrategicFrontQualityEvaluation;
+  qualityReview: StrategicFrontQualityReview | null;
+  activeField: ActiveFrontField;
+  pendingCreateStatus: StrategicFrontStatus | null;
   onClose: () => void;
   onChange: React.Dispatch<React.SetStateAction<StrategicFrontFormState>>;
+  onFieldFocus: (field: ActiveFrontField) => void;
   onCreateDraft: () => void;
   onCreateActive: () => void;
+  onConfirmCreate: () => void;
+  onCancelCreateReview: () => void;
   onUpdate: () => void;
   onImproveWithAi: () => void;
 }) {
@@ -608,6 +657,7 @@ function StrategicFrontFormDrawer({
                   required
                   value={form.name}
                   onChange={value => onChange(prev => ({ ...prev, name: value }))}
+                  onFocus={() => onFieldFocus('name')}
                   placeholder="Ej. Excelencia operativa"
                   helper="Debe representar una prioridad del negocio, no una solución específica."
                   error={errors.name}
@@ -617,6 +667,7 @@ function StrategicFrontFormDrawer({
                   required
                   value={form.area}
                   onChange={value => onChange(prev => ({ ...prev, area: value }))}
+                  onFocus={() => onFieldFocus('area')}
                   placeholder="Operaciones, Comercial, Talento, TI"
                   helper="¿Quién tendrá mayor responsabilidad sobre este frente?"
                   error={errors.area}
@@ -626,29 +677,33 @@ function StrategicFrontFormDrawer({
                   required
                   value={form.mainKpi}
                   onChange={value => onChange(prev => ({ ...prev, mainKpi: value }))}
+                  onFocus={() => onFieldFocus('mainKpi')}
                   placeholder="Ej. Tiempo promedio de cierre"
                   helper="Indica cómo sabrás que el frente está avanzando."
                   error={errors.mainKpi}
                 />
                 <FormField
                   label="Meta esperada"
-                  required
                   value={form.target}
                   onChange={value => onChange(prev => ({ ...prev, target: value }))}
+                  onFocus={() => onFieldFocus('target')}
                   placeholder="Ej. Reducir a 15 días"
-                  helper="Define el resultado que quieres mover con claridad."
+                  helper="Puedes dejarla pendiente si todavia no tienes el dato. Conviene completarla antes de activar retos."
                   error={errors.target}
                 />
                 <FormField
                   label="Baseline actual"
                   value={form.baseline}
                   onChange={value => onChange(prev => ({ ...prev, baseline: value }))}
+                  onFocus={() => onFieldFocus('baseline')}
+                  helper="Si no tienes el dato exacto, puedes dejarlo pendiente y completarlo antes de activar retos."
                   placeholder="Ej. 21 días"
                 />
                 <FormField
                   label="Umbral mínimo de avance"
                   value={form.threshold}
                   onChange={value => onChange(prev => ({ ...prev, threshold: value }))}
+                  onFocus={() => onFieldFocus('threshold')}
                   placeholder="Ej. Reducir al menos 20%"
                   helper="Opcional, pero útil para saber cuándo el frente realmente avanza."
                 />
@@ -656,12 +711,15 @@ function StrategicFrontFormDrawer({
                   label="Sponsor"
                   value={form.sponsor}
                   onChange={value => onChange(prev => ({ ...prev, sponsor: value }))}
+                  onFocus={() => onFieldFocus('sponsor')}
+                  helper="Puedes guardar sin sponsor. Antes de activar retos conviene definir quien puede respaldar o destrabar este frente."
                   placeholder="Nombre del sponsor o líder ejecutivo"
                 />
                 <FormField
                   label="Email del sponsor"
                   value={form.sponsorEmail}
                   onChange={value => onChange(prev => ({ ...prev, sponsorEmail: value }))}
+                  onFocus={() => onFieldFocus('sponsorEmail')}
                   placeholder="sponsor@empresa.com"
                 />
                 <FormField
@@ -669,6 +727,7 @@ function StrategicFrontFormDrawer({
                   required
                   value={form.horizon}
                   onChange={value => onChange(prev => ({ ...prev, horizon: value }))}
+                  onFocus={() => onFieldFocus('horizon')}
                   placeholder="Ej. Trimestre, semestre o 90 días"
                   helper="Puedes usar 30 días, 60 días, 90 días, trimestre, semestre o año."
                   error={errors.horizon}
@@ -678,12 +737,14 @@ function StrategicFrontFormDrawer({
                   type="date"
                   value={form.endDate}
                   onChange={value => onChange(prev => ({ ...prev, endDate: value }))}
+                  onFocus={() => onFieldFocus('endDate')}
                 />
                 <SelectField
                   label="Prioridad"
                   required
                   value={form.priority}
                   onChange={value => onChange(prev => ({ ...prev, priority: value as StrategicFrontPriority }))}
+                  onFocus={() => onFieldFocus('priority')}
                   options={PRIORITY_OPTIONS}
                   error={errors.priority}
                 />
@@ -692,6 +753,7 @@ function StrategicFrontFormDrawer({
                   required
                   value={form.status}
                   onChange={value => onChange(prev => ({ ...prev, status: value as StrategicFrontStatus }))}
+                  onFocus={() => onFieldFocus('status')}
                   options={mode === 'create' ? CREATE_STATUS_OPTIONS : EDIT_STATUS_OPTIONS}
                   error={errors.status}
                 />
@@ -703,6 +765,7 @@ function StrategicFrontFormDrawer({
                   required
                   value={form.strategicObjective}
                   onChange={value => onChange(prev => ({ ...prev, strategicObjective: value }))}
+                  onFocus={() => onFieldFocus('strategicObjective')}
                   placeholder="Ej. Reducir reprocesos en cierres de atención para mejorar eficiencia operativa."
                   helper="Explica qué quieres mover y por qué importa para el negocio."
                   error={errors.strategicObjective}
@@ -711,25 +774,35 @@ function StrategicFrontFormDrawer({
                   label="Lectura actual del frente"
                   value={form.whyNow}
                   onChange={value => onChange(prev => ({ ...prev, whyNow: value }))}
+                  onFocus={() => onFieldFocus('whyNow')}
                   placeholder="Opcional. Qué está pasando ahora y por qué conviene abrir este frente."
                 />
                 <TextAreaField
                   label="Notas internas"
                   value={form.notes}
                   onChange={value => onChange(prev => ({ ...prev, notes: value }))}
+                  onFocus={() => onFieldFocus('notes')}
                   placeholder="Notas de seguimiento, contexto o decisiones que quieras dejar registradas."
                 />
               </div>
 
               {Object.keys(errors).length > 0 ? (
                 <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                  <p style={{ fontWeight: 700 }}>Revisa los campos marcados</p>
+                  <p style={{ fontWeight: 700 }}>Siguiente paso recomendado</p>
                   <p className="mt-1">El frente todavía necesita completar algunos datos mínimos para quedar listo.</p>
                 </div>
               ) : null}
 
+              {pendingCreateStatus ? (
+                <StrategicFrontCreateReview
+                  evaluation={qualityEvaluation}
+                  onCancel={onCancelCreateReview}
+                  onConfirm={onConfirmCreate}
+                />
+              ) : null}
+
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
-                <p className="text-sm text-slate-500">
+                <p className="max-w-xl text-sm text-slate-500">
                   Un frente no reemplaza la gestión de retos ni iniciativas. Solo ordena la prioridad que quieres mover.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -777,7 +850,9 @@ function StrategicFrontFormDrawer({
             <div className="bg-slate-50 p-6">
               <StrategicFrontAiGuideCard
                 form={form}
-                aiInsight={aiInsight}
+                qualityEvaluation={qualityEvaluation}
+                qualityReview={qualityReview}
+                activeField={activeField}
                 onImproveWithAi={onImproveWithAi}
               />
             </div>
@@ -904,11 +979,185 @@ function StrategicFrontDetailDrawer({
 
 function StrategicFrontAiGuideCard({
   form,
+  qualityEvaluation,
+  qualityReview,
+  activeField,
+  onImproveWithAi,
+}: {
+  form: StrategicFrontFormState;
+  qualityEvaluation: StrategicFrontQualityEvaluation;
+  qualityReview: StrategicFrontQualityReview | null;
+  activeField: ActiveFrontField;
+  onImproveWithAi: () => void;
+}) {
+  void form;
+  const [showAllCriteria, setShowAllCriteria] = useState(false);
+  const statusMeta = QUALITY_STATUS_META[qualityEvaluation.qualityStatus];
+  const contextualHelp = getFieldContextualHelp(activeField);
+  const clearItems = qualityEvaluation.criteria.filter(item => item.status === 'complete').slice(0, 3);
+  const strengtheningItems = qualityEvaluation.criteria
+    .filter(item => item.status !== 'complete')
+    .slice(0, 5);
+
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-white p-5">
+      <div className="flex items-start gap-3">
+        <div className="rounded-2xl bg-violet-50 p-2 text-violet-700">
+          <Sparkles size={18} />
+        </div>
+        <div>
+          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>CALIDAD DEL FRENTE</p>
+          <h3 className="mt-1 text-lg text-slate-950" style={{ fontWeight: 700 }}>Calidad del frente</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Captura primero la prioridad. Starteria te ayuda a fortalecerla paso a paso.
+          </p>
+        </div>
+      </div>
+
+      <div className={`mt-5 rounded-2xl border p-4 ${statusMeta.tone}`}>
+        <p className="text-xs" style={{ fontWeight: 700 }}>{statusMeta.label}</p>
+        <p className="mt-2 text-sm">{qualityEvaluation.diagnosis}</p>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-violet-950">
+        <p className="text-xs" style={{ fontWeight: 700 }}>Siguiente mejor accion</p>
+        <p className="mt-2 text-sm" style={{ fontWeight: 700 }}>{qualityEvaluation.nextBestAction.title}</p>
+        <p className="mt-1 text-sm">{qualityEvaluation.nextBestAction.description}</p>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950">
+        <p className="text-xs" style={{ fontWeight: 700 }}>Lo que ya esta claro</p>
+        {clearItems.length > 0 ? (
+          <ul className="mt-3 space-y-2 text-sm">
+            {clearItems.map(item => (
+              <li key={item.id} className="flex items-start gap-2">
+                <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                <span>{item.label}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm">Completa los primeros campos para que Starteria detecte senales de claridad.</p>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
+        <p className="text-xs text-slate-600" style={{ fontWeight: 700 }}>Para fortalecer antes de activar retos</p>
+        <p className="mt-2 text-xs text-slate-500">
+          No necesitas completarlo todo para guardar un borrador. Estos elementos ayudan cuando quieras activar retos.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm">
+          {strengtheningItems.length > 0 ? strengtheningItems.map(item => (
+            <li key={item.id} className="flex items-start gap-2">
+              <Circle size={15} className="mt-0.5 shrink-0 text-slate-400" />
+              <span>{item.label}</span>
+            </li>
+          )) : (
+            <li className="flex items-start gap-2">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+              <span>La base esta lista para preparar retos accionables.</span>
+            </li>
+          )}
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowAllCriteria(prev => !prev)}
+        className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+        style={{ fontWeight: 700 }}
+      >
+        {showAllCriteria ? 'Ocultar criterios completos' : 'Ver criterios completos'}
+      </button>
+
+      {showAllCriteria ? (
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>Criterios completos</p>
+          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            {qualityEvaluation.criteria.map(item => (
+              <li key={item.id} className="flex items-start gap-2">
+                <CriterionIcon status={item.status} />
+                <span>
+                  <span style={{ fontWeight: 700 }}>{item.label}</span>
+                  <span className="block text-xs text-slate-500">{item.feedback}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {contextualHelp ? (
+        <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
+          <p className="text-xs" style={{ fontWeight: 700 }}>Ayuda para este campo</p>
+          <p className="mt-2">{contextualHelp.text}</p>
+          {contextualHelp.goodExample ? (
+            <p className="mt-3"><span style={{ fontWeight: 700 }}>Ejemplo bueno:</span> {contextualHelp.goodExample}</p>
+          ) : null}
+          {contextualHelp.weakExample ? (
+            <p className="mt-1"><span style={{ fontWeight: 700 }}>Ejemplo debil:</span> {contextualHelp.weakExample}</p>
+          ) : null}
+          {contextualHelp.examples?.length ? (
+            <ul className="mt-3 space-y-1">
+              {contextualHelp.examples.map(example => <li key={example}>- {example}</li>)}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
+      <button
+        onClick={onImproveWithAi}
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm text-white transition-colors hover:bg-violet-700"
+        style={{ fontWeight: 700 }}
+      >
+        <Sparkles size={15} />
+        Ayudarme a formularlo mejor
+      </button>
+
+      {qualityReview ? (
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>Revision de calidad</p>
+          <p className="mt-2 text-sm text-slate-700">{qualityReview.diagnosis}</p>
+
+          <div className="mt-3 space-y-3 text-sm text-slate-700">
+            <InsightLine label="Que esta bien" items={qualityReview.strengths} tone="emerald" />
+            <InsightLine label="Puntos a cuidar" items={qualityReview.risks.length ? qualityReview.risks : ['No hay puntos criticos visibles.']} tone="amber" />
+            <InsightLine label="Para fortalecer" items={qualityReview.missingElements.length ? qualityReview.missingElements : ['No hay elementos prioritarios por fortalecer.']} tone="slate" />
+            {qualityReview.suggestedRewrite ? (
+              <InsightLine label="Version sugerida" items={[qualityReview.suggestedRewrite]} tone="slate" />
+            ) : null}
+            {qualityReview.canGenerateChallenges && qualityReview.suggestedChallenges.length > 0 ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+                <p className="text-xs" style={{ fontWeight: 700 }}>Retos sugeridos editables</p>
+                <div className="mt-3 space-y-2">
+                  {qualityReview.suggestedChallenges.map(challenge => (
+                    <textarea
+                      key={challenge}
+                      defaultValue={challenge}
+                      rows={2}
+                      className="w-full resize-none rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              {qualityReview.confidenceNote}
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function StrategicFrontAiGuideCardLegacy({
+  form,
   aiInsight,
   onImproveWithAi,
 }: {
   form: StrategicFrontFormState;
-  aiInsight: ClarityInsight | null;
+  aiInsight: { goodPoints: string[]; missingPoints: string[]; nextStep: string } | null;
   onImproveWithAi: () => void;
 }) {
   return (
@@ -967,7 +1216,7 @@ function StrategicFrontAiGuideCard({
         style={{ fontWeight: 700 }}
       >
         <Sparkles size={15} />
-        Mejorar con IA
+        Ayudarme a formularlo mejor
       </button>
 
       {aiInsight ? (
@@ -983,6 +1232,124 @@ function StrategicFrontAiGuideCard({
       ) : null}
     </div>
   );
+}
+
+const QUALITY_STATUS_META = {
+  red: {
+    label: 'Primer borrador',
+    tone: 'border-sky-200 bg-sky-50 text-sky-950',
+  },
+  yellow: {
+    label: 'Borrador con buena base',
+    tone: 'border-amber-200 bg-amber-50 text-amber-950',
+  },
+  green: {
+    label: 'Listo para activar retos',
+    tone: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  },
+} satisfies Record<StrategicFrontQualityReview['qualityStatus'], { label: string; tone: string }>;
+
+function CriterionIcon({ status }: { status: StrategicFrontQualityEvaluation['criteria'][number]['status'] }) {
+  if (status === 'complete') return <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />;
+  if (status === 'needs_improvement') return <Circle size={16} className="mt-0.5 shrink-0 text-amber-500" />;
+  return <Circle size={16} className="mt-0.5 shrink-0 text-slate-400" />;
+}
+
+function StrategicFrontCreateReview({
+  evaluation,
+  onCancel,
+  onConfirm,
+}: {
+  evaluation: StrategicFrontQualityEvaluation;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+      <div className="flex items-start gap-3">
+        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-600" />
+        <div>
+          <p style={{ fontWeight: 700 }}>Revision suave antes de crear</p>
+          <p className="mt-1">{evaluation.diagnosis}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {[
+          ['Foco del frente', evaluation.warnings.some(item => item.includes('foco') || item.includes('herramienta')) ? 'Puedes fortalecerlo' : 'Se entiende'],
+          ['Nombre como prioridad', evaluation.warnings.some(item => item.includes('herramienta')) ? 'Conviene reformular' : 'Se lee bien'],
+          ['KPI o senal', evaluation.missingCriticalFields.includes('KPI principal o senal de avance') ? 'Pendiente por definir' : 'Definido'],
+          ['Area responsable', evaluation.missingCriticalFields.includes('Area o unidad involucrada') ? 'Pendiente por definir' : 'Definida'],
+          ['Sponsor o respaldo', evaluation.missingRecommendedFields.includes('Sponsor') ? 'Conviene aclararlo luego' : 'Definido'],
+          ['Retos accionables', evaluation.canGenerateChallenges ? 'Ya puede orientar retos' : 'Puede madurar un poco mas'],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-amber-200 bg-white/70 p-3">
+            <p className="text-xs text-amber-800" style={{ fontWeight: 700 }}>{label}</p>
+            <p className="mt-1 text-sm">{value}</p>
+          </div>
+        ))}
+      </div>
+      {(evaluation.missingCriticalFields.length > 0 || evaluation.missingRecommendedFields.length > 0) ? (
+        <p className="mt-3 text-xs">
+          Para fortalecer antes de activar retos: {[...evaluation.missingCriticalFields, ...evaluation.missingRecommendedFields].slice(0, 5).join(', ')}.
+        </p>
+      ) : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-2xl border border-amber-200 bg-white px-4 py-2 text-sm text-amber-950 transition-colors hover:bg-amber-100"
+          style={{ fontWeight: 700 }}
+        >
+          Volver a editar
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="rounded-2xl bg-amber-700 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-800"
+          style={{ fontWeight: 700 }}
+        >
+          Crear y seguir fortaleciendo
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getFieldContextualHelp(field: ActiveFrontField) {
+  const help: Partial<Record<keyof StrategicFrontFormState, {
+    text: string;
+    goodExample?: string;
+    weakExample?: string;
+    examples?: string[];
+  }>> = {
+    name: {
+      text: 'Un buen nombre expresa prioridad, no herramienta.',
+      goodExample: 'Mejorar activacion de nuevos clientes B2B.',
+      weakExample: 'Crear app de onboarding.',
+    },
+    mainKpi: {
+      text: 'El KPI debe indicar como sabras que el frente avanza. No necesita estar perfecto ahora, pero si debe apuntar a una senal observable.',
+      examples: ['Tiempo promedio de activacion', 'Tasa de conversion', 'Reclamos por demora', 'Uso semanal', 'Costo operativo', 'Cumplimiento de SLA'],
+    },
+    target: {
+      text: 'La meta debe conversar con el KPI. Si tu KPI es tiempo, tu meta debe expresar reduccion o mejora de tiempo.',
+      goodExample: 'Reducir tiempo de activacion de 21 a 15 dias.',
+    },
+    baseline: {
+      text: 'Si no conoces el baseline exacto, puedes dejarlo como estimado o pendiente de medir, pero no lo inventes.',
+    },
+    sponsor: {
+      text: 'El sponsor no ejecuta el frente todos los dias. Es quien puede respaldarlo, priorizarlo o destrabar decisiones.',
+    },
+    horizon: {
+      text: 'El horizonte no es una fecha de cierre definitiva. Es el momento en que revisaras si el frente muestra avance.',
+    },
+    strategicObjective: {
+      text: 'Describe el resultado de negocio que quieres mover. Evita empezar por la solucion; enfocate en el cambio que esperas lograr.',
+    },
+  };
+
+  return field ? help[field] ?? null : null;
 }
 
 function EmptyStrategicFrontsState({ onCreate }: { onCreate: () => void }) {
@@ -1098,6 +1465,7 @@ function SelectField({
   label,
   value,
   onChange,
+  onFocus,
   options,
   required,
   error,
@@ -1105,6 +1473,7 @@ function SelectField({
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
   options: Array<{ value: string; label: string }>;
   required?: boolean;
   error?: string;
@@ -1118,6 +1487,7 @@ function SelectField({
       <select
         value={value}
         onChange={event => onChange(event.target.value)}
+        onFocus={onFocus}
         className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
           error ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'
         }`}
@@ -1137,6 +1507,7 @@ function FormField({
   label,
   value,
   onChange,
+  onFocus,
   placeholder,
   helper,
   error,
@@ -1146,6 +1517,7 @@ function FormField({
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
   placeholder?: string;
   helper?: string;
   error?: string;
@@ -1162,6 +1534,7 @@ function FormField({
         type={type}
         value={value}
         onChange={event => onChange(event.target.value)}
+        onFocus={onFocus}
         placeholder={placeholder}
         className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
           error ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'
@@ -1177,6 +1550,7 @@ function TextAreaField({
   label,
   value,
   onChange,
+  onFocus,
   placeholder,
   helper,
   error,
@@ -1185,6 +1559,7 @@ function TextAreaField({
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
   placeholder?: string;
   helper?: string;
   error?: string;
@@ -1199,6 +1574,7 @@ function TextAreaField({
       <textarea
         value={value}
         onChange={event => onChange(event.target.value)}
+        onFocus={onFocus}
         placeholder={placeholder}
         rows={4}
         className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 ${
@@ -1305,6 +1681,26 @@ function mapFormToCreateInput(form: StrategicFrontFormState, status: StrategicFr
   };
 }
 
+function mapFormToQualityInput(form: StrategicFrontFormState) {
+  return {
+    name: form.name,
+    strategicObjective: form.strategicObjective,
+    sponsor: form.sponsor,
+    sponsorEmail: form.sponsorEmail,
+    mainKpi: form.mainKpi,
+    baseline: form.baseline,
+    target: form.target,
+    threshold: form.threshold,
+    area: form.area,
+    horizon: form.horizon,
+    endDate: form.endDate,
+    priority: form.priority,
+    status: form.status,
+    whyNow: form.whyNow,
+    notes: form.notes,
+  };
+}
+
 function validateFrontForm(
   form: StrategicFrontFormState,
   { allowDraft }: { allowDraft: boolean },
@@ -1312,22 +1708,21 @@ function validateFrontForm(
   const errors: FrontFormErrors = {};
 
   if (!form.name.trim()) errors.name = 'Define un nombre para el frente.';
+  if (allowDraft) return errors;
   if (!form.strategicObjective.trim()) errors.strategicObjective = 'Describe la prioridad estratégica que quieres mover.';
   if (!form.mainKpi.trim()) errors.mainKpi = 'Agrega un KPI o señal principal.';
-  if (!form.target.trim()) errors.target = 'Define la meta esperada.';
   if (!form.horizon.trim()) errors.horizon = 'Indica un horizonte.';
   if (!form.area.trim()) errors.area = 'Indica el área o unidad involucrada.';
   if (!form.priority.trim()) errors.priority = 'Selecciona una prioridad.';
 
-  if (!allowDraft && (!form.mainKpi.trim() || !form.target.trim())) {
+  if (!allowDraft && !form.mainKpi.trim()) {
     errors.mainKpi = errors.mainKpi ?? 'No puedes activarlo sin un KPI principal.';
-    errors.target = errors.target ?? 'No puedes activarlo sin una meta esperada.';
   }
 
   return errors;
 }
 
-function buildClarityInsight(form: StrategicFrontFormState): ClarityInsight {
+function buildClarityInsight(form: StrategicFrontFormState): { goodPoints: string[]; missingPoints: string[]; nextStep: string } {
   const goodPoints: string[] = [];
   const missingPoints: string[] = [];
 
