@@ -4,6 +4,11 @@ export const createProjectSchema = z.object({
   name: z.string().min(3).max(200),
   description: z.string().max(1000).optional(),
   cohort: z.string().optional(),
+  // Issue #92: when the iniciativa is created from within a reto (Challenge), this
+  // links it so the portfolio-lead dashboard can track it under that reto. Optional —
+  // standalone iniciativas omit it. The link is persisted as InitiativePortfolioMeta
+  // (Project has no direct challengeId column).
+  challengeId: z.string().optional(),
 });
 
 export const updateProjectSchema = z.object({

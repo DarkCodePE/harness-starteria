@@ -33,9 +33,10 @@
  */
 import type { Request, Response, NextFunction } from 'express';
 import { entitlementService } from './entitlement.service';
-import { FEATURE_KIND, type Feature } from './types';
+import { FEATURE_KIND, type Feature, type EntitlementResult } from './types';
 import { AppError } from '../../shared/errors/AppError';
 import { logger } from '../../shared/utils/logger';
+import { config } from '../../config';
 
 interface RequireEntitlementOptions {
   /** How many units this request consumes (default 1). */
@@ -67,7 +68,26 @@ export function requireEntitlement(
         ? await options.resourceCount(req)
         : undefined;
 
-      const result = await entitlementService.check(userId, feature, qty, currentCount);
+      let result: EntitlementResult;
+      try {
+        result = await entitlementService.check(userId, feature, qty, currentCount);
+      } catch (err) {
+        // The entitlement layer (PRD-005) must NEVER take down a core flow in shadow
+        // mode — that's its documented contract. If check() itself throws (e.g. the
+        // billing tables aren't provisioned yet in this environment, issue #82), fail
+        // OPEN while enforcement is off, and fail CLOSED only when the paywall is
+        // deliberately enforced.
+        if (!config.billingEnforcementEnabled) {
+          logger.error(
+            { err, feature, userId },
+            '[entitlement] check failed — allowing through (shadow mode, fail-open)',
+          );
+          next();
+          return;
+        }
+        next(err);
+        return;
+      }
       req.entitlement = result;
 
       if (!result.allowed) {

@@ -694,7 +694,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     options?: { challengeLink?: ProjectChallengeLink },
   ): Promise<{ success: true; project: Project } | { success: false; error: string }> => {
     try {
-      const response = await projectService.create({ name, description });
+      // Issue #92: forward the reto link so the backend persists InitiativePortfolioMeta
+      // (the iniciativa shows up under its reto in the portfolio-lead dashboard).
+      const response = await projectService.create({
+        name,
+        description,
+        challengeId: options?.challengeLink?.challengeId,
+      });
       const ownerMember: TeamMember | null = user
         ? { id: user.id, name: user.name, email: user.email, role: 'Owner', status: 'Activo', initials: user.initials }
         : null;
