@@ -172,6 +172,33 @@ export async function listInitiatives(challengeId: string): Promise<Initiative[]
   return data.data;
 }
 
+/**
+ * The portfolio link of a project (reto + frente), or null if the iniciativa is not
+ * linked to a reto. Used by the Steps portal breadcrumb (#93).
+ */
+export interface InitiativeMeta {
+  id: string;
+  projectId: string;
+  challengeId: string;
+  status: string;
+  challenge: {
+    id: string;
+    title: string;
+    name: string | null;
+    strategicFrontId: string;
+    status: string;
+    strategicFront: { id: string; name: string } | null;
+  } | null;
+}
+
+/** Get the portfolio meta (reto + frente) for a project, or null if unlinked (#93). */
+export async function getInitiativeMeta(projectId: string): Promise<InitiativeMeta | null> {
+  const { data } = await api.get<ApiResponse<InitiativeMeta | null>>(
+    `/portfolio/initiatives/${projectId}/meta`,
+  );
+  return data.data;
+}
+
 /** Upsert the portfolio meta for an initiative (project). */
 export async function upsertInitiativeMeta(
   projectId: string,

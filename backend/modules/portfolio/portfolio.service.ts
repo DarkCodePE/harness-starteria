@@ -217,7 +217,15 @@ export class PortfolioService {
       where: { projectId },
       include: {
         challenge: {
-          select: { id: true, title: true, strategicFrontId: true, status: true },
+          select: {
+            id: true,
+            title: true,
+            name: true,
+            strategicFrontId: true,
+            status: true,
+            // #93: the Steps-portal breadcrumb needs the frente name, not just the reto.
+            strategicFront: { select: { id: true, name: true } },
+          },
         },
       },
     });
