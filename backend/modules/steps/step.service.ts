@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
 import { StatusMapper } from '../../shared/utils/status-mapper';
 import { validateTransition } from '../projects/state-machine';
+import { syncInitiativeProgress } from '../portfolio/initiative-progress';
 import { Step, StepStatus, ModuleStatus } from '../../shared/types';
 
 export class StepService {
@@ -49,6 +50,10 @@ export class StepService {
       data: { status: dbStatus as any },
       include: { modules: true },
     });
+
+    // Issue #95: reflect the new step progress in the portfolio-lead dashboard
+    // (best-effort, never throws).
+    await syncInitiativeProgress(this.prisma, projectId);
 
     return updated as unknown as Step;
   }

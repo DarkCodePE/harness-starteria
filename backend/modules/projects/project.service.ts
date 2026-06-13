@@ -3,6 +3,7 @@ import { AppError } from '../../shared/errors/AppError';
 import { Role, Project, Step0Data, Step0Status } from '../../shared/types';
 import { StatusMapper } from '../../shared/utils/status-mapper';
 import { validateTransition } from './state-machine';
+import { syncInitiativeProgress } from '../portfolio/initiative-progress';
 import { CreateProjectInput, UpdateProjectInput, UpdateSponsorDataInput } from './project.schemas';
 
 const DEFAULT_STEPS = [
@@ -220,6 +221,10 @@ export class ProjectService {
       },
       include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
     });
+
+    // Issue #95: completing/advancing Step 0 should move the iniciativa forward in the
+    // portfolio-lead dashboard (best-effort, never throws).
+    await syncInitiativeProgress(this.prisma, projectId);
 
     return updated as unknown as Project;
   }
