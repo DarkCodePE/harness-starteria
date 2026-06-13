@@ -1,4 +1,6 @@
-import React, { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import * as portfolioService from '../../../app/services/portfolioService';
+import { adaptStrategicFront, adaptChallenge, adaptInitiative } from '../domain/adapters';
 import {
   buildChallengeActivationMessageDraft,
   buildDefaultActivationInputs,
@@ -46,6 +48,37 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
   const [initiativeOverlaps, setInitiativeOverlaps] = useState(DEFAULT_INITIATIVE_OVERLAPS);
   const [portfolioDecisions, setPortfolioDecisions] = useState(DEFAULT_PORTFOLIO_DECISIONS);
   const [executiveOutputs, setExecutiveOutputs] = useState(DEFAULT_EXECUTIVE_OUTPUTS);
+
+  // #100: hydrate the read path from the real backend (frentes → retos → iniciativas).
+  // The mock fixtures above are the initial/fallback state, kept if the API is empty or
+  // unreachable so local dev still works. Mutations remain local for now (follow-up).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rawFronts = await portfolioService.listStrategicFronts();
+        if (!rawFronts || rawFronts.length === 0) return; // no real data → keep mocks
+        const fronts = rawFronts.map(adaptStrategicFront);
+        const challengesByFront = await Promise.all(
+          fronts.map((f) => portfolioService.listChallenges(f.id).catch(() => [])),
+        );
+        const allChallenges = challengesByFront.flat().map(adaptChallenge);
+        const initiativesByChallenge = await Promise.all(
+          allChallenges.map((c) => portfolioService.listInitiatives(c.id).catch(() => [])),
+        );
+        const allInitiatives = initiativesByChallenge.flat().map(adaptInitiative);
+        if (cancelled) return;
+        setStrategicFronts(fronts);
+        setChallenges(allChallenges);
+        setInitiatives(allInitiatives);
+      } catch {
+        // Keep the mock fixtures on any failure.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo<PortfolioLeadContextValue>(() => ({
     strategicFronts,

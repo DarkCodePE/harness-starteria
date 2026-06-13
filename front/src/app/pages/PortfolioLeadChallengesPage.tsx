@@ -512,6 +512,7 @@ export function PortfolioLeadChallengesPage() {
                   expanded={isExpanded}
                   onToggleDetail={() => setExpandedChallengeId(current => (current === challenge.id ? null : challenge.id))}
                   onExplore={() => navigate(`/portfolio/iniciativas?challengeId=${encodeURIComponent(card.id)}`)}
+                  onCreateInitiative={() => navigate(`/projects/new?challengeId=${encodeURIComponent(challenge.id)}`)}
                   onEdit={() => openEditDrawer(card.id)}
                   onChangeStatus={(nextStatus) => updateChallenge(challenge.id, { status: nextStatus })}
                   onChangeOwnerStatus={(status) => updateChallengeStakeholderStatus(challenge.id, 'challengeOwnerStatus', status)}
@@ -657,6 +658,7 @@ function ChallengeListItem({
   expanded,
   onToggleDetail,
   onExplore,
+  onCreateInitiative,
   onEdit,
   onChangeStatus,
   onChangeOwnerStatus,
@@ -671,6 +673,7 @@ function ChallengeListItem({
   expanded: boolean;
   onToggleDetail: () => void;
   onExplore: () => void;
+  onCreateInitiative: () => void;
   onEdit: () => void;
   onChangeStatus: (status: ChallengeStatus) => void;
   onChangeOwnerStatus: (status: StakeholderStatus) => void;
@@ -770,6 +773,16 @@ function ChallengeListItem({
               style={{ fontWeight: 700 }}
             >
               Ver iniciativas
+              <ArrowRight size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={onCreateInitiative}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 transition-colors hover:bg-indigo-100"
+              style={{ fontWeight: 700 }}
+              data-testid="create-initiative-from-challenge"
+            >
+              Crear iniciativa{challenge.assignedSquad.length > 0 ? ' con este squad' : ''}
               <ArrowRight size={15} />
             </button>
             <details className="group relative">
