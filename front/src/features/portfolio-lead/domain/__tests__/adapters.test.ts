@@ -6,7 +6,13 @@
  * (#96), and safe defaults for the rich fields the UI reads.
  */
 import { describe, it, expect } from 'vitest';
-import { adaptStrategicFront, adaptChallenge, adaptInitiative } from '../adapters';
+import {
+  adaptStrategicFront,
+  adaptChallenge,
+  adaptInitiative,
+  toBackendStrategicFront,
+  toBackendChallenge,
+} from '../adapters';
 
 describe('adaptStrategicFront', () => {
   it('maps columns and derives challengeCount from _count', () => {
@@ -73,5 +79,46 @@ describe('adaptInitiative', () => {
     const init = adaptInitiative({ id: 'm', challengeId: 'c', status: 'draft', project: { id: 'p', name: 'X' } });
     expect(init.currentStep).toBe('Step 0');
     expect(init.projectId).toBe('p');
+  });
+});
+
+describe('toBackendStrategicFront (write path #104)', () => {
+  it('coerces status/priority to the backend-accepted enums and drops front-only fields', () => {
+    const out = toBackendStrategicFront({
+      name: 'F', strategicObjective: 'obj', sponsor: 'Ana',
+      status: 'in_definition', priority: 'Critica',
+      threshold: 'x', endDate: '2026-01-01', notes: 'n', // front-only → dropped
+    });
+    expect(out.status).toBe('draft');   // in_definition → draft
+    expect(out.priority).toBe('Alta');  // Critica → Alta (backend has no Critica)
+    expect(out.name).toBe('F');
+    expect(out).not.toHaveProperty('threshold');
+    expect(out).not.toHaveProperty('notes');
+  });
+});
+
+describe('toBackendChallenge (write path #104)', () => {
+  it('sets title from name and coerces type/status to legacy enums', () => {
+    const out = toBackendChallenge({
+      name: 'Reducir esperas',
+      challengeType: 'growth',          // canonical → legacy
+      status: 'ready_to_activate',      // canonical → legacy
+      whatWeWantToMove: 'algo',
+      challengeOwnerStatus: 'confirmado',
+      activationInputs: { urgency: 'alta' }, // front-only → dropped
+    });
+    expect(out.title).toBe('Reducir esperas'); // backend REQUIRES title
+    expect(out.name).toBe('Reducir esperas');
+    expect(out.type).toBe('crecimiento');
+    expect(out.status).toBe('listo_para_activar');
+    expect(out.challengeOwnerStatus).toBe('confirmado');
+    expect(out).not.toHaveProperty('activationInputs');
+  });
+
+  it('omits an activationMode the backend does not support', () => {
+    const out = toBackendChallenge({ name: 'X', activationMode: 'equipo_core_encargado' });
+    expect(out).not.toHaveProperty('activationMode');
+    const ok = toBackendChallenge({ name: 'X', activationMode: 'squad_asignado' });
+    expect(ok.activationMode).toBe('squad_asignado');
   });
 });
