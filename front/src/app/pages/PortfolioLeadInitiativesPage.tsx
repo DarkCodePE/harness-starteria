@@ -1323,6 +1323,9 @@ export function PortfolioLeadInitiativesPage() {
                   onOpenDecision={row.canDecision ? () => navigate(`/portfolio/decisiones?initiativeId=${encodeURIComponent(initiative.id)}&challengeId=${encodeURIComponent(challenge?.id ?? initiative.challengeId)}&frontId=${encodeURIComponent(front?.id ?? initiative.strategicFrontId)}`) : null}
                   onOpenReport={row.canReport ? () => navigate(`/portfolio/reportes?initiativeId=${encodeURIComponent(initiative.id)}&challengeId=${encodeURIComponent(challenge?.id ?? initiative.challengeId)}&frontId=${encodeURIComponent(front?.id ?? initiative.strategicFrontId)}`) : null}
                   onOpenCore={challenge ? () => navigate(`/retos/${encodeURIComponent(challenge.id)}`) : null}
+                  onOpenInitiative={initiative.projectId
+                    ? () => navigate(`/projects/${encodeURIComponent(initiative.projectId!)}/step/${initiative.currentStep.match(/\d/)?.[0] ?? '0'}`)
+                    : null}
                 />
               );
             })}
@@ -1462,6 +1465,7 @@ function InitiativeCard({
   onOpenDecision,
   onOpenReport,
   onOpenCore,
+  onOpenInitiative,
 }: {
   initiative: InitiativeItem;
   frontName: string;
@@ -1498,6 +1502,7 @@ function InitiativeCard({
   onOpenDecision: (() => void) | null;
   onOpenReport: (() => void) | null;
   onOpenCore: (() => void) | null;
+  onOpenInitiative: (() => void) | null;
 }) {
   const toneClasses: Record<'slate' | 'emerald' | 'amber' | 'rose' | 'violet', string> = {
     slate: 'border-slate-200 bg-slate-50 text-slate-600',
@@ -1637,6 +1642,11 @@ function InitiativeCard({
         {onOpenCore ? (
           <button onClick={onOpenCore} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700" style={{ fontWeight: 600 }}>
             Abrir flujo Step 0–4
+          </button>
+        ) : null}
+        {onOpenInitiative ? (
+          <button onClick={onOpenInitiative} className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700" style={{ fontWeight: 600 }} data-testid="open-initiative">
+            Abrir iniciativa
           </button>
         ) : null}
       </div>

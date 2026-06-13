@@ -473,6 +473,9 @@ export interface PortfolioValidation {
 
 export interface Initiative {
   id: string;
+  /** Real backend Project id (#100). Present when hydrated from the API; enables
+   *  deep-linking into the Steps portal (#94). Absent on mock fixtures. */
+  projectId?: string;
   name: string;
   strategicFrontId: string;
   challengeId: string;
