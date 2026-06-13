@@ -1,6 +1,12 @@
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import * as portfolioService from '../../../app/services/portfolioService';
-import { adaptStrategicFront, adaptChallenge, adaptInitiative } from '../domain/adapters';
+import {
+  adaptStrategicFront,
+  adaptChallenge,
+  adaptInitiative,
+  toBackendStrategicFront,
+  toBackendChallenge,
+} from '../domain/adapters';
 import {
   buildChallengeActivationMessageDraft,
   buildDefaultActivationInputs,
@@ -38,6 +44,84 @@ import type {
   StrategicFront,
   StrategicFrontStatus,
 } from '../domain/types';
+
+type WithId = { id: string };
+
+/**
+ * #104 — optimistic CREATE. The temp row is already in state; once the backend confirms,
+ * swap it for the real (finalized) row; on failure, drop it. Keeps the handler synchronous
+ * (callers still get the temp object immediately).
+ */
+function persistCreate<Raw, T extends WithId>(
+  tempId: string,
+  call: () => Promise<Raw>,
+  finalize: (raw: Raw) => T,
+  setList: React.Dispatch<React.SetStateAction<T[]>>,
+  label: string,
+): void {
+  call()
+    .then((raw) => setList((prev) => prev.map((it) => (it.id === tempId ? finalize(raw) : it))))
+    .catch((err) => {
+      setList((prev) => prev.filter((it) => it.id !== tempId));
+      // eslint-disable-next-line no-console
+      console.error(`[portfolio] create ${label} failed — reverted`, err);
+    });
+}
+
+/**
+ * #104 — optimistic UPDATE. State is already mutated; on backend failure, restore the
+ * pre-change snapshot.
+ */
+function persistUpdate<T>(
+  call: () => Promise<unknown>,
+  snapshot: T[],
+  setList: React.Dispatch<React.SetStateAction<T[]>>,
+  label: string,
+): void {
+  call().catch((err) => {
+    setList(snapshot);
+    // eslint-disable-next-line no-console
+    console.error(`[portfolio] update ${label} failed — reverted`, err);
+  });
+}
+
+/**
+ * #104 — reconcile a backend-confirmed Challenge into a list, preserving the front-only
+ * computed fields the backend doesn't store (activationInputs/recommendation/draft).
+ */
+function reconcileChallenge(prev: Challenge[], challengeId: string, raw: unknown): Challenge[] {
+  return prev.map((c) =>
+    c.id === challengeId
+      ? {
+          ...adaptChallenge(raw as Record<string, unknown>),
+          activationInputs: c.activationInputs,
+          activationRecommendationNote: c.activationRecommendationNote,
+          activationMessageDraft: c.activationMessageDraft,
+        }
+      : c,
+  );
+}
+
+/**
+ * #104 — optimistic challenge-scoped mutation (squad, invitations, activation). The
+ * backend endpoint returns the updated Challenge; on success we reconcile (adopting real
+ * nested ids), on failure we restore the snapshot.
+ */
+function persistChallengeMutation(
+  challengeId: string,
+  call: () => Promise<unknown>,
+  snapshot: Challenge[],
+  setChallenges: React.Dispatch<React.SetStateAction<Challenge[]>>,
+  label: string,
+): void {
+  call()
+    .then((raw) => setChallenges((prev) => reconcileChallenge(prev, challengeId, raw)))
+    .catch((err) => {
+      setChallenges(snapshot);
+      // eslint-disable-next-line no-console
+      console.error(`[portfolio] ${label} failed — reverted`, err);
+    });
+}
 
 const PortfolioLeadContext = createContext<PortfolioLeadContextValue | null>(null);
 
@@ -98,21 +182,42 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       };
 
       setStrategicFronts(prev => [front, ...prev]);
+      persistCreate(
+        front.id,
+        () => portfolioService.createStrategicFront(toBackendStrategicFront(input) as CreateStrategicFrontInput),
+        (raw) => adaptStrategicFront(raw as Record<string, unknown>),
+        setStrategicFronts,
+        'strategic-front',
+      );
       return front;
     },
     updateStrategicFront: (frontId, input) => {
+      const snapshot = strategicFronts;
       setStrategicFronts(prev => prev.map(front => (
         front.id === frontId
           ? { ...front, ...input, lastUpdatedAt: new Date().toISOString().split('T')[0] }
           : front
       )));
+      persistUpdate(
+        () => portfolioService.updateStrategicFront(frontId, toBackendStrategicFront(input)),
+        snapshot,
+        setStrategicFronts,
+        'strategic-front',
+      );
     },
     updateStrategicFrontStatus: (frontId, status) => {
+      const snapshot = strategicFronts;
       setStrategicFronts(prev => prev.map(front => (
         front.id === frontId
           ? { ...front, status, lastUpdatedAt: new Date().toISOString().split('T')[0] }
           : front
       )));
+      persistUpdate(
+        () => portfolioService.updateStrategicFront(frontId, toBackendStrategicFront({ status })),
+        snapshot,
+        setStrategicFronts,
+        'strategic-front-status',
+      );
     },
     createChallenge: input => {
       const challenge: Challenge = {
@@ -148,15 +253,34 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           front.id === input.strategicFrontId ? { ...front, challengeCount: front.challengeCount + 1 } : front,
         ),
       );
+      persistCreate(
+        challenge.id,
+        () => portfolioService.createChallenge(input.strategicFrontId, toBackendChallenge(input) as CreateChallengeInput),
+        (raw) => ({
+          ...adaptChallenge(raw as Record<string, unknown>),
+          activationInputs: challenge.activationInputs,
+          activationRecommendationNote: challenge.activationRecommendationNote,
+          activationMessageDraft: challenge.activationMessageDraft,
+        }),
+        setChallenges,
+        'challenge',
+      );
       return challenge;
     },
     updateChallenge: (challengeId, input) => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
           ...input,
           lastUpdatedAt: new Date().toISOString().split('T')[0],
         })),
+      );
+      persistUpdate(
+        () => portfolioService.updateChallenge(challengeId, toBackendChallenge(input)),
+        snapshot,
+        setChallenges,
+        'challenge',
       );
     },
     updateChallengeActivationMode: (challengeId, mode) => {
@@ -195,6 +319,7 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
     },
     updateChallengeStakeholderStatus: (challengeId, stakeholder, status) => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -205,6 +330,12 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           },
           status: ['draft', 'listo_para_activar'].includes(challenge.status) ? 'listo_para_activar' : challenge.status,
         })),
+      );
+      persistUpdate(
+        () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ [stakeholder]: status })),
+        snapshot,
+        setChallenges,
+        'stakeholder-status',
       );
     },
     acceptChallengeActivationRecommendation: challengeId => {
@@ -242,6 +373,7 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
     },
     activateOpenCall: challengeId => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -250,11 +382,19 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           publicationNotes: 'La convocatoria ya puede prepararse para publicacion.',
         })),
       );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.activateOpenCall(challengeId),
+        snapshot,
+        setChallenges,
+        'activateOpenCall',
+      );
     },
     addSelectedPerson: (challengeId, value) => {
       const normalized = value.trim();
       if (!normalized) return;
 
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -270,8 +410,16 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           publicationNotes: 'Ya hay personas objetivo, pero aun falta publicar la invitacion.',
         })),
       );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.addInvitation(challengeId, normalized),
+        snapshot,
+        setChallenges,
+        'addInvitation',
+      );
     },
     updateSelectedPersonStatus: (challengeId, invitationId, status) => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -281,11 +429,19 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           status: challenge.visibleToParticipants ? challenge.status : 'activo_interno',
         })),
       );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.updateInvitation(challengeId, invitationId, status),
+        snapshot,
+        setChallenges,
+        'updateInvitation',
+      );
     },
     addSquadMember: (challengeId, value, role) => {
       const normalized = value.trim();
       if (!normalized) return;
 
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -301,8 +457,16 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           publicationNotes: 'El squad ya esta definido internamente.',
         })),
       );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.addSquadMember(challengeId, normalized, role),
+        snapshot,
+        setChallenges,
+        'addSquadMember',
+      );
     },
     updateSquadMemberRole: (challengeId, memberId, role) => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -310,6 +474,13 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
             member.id === memberId ? { ...member, role } : member,
           ),
         })),
+      );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.updateSquadMember(challengeId, memberId, role),
+        snapshot,
+        setChallenges,
+        'updateSquadMember',
       );
     },
     confirmAssignedSquad: challengeId => {
@@ -349,6 +520,7 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
     },
     publishChallenge: challengeId => {
+      const snapshot = challenges;
       setChallenges(prev =>
         syncChallengeSummaries(
           patchChallenge(prev, challengeId, challenge => ({
@@ -365,6 +537,13 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           })),
           initiatives,
         ),
+      );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.publishChallenge(challengeId),
+        snapshot,
+        setChallenges,
+        'publishChallenge',
       );
     },
     loadChallengeCoverageDemo: challengeId => {

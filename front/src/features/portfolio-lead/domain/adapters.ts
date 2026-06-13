@@ -99,6 +99,68 @@ export function adaptChallenge(raw: Raw): Challenge {
   };
 }
 
+// ── domain → backend (write path, #104) ──────────────────────────────────────
+// The backend zod schemas are non-strict (unknown keys are stripped), so front-only
+// fields like activationInputs pass through harmlessly. But field NAMES and ENUMS must
+// be coerced: the backend requires `title` (front uses `name`) and only accepts the
+// legacy enum sets. These maps coerce canonical→legacy and drop unsupported values.
+
+const FRONT_STATUS_TO_BACKEND: Record<string, 'draft' | 'active' | 'paused' | 'closed'> = {
+  draft: 'draft', in_definition: 'draft',
+  active: 'active', with_active_challenges: 'active', in_tracking: 'active', tracking: 'active', pending_decision: 'active',
+  paused: 'paused',
+  closed: 'closed',
+};
+const PRIORITY_TO_BACKEND: Record<string, 'Alta' | 'Media' | 'Baja'> = {
+  Alta: 'Alta', Media: 'Media', Baja: 'Baja', Critica: 'Alta',
+};
+const CHALLENGE_TYPE_TO_BACKEND: Record<string, 'correccion' | 'crecimiento' | 'exploracion'> = {
+  correccion: 'correccion', crecimiento: 'crecimiento', exploracion: 'exploracion',
+  correction: 'correccion', growth: 'crecimiento', exploration: 'exploracion',
+};
+const CHALLENGE_STATUS_TO_BACKEND: Record<string, string> = {
+  draft: 'draft',
+  listo_para_activar: 'listo_para_activar', ready_to_activate: 'listo_para_activar',
+  activo_interno: 'activo_interno', activating_team: 'activo_interno', active: 'activo_interno',
+  publicado: 'publicado',
+  recibiendo_iniciativas: 'recibiendo_iniciativas', receiving_initiatives: 'recibiendo_iniciativas',
+  con_iniciativas_activas: 'con_iniciativas_activas', in_tracking: 'con_iniciativas_activas',
+  pendiente_de_decision: 'pendiente_de_decision', pending_decision: 'pendiente_de_decision',
+  cerrado: 'cerrado', closed: 'cerrado',
+};
+const CHALLENGE_ACTIVATION_BACKEND = new Set(['convocatoria_abierta', 'personas_seleccionadas', 'squad_asignado']);
+const CHALLENGE_COVERAGE_BACKEND = new Set(['sin_cobertura', 'cobertura_parcial', 'cobertura_suficiente', 'resuelto', 'reformular', 'cerrar']);
+
+const has = (v: unknown): boolean => v != null && v !== '';
+
+export function toBackendStrategicFront(input: Raw): Raw {
+  const out: Raw = {};
+  for (const k of ['name', 'strategicObjective', 'whyNow', 'mainKpi', 'baseline', 'target', 'horizon', 'sponsor']) {
+    if (has(input[k])) out[k] = input[k];
+  }
+  if (has(input.status)) out.status = FRONT_STATUS_TO_BACKEND[input.status] ?? 'draft';
+  if (has(input.priority)) out.priority = PRIORITY_TO_BACKEND[input.priority] ?? 'Media';
+  return out;
+}
+
+export function toBackendChallenge(input: Raw): Raw {
+  const out: Raw = {};
+  const name = input.name ?? input.title;
+  if (has(name)) { out.title = name; out.name = name; }
+  for (const k of ['whatWeWantToMove', 'objective', 'whyNow', 'successCriteria', 'challengeOwner', 'publicationNotes']) {
+    if (has(input[k])) out[k] = input[k];
+  }
+  if (has(input.challengeType)) { const t = CHALLENGE_TYPE_TO_BACKEND[input.challengeType]; if (t) out.type = t; }
+  if (has(input.challengeOwnerStatus)) out.challengeOwnerStatus = input.challengeOwnerStatus;
+  if (has(input.sponsorStatus)) out.sponsorStatus = input.sponsorStatus;
+  if (has(input.openCallStatus)) out.openCallStatus = input.openCallStatus;
+  if (typeof input.visibleToParticipants === 'boolean') out.visibleToParticipants = input.visibleToParticipants;
+  if (has(input.status)) { const s = CHALLENGE_STATUS_TO_BACKEND[input.status]; if (s) out.status = s; }
+  if (input.activationMode && CHALLENGE_ACTIVATION_BACKEND.has(input.activationMode)) out.activationMode = input.activationMode;
+  if (input.coverageStatus && CHALLENGE_COVERAGE_BACKEND.has(input.coverageStatus)) out.coverageStatus = input.coverageStatus;
+  return out;
+}
+
 export function adaptInitiative(raw: Raw): Initiative {
   const project = raw.project ?? {};
   return {
