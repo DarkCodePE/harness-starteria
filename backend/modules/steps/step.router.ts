@@ -6,6 +6,7 @@ import { validate } from '../../shared/middleware/validate';
 import { updateStepStatusSchema, updateModuleSchema, requestSessionSchema } from './step.schemas';
 
 import { authenticate } from '../auth/auth.middleware';
+import { requireEntitlement } from '../billing/entitlement.middleware';
 const service = new StepService(prisma);
 const controller = new StepController(service);
 
@@ -24,8 +25,13 @@ stepRouter.patch(
   controller.updateModule
 );
 stepRouter.post('/:projectId/steps/:number/ai-review', controller.submitAiReview);
+// PRD-005 / issue #85: `mentor_credit` call site. Booking a mentor session
+// consumes one credit — metered in shadow mode (never blocks until
+// BILLING_ENFORCEMENT_ENABLED flips), and the per-project ledger
+// (Project.mentorCredits) is decremented in the service.
 stepRouter.post(
   '/:projectId/steps/:number/session',
+  requireEntitlement('mentor_credit'),
   validate(requestSessionSchema),
   controller.requestSession
 );
