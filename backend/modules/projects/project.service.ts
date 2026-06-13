@@ -76,40 +76,68 @@ export class ProjectService {
   }
 
   async createProject(userId: string, data: CreateProjectInput): Promise<Project> {
-    const project = await this.prisma.project.create({
-      data: {
-        name: data.name,
-        description: data.description,
-        ownerId: userId,
-        cohortId: data.cohort,
-        status: 'DRAFT',
-        currentStep: 1,
-        step0Status: 'NOT_STARTED',
-        mentorCredits: 3,
-        riskLevel: 'LOW',
-        teamMembers: {
-          create: { userId, role: 'OWNER', status: 'ACTIVE' },
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          ownerId: userId,
+          cohortId: data.cohort,
+          status: 'DRAFT',
+          currentStep: 1,
+          step0Status: 'NOT_STARTED',
+          mentorCredits: 3,
+          riskLevel: 'LOW',
+          teamMembers: {
+            create: { userId, role: 'OWNER', status: 'ACTIVE' },
+          },
+          steps: {
+            create: DEFAULT_STEPS.map((s) => ({
+              number: s.number,
+              name: s.name,
+              status: s.number === 1 ? 'NOT_STARTED' : 'BLOCKED',
+              progress: 0,
+              modules: {
+                create: s.modules.map((m, idx) => ({
+                  moduleId: m.id,
+                  name: m.name,
+                  status: s.number === 1 && idx === 0 ? 'DRAFT' : 'BLOCKED',
+                })),
+              },
+            })),
+          },
         },
-        steps: {
-          create: DEFAULT_STEPS.map((s) => ({
-            number: s.number,
-            name: s.name,
-            status: s.number === 1 ? 'NOT_STARTED' : 'BLOCKED',
-            progress: 0,
-            modules: {
-              create: s.modules.map((m, idx) => ({
-                moduleId: m.id,
-                name: m.name,
-                status: s.number === 1 && idx === 0 ? 'DRAFT' : 'BLOCKED',
-              })),
-            },
-          })),
-        },
-      },
-      include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
-    });
+        include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+      });
 
-    return project as unknown as Project;
+      // Issue #92: if this iniciativa is created from within a reto (Challenge),
+      // persist the link so the portfolio-lead dashboard can track it under that reto.
+      // The link lives in InitiativePortfolioMeta (Project has no direct challengeId).
+      // An unknown challengeId is ignored — creating a standalone iniciativa, or one
+      // referencing a since-deleted reto, must never fail here.
+      if (data.challengeId) {
+        const challenge = await tx.challenge.findUnique({
+          where: { id: data.challengeId },
+          select: { id: true, strategicFrontId: true },
+        });
+        if (challenge) {
+          await tx.initiativePortfolioMeta.upsert({
+            where: {
+              projectId_challengeId: { projectId: project.id, challengeId: challenge.id },
+            },
+            create: {
+              projectId: project.id,
+              challengeId: challenge.id,
+              strategicFrontId: challenge.strategicFrontId,
+              status: 'en_step_0',
+            },
+            update: {},
+          });
+        }
+      }
+
+      return project as unknown as Project;
+    });
   }
 
   async getProject(projectId: string, userId: string, role: Role): Promise<Project> {
