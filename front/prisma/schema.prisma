@@ -313,6 +313,7 @@ model User {
 
   projects           Project[]
   teamMemberships    TeamMember[]
+  challengeTeamMemberships ChallengeTeamMember[] // ADR-023: reto-scoped team membership
   mentorSessions     MentorSession[]
   evidence           Evidence[]
   refreshTokens      RefreshToken[]
@@ -475,6 +476,10 @@ model TeamMember {
   status    TeamMemberStatus @default(PENDING)
   invitedAt DateTime         @default(now())
   joinedAt  DateTime?
+  // ADR-023: marks rows materialized from the reto's ChallengeTeamMember at
+  // create-iniciativa time (inheritance). Manual additions stay false (override).
+  // Additive Boolean with default → safe for `prisma db push` (ADR-018).
+  inheritedFromChallenge Boolean @default(false)
 
   modulePermissions String[] // Module IDs the colaborador can edit
 
@@ -640,6 +645,7 @@ model Challenge {
 
   selectedPeople   ChallengeInvitation[]
   assignedSquad    ChallengeSquadMember[]
+  challengeTeam    ChallengeTeamMember[] // ADR-023: unified reto-scoped team (replaces assignedSquad)
   initiativeMetas  InitiativePortfolioMeta[]
   overlaps         InitiativeOverlap[]
   executiveOutputs ExecutiveOutput[]
@@ -660,6 +666,8 @@ model ChallengeInvitation {
   @@index([challengeId])
 }
 
+// DEPRECATED (ADR-023): superseded by ChallengeTeamMember. Kept read-only during the
+// transition; backfilled into ChallengeTeamMember by backend/scripts/backfill-challenge-team.ts.
 model ChallengeSquadMember {
   id          String    @id @default(cuid())
   challengeId String
@@ -670,6 +678,29 @@ model ChallengeSquadMember {
   updatedAt   DateTime  @updatedAt
 
   @@index([challengeId])
+}
+
+// ADR-023: unified reto-scoped team. One canonical team owned by the Challenge (reto),
+// inherited by its iniciativas (materialized into TeamMember at create-time, then
+// overridable per-iniciativa). Reuses TeamRole/TeamMemberStatus (orthogonal to the
+// ADR-009 6-role platform authz). `userId` is nullable for the squad-string transition.
+// Logical uniqueness (challengeId, userId) is enforced in PortfolioService via a
+// findFirst-guard, NOT @unique — `prisma db push` trips its data-loss guard on a
+// @unique added to a populated table (ADR-018/020). Null-userId label rows may repeat.
+model ChallengeTeamMember {
+  id          String           @id @default(cuid())
+  challengeId String
+  challenge   Challenge        @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  label       String? // free-text name/email when userId is unknown (backfill of squad value)
+  role        TeamRole         @default(VIEWER)
+  status      TeamMemberStatus @default(ACTIVE)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([challengeId])
+  @@index([userId])
 }
 
 model InitiativePortfolioMeta {

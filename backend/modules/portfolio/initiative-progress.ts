@@ -39,6 +39,49 @@ export function deriveInitiativePortfolioStatus(
 }
 
 /**
+ * Issue #113 (ADR-023) — derive the team cache for the dashboard from the iniciativa's
+ * resolved TeamMember roster (inherited members + manual overrides). Best-effort: on any
+ * failure returns {} so the status sync still proceeds. This keeps
+ * InitiativePortfolioMeta.teamMembers/teamOwner/teamLabel a read cache whose source of
+ * truth is ChallengeTeamMember (reto) + TeamMember (iniciativa), never client input.
+ */
+async function deriveTeamCache(
+  prisma: PrismaClient,
+  projectId: string,
+): Promise<{ teamMembers?: any; teamOwner?: string | null; teamLabel?: string | null }> {
+  try {
+    const members = await prisma.teamMember.findMany({
+      where: { projectId },
+      select: {
+        userId: true,
+        role: true,
+        status: true,
+        inheritedFromChallenge: true,
+        user: { select: { name: true, email: true } },
+      },
+      orderBy: [{ role: 'asc' }, { invitedAt: 'asc' }],
+    });
+
+    const inheritedCount = members.filter((m) => m.inheritedFromChallenge).length;
+    const ownerRow = members.find((m) => m.role === 'OWNER');
+    const teamOwner = ownerRow?.user?.name ?? ownerRow?.user?.email ?? null;
+    const teamLabel = `Equipo de ${members.length}${inheritedCount > 0 ? ` (${inheritedCount} heredado${inheritedCount > 1 ? 's' : ''})` : ''}`;
+    const teamMembers = members.map((m) => ({
+      userId: m.userId,
+      name: m.user?.name ?? null,
+      role: m.role,
+      status: m.status,
+      inherited: m.inheritedFromChallenge,
+    }));
+
+    return { teamMembers, teamOwner, teamLabel };
+  } catch (err) {
+    logger.error({ err, projectId }, '[portfolio] deriveTeamCache failed (non-fatal)');
+    return {};
+  }
+}
+
+/**
  * Best-effort sync of a project's linked initiatives. NEVER throws — a portfolio sync
  * hiccup must not break the step/project flow that triggered it.
  *
@@ -71,9 +114,18 @@ export async function syncInitiativeProgress(
       project.steps as unknown as { number: number; status: string }[],
     );
 
+    // Issue #113 (ADR-023/024): derive the team cache from the resolved TeamMember
+    // roster (inherited from the reto + manual overrides). This is the ONLY writer of
+    // meta.teamMembers/teamOwner/teamLabel — they are never accepted from the client.
+    const teamCache = await deriveTeamCache(prisma, projectId);
+
     await prisma.initiativePortfolioMeta.updateMany({
       where: { id: { in: metas.map((m) => m.id) } },
-      data: { status: derived as any, currentStep: derived.replace('en_step_', '') },
+      data: {
+        status: derived as any,
+        currentStep: derived.replace('en_step_', ''),
+        ...teamCache,
+      },
     });
   } catch (err) {
     logger.error({ err, projectId }, '[portfolio] syncInitiativeProgress failed (non-fatal)');

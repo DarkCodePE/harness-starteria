@@ -90,6 +90,41 @@ export const updateSquadMemberSchema = z.object({
   role: z.string().max(200),
 });
 
+// ─── Challenge Team Member (ADR-023) ───────────────────────────────────────────
+// Unified reto-scoped team. Accepts a userId (link to a real User) OR a free-text
+// label (transition compat / external person not yet a User). Roles reuse TeamRole.
+
+const teamRoleEnum = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
+const teamStatusEnum = z.enum(['ACTIVE', 'PENDING']);
+
+export const addChallengeTeamMemberSchema = z
+  .object({
+    userId: z.string().min(1).optional(),
+    label: z.string().min(1).max(500).optional(),
+    role: teamRoleEnum.optional(),
+    status: teamStatusEnum.optional(),
+  })
+  .refine((d) => Boolean(d.userId) || Boolean(d.label), {
+    message: 'Indica un userId o un label.',
+    path: ['userId'],
+  });
+
+export const updateChallengeTeamMemberSchema = z.object({
+  role: teamRoleEnum.optional(),
+  status: teamStatusEnum.optional(),
+  label: z.string().min(1).max(500).optional(),
+});
+
+// ─── Initiative Team Override (ADR-023 / #114) ─────────────────────────────────
+// Per-iniciativa override of the inherited team. Upserts a TeamMember (real User)
+// marked inheritedFromChallenge=false.
+
+export const upsertInitiativeTeamMemberSchema = z.object({
+  role: teamRoleEnum.optional(),
+  status: teamStatusEnum.optional(),
+  modulePermissions: z.array(z.string()).optional(),
+});
+
 // ─── Initiative Meta ─────────────────────────────────────────────────────────
 
 export const upsertInitiativeMetaSchema = z.object({
@@ -237,6 +272,9 @@ export type AddInvitationInput = z.infer<typeof addInvitationSchema>;
 export type UpdateInvitationInput = z.infer<typeof updateInvitationSchema>;
 export type AddSquadMemberInput = z.infer<typeof addSquadMemberSchema>;
 export type UpdateSquadMemberInput = z.infer<typeof updateSquadMemberSchema>;
+export type AddChallengeTeamMemberInput = z.infer<typeof addChallengeTeamMemberSchema>;
+export type UpdateChallengeTeamMemberInput = z.infer<typeof updateChallengeTeamMemberSchema>;
+export type UpsertInitiativeTeamMemberInput = z.infer<typeof upsertInitiativeTeamMemberSchema>;
 export type UpsertInitiativeMetaInput = z.infer<typeof upsertInitiativeMetaSchema>;
 export type CreateOverlapInput = z.infer<typeof createOverlapSchema>;
 export type CreateExecutiveOutputInput = z.infer<typeof createExecutiveOutputSchema>;

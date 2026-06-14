@@ -9,6 +9,9 @@ import {
   UpdateInvitationInput,
   AddSquadMemberInput,
   UpdateSquadMemberInput,
+  AddChallengeTeamMemberInput,
+  UpdateChallengeTeamMemberInput,
+  UpsertInitiativeTeamMemberInput,
   UpsertInitiativeMetaInput,
   CreateOverlapInput,
   CreateExecutiveOutputInput,
@@ -185,6 +188,141 @@ export class PortfolioService {
     });
   }
 
+  // ─── Challenge Team Members (ADR-023) ──────────────────────────────────────────
+  // Unified reto-scoped team. Replaces the squad strings + meta.teamMembers Json.
+
+  async listChallengeTeam(challengeId: string) {
+    const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
+    if (!challenge) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
+
+    return this.prisma.challengeTeamMember.findMany({
+      where: { challengeId },
+      include: { user: { select: { id: true, name: true, email: true, initials: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addChallengeTeamMember(challengeId: string, input: AddChallengeTeamMemberInput) {
+    const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
+    if (!challenge) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
+
+    // Logical uniqueness (challengeId, userId) — enforced here, NOT via @unique
+    // (prisma db push trips its data-loss guard on @unique over a populated table).
+    if (input.userId) {
+      const dup = await this.prisma.challengeTeamMember.findFirst({
+        where: { challengeId, userId: input.userId },
+        select: { id: true },
+      });
+      if (dup) {
+        throw AppError.conflict(
+          'Este usuario ya forma parte del equipo del reto.',
+          'CHALLENGE_TEAM_MEMBER_EXISTS',
+          { hint: 'Actualiza el miembro existente en lugar de duplicarlo.' },
+        );
+      }
+    }
+
+    return this.prisma.challengeTeamMember.create({
+      data: {
+        challengeId,
+        userId: input.userId ?? null,
+        label: input.label ?? null,
+        role: (input.role ?? 'VIEWER') as any,
+        status: (input.status ?? 'ACTIVE') as any,
+      },
+      include: { user: { select: { id: true, name: true, email: true, initials: true } } },
+    });
+  }
+
+  async updateChallengeTeamMember(memberId: string, input: UpdateChallengeTeamMemberInput) {
+    const existing = await this.prisma.challengeTeamMember.findUnique({ where: { id: memberId } });
+    if (!existing) throw AppError.notFound('Miembro del equipo', 'TEAM_MEMBER_NOT_FOUND', { hint: 'Verifica que el usuario forme parte del equipo.' });
+
+    return this.prisma.challengeTeamMember.update({
+      where: { id: memberId },
+      data: {
+        ...(input.role !== undefined ? { role: input.role as any } : {}),
+        ...(input.status !== undefined ? { status: input.status as any } : {}),
+        ...(input.label !== undefined ? { label: input.label } : {}),
+      },
+      include: { user: { select: { id: true, name: true, email: true, initials: true } } },
+    });
+  }
+
+  async removeChallengeTeamMember(memberId: string) {
+    const existing = await this.prisma.challengeTeamMember.findUnique({
+      where: { id: memberId },
+      select: { id: true },
+    });
+    if (!existing) throw AppError.notFound('Miembro del equipo', 'TEAM_MEMBER_NOT_FOUND', { hint: 'Verifica que el usuario forme parte del equipo.' });
+
+    await this.prisma.challengeTeamMember.delete({ where: { id: memberId } });
+  }
+
+  // ─── Initiative Team (resolution + per-iniciativa override, #110/#114) ─────────
+
+  /**
+   * Effective team of an iniciativa under the MATERIALIZE-AT-CREATE + REFRESH model:
+   * the TeamMember rows (inherited from the reto at create-time + manual overrides).
+   */
+  async resolveInitiativeTeam(projectId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!project) throw AppError.notFound('Proyecto', 'PROJECT_NOT_FOUND', { hint: 'Verifica el ID o vuelve al listado.' });
+
+    const members = await this.prisma.teamMember.findMany({
+      where: { projectId },
+      include: { user: { select: { id: true, name: true, email: true, initials: true } } },
+      orderBy: [{ role: 'asc' }, { invitedAt: 'asc' }],
+    });
+
+    const owner = members.find((m) => m.role === 'OWNER')?.userId ?? null;
+    const inheritedCount = members.filter((m) => m.inheritedFromChallenge).length;
+    const label = `Equipo de ${members.length}${inheritedCount > 0 ? ` (${inheritedCount} heredado${inheritedCount > 1 ? 's' : ''})` : ''}`;
+
+    return { members, owner, inheritedCount, label };
+  }
+
+  /** Add/override a member on the iniciativa team (TeamMember, inheritedFromChallenge=false). */
+  async upsertInitiativeTeamMember(projectId: string, userId: string, input: UpsertInitiativeTeamMemberInput) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!project) throw AppError.notFound('Proyecto', 'PROJECT_NOT_FOUND', { hint: 'Verifica el ID o vuelve al listado.' });
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) throw AppError.notFound('Usuario', 'USER_NOT_FOUND', { hint: 'Verifica el ID del usuario.' });
+
+    return this.prisma.teamMember.upsert({
+      where: { projectId_userId: { projectId, userId } },
+      create: {
+        projectId,
+        userId,
+        role: (input.role ?? 'VIEWER') as any,
+        status: (input.status ?? 'ACTIVE') as any,
+        inheritedFromChallenge: false,
+        ...(input.modulePermissions ? { modulePermissions: input.modulePermissions } : {}),
+      },
+      update: {
+        ...(input.role !== undefined ? { role: input.role as any } : {}),
+        ...(input.status !== undefined ? { status: input.status as any } : {}),
+        ...(input.modulePermissions !== undefined ? { modulePermissions: input.modulePermissions } : {}),
+      },
+      include: { user: { select: { id: true, name: true, email: true, initials: true } } },
+    });
+  }
+
+  /** Remove a member from the iniciativa team (override = exclude an inherited member). */
+  async removeInitiativeTeamMember(projectId: string, userId: string) {
+    const existing = await this.prisma.teamMember.findUnique({
+      where: { projectId_userId: { projectId, userId } },
+      select: { id: true, role: true },
+    });
+    if (!existing) throw AppError.notFound('Miembro del equipo', 'TEAM_MEMBER_NOT_FOUND', { hint: 'El usuario no pertenece al equipo de esta iniciativa.' });
+    if (existing.role === 'OWNER') {
+      throw AppError.conflict('No puedes quitar al owner de la iniciativa.', 'CANNOT_REMOVE_OWNER', { hint: 'Transfiere la propiedad antes de quitarlo.' });
+    }
+
+    await this.prisma.teamMember.delete({ where: { projectId_userId: { projectId, userId } } });
+  }
+
   // ─── Initiatives ──────────────────────────────────────────────────────────────
 
   async listInitiativesForChallenge(challengeId: string) {
@@ -235,7 +373,11 @@ export class PortfolioService {
     projectId: string,
     input: UpsertInitiativeMetaInput,
   ) {
-    const { challengeId, ...rest } = input;
+    // ADR-024 / #113: teamMembers, teamOwner and teamLabel are DERIVED caches,
+    // recalculated from the resolved team in initiative-progress.ts. They are never
+    // accepted from the client — strip them so a stale UI value can't overwrite the cache.
+    const { challengeId, teamMembers, teamOwner, teamLabel, ...rest } = input;
+    void teamMembers; void teamOwner; void teamLabel;
 
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw AppError.notFound('Proyecto', 'PROJECT_NOT_FOUND', { hint: 'Verifica el ID o vuelve al listado.' });
