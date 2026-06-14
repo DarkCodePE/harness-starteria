@@ -161,6 +161,38 @@ export function toBackendChallenge(input: Raw): Raw {
   return out;
 }
 
+// ── domain → backend: initiative meta WRITE path (#114 / ADR-024) ────────────
+// Only EDITABLE tracking fields are sent. DERIVED fields (status, blockedDays,
+// lastActivity, currentStep) are owned by the backend sync (initiative-progress.ts)
+// and the derived team cache (teamMembers/teamOwner/teamLabel) is rejected server-side
+// — sending them would be a no-op at best, so we omit them here.
+const INITIATIVE_META_EDITABLE = [
+  'mentor', 'sponsorTouchpoint', 'mainAlert', 'nextActionRecommended', 'attackedArea',
+  'hypothesisCovered', 'mainMetric', 'signalSummary', 'mainBlocker', 'executiveSummary',
+  'experimentSummary', 'aiCommentSummary', 'mentorCommentSummary', 'decisionRecommendationReason',
+  'alignmentNotes', 'decisionNotes',
+] as const;
+const INITIATIVE_META_BOOL = [
+  'requiresSponsor', 'readyForDecision', 'requiresExternalCapability', 'partialSignal', 'resolvedCorePart',
+] as const;
+const CONTRIBUTION_TYPE_BACKEND = new Set(['descubrir', 'validar', 'resolver_parcialmente', 'resolver_directamente']);
+const ESTIMATED_CONTRIBUTION_BACKEND = new Set(['bajo', 'medio', 'alto']);
+
+export function toBackendInitiativeMeta(challengeId: string, input: Raw): Raw {
+  const out: Raw = { challengeId };
+  for (const k of INITIATIVE_META_EDITABLE) {
+    if (has(input[k])) out[k] = input[k];
+  }
+  for (const k of INITIATIVE_META_BOOL) {
+    if (typeof input[k] === 'boolean') out[k] = input[k];
+  }
+  if (input.contributionType && CONTRIBUTION_TYPE_BACKEND.has(input.contributionType)) out.contributionType = input.contributionType;
+  if (input.estimatedContribution && ESTIMATED_CONTRIBUTION_BACKEND.has(input.estimatedContribution)) out.estimatedContribution = input.estimatedContribution;
+  if (Array.isArray(input.deliverables)) out.deliverables = input.deliverables;
+  if (Array.isArray(input.stepsTimeline)) out.stepsTimeline = input.stepsTimeline;
+  return out;
+}
+
 export function adaptInitiative(raw: Raw): Initiative {
   const project = raw.project ?? {};
   return {

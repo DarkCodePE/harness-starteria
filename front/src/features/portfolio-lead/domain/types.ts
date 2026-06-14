@@ -513,6 +513,21 @@ export interface Initiative {
 
 export type PortfolioInitiative = Initiative;
 
+/**
+ * ADR-024 (#114): the subset of initiative fields a portfolio lead may edit and persist
+ * via PUT /portfolio/initiatives/:projectId/meta. DERIVED fields (status, blockedDays,
+ * lastActivity, currentStep) and the derived team cache (teamMembers/teamOwner/teamLabel)
+ * are owned by the backend sync and are intentionally excluded.
+ */
+export type InitiativeEditableMeta = Partial<Pick<Initiative,
+  | 'mentor' | 'sponsorTouchpoint' | 'mainAlert' | 'nextActionRecommended' | 'attackedArea'
+  | 'hypothesisCovered' | 'mainMetric' | 'contributionType' | 'estimatedContribution'
+  | 'signalSummary' | 'mainBlocker' | 'requiresSponsor' | 'readyForDecision'
+  | 'requiresExternalCapability' | 'partialSignal' | 'resolvedCorePart'
+  | 'executiveSummary' | 'experimentSummary' | 'aiCommentSummary' | 'mentorCommentSummary'
+  | 'decisionRecommendationReason' | 'deliverables' | 'stepsTimeline'
+>>;
+
 export interface InitiativeOverlap {
   id: string;
   challengeId: string;
@@ -1062,5 +1077,7 @@ export interface PortfolioLeadContextValue extends PortfolioLeadState {
   loadChallengeCoverageDemo: (challengeId: string) => void;
   createExecutiveOutput: (initiativeId: string, recommendation: PortfolioDecisionOutcome) => ExecutiveOutput | null;
   updateExecutiveOutputStatus: (outputId: string, status: ExecutiveOutputStatus) => void;
+  // ADR-024 (#114): persist editable tracking fields of a reto-linked iniciativa.
+  updateInitiativeMeta: (projectId: string, input: InitiativeEditableMeta) => void;
 }
 
