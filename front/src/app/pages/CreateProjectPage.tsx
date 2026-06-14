@@ -79,7 +79,19 @@ export function CreateProjectPage() {
   const removeSponsorInvite = (id: string) => setSponsorInvites(prev => prev.filter(i => i.id !== id));
 
   const handleCreate = async () => {
-    if (!name.trim()) return;
+    // #91: match the backend createProjectSchema (name 3–200) client-side so an invalid
+    // name fails fast with a clear message instead of a 422 surfaced as a generic error.
+    const trimmed = name.trim();
+    if (trimmed.length < 3) {
+      setStep(1);
+      setCreateError('El nombre del proyecto debe tener al menos 3 caracteres.');
+      return;
+    }
+    if (trimmed.length > 200) {
+      setStep(1);
+      setCreateError('El nombre del proyecto no puede superar 200 caracteres.');
+      return;
+    }
     setCreateError(null);
     setSaving(true);
     const result = await createProject(
@@ -156,10 +168,15 @@ export function CreateProjectPage() {
                 value={name}
                 onChange={e => { setName(e.target.value); setCreateError(null); }}
                 placeholder="Ej. Reducir tiempo de onboarding de empleados"
+                maxLength={200}
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
                 autoFocus
               />
-              <p className="text-xs text-slate-400 mt-1">Usa el nombre del desafío que vas a resolver.</p>
+              {name.trim().length > 0 && name.trim().length < 3 ? (
+                <p className="text-xs text-red-600 mt-1">El nombre debe tener al menos 3 caracteres.</p>
+              ) : (
+                <p className="text-xs text-slate-400 mt-1">Usa el nombre del desafío que vas a resolver (mínimo 3 caracteres).</p>
+              )}
             </div>
 
             <div>
@@ -182,7 +199,7 @@ export function CreateProjectPage() {
 
             <button
               onClick={() => setStep(2)}
-              disabled={!name.trim()}
+              disabled={name.trim().length < 3}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-3 text-sm transition-colors"
               style={{ fontWeight: 500 }}
             >
