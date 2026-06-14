@@ -284,6 +284,13 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
     },
     updateChallengeActivationMode: (challengeId, mode) => {
+      const snapshot = challenges;
+      const current = challenges.find(c => c.id === challengeId);
+      const nextStatus = mode === 'mantener_en_definicion'
+        ? 'draft'
+        : current?.status === 'draft'
+          ? 'listo_para_activar'
+          : current?.status;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -295,6 +302,12 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
               : challenge.status,
           lastUpdatedAt: new Date().toISOString().split('T')[0],
         })),
+      );
+      persistUpdate(
+        () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ activationMode: mode, status: nextStatus })),
+        snapshot,
+        setChallenges,
+        'activation-mode',
       );
     },
     updateChallengeActivationInputs: (challengeId, input) => {
@@ -339,6 +352,11 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
     },
     acceptChallengeActivationRecommendation: challengeId => {
+      const snapshot = challenges;
+      const current = challenges.find(c => c.id === challengeId);
+      const recFront = current ? getFrontById(strategicFronts, current.strategicFrontId) : null;
+      const rec = current ? deriveChallengeActivationRecommendation(current, recFront) : null;
+      const nextStatus = current?.status === 'draft' ? 'listo_para_activar' : current?.status;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => {
           const front = getFrontById(strategicFronts, challenge.strategicFrontId);
@@ -353,6 +371,14 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           };
         }),
       );
+      if (rec) {
+        persistUpdate(
+          () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ activationMode: rec.recommendedMode, status: nextStatus })),
+          snapshot,
+          setChallenges,
+          'accept-recommendation',
+        );
+      }
     },
     updateChallengeActivationRecommendationNote: (challengeId, note) => {
       setChallenges(prev =>
@@ -484,6 +510,9 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
     },
     confirmAssignedSquad: challengeId => {
+      const snapshot = challenges;
+      const current = challenges.find(c => c.id === challengeId);
+      const nextStatus = (current?.assignedSquad.length ?? 0) > 0 ? 'activo_interno' : 'listo_para_activar';
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -493,8 +522,19 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
             : challenge.publicationNotes,
         })),
       );
+      persistUpdate(
+        () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ status: nextStatus })),
+        snapshot,
+        setChallenges,
+        'confirm-squad',
+      );
     },
     activateChallenge: challengeId => {
+      const snapshot = challenges;
+      const current = challenges.find(c => c.id === challengeId);
+      const canActivate = !!current && !!current.challengeOwner.trim() && current.challengeOwnerStatus === 'confirmado';
+      const isPublishedMode = !!current && (current.activationMode === 'convocatoria_abierta' || current.activationMode === 'personas_seleccionadas' || current.activationMode === 'innovacion_abierta_partner_externo');
+      const nextStatus = isPublishedMode ? 'recibiendo_iniciativas' : 'activo_interno';
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => {
           if (!challenge.challengeOwner.trim() || challenge.challengeOwnerStatus !== 'confirmado') {
@@ -518,6 +558,14 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
           };
         }),
       );
+      if (canActivate) {
+        persistUpdate(
+          () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ visibleToParticipants: isPublishedMode, status: nextStatus })),
+          snapshot,
+          setChallenges,
+          'activate-challenge',
+        );
+      }
     },
     publishChallenge: challengeId => {
       const snapshot = challenges;
@@ -583,9 +631,20 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
       );
 
       setExecutiveOutputs(prev => [created, ...prev]);
+      persistCreate(
+        created.id,
+        () => portfolioService.createExecutiveOutput(challenge.id, {
+          projectId: initiative.projectId ?? initiative.id,
+          recommendation,
+        }),
+        (raw) => ({ ...created, id: (raw as { id?: string }).id ?? created.id }),
+        setExecutiveOutputs,
+        'executive-output',
+      );
       return created;
     },
     updateExecutiveOutputStatus: (outputId, status) => {
+      const snapshot = executiveOutputs;
       setExecutiveOutputs(prev =>
         prev.map(item =>
           item.id === outputId
@@ -599,6 +658,12 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
               }
             : item,
         ),
+      );
+      persistUpdate(
+        () => portfolioService.updateExecutiveOutput(outputId, { status }),
+        snapshot,
+        setExecutiveOutputs,
+        'executive-output-status',
       );
     },
   }), [challenges, executiveOutputs, initiativeOverlaps, initiatives, portfolioDecisions, strategicFronts]);
