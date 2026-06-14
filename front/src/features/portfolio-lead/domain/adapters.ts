@@ -166,11 +166,14 @@ export function toBackendChallenge(input: Raw): Raw {
 // lastActivity, currentStep) are owned by the backend sync (initiative-progress.ts)
 // and the derived team cache (teamMembers/teamOwner/teamLabel) is rejected server-side
 // — sending them would be a no-op at best, so we omit them here.
+// Keep this allowlist in lockstep with InitiativeEditableMeta (domain/types.ts). Legacy
+// decision fields (alignmentNotes/decisionNotes) are intentionally NOT here — they have no
+// portfolio-lead UI and are absent from InitiativeEditableMeta, so forwarding them would be
+// dead code (caught in ADR-023 review).
 const INITIATIVE_META_EDITABLE = [
   'mentor', 'sponsorTouchpoint', 'mainAlert', 'nextActionRecommended', 'attackedArea',
   'hypothesisCovered', 'mainMetric', 'signalSummary', 'mainBlocker', 'executiveSummary',
   'experimentSummary', 'aiCommentSummary', 'mentorCommentSummary', 'decisionRecommendationReason',
-  'alignmentNotes', 'decisionNotes',
 ] as const;
 const INITIATIVE_META_BOOL = [
   'requiresSponsor', 'readyForDecision', 'requiresExternalCapability', 'partialSignal', 'resolvedCorePart',
