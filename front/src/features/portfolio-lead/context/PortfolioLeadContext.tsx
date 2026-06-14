@@ -6,6 +6,7 @@ import {
   adaptInitiative,
   toBackendStrategicFront,
   toBackendChallenge,
+  toBackendInitiativeMeta,
 } from '../domain/adapters';
 import {
   buildChallengeActivationMessageDraft,
@@ -36,6 +37,7 @@ import type {
   CreateChallengeInput,
   CreateStrategicFrontInput,
   ExecutiveOutputStatus,
+  InitiativeEditableMeta,
   InvitationStatus,
   PortfolioDecisionOutcome,
   PortfolioLeadContextValue,
@@ -664,6 +666,30 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
         snapshot,
         setExecutiveOutputs,
         'executive-output-status',
+      );
+    },
+    // ADR-024 (#114): persist a portfolio lead's edits to an iniciativa's tracking
+    // fields. Was local-only before — mutations were lost on refresh. Optimistic update
+    // + rollback on failure (persistUpdate). Only reto-linked iniciativas (with a
+    // challengeId) can persist; the backend needs it to locate InitiativePortfolioMeta.
+    updateInitiativeMeta: (projectId: string, input: InitiativeEditableMeta) => {
+      const snapshot = initiatives;
+      const target = initiatives.find(it => it.projectId === projectId || it.id === projectId);
+      if (!target) return;
+
+      setInitiatives(prev =>
+        prev.map(it => (it.projectId === projectId || it.id === projectId) ? { ...it, ...input } : it),
+      );
+
+      if (!target.challengeId) return; // unlinked iniciativa: optimistic-only, nothing to persist
+      persistUpdate(
+        () => portfolioService.upsertInitiativeMeta(
+          projectId,
+          toBackendInitiativeMeta(target.challengeId, input) as Parameters<typeof portfolioService.upsertInitiativeMeta>[1],
+        ),
+        snapshot,
+        setInitiatives,
+        'initiative-meta',
       );
     },
   }), [challenges, executiveOutputs, initiativeOverlaps, initiatives, portfolioDecisions, strategicFronts]);

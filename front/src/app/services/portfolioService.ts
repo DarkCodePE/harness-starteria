@@ -146,6 +146,88 @@ export async function updateSquadMember(
   return data.data;
 }
 
+// ── Challenge Team (ADR-023, unified reto-scoped team) ─────────────
+
+export interface ChallengeTeamMemberDto {
+  id: string;
+  challengeId: string;
+  userId: string | null;
+  label: string | null;
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  status: 'ACTIVE' | 'PENDING';
+  user?: { id: string; name: string; email: string; initials: string } | null;
+}
+
+/** List the reto's unified team (ADR-023). */
+export async function listChallengeTeam(challengeId: string): Promise<ChallengeTeamMemberDto[]> {
+  const { data } = await api.get<ApiResponse<ChallengeTeamMemberDto[]>>(
+    `/portfolio/challenges/${challengeId}/team`,
+  );
+  return data.data;
+}
+
+/** Add a member to the reto team (userId or free-text label). */
+export async function addChallengeTeamMember(
+  challengeId: string,
+  input: { userId?: string; label?: string; role?: 'OWNER' | 'EDITOR' | 'VIEWER'; status?: 'ACTIVE' | 'PENDING' },
+): Promise<ChallengeTeamMemberDto> {
+  const { data } = await api.post<ApiResponse<ChallengeTeamMemberDto>>(
+    `/portfolio/challenges/${challengeId}/team`,
+    input,
+  );
+  return data.data;
+}
+
+/** Update a reto team member's role/status/label. */
+export async function updateChallengeTeamMember(
+  challengeId: string,
+  memberId: string,
+  input: { role?: 'OWNER' | 'EDITOR' | 'VIEWER'; status?: 'ACTIVE' | 'PENDING'; label?: string },
+): Promise<ChallengeTeamMemberDto> {
+  const { data } = await api.patch<ApiResponse<ChallengeTeamMemberDto>>(
+    `/portfolio/challenges/${challengeId}/team/${memberId}`,
+    input,
+  );
+  return data.data;
+}
+
+/** Remove a member from the reto team. */
+export async function removeChallengeTeamMember(challengeId: string, memberId: string): Promise<{ id: string }> {
+  const { data } = await api.delete<ApiResponse<{ id: string }>>(
+    `/portfolio/challenges/${challengeId}/team/${memberId}`,
+  );
+  return data.data;
+}
+
+// ── Initiative team (resolution + per-iniciativa override, #110/#114) ──
+
+/** Resolve the effective team of an iniciativa (inherited + overrides). */
+export async function getInitiativeTeam(projectId: string): Promise<unknown> {
+  const { data } = await api.get<ApiResponse<unknown>>(`/portfolio/initiatives/${projectId}/team`);
+  return data.data;
+}
+
+/** Add/override a member on an iniciativa's team. */
+export async function upsertInitiativeTeamMember(
+  projectId: string,
+  userId: string,
+  input: { role?: 'OWNER' | 'EDITOR' | 'VIEWER'; status?: 'ACTIVE' | 'PENDING'; modulePermissions?: string[] },
+): Promise<unknown> {
+  const { data } = await api.put<ApiResponse<unknown>>(
+    `/portfolio/initiatives/${projectId}/team/${userId}`,
+    input,
+  );
+  return data.data;
+}
+
+/** Remove a member from an iniciativa's team. */
+export async function removeInitiativeTeamMember(projectId: string, userId: string): Promise<unknown> {
+  const { data } = await api.delete<ApiResponse<unknown>>(
+    `/portfolio/initiatives/${projectId}/team/${userId}`,
+  );
+  return data.data;
+}
+
 /** Activate the open call for a challenge. */
 export async function activateOpenCall(challengeId: string): Promise<Challenge> {
   const { data } = await api.post<ApiResponse<Challenge>>(

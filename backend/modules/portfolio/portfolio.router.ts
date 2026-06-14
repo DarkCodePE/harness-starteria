@@ -14,6 +14,9 @@ import {
   updateInvitationSchema,
   addSquadMemberSchema,
   updateSquadMemberSchema,
+  addChallengeTeamMemberSchema,
+  updateChallengeTeamMemberSchema,
+  upsertInitiativeTeamMemberSchema,
   upsertInitiativeMetaSchema,
   createOverlapSchema,
   createExecutiveOutputSchema,
@@ -111,6 +114,51 @@ portfolioRouter.patch(
   requireRole('admin', 'mentor'),
   validate(updateSquadMemberSchema),
   controller.updateSquadMember,
+);
+
+// ─── Challenge Team Members (ADR-023) ───────────────────────────────────────────
+portfolioRouter.get(
+  '/challenges/:challengeId/team',
+  controller.listChallengeTeam,
+);
+
+portfolioRouter.post(
+  '/challenges/:challengeId/team',
+  requireRole('admin', 'mentor'),
+  validate(addChallengeTeamMemberSchema),
+  controller.addChallengeTeamMember,
+);
+
+portfolioRouter.patch(
+  '/challenges/:challengeId/team/:memberId',
+  requireRole('admin', 'mentor'),
+  validate(updateChallengeTeamMemberSchema),
+  controller.updateChallengeTeamMember,
+);
+
+portfolioRouter.delete(
+  '/challenges/:challengeId/team/:memberId',
+  requireRole('admin', 'mentor'),
+  controller.removeChallengeTeamMember,
+);
+
+// ─── Initiative Team (resolution + per-iniciativa override, #110/#114) ───────────
+portfolioRouter.get(
+  '/initiatives/:projectId/team',
+  controller.getInitiativeTeam,
+);
+
+portfolioRouter.put(
+  '/initiatives/:projectId/team/:userId',
+  requireRole('admin', 'mentor'),
+  validate(upsertInitiativeTeamMemberSchema),
+  controller.upsertInitiativeTeamMember,
+);
+
+portfolioRouter.delete(
+  '/initiatives/:projectId/team/:userId',
+  requireRole('admin', 'mentor'),
+  controller.removeInitiativeTeamMember,
 );
 
 // ─── Initiatives ──────────────────────────────────────────────────────────────

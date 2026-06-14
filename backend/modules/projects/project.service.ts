@@ -134,6 +134,28 @@ export class ProjectService {
             },
             update: {},
           });
+
+          // Issue #111 (ADR-023): materialize the reto's team into this iniciativa.
+          // Snapshot ChallengeTeamMember rows that point to a real User into TeamMember
+          // (inheritedFromChallenge=true). Dedupe the owner (already created above as
+          // OWNER) and use skipDuplicates so the @@unique([projectId, userId]) never trips.
+          const challengeTeam = await tx.challengeTeamMember.findMany({
+            where: { challengeId: challenge.id, userId: { not: null } },
+            select: { userId: true, role: true, status: true },
+          });
+          const inherited = challengeTeam.filter((m) => m.userId && m.userId !== userId);
+          if (inherited.length > 0) {
+            await tx.teamMember.createMany({
+              data: inherited.map((m) => ({
+                projectId: project.id,
+                userId: m.userId as string,
+                role: m.role,
+                status: m.status,
+                inheritedFromChallenge: true,
+              })),
+              skipDuplicates: true,
+            });
+          }
         }
       }
 

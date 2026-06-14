@@ -12,6 +12,7 @@ import {
   adaptInitiative,
   toBackendStrategicFront,
   toBackendChallenge,
+  toBackendInitiativeMeta,
 } from '../adapters';
 
 describe('adaptStrategicFront', () => {
@@ -120,5 +121,53 @@ describe('toBackendChallenge (write path #104)', () => {
     expect(out).not.toHaveProperty('activationMode');
     const ok = toBackendChallenge({ name: 'X', activationMode: 'squad_asignado' });
     expect(ok.activationMode).toBe('squad_asignado');
+  });
+});
+
+describe('toBackendInitiativeMeta (write path #114 / ADR-024)', () => {
+  it('always sets challengeId and keeps editable tracking fields', () => {
+    const out = toBackendInitiativeMeta('ch1', {
+      mentor: 'Ana',
+      mainBlocker: 'Falta dato de costos',
+      requiresSponsor: true,
+      contributionType: 'validar',
+      estimatedContribution: 'alto',
+    });
+    expect(out.challengeId).toBe('ch1');
+    expect(out.mentor).toBe('Ana');
+    expect(out.mainBlocker).toBe('Falta dato de costos');
+    expect(out.requiresSponsor).toBe(true);
+    expect(out.contributionType).toBe('validar');
+    expect(out.estimatedContribution).toBe('alto');
+  });
+
+  it('drops DERIVED fields owned by the backend sync (status/blockedDays/lastActivity/currentStep)', () => {
+    const out = toBackendInitiativeMeta('ch1', {
+      mentor: 'Ana',
+      status: 'cerrada',
+      blockedDays: 9,
+      lastActivity: 'hoy',
+      currentStep: 'Step 3',
+      teamMembers: ['spoof'],
+      teamOwner: 'spoof',
+      teamLabel: 'spoof',
+    } as Record<string, unknown>);
+    expect(out).not.toHaveProperty('status');
+    expect(out).not.toHaveProperty('blockedDays');
+    expect(out).not.toHaveProperty('lastActivity');
+    expect(out).not.toHaveProperty('currentStep');
+    expect(out).not.toHaveProperty('teamMembers');
+    expect(out).not.toHaveProperty('teamOwner');
+    expect(out).not.toHaveProperty('teamLabel');
+    expect(out.mentor).toBe('Ana');
+  });
+
+  it('omits an estimatedContribution / contributionType the backend does not accept', () => {
+    const out = toBackendInitiativeMeta('ch1', {
+      estimatedContribution: 'gigante' as unknown as never,
+      contributionType: 'inventado' as unknown as never,
+    });
+    expect(out).not.toHaveProperty('estimatedContribution');
+    expect(out).not.toHaveProperty('contributionType');
   });
 });

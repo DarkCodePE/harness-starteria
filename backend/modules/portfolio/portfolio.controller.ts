@@ -183,6 +183,105 @@ export class PortfolioController {
     }
   };
 
+  // ─── Challenge Team Members (ADR-023) ──────────────────────────────────────────
+
+  listChallengeTeam = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      const data = await this.service.listChallengeTeam(req.params.challengeId);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  addChallengeTeamMember = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      const data = await this.service.addChallengeTeamMember(req.params.challengeId, req.body);
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  updateChallengeTeamMember = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      const data = await this.service.updateChallengeTeamMember(req.params.memberId, req.body);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  removeChallengeTeamMember = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      await this.service.removeChallengeTeamMember(req.params.memberId);
+      res.json({ success: true, data: { id: req.params.memberId } });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // ─── Initiative Team (resolution + override, #110/#114) ─────────────────────────
+
+  getInitiativeTeam = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      const data = await this.service.resolveInitiativeTeam(req.params.projectId);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  upsertInitiativeTeamMember = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      const data = await this.service.upsertInitiativeTeamMember(
+        req.params.projectId,
+        req.params.userId,
+        req.body,
+      );
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  removeInitiativeTeamMember = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      await this.service.removeInitiativeTeamMember(req.params.projectId, req.params.userId);
+      res.json({ success: true, data: { projectId: req.params.projectId, userId: req.params.userId } });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   // ─── Initiatives ──────────────────────────────────────────────────────────────
 
   listInitiatives = async (
