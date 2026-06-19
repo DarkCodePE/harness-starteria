@@ -210,7 +210,7 @@ export function Step2Page() {
   const [hmwIALoading, setHmwIALoading] = useState(false);
   const [showMentorHMW, setShowMentorHMW] = useState(false);
   const [selectedHmwOptionId, setSelectedHmwOptionId] = useState('custom');
-  const [customHmwDraft, setCustomHmwDraft] = useState('¿Cómo podríamos reducir el tiempo de alta en sistemas de TI para nuevos empleados, sin comprometer la seguridad de accesos?');
+  const [customHmwDraft, setCustomHmwDraft] = useState('');
   const [expertCommentDraft, setExpertCommentDraft] = useState('');
   const [experimentExpertComment, setExperimentExpertComment] = useState('');
 
@@ -241,66 +241,51 @@ export function Step2Page() {
   const [cPaso, setCPaso] = useState<1 | 2>(2);
   const [cIaFinalistasLoading, setCIaFinalistasLoading] = useState(false);
   const [cIaComparacionLoading, setCIaComparacionLoading] = useState(false);
-  const [cRazonGana, setCRazonGana] = useState('Es la opción con mejor balance entre impacto y esfuerzo, y puede probarse con recursos actuales en 2 semanas.');
-  const [cQueProbamos, setCQueProbamos] = useState('Formulario unificado de solicitud de accesos en Google Forms con notificación automática a TI.');
-  const [finalistas, setFinalistas] = useState<Finalista[]>([
-    { id: 'f1', ideaId: '2', text: 'Automatizar la solicitud de accesos con un formulario unificado', cluster: 'Automatización', deseable: 5, viable: 4, factible: 4, impacto: 4, esfuerzo: 4, razon: 'Suposición: TI puede implementar en 2 semanas. Pregunta: ¿quién es el dueño del proceso?', checks: { hmw: true, pronto: true, diferente: true } },
-    { id: 'f2', ideaId: '6', text: 'Integrar el proceso de contratación con la solicitud de TI desde RRHH', cluster: 'Integración', deseable: 5, viable: 3, factible: 2, impacto: 5, esfuerzo: 2, razon: 'Suposición: SAP tiene API disponible. Pregunta: ¿cuánto tardaría la integración con SAP?', checks: { hmw: true, pronto: false, diferente: true } },
-    { id: 'f3', ideaId: '3', text: 'Implementar accesos temporales pre-aprobados por perfil de cargo', cluster: 'Automatización', deseable: 4, viable: 5, factible: 4, impacto: 4, esfuerzo: 4, razon: 'Suposición: TI tiene perfiles predefinidos. Pregunta: ¿los perfiles estándar cubren el 80% de los casos?', checks: { hmw: true, pronto: true, diferente: false } },
-  ]);
+  const [cRazonGana, setCRazonGana] = useState('');
+  const [cQueProbamos, setCQueProbamos] = useState('');
+  const [finalistas, setFinalistas] = useState<Finalista[]>([]);
 
-  const [hmw, setHmw] = useState('¿Cómo podríamos reducir el tiempo de alta en sistemas de TI para nuevos empleados, sin comprometer la seguridad de accesos?');
-  const [ideas, setIdeas] = useState<Idea[]>([
-    { id: '1', text: 'Crear un portal de autogestión de onboarding para TI', cluster: 'Digital' },
-    { id: '2', text: 'Automatizar la solicitud de accesos con un formulario unificado', cluster: 'Automatización' },
-    { id: '3', text: 'Implementar accesos temporales pre-aprobados por perfil de cargo', cluster: 'Automatización' },
-    { id: '4', text: 'Generar kits de onboarding digital pre-configurados por área', cluster: 'Digital' },
-    { id: '5', text: 'Crear un chatbot de acompañamiento para el empleado nuevo', cluster: 'Digital' },
-    { id: '6', text: 'Integrar el proceso de contratación con la solicitud de TI desde RRHH', cluster: 'Integración' },
-  ]);
+  const [hmw, setHmw] = useState('');
+  const [ideas, setIdeas] = useState<Idea[]>([]);
   const [newIdea, setNewIdea] = useState('');
 
-  const [shortlist, setShortlist] = useState([
-    { id: '2', text: 'Formulario unificado de accesos', d: 5, v: 4, f: 4, total: 13, justificacion: 'Alta deseabilidad, viable con recursos actuales y factible en 2 sprints.' },
-    { id: '6', text: 'Integración RRHH-TI', d: 5, v: 3, f: 2, total: 10, justificacion: 'Alta deseabilidad pero baja factibilidad por dependencia con SAP.' },
-    { id: '3', text: 'Accesos temporales por perfil', d: 4, v: 5, f: 4, total: 13, justificacion: 'Fácil de implementar y de alto impacto operativo.' },
-  ]);
-  const [selectedIdea, setSelectedIdea] = useState('2');
+  const [shortlist, setShortlist] = useState<{ id: string; text: string; d: number; v: number; f: number; total: number; justificacion: string }[]>([]);
+  const [selectedIdea, setSelectedIdea] = useState('');
 
   const [solutionCard, setSolutionCard] = useState({
-    problema: 'Los nuevos empleados esperan 7-10 días para tener accesos a sistemas porque las solicitudes de TI son informales y no priorizadas.',
-    usuario: 'Nuevo empleado en primeros 15 días + Coordinadora de RRHH',
-    propuesta: 'Formulario digital unificado que automatiza la solicitud de accesos desde la firma del contrato, con SLA de 24 horas para TI.',
-    diferenciador: 'Integración directa con el proceso de contratación de RRHH, sin dependencia de tickets manuales.',
-    hipotesis: 'Si implementamos el formulario unificado, reduciremos el tiempo de alta en TI de 7 días a 1 día para el 80% de los casos.',
-    supuestos: 'TI tiene capacidad técnica para implementar el formulario. RRHH adoptará el nuevo proceso. Los accesos tipo "perfil" cubren el 80% de los casos.',
+    problema: '',
+    usuario: '',
+    propuesta: '',
+    diferenciador: '',
+    hipotesis: '',
+    supuestos: '',
   });
 
   const [testCard, setTestCard] = useState({
-    hipotesis: 'Si automatizamos la solicitud de accesos con un formulario unificado, reduciremos el tiempo de alta en TI de 7 días a 1 día.',
-    queTestan: 'Velocidad de procesamiento de solicitudes de acceso con formulario digital vs. correo informal',
-    conQuien: '3 nuevos empleados que ingresan en marzo 2025',
-    dondeCuando: 'Área de Tecnología · Marzo 2025',
-    metodo: 'Prueba piloto con formulario Google Forms conectado a tabla de seguimiento en Sheets',
-    metrica: 'Tiempo desde envío formulario hasta accesos activos · Umbral: ≤24 horas en 80% de casos',
-    pasos: ['Crear formulario con campos de accesos por perfil', 'Capacitar a RRHH en 30 min', 'Enviar formulario al siguiente grupo de ingresos', 'Registrar timestamps de solicitud y activación', 'Comparar con datos históricos'],
-    riesgos: 'TI puede rechazar el proceso si no hay aval directivo. Formulario no cubre casos de accesos especiales.',
-    evidencia: 'Timestamps de solicitud y activación, encuesta de 3 preguntas al empleado nuevo al día 3.',
+    hipotesis: '',
+    queTestan: '',
+    conQuien: '',
+    dondeCuando: '',
+    metodo: '',
+    metrica: '',
+    pasos: [] as string[],
+    riesgos: '',
+    evidencia: '',
   });
 
   const [experimentCard, setExperimentCard] = useState({
-    name: 'MVP formulario unificado de accesos',
-    problem: 'El alta de accesos sigue siendo lenta, informal y poco trazable para nuevos ingresos.',
-    hypothesis: 'Si RRHH activa un formulario unificado antes del primer dia, entonces el nuevo ingreso recibira accesos mas rapido y con menos errores, porque la solicitud llegara completa y trazable a TI.',
-    decision: 'Decidir si esta logica vale la pena escalar, iterar o reformular antes de invertir en una implementacion mayor.',
-    expectedOutcome: 'Menor tiempo de respuesta, menos omisiones y mejor trazabilidad del onboarding.',
-    minimumMechanism: 'Un formulario unico con datos minimos del ingreso y tipo de acceso requerido.',
-    tool: 'Google Forms + seguimiento manual en Sheets',
-    context: 'Piloto interno con 3 nuevos ingresos del area de Tecnologia durante el proximo ciclo de onboarding.',
-    actors: 'Usuario principal: nuevo ingreso. Actores: RRHH, TI y lider del area. Facilitador: coordinadora de RRHH. Posible bloqueo: capacidad de TI.',
-    metric: '80% de solicitudes completas y activadas en menos de 24 horas.',
-    evidenceQuant: 'Tiempo de activacion, numero de reprocesos y porcentaje de solicitudes completas.',
-    evidenceQual: 'Notas de RRHH y TI, comentarios del nuevo ingreso y fricciones observadas durante el proceso.',
+    name: '',
+    problem: '',
+    hypothesis: '',
+    decision: '',
+    expectedOutcome: '',
+    minimumMechanism: '',
+    tool: '',
+    context: '',
+    actors: '',
+    metric: '',
+    evidenceQuant: '',
+    evidenceQual: '',
   });
   const [experimentAiLoading, setExperimentAiLoading] = useState(false);
   const [experimentFocus, setExperimentFocus] = useState<string>(EXPERIMENT_FOCUS_OPTIONS[1]);

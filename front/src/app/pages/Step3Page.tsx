@@ -153,54 +153,27 @@ const IA_SUGERENCIAS_NEXT = [
 const createInitialTestCycle = (hipotesis: string = ''): TestCycle => ({
   id: 'testeo-1',
   nombre: 'Testeo 1',
-  estado: 'En analisis',
+  estado: '',
   queValidamos: hipotesis,
-  metricaPrincipal: 'Tiempo formulario -> accesos activos',
-  criterioDecision: '<=24h en >=80% de los casos procesados',
-  contextoPrueba: '5 empleados nuevos, perfiles estandar y 1 caso con accesos especiales, durante la semana del 24 de febrero.',
-  versionProbada: 'Version base del experimento: formulario unificado en Google Forms con coordinacion manual con TI.',
+  metricaPrincipal: '',
+  criterioDecision: '',
+  contextoPrueba: '',
+  versionProbada: '',
   evidencias: [],
   bitacora: [],
   hallazgos: [],
-  resultadoEsperado: 'Resolver al menos 4 de 5 casos en menos de 24 horas.',
-  resultadoObservado: '4/5 casos resueltos en menos de 24 horas (80%).',
-  aprendizaje: 'El formulario funciona bien para perfiles estandar, pero los accesos especiales siguen necesitando un camino aparte.',
-  decision: 'iterar',
-  decisionJustificacion: 'Conviene mantener el nucleo del experimento y ajustar el flujo para accesos especiales antes de escalar.',
-  siguientePaso: 'Validar si un flujo especifico para accesos especiales reduce el tiempo de respuesta sin romper la experiencia actual.',
-  siguienteCambio: 'Agregar un campo para accesos especiales y un escalado directo a TI Senior.',
-  siguienteMetodo: 'Repetir el piloto con la misma base, comparando casos estandar versus especiales.',
-  siguienteCuando: 'Proxima semana, con 3 nuevos ingresos que incluyan al menos 1 caso especial.',
+  resultadoEsperado: '',
+  resultadoObservado: '',
+  aprendizaje: '',
+  decision: '',
+  decisionJustificacion: '',
+  siguientePaso: '',
+  siguienteCambio: '',
+  siguienteMetodo: '',
+  siguienteCuando: '',
 });
 
-const MODULE_A_BASE_INSTRUMENTACION: InstrumentacionRow[] = [
-  {
-    id: 'i1',
-    dato: 'Tiempo entre el envío de la solicitud y la activación de accesos',
-    lineaBase: '7 días promedio',
-    metricaExito: '<=24 horas en 80% de los casos',
-    fuente: 'Registro de solicitudes TI',
-    comoCapturar: 'Comparando el momento de envío contra el momento de activación',
-    dondeCapturar: 'Google Sheet del piloto',
-    responsable: 'TI',
-    evidenciaEsperada: 'Sheet actualizado y captura de casos cerrados',
-    frecuencia: 'En cada caso',
-    estado: 'listo',
-  },
-  {
-    id: 'i2',
-    dato: 'Nivel de satisfacción del empleado al día 3',
-    lineaBase: '',
-    metricaExito: 'Promedio mayor a 70',
-    fuente: 'Encuesta de seguimiento',
-    comoCapturar: 'Formulario breve de 3 preguntas',
-    dondeCapturar: 'Formulario de seguimiento del piloto',
-    responsable: 'RRHH',
-    evidenciaEsperada: 'Respuestas de encuesta y resumen de comentarios',
-    frecuencia: 'Una vez por participante',
-    estado: 'pendiente',
-  },
-];
+const MODULE_A_BASE_INSTRUMENTACION: InstrumentacionRow[] = [];
 
 const createChecklistItem = (partial?: Partial<LaunchChecklistItem>): LaunchChecklistItem => ({
   id: partial?.id ?? `check-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
@@ -438,8 +411,8 @@ export function Step3Page() {
   const [showAdjuntarOverlay, setShowAdjuntarOverlay] = useState(false);
   const [adjuntarTipo, setAdjuntarTipo] = useState<'archivo' | 'link' | null>(null);
   const [adjuntarDesc, setAdjuntarDesc] = useState('');
-  const [observaciones, setObservaciones] = useState('(Placeholder) El formulario funcionó bien para perfiles estándar. Los accesos especiales tardaron más de lo esperado.');
-  const [incidencias, setIncidencias] = useState('(Placeholder) 1 caso con accesos especiales — resuelto en 36 horas tras escalar con el líder de TI.');
+  const [observaciones, setObservaciones] = useState('');
+  const [incidencias, setIncidencias] = useState('');
 
   // S3B_Bitacora
   const [showBitacoraModal, setShowBitacoraModal] = useState(false);
@@ -617,8 +590,8 @@ export function Step3Page() {
     { label: 'Muestra real', value: 'Aterriza qué casos, perfiles o usuarios sí participaron.' },
     { label: 'Observación clave', value: 'Escribe el cambio o fricción más importante que apareció en campo.' },
   ]);
-  const [umbral] = useState('≤24h en ≥80% de casos');
-  const [resultado] = useState('24h promedio · 80% (4/5 casos)');
+  const [umbral] = useState('');
+  const [resultado] = useState('');
   const [goNoGo, setGoNoGo] = useState<GoNoGoDecision>(null);
   const [aprendizajes, setAprendizajes] = useState([
     'Resume aquí el principal aprendizaje que dejó el contraste entre lo esperado y lo observado.',

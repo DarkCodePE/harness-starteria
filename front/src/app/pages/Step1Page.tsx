@@ -237,97 +237,60 @@ export function Step1Page() {
   const [showMentorOptions, setShowMentorOptions] = useState(false);
 
   const [iaLoadingB, setIaLoadingB] = useState(false);
-  const [expandedTemaId, setExpandedTemaId] = useState<string | null>('t1');
-  const [expandedPerfilId, setExpandedPerfilId] = useState<string | null>('p1');
+  const [expandedTemaId, setExpandedTemaId] = useState<string | null>(null);
+  const [expandedPerfilId, setExpandedPerfilId] = useState<string | null>(null);
   const [guiaVisible, setGuiaVisible] = useState(false);
   const [showOpcionalesC, setShowOpcionalesC] = useState(false);
 
   // Module data states
   const [asisData, setAsisData] = useState<ModuleASISData>({
-    casoReal: 'El proceso de incorporación de nuevos empleados en TechCorp involucra múltiples áreas (RRHH, TI, Finanzas, el área receptora) y actualmente dura entre 15 y 21 días.',
-    pasos: ['Firma de contrato y documentos legales', 'Alta en sistemas de TI (correo, accesos, software)', 'Inducción corporativa (2 días presenciales)', 'Inducción específica del área (5 días con jefatura)'],
-    quiebreIndex: 1,
-    quiebreDetalle: 'El empleado espera entre 7 y 10 días para recibir accesos porque TI no tiene priorización formal para solicitudes de onboarding.',
-    quiebre: 'Paso 2 — Alta en sistemas de TI',
-    consecuencia: 'El empleado no puede trabajar productivamente durante 7-10 días porque no tiene accesos ni herramientas, generando frustración y costos de productividad.',
-    causaInmediata: 'TI recibe las solicitudes por correo informal sin priorización; no hay tiempo objetivo definido ni sistema de asignación para el proceso de incorporación.',
-    evidenciaTipo: 'dato',
-    evidenciaNota: 'Promedio de 18 días en incorporación según registros de RRHH 2024.',
-    alcance: 'durante',
+    casoReal: '',
+    pasos: [],
+    quiebreIndex: null,
+    quiebreDetalle: '',
+    quiebre: '',
+    consecuencia: '',
+    causaInmediata: '',
+    evidenciaTipo: '',
+    evidenciaNota: '',
+    alcance: '',
     corteAlcance: '',
-    consequenceTags: ['operativa', 'economica', 'humana'],
+    consequenceTags: [],
   });
 
   const [bData, setBData] = useState<ModuleBData>({
-    objetivoGeneral: 'Confirmar si el retraso en la asignación de accesos TI es una causa sistémica de la baja productividad en el onboarding, y si afecta a la mayoría de los empleados nuevos de TechCorp.',
-    temas: [
-      {
-        id: 't1',
-        titulo: 'Magnitud real del problema',
-        preguntaClave: '¿Qué tan frecuente ocurre el retraso y cuántos empleados lo experimentan por ciclo de incorporación?',
-        via: 'ambas',
-        perfilesIds: ['p1'],
-        fuente: 'Registros de solicitudes TI y reportes de RRHH Q4 2024',
-        preguntas: ['¿Con qué frecuencia enfrentan retrasos en los accesos?', '¿Cuántos días promedio espera un empleado nuevo sin herramientas?'],
-      },
-      {
-        id: 't2',
-        titulo: 'Tiempo y costo operativo por caso',
-        preguntaClave: '¿Cuánto tiempo y dinero pierde la organización por cada caso de retraso?',
-        via: 'data',
-        perfilesIds: [],
-        fuente: 'Registros de RRHH, sistema de tickets TI, datos de nómina',
-        preguntas: [],
-      },
-      {
-        id: 't3',
-        titulo: 'Variación por perfil de empleado',
-        preguntaClave: '¿El impacto es igual para todos los perfiles o hay segmentos que lo sufren de forma más crítica?',
-        via: 'entrevistas',
-        perfilesIds: ['p1', 'p2'],
-        fuente: '',
-        preguntas: ['¿Cómo afecta el retraso en tu área específica?', '¿Qué herramientas necesitas urgente el primer día?'],
-      },
-    ],
-    perfiles: [
-      { id: 'p1', nombre: 'Coordinadora de RRHH', porQue: 'Ejecuta el proceso y tiene contacto directo con el quiebre', temas: [] },
-      { id: 'p2', nombre: 'Jefe de TI', porQue: 'Responsable del handoff y priorización de solicitudes de acceso' },
-    ],
+    objetivoGeneral: '',
+    temas: [],
+    perfiles: [],
     guiaGenerada: false,
     modalidad: '',
     deskTemas: '',
     objetivos: [],
     version: STEP1_RESEARCH_MODULE_B_VERSION,
     researchV2: buildInitialResearchV2State({
-      casoReal: 'El proceso de incorporacion de nuevos empleados en TechCorp involucra multiples areas y hoy dura entre 15 y 21 dias.',
-      quiebre: 'Paso 2 - Alta en sistemas de TI',
-      consecuencia: 'El empleado no puede trabajar productivamente durante 7 a 10 dias porque no tiene accesos ni herramientas.',
-      causaInmediata: 'TI recibe solicitudes por correo informal sin priorizacion formal ni tiempo objetivo definido.',
-      lecturaConsolidada: 'El reto ocurre en el alta en sistemas de TI dentro del proceso de onboarding y hoy genera impacto directo en productividad y experiencia.',
-      actoresProceso: 'RRHH, TI, Area receptora, Empleado nuevo',
+      casoReal: '',
+      quiebre: '',
+      consecuencia: '',
+      causaInmediata: '',
+      lecturaConsolidada: '',
+      actoresProceso: '',
     }),
   });
 
   const [cData, setCData] = useState<ModuleCData>({
-    limitesChips: ['Datos sensibles', 'Legal / regulatorio'],
-    limitesTexto: 'No reemplazar al equipo de RRHH sin proceso formal.',
-    dependencia: 'Área de TI para gestionar accesos al sistema',
-    dependenciaDueno: 'Gerente de TI',
-    dependenciaProbabilidad: 'alta',
+    limitesChips: [],
+    limitesTexto: '',
+    dependencia: '',
+    dependenciaDueno: '',
+    dependenciaProbabilidad: '',
     alternativaPiloto: '',
     vistoBueno: '',
-    capacidadReal: 'Equipo de 2 personas de RRHH + 1 de TI disponibles 20% de su tiempo.',
+    capacidadReal: '',
   });
 
   const [dData, setDData] = useState<ModuleDData>({
-    objetivos: [
-      'Confirmar si el reto es real y prioritario para el área',
-      'Identificar quién toma la decisión de priorización en TI',
-    ],
-    fuentes: [
-      { id: '1', tipo: 'persona', rolNombre: 'Coordinadora de RRHH', porQue: 'Ejecuta el proceso y tiene contacto directo con el quiebre', queConfirmar: 'Confirmar el tiempo real de espera y los parches que usan hoy' },
-      { id: '2', tipo: 'persona', rolNombre: 'Jefe de TI', porQue: 'Responsable del handoff y priorización de solicitudes', queConfirmar: 'Identificar quién decide el orden de las solicitudes de onboarding' },
-    ],
+    objetivos: [],
+    fuentes: [],
     guiasGeneradas: false,
     evidencias: [],
     decisionReto: '',
@@ -354,11 +317,9 @@ export function Step1Page() {
 
   // ── Módulo A — nuevos estados (rediseño Step1A) ──────────────────────────
   const [step0Collapsed, setStep0Collapsed] = useState(false);
-  const [actoresProceso, setActoresProceso] = useState('RRHH, TI, Área receptora, Empleado nuevo');
+  const [actoresProceso, setActoresProceso] = useState('');
   const [momentoData, setMomentoData] = useState({ cuando: '', frecuencia: '', quienSufre: '', duracion: '' });
-  const [evidenciasA, setEvidenciasA] = useState<EvidenciaA[]>([
-    { id: '1', tipo: 'dato', desc: 'Promedio de 18 días en incorporación según registros de RRHH 2024.', fuente: 'Registros RRHH Q4 2024' },
-  ]);
+  const [evidenciasA, setEvidenciasA] = useState<EvidenciaA[]>([]);
   const [iaModAState, setIaModAState] = useState<'idle' | 'loading' | 'done'>('idle');
   const [fichaConfirmada, setFichaConfirmada] = useState(false);
   const [aiAnalysisState, setAiAnalysisState] = useState<Step1AiAnalysisState>({
@@ -517,6 +478,40 @@ export function Step1Page() {
     delay: 2000,
     enabled: !!projectId,
   });
+
+  // Hydrate from backend on mount; mirror Step 2's persistence pattern.
+  // Pull stepData once; if it has a `formData` envelope written by an earlier
+  // session, rehydrate the local state. Falls back silently to the empty
+  // defaults when nothing is persisted (preserves the empty state).
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await stepService.getStepData(projectId, 1);
+        if (cancelled || !stored || typeof stored !== 'object') return;
+        const formData = (stored as { formData?: Record<string, unknown> }).formData;
+        if (!formData) return;
+        if (formData.asisData && typeof formData.asisData === 'object')
+          setAsisData(formData.asisData as ModuleASISData);
+        if (Array.isArray(formData.evidenciasA))
+          setEvidenciasA(formData.evidenciasA as EvidenciaA[]);
+        if (formData.aiAnalysisState && typeof formData.aiAnalysisState === 'object')
+          setAiAnalysisState(formData.aiAnalysisState as Step1AiAnalysisState);
+        if (formData.bData && typeof formData.bData === 'object')
+          setBData(formData.bData as ModuleBData);
+        if (formData.captureSynthesisData && typeof formData.captureSynthesisData === 'object')
+          setCaptureSynthesisData(formData.captureSynthesisData as typeof captureSynthesisData);
+        if (formData.moduleAdjustments && typeof formData.moduleAdjustments === 'object')
+          setModuleAdjustments(formData.moduleAdjustments as typeof moduleAdjustments);
+      } catch {
+        // 404 or auth error — keep defaults silently; AutosaveIndicator will reflect future writes.
+      }
+    })();
+    return () => { cancelled = true; };
+    // We only want to hydrate on project change, not on every state mutation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const updateResearchV2 = (updater: (prev: Step1ResearchModuleV2State) => Step1ResearchModuleV2State) => {
     setBData(prev => {

@@ -241,125 +241,15 @@ const DEFAULT_PRESENTATION: Record<PresentationKey, string> = {
     'Cerrar validacion final con mentor, alinear sponsor y confirmar la reunion donde se movera la decision.',
 };
 
-const DEFAULT_EVIDENCE: EvidenceItem[] = [
-  {
-    id: 'ev-1',
-    title: 'Capturas del formulario y del flujo final',
-    source: 'Piloto Step 3',
-    selected: true,
-    proves: 'Que la solucion existe y se entiende rapido para alguien que no participo en el piloto.',
-    supportsDecision: 'Implementar / mantener',
-    usedIn: 'Problema y solucion',
-  },
-  {
-    id: 'ev-2',
-    title: 'Registro de tiempos del piloto',
-    source: 'Hoja de seguimiento',
-    selected: true,
-    proves: 'Que 4 de 5 casos llegaron a menos de 24 horas y donde aparecieron las excepciones.',
-    supportsDecision: 'Implementar / mantener',
-    usedIn: 'Resultados',
-  },
-  {
-    id: 'ev-3',
-    title: 'Observaciones del facilitador',
-    source: 'Notas de campo',
-    selected: false,
-    proves: 'Que los casos especiales requieren un flujo diferente para no romper la experiencia.',
-    supportsDecision: 'Iterar',
-    usedIn: 'Riesgos y siguiente paso',
-  },
-];
+const DEFAULT_EVIDENCE: EvidenceItem[] = [];
 
-const DEFAULT_DEMOS: DemoItem[] = [
-  {
-    id: 'demo-1',
-    type: 'Video',
-    url: 'https://loom.com/demo-onboarding-step4',
-    proof: 'Muestra el flujo completo desde la solicitud hasta la activacion en un caso real del piloto.',
-    supports: 'Refuerza credibilidad de la propuesta ante sponsor o encargado.',
-    usedIn: 'Como funciona / demo de uso',
-  },
-];
+const DEFAULT_DEMOS: DemoItem[] = [];
 
-const IMPLEMENTATION_ROWS: PlanRow[] = [
-  {
-    id: 'imp-1',
-    stage: '0-30 dias',
-    activity: 'Definir owner del flujo y formalizar reglas de atencion con TI.',
-    owner: 'Ana Rojas',
-    area: 'RRHH',
-    timing: 'Semana 1 a 4',
-    dependency: 'Alineacion con TI y sponsor',
-    expectedResult: 'Owner y reglas base listas para operar.',
-  },
-  {
-    id: 'imp-2',
-    stage: '31-60 dias',
-    activity: 'Escalar el flujo a todos los ingresos estandar y monitorear tiempos.',
-    owner: 'Carlos Vega',
-    area: 'TI',
-    timing: 'Mes 2',
-    dependency: 'Formulario y hoja de seguimiento activos',
-    expectedResult: 'Operacion estable con trazabilidad visible.',
-  },
-  {
-    id: 'imp-3',
-    stage: '61-90 dias',
-    activity: 'Ajustar manejo de casos especiales y definir automatizacion prioritaria.',
-    owner: 'Paula Ortiz',
-    area: 'Operacion',
-    timing: 'Mes 3',
-    dependency: 'Datos reales de la fase inicial',
-    expectedResult: 'Escalamiento sostenible y mejor criterio de excepciones.',
-  },
-];
+const IMPLEMENTATION_ROWS: PlanRow[] = [];
 
-const ITERATION_ROWS: PlanRow[] = [
-  {
-    id: 'it-1',
-    stage: 'Ajuste',
-    activity: 'Separar casos especiales del flujo base para no contaminar el tiempo promedio.',
-    owner: 'Ana Rojas',
-    area: 'RRHH',
-    timing: 'Semana 1',
-    dependency: 'Feedback del piloto',
-    expectedResult: 'Nuevo experimento con foco claro.',
-  },
-  {
-    id: 'it-2',
-    stage: 'Validacion',
-    activity: 'Probar el flujo corregido con 3 casos especiales y comparar tiempos.',
-    owner: 'Carlos Vega',
-    area: 'TI',
-    timing: 'Semana 2 a 3',
-    dependency: 'Criterio de exito definido',
-    expectedResult: 'Decision de seguir, ajustar o cerrar.',
-  },
-];
+const ITERATION_ROWS: PlanRow[] = [];
 
-const PIVOT_ROWS: PlanRow[] = [
-  {
-    id: 'pv-1',
-    stage: 'Dejar atras',
-    activity: 'Cerrar la propuesta actual de formulario unico para todos los casos.',
-    owner: 'Equipo del proyecto',
-    area: 'Proyecto',
-    timing: 'Semana 1',
-    dependency: 'Alineacion con sponsor',
-    expectedResult: 'Scope actual cerrado sin ambiguedades.',
-  },
-  {
-    id: 'pv-2',
-    stage: 'Nueva direccion',
-    activity: 'Explorar una solucion diferenciada solo para accesos especiales.',
-    owner: 'Paula Ortiz',
-    area: 'Operacion',
-    timing: 'Semana 2 a 4',
-    dependency: 'Nueva hipotesis validada',
-    expectedResult: 'Siguiente hipotesis lista para presentar.',
-  },
-];
+const PIVOT_ROWS: PlanRow[] = [];
 
 const LEARNING_ROWS: PlanRow[] = [
   {
@@ -597,31 +487,19 @@ export function Step4Page() {
     'Detectamos un problema concreto en el alta de accesos. Lo validamos, probamos una solucion simple y obtuvimos evidencia suficiente para pedir una decision clara. Hoy necesitamos definir si avanzamos con una implementacion acotada y quien patrocinara el siguiente paso.'
   );
   const [mentorStatus, setMentorStatus] = useState<MentorDecision>('Pendiente');
-  const [mentorFeedback, setMentorFeedback] = useState(
-    'La historia ya es clara; falta reforzar que se hara con los casos especiales y dejar explicito el pedido final.'
-  );
-  const [mentorReviewer, setMentorReviewer] = useState('Carlos Mendez');
-  const [mentorReviewDate, setMentorReviewDate] = useState('2026-03-22');
+  const [mentorFeedback, setMentorFeedback] = useState('');
+  const [mentorReviewer, setMentorReviewer] = useState('');
+  const [mentorReviewDate, setMentorReviewDate] = useState('');
 
   const [nextStepType, setNextStepType] = useState<NextStepType | ''>('');
-  const [inviteSubject, setInviteSubject] = useState(
-    'Solicitud de reunion para decidir siguiente paso de la iniciativa'
-  );
-  const [inviteBody, setInviteBody] = useState(
-    'Hola, cerramos la validacion de la iniciativa y ya contamos con hallazgos, evidencia y una recomendacion concreta. Me gustaria compartir la presentacion final para mover una decision clara sobre el siguiente paso.'
-  );
-  const [inviteSummary, setInviteSummary] = useState(
-    'Piloto validado con 80% de casos resueltos en menos de 24 horas.'
-  );
-  const [inviteRecipients, setInviteRecipients] = useState(
-    'sponsor@empresa.com; encargado-operacion@empresa.com'
-  );
-  const [meetingDate, setMeetingDate] = useState('2026-03-26');
-  const [meetingOwner, setMeetingOwner] = useState('Laura Perez');
-  const [meetingRole, setMeetingRole] = useState('Sponsor de Operaciones');
-  const [meetingObjective, setMeetingObjective] = useState(
-    'Validar recomendacion final y acordar siguiente paso habilitado por la organizacion.'
-  );
+  const [inviteSubject, setInviteSubject] = useState('');
+  const [inviteBody, setInviteBody] = useState('');
+  const [inviteSummary, setInviteSummary] = useState('');
+  const [inviteRecipients, setInviteRecipients] = useState('');
+  const [meetingDate, setMeetingDate] = useState('');
+  const [meetingOwner, setMeetingOwner] = useState('');
+  const [meetingRole, setMeetingRole] = useState('');
+  const [meetingObjective, setMeetingObjective] = useState('');
   const [meetingStatus, setMeetingStatus] = useState<MeetingStatus>('Pendiente');
   const [stepFinalized, setStepFinalized] = useState(false);
   const [executiveDecisionReady, setExecutiveDecisionReady] = useState(false);
