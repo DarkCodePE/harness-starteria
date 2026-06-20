@@ -11,9 +11,12 @@ import { ProgressBar } from '../components/ProgressBar';
 import { MentorSupportModal } from '../components/MentorSupportModal';
 import { MentorVirtualPanel } from '../components/MentorVirtualPanel';
 import { PdfInitiativeUploader } from '../components/PdfInitiativeUploader';
+import { InitiativeStartChooser } from '../components/InitiativeStartChooser';
 import { usePdfAutofill } from '../hooks/usePdfAutofill';
 import { isPdfAutofillEnabled } from '../services/featureFlags';
-import { Sparkles, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+// Sparkles & CheckCircle2 already come from the lucide import at the top of
+// this file; only Loader2 & AlertCircle are new here.
+import { Loader2, AlertCircle } from 'lucide-react';
 import type { Step } from '../context/AppContext';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { buildInheritedChallengeContext, getStep0Mode, getSummaryBlocks, normalizeStep0Data } from '../step0/step0Config';
@@ -238,6 +241,11 @@ export function ProjectHomePage() {
   const autofill = usePdfAutofill(project.id);
   // Explicit "Procesar con IA" button instead of auto-triggering on upload.
   const [uploadedPdfIds, setUploadedPdfIds] = useState<string[]>([]);
+  // Option C (first-run UX): on a brand-new initiative we present a "¿cómo
+  // quieres empezar?" chooser instead of dumping the PDF uploader at the top.
+  // `startMode` tracks the in-page choice; `isFirstRun` (computed below) gates
+  // whether the chooser is shown at all.
+  const [startMode, setStartMode] = useState<'choose' | 'upload'>('choose');
 
   const sponsorTouchpoints = project.sponsorTouchpoints ?? [];
   const sponsorComments = project.sponsorComments ?? [];
@@ -423,6 +431,9 @@ export function ProjectHomePage() {
   const canManageSponsors = user?.role === 'owner' || user?.role === 'admin';
   const firstName = user?.name?.trim().split(/\s+/)[0];
   const step0Complete = project.step0Status === 'Completado';
+  // First-run = fresh initiative with nothing done yet → show the start chooser
+  // (Option C) instead of the always-on PDF uploader banner.
+  const isFirstRun = project.step0Status === 'No iniciado' && overallProgress === 0;
   const step0Mode = getStep0Mode(project);
   const step0Data = normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? '');
   const inheritedStep0 = buildInheritedChallengeContext(project, challenges, strategicFronts);
@@ -700,9 +711,29 @@ export function ProjectHomePage() {
         </div>
       </div>
 
-      {/* ─── PDF auto-fill (PRD-002 / SPEC-002) — gated by feature flag ─── */}
-      {autofillEnabled && (
+      {/* ─── Option C: first-run "¿cómo quieres empezar?" chooser ─── */}
+      {isFirstRun && startMode === 'choose' && (
+        <InitiativeStartChooser
+          autofillEnabled={autofillEnabled}
+          onChooseManual={openStep0}
+          onChooseUpload={() => setStartMode('upload')}
+        />
+      )}
+
+      {/* ─── PDF auto-fill (PRD-002 / SPEC-002) — gated by feature flag. On a
+           first-run initiative it only appears once the user picks "Tengo un
+           documento"; returning users keep direct access. ─── */}
+      {autofillEnabled && (!isFirstRun || startMode === 'upload') && (
         <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-5 mb-6">
+          {isFirstRun && startMode === 'upload' && (
+            <button
+              type="button"
+              onClick={() => setStartMode('choose')}
+              className="mb-3 inline-flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900 transition-colors"
+            >
+              <ChevronRight size={13} className="rotate-180" /> Elegir otra forma de empezar
+            </button>
+          )}
           <div className="flex items-start gap-3 mb-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
               <Sparkles size={20} />

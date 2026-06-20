@@ -21,6 +21,15 @@ export type ExtractionRunStatusValue =
   | 'FAILED'
   | 'COST_CAPPED';
 
+/**
+ * Wire-facing run status (lowercase) consumed by the web client. The web hook
+ * (`usePdfAutofill`) compares against these exact strings, so the DB enum
+ * (`ExtractionRunStatusValue`, UPPERCASE) is mapped to this at the DTO boundary
+ * via `toWireStatus`. `COST_CAPPED` collapses to `failed` — the client has no
+ * dedicated cost-cap state (the detail lives in `errorReason`). See BUG-001.
+ */
+export type ExtractionRunWireStatus = 'queued' | 'running' | 'completed' | 'failed';
+
 export type ConfidenceBandValue = 'HIGH' | 'MED' | 'LOW';
 
 export type ProposalStatusValue = 'PENDING' | 'CONFIRMED' | 'EDITED' | 'DISCARDED';
@@ -57,7 +66,7 @@ export interface PdfExtractionRunDTO {
   runId: string;
   pdfId: string;
   projectId: string;
-  status: ExtractionRunStatusValue;
+  status: ExtractionRunWireStatus;
   startedAt?: string | null;
   finishedAt?: string | null;
   costUsd?: number | null;

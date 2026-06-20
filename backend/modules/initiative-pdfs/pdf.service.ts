@@ -25,6 +25,7 @@ import { AiServiceClient } from './ai-client';
 import {
   ConfidenceBandValue,
   ExtractionRunStatusValue,
+  ExtractionRunWireStatus,
   InitiativePdfDTO,
   PROPOSAL_RESOLVED_STATUSES,
   PdfExtractionRunDTO,
@@ -81,12 +82,34 @@ function toPdfDTO(row: PrismaInitiativePdf): InitiativePdfDTO {
   };
 }
 
+/**
+ * Map the DB run status (UPPERCASE Prisma enum) to the lowercase wire status the
+ * web client compares against (`usePdfAutofill`). Without this the client never
+ * matches `'completed'` and polls until timeout — that was BUG-001. `COST_CAPPED`
+ * collapses to `failed` (the client has no cost-cap state; detail in errorReason).
+ * Exported so the contract can be unit-tested directly.
+ */
+export function toWireStatus(status: ExtractionRunStatusValue): ExtractionRunWireStatus {
+  switch (status) {
+    case 'COMPLETED':
+      return 'completed';
+    case 'RUNNING':
+      return 'running';
+    case 'FAILED':
+    case 'COST_CAPPED':
+      return 'failed';
+    case 'PENDING':
+    default:
+      return 'queued';
+  }
+}
+
 function toRunDTO(row: PrismaPdfExtractionRun): PdfExtractionRunDTO {
   return {
     runId: row.id,
     pdfId: row.pdfId,
     projectId: row.projectId,
-    status: row.status,
+    status: toWireStatus(row.status),
     startedAt: row.startedAt?.toISOString() ?? null,
     finishedAt: row.finishedAt?.toISOString() ?? null,
     costUsd: row.costUsd ? Number(row.costUsd) : null,

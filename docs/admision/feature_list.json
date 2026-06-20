@@ -1,0 +1,266 @@
+{
+  "$schema_note": "Estado/foto estructurada de las features del flujo de admisión/onboarding. Pregunta que responde: ¿Cuál es el estado de cada feature AHORA? Consumidor: control de scope y el agente al elegir qué feature tomar.",
+  "scope": "Flujo de admisión de iniciativas en Starteria (Paso 0–4: PDF autofill + manual + flujo público).",
+  "generatedAt": "2026-06-19",
+  "lastUpdated": "2026-06-19",
+  "branch": "main",
+  "verificationBasis": "Sesión 1: investigación con 5 agentes + lectura directa. Sesión 1 (cont.): 3 verificaciones SPARC (S/P/A/R) + pase adversarial, todas alta confianza, ninguna refutada.",
+  "legend": {
+    "status": {
+      "implemented": "Existe en código y el camino está completo.",
+      "implemented-with-mock": "Existe el camino, pero alguna pieza usa datos simulados/mock.",
+      "implemented-with-bug": "Existe el camino completo pero tiene un defecto que rompe el comportamiento esperado.",
+      "partial": "Existe parcialmente; falta cerrar parte del flujo.",
+      "not-started": "No existe aún.",
+      "unknown": "No determinado."
+    },
+    "verification": {
+      "code-verified": "Confirmado leyendo el código.",
+      "needs-runtime-check": "Requiere ejecutar la app para confirmar comportamiento real."
+    }
+  },
+  "verificationLog": [
+    {
+      "id": "Q1-public-autofill",
+      "question": "¿El autofill público (POST /public/pdf-extract) es real o mock?",
+      "verdict": "REAL",
+      "confidence": "high",
+      "method": "SPARC + adversarial",
+      "evidence": "public-pdf.router.ts:108-115 (AiServiceClient real), public-pdf.service.ts:146, ai-client.ts:78-102 (fetch real a AI_SERVICE_URL/api/v1/ai/pdf-extract). Mock (generateMockPublicDraftOutput) solo en flujo de TEXTO y tests."
+    },
+    {
+      "id": "Q2-currentStep",
+      "question": "¿currentStep al crear es 0 (default) o 1?",
+      "verdict": "1 (asignación explícita, sobreescribe @default(0))",
+      "confidence": "high",
+      "method": "SPARC + adversarial",
+      "evidence": "project.service.ts:87-89 (status DRAFT, currentStep 1, step0Status NOT_STARTED). DTO CreateProjectInput no expone currentStep. schema.prisma:337 @default(0) ignorado por INSERT explícito."
+    },
+    {
+      "id": "Q3-extraction-status-map",
+      "question": "¿Dónde se mapea ExtractionRunStatus backend↔front?",
+      "verdict": "NO hay mapeo en el flujo autenticado → BUG-001 (desajuste mayúsculas/minúsculas). El flujo público sí mapea.",
+      "confidence": "high",
+      "method": "SPARC + adversarial",
+      "evidence": "pdf.service.ts:89,339 (toRunDTO devuelve row.status en MAYÚSCULAS sin transformar) vs usePdfAutofill.ts:174,178 (compara minúsculas). public-pdf.service.ts:85-99 sí mapea a minúsculas."
+    }
+  ],
+  "knownIssues": [
+    {
+      "id": "BUG-001",
+      "title": "Desajuste de mayúsculas en el polling del autofill autenticado",
+      "severity": "high",
+      "status": "resolved",
+      "resolvedAt": "2026-06-19",
+      "resolvedBy": "Opción A (SPARC): toWireStatus() en pdf.service.ts mapea el enum de BD a minúsculas en toRunDTO; tipo PdfExtractionRunDTO.status → ExtractionRunWireStatus. Front sin cambios. Tests: + run-status-wire-mapping.test.ts (6) y aserciones corregidas en integration-regression/pdf.service.test. 394/394 backend + 212/212 front.",
+      "affects": ["PDF-AUTOFILL-AUTH"],
+      "summary": "El backend autenticado devuelve status en MAYÚSCULAS (COMPLETED, …) y el hook compara minúsculas ('completed'). La rama de finalización nunca se cumple → polling hasta timeout; el usuario no ve el resultado aunque la extracción termine.",
+      "evidence": [
+        "backend/modules/initiative-pdfs/pdf.service.ts:84-89 (toRunDTO: status: row.status sin transformar)",
+        "backend/modules/initiative-pdfs/pdf.service.ts:339 (getRun → toRunDTO)",
+        "front/src/app/hooks/usePdfAutofill.ts:174 (runStatus === 'completed')",
+        "front/src/app/hooks/usePdfAutofill.ts:178,189 (failed/cancelled minúscula; fallthrough keep-polling)",
+        "backend/modules/initiative-pdfs/public-pdf.service.ts:85-99 (el público SÍ mapea a minúsculas — contraste)"
+      ],
+      "deadStates": "Tipo front incluye 'partial' (no existe en backend), 'queued' y 'cancelled' (solo público).",
+      "testNote": "pdf-autofill-integration.test.tsx mockea minúsculas → pasa en verde pese al bug.",
+      "suggestedFix": "Normalizar el estado en un único punto: A) mapear en el backend autenticado como hace el público (DTO en minúsculas), o B) .toLowerCase() en pdfAutofillService.getExtractionRunStatus / hook. Preferible A + alinear test."
+    }
+  ],
+  "features": [
+    {
+      "id": "AUTH-PROJECT-CREATE",
+      "name": "Crear proyecto (prerrequisito, autenticado)",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": ["POST /projects"],
+      "keyFiles": [
+        "front/src/app/pages/CreateProjectPage.tsx",
+        "front/src/app/context/AppContext.tsx",
+        "front/src/app/services/projectService.ts",
+        "backend/modules/projects/project.service.ts"
+      ],
+      "notes": "Crea Project con valores iniciales VERIFICADOS: status='DRAFT', currentStep=1 (explícito, project.service.ts:88, sobreescribe @default(0)), step0Status='NOT_STARTED'. Owner como TeamMember, 4 Steps + módulos. Es el prerrequisito de AMBOS métodos de llenado."
+    },
+    {
+      "id": "HOME-RECORRIDO",
+      "name": "Recorrido del proyecto (home de la iniciativa)",
+      "area": "frontend",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": ["GET /projects/:id"],
+      "keyFiles": ["front/src/app/pages/ProjectHomePage.tsx"],
+      "notes": "Pantalla 'Base estratégica inicial'. Requiere proyecto existente; si no lo encuentra muestra 'Proyecto no encontrado'."
+    },
+    {
+      "id": "STEP0-MANUAL",
+      "name": "Rellenado manual del Paso 0",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": ["PATCH /projects/:id/step0"],
+      "keyFiles": [
+        "front/src/app/pages/Step0Page.tsx",
+        "front/src/app/services/projectService.ts",
+        "backend/modules/projects/project.service.ts"
+      ],
+      "notes": "updateStep0 valida proyecto con getProject() → PROJECT_NOT_FOUND si no existe."
+    },
+    {
+      "id": "STEP0-MODES",
+      "name": "Modos del Paso 0 (independent / linked_to_challenge)",
+      "area": "frontend",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": [],
+      "keyFiles": ["front/src/app/step0/step0Config.ts"],
+      "notes": "linked_to_challenge hereda contexto del reto/frente. 8 campos requeridos (getRequiredFieldKeys)."
+    },
+    {
+      "id": "STEPS-1-4-MANUAL",
+      "name": "Pasos 1–4 (manual)",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": [
+        "PUT /projects/:id/steps/:n/data",
+        "PATCH /projects/:id/steps/:n",
+        "GET /projects/:id/steps/:n/data"
+      ],
+      "keyFiles": ["front/src/app/services/stepService.ts", "front/src/app/pages/Step1Page.tsx"],
+      "notes": "Todas las funciones exigen projectId. StepStatus default BLOCKED."
+    },
+    {
+      "id": "PDF-AUTOFILL-AUTH",
+      "name": "PDF + autofill por agente (autenticado)",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "knownIssues": ["BUG-001 (resuelto 2026-06-19)"],
+      "endpoints": [
+        "POST /initiatives/:id/pdfs",
+        "POST /initiatives/:id/pdfs/:pdfId/extract",
+        "GET /initiatives/:id/pdfs/runs/:runId",
+        "GET /initiatives/:id/autofill-proposals"
+      ],
+      "keyFiles": [
+        "front/src/app/services/pdfAutofillService.ts",
+        "front/src/app/hooks/usePdfAutofill.ts",
+        "front/src/app/components/PdfInitiativeUploader.tsx",
+        "backend/modules/initiative-pdfs/pdf.service.ts"
+      ],
+      "notes": "Extracción real (AI service, ~5min). Requiere proyecto: assertProject() → PROJECT_NOT_FOUND. Scope: step0|step1..4|all. BUG-001 RESUELTO (2026-06-19): el backend ahora normaliza el estado a minúsculas en el DTO (toWireStatus); el polling detecta el fin de la extracción."
+    },
+    {
+      "id": "PDF-PROPOSALS-REVIEW",
+      "name": "Revisión de propuestas por campo (confirmar/editar/descartar)",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": [
+        "POST /initiatives/:id/pdfs/runs/:runId/proposals/:fp/confirm",
+        "POST /initiatives/:id/pdfs/runs/:runId/proposals/:fp/edit",
+        "DELETE /initiatives/:id/pdfs/runs/:runId/proposals/:fp",
+        "POST /initiatives/:id/pdfs/runs/:runId/proposals/:fp/restore",
+        "POST /initiatives/:id/pdfs/runs/:runId/proposals/:fp/resolve-conflict"
+      ],
+      "keyFiles": ["front/src/app/services/pdfAutofillService.ts"],
+      "notes": "Cada propuesta: ProposalStatus (PENDING/CONFIRMED/EDITED/DISCARDED), ConfidenceBand (HIGH/MED/LOW), procedencia (PDF, páginas, cita). El usuario confirma cada campo antes de avanzar. Nota: depende de que el run llegue a 'completed' (ver BUG-001)."
+    },
+    {
+      "id": "SPONSOR",
+      "name": "Sponsor opcional",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "needs-runtime-check",
+      "endpoints": [],
+      "keyFiles": ["front/prisma/schema.prisma (SponsorCheckpointStatus)"],
+      "notes": "Opcional; no bloquea el Paso 0. Confirmar UI/endpoints exactos en runtime (no estaba en el alcance de las verificaciones SPARC)."
+    },
+    {
+      "id": "PORTFOLIO-LINK",
+      "name": "Vinculación a reto/portafolio",
+      "area": "fullstack",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": [],
+      "keyFiles": [
+        "front/prisma/schema.prisma (InitiativePortfolioMeta)",
+        "backend/modules/portfolio/initiative-progress.ts"
+      ],
+      "notes": "challengeId enlaza Project↔Challenge vía InitiativePortfolioMeta (status=en_step_0). Activa modo linked_to_challenge en Paso 0. OJO: InitiativePortfolioMeta.currentStep es un campo DISTINTO de Project.currentStep."
+    },
+    {
+      "id": "PUBLIC-DRAFT",
+      "name": "Flujo público: draft anónimo",
+      "area": "frontend",
+      "entryContext": "public",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": [],
+      "keyFiles": [
+        "front/src/features/public-start/domain/types.ts",
+        "front/src/features/public-start/services/publicDraftStorage.ts",
+        "front/src/app/pages/public/PublicStartPage.tsx"
+      ],
+      "notes": "PublicDraft en sessionStorage (created|edited|pilot_interest_submitted|expired|discarded|converted). NO crea proyecto al inicio. El flujo de TEXTO usa generateMockPublicDraftOutput (mock); el de PDF usa extracción real (ver PUBLIC-PDF-AUTOFILL)."
+    },
+    {
+      "id": "PUBLIC-PDF-AUTOFILL",
+      "name": "Autofill PDF en flujo público",
+      "area": "fullstack",
+      "entryContext": "public",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": ["POST /public/pdf-extract"],
+      "keyFiles": [
+        "front/src/app/services/publicPdfAutofillService.ts",
+        "backend/modules/initiative-pdfs/public-pdf.router.ts",
+        "backend/modules/initiative-pdfs/public-pdf.service.ts",
+        "backend/modules/initiative-pdfs/ai-client.ts"
+      ],
+      "notes": "VERIFICADO REAL (corrige el estado previo 'implemented-with-mock'). Backend construye AiServiceClient real (public-pdf.router.ts:108-115) → fetch a AI_SERVICE_URL/api/v1/ai/pdf-extract (ai-client.ts:78-102). El mock solo aplica al flujo de TEXTO público y a tests. Mapea status con su propio mapUpstreamStatus → minúsculas (no sufre BUG-001)."
+    },
+    {
+      "id": "PILOT-CLAIM-CONVERT",
+      "name": "Conversión draft → proyecto al registrarse",
+      "area": "fullstack",
+      "entryContext": "public",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": ["POST /public/pilot-leads", "POST /public/pilot-leads/consume-claim"],
+      "keyFiles": [
+        "front/src/app/pages/ContinuePilotPage.tsx",
+        "front/src/features/public-start/services/publicPilotLeadService.ts",
+        "backend/modules/pilot-leads/pilot-claim.service.ts",
+        "backend/modules/pilot-leads/pilot-lead.router.ts"
+      ],
+      "notes": "consume() → createProject() (currentStep=1) + updateStep0() con snapshot del draft. Idempotente vía pilotLeadId."
+    },
+    {
+      "id": "STEP0-START-CHOOSER",
+      "name": "Chooser de primer ingreso (Opción C): subir PDF vs empezar en blanco",
+      "area": "frontend",
+      "entryContext": "authenticated",
+      "status": "implemented",
+      "verification": "code-verified",
+      "endpoints": [],
+      "keyFiles": [
+        "front/src/app/components/InitiativeStartChooser.tsx",
+        "front/src/app/components/__tests__/InitiativeStartChooser.test.tsx",
+        "front/src/app/pages/ProjectHomePage.tsx"
+      ],
+      "notes": "Opción C implementada con SPARC (2026-06-19). En primer ingreso (step0Status='No iniciado' && overallProgress===0) muestra '¿Cómo quieres empezar?' en vez del uploader siempre-arriba: 'Empezar en blanco'→openStep0(); 'Tengo un documento'→revela el uploader (startMode='upload', con back). Usuarios recurrentes conservan acceso directo. Componente puro/prop-driven (4 tests). Incidental: se dedupló el import duplicado de lucide-react en ProjectHomePage.tsx:16. Verificado: 212/212 tests front + vite build OK."
+    }
+  ]
+}

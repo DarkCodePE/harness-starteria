@@ -232,7 +232,7 @@ describe('PdfService.startExtraction — persists aiRunId from ai-service', () =
       actorId: 'user-1',
     });
 
-    expect(dto.status).toBe('PENDING');
+    expect(dto.status).toBe('queued');
     expect(ai.callPdfExtract).toHaveBeenCalledOnce();
 
     // The update call must persist aiRunId.
@@ -302,7 +302,7 @@ describe('PdfService.getRun — syncs from ai-service and persists proposals', (
 
     const dto = await service.getRun('cproject0000000000000000', 'local-run-3');
 
-    expect(dto.status).toBe('COMPLETED');
+    expect(dto.status).toBe('completed');
     expect(dto.costUsd).toBe(0.18);
     expect(dto.finishedAt).toBeTruthy();
 
@@ -321,7 +321,7 @@ describe('PdfService.getRun — syncs from ai-service and persists proposals', (
     (ai.fetchRunState as any).mockClear();
     (prisma.pdfFieldProposal.upsert as any).mockClear();
     const dto2 = await service.getRun('cproject0000000000000000', 'local-run-3');
-    expect(dto2.status).toBe('COMPLETED');
+    expect(dto2.status).toBe('completed');
     expect((ai.fetchRunState as any).mock.calls.length).toBe(0);
     expect((prisma.pdfFieldProposal.upsert as any).mock.calls.length).toBe(0);
   });
@@ -358,7 +358,7 @@ describe('PdfService.getRun — polling failure tolerated', () => {
     // Must NOT throw to caller.
     const dto = await service.getRun('cproject0000000000000000', 'local-run-4');
 
-    expect(dto.status).toBe('PENDING');
+    expect(dto.status).toBe('queued');
     expect(dto.finishedAt).toBeNull();
     // No update on the run row.
     expect((prisma.pdfExtractionRun.update as any).mock.calls.length).toBe(0);
@@ -411,7 +411,7 @@ describe('PdfService.getRun — upstream failure propagates to local FAILED', ()
 
     const dto = await service.getRun('cproject0000000000000000', 'local-run-5');
 
-    expect(dto.status).toBe('FAILED');
+    expect(dto.status).toBe('failed');
     expect(dto.errorReason).toBe('model timeout');
     expect(dto.finishedAt).toBeTruthy();
 
@@ -464,7 +464,9 @@ describe('PdfService.getRun — upstream cost_capped maps to local COST_CAPPED',
 
     const dto = await service.getRun('cproject0000000000000000', 'local-run-6');
 
-    expect(dto.status).toBe('COST_CAPPED');
+    // Wire status collapses COST_CAPPED → 'failed' (the client has no cost-cap
+    // state). The DB row stays COST_CAPPED — asserted on updateArgs.data below.
+    expect(dto.status).toBe('failed');
     expect(dto.costUsd).toBe(0.31);
     expect(dto.errorReason).toBe('cap_exceeded');
 

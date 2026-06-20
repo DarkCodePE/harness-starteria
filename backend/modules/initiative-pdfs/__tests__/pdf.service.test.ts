@@ -198,7 +198,8 @@ describe('PdfService', () => {
         actorId: 'user-1',
       });
       expect(dto.runId).toBe('run-1');
-      expect(dto.status).toBe('PENDING');
+      // Wire status is lowercase (BUG-001): DB 'PENDING' → wire 'queued'.
+      expect(dto.status).toBe('queued');
       expect(ai.callPdfExtract).toHaveBeenCalledOnce();
     });
   });
