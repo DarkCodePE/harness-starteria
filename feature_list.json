@@ -1,0 +1,127 @@
+{
+  "project": "Starteria (Dashboardstarteria)",
+  "last_updated": "2026-06-23",
+  "rules": {
+    "single_active_feature": true,
+    "passing_requires_evidence": true,
+    "do_not_skip_verification": true
+  },
+  "status_legend": {
+    "not_started": "Work has not begun.",
+    "in_progress": "The feature is the current active task.",
+    "blocked": "Work cannot continue until a documented blocker is resolved.",
+    "passing": "Required verification has passed and evidence is recorded."
+  },
+  "reference_smoke_path": {
+    "name": "PDF auto-fill end-to-end",
+    "scenario": "register → login → create project → PDF upload + extract via API → assert UI on Step 0",
+    "command": "cd front && npm run docker:up && npm run test:e2e",
+    "spec": "front/e2e/pdf-autofill.spec.ts"
+  },
+  "features": [
+    {
+      "id": "portfolio-steps-integration",
+      "priority": 1,
+      "area": "portfolio-lead",
+      "title": "Integrar portfolio-lead con el flujo de steps del participante (milestone #7)",
+      "user_visible_behavior": "Una iniciativa creada por el portfolio-lead aparece como reto/proyecto navegable para el participante y comparte equipo/meta sin re-captura.",
+      "status": "not_started",
+      "verification": [
+        "Crear un frente → reto → iniciativa desde /portfolio.",
+        "Verificar que la iniciativa materializa un proyecto/reto accesible en el flujo de participante (Step 0–4).",
+        "Verificar que el equipo y la meta heredados (ADR-023/024) se reflejan sin volver a pedirlos.",
+        "Registrar evidencia ejecutable (e2e o test de integración)."
+      ],
+      "evidence": [],
+      "notes": "Gap conocido entre el dominio portfolio-lead (frente→reto→iniciativa, InitiativePortfolioMeta) y el flujo de steps. Bridge: InitiativePortfolioMeta. Feature activa de mayor prioridad."
+    },
+    {
+      "id": "admision-step0-chooser",
+      "priority": 2,
+      "area": "admision",
+      "title": "Chooser de primer ingreso (Paso 0) + autofill desde PDF",
+      "user_visible_behavior": "Un usuario nuevo elige cómo iniciar y, si sube un PDF, los campos del Step 0 se autocompletan con lo extraído.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e",
+        "Escenario: register → login → create project → upload + extract via API → assert UI on Step 0."
+      ],
+      "evidence": [
+        "front/e2e/pdf-autofill.spec.ts",
+        "front/e2e/public-pdf-autofill.spec.ts",
+        "PR #118 (feat(admisión): chooser de primer ingreso + fix BUG-001)"
+      ],
+      "notes": "Verificación e2e cubre create-project + autofill + Step 0."
+    },
+    {
+      "id": "steps-empty-start",
+      "priority": 3,
+      "area": "steps",
+      "title": "Step 1–4 arrancan vacíos para proyectos nuevos + hidratación de Step 1",
+      "user_visible_behavior": "Al crear un proyecto nuevo, los Steps 1–4 no muestran datos de otro proyecto; Step 1 se hidrata desde lo persistido.",
+      "status": "in_progress",
+      "verification": [
+        "Crear un proyecto nuevo y abrir Step 1–4.",
+        "Verificar que ningún campo aparece pre-rellenado con datos de otro proyecto.",
+        "Recargar Step 1 y verificar que se hidrata desde el backend.",
+        "Registrar evidencia ejecutable (falta test de regresión dedicado)."
+      ],
+      "evidence": [
+        "PR #117 (fix(steps): start Step1-4 empty for new projects + Step1 hydration)"
+      ],
+      "notes": "Mergeado, pero sin verificación ejecutable registrada en este tracker — no pasa la Puerta de Completación hasta capturar evidencia."
+    },
+    {
+      "id": "portfolio-team-model",
+      "priority": 4,
+      "area": "portfolio-lead",
+      "title": "Modelo de equipo unificado scoped al reto + persistencia de meta de iniciativa (ADR-023/024)",
+      "user_visible_behavior": "El equipo definido en un reto se materializa en sus iniciativas; editar la meta de una iniciativa persiste.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e -- team-inheritance.spec.ts"
+      ],
+      "evidence": [
+        "front/e2e/team-inheritance.spec.ts",
+        "PR #114 (feat(portfolio-lead): persist initiative-meta edits + team API)",
+        "ADR-023 / ADR-024"
+      ],
+      "notes": "Cubierto por e2e team-inheritance (#109/#110/#111/#113/#114)."
+    },
+    {
+      "id": "portfolio-persist-mutations",
+      "priority": 5,
+      "area": "portfolio-lead",
+      "title": "Persistir mutaciones del provider portfolio-lead al backend",
+      "user_visible_behavior": "Activación, squad y exec-outputs editados en /portfolio sobreviven a recargas y reinicios.",
+      "status": "in_progress",
+      "verification": [
+        "Editar activación/squad/exec-outputs en /portfolio.",
+        "Recargar y verificar persistencia.",
+        "Registrar evidencia ejecutable (unit/e2e)."
+      ],
+      "evidence": [
+        "PR #104 (feat(portfolio): persistir mutaciones restantes)"
+      ],
+      "notes": "Mergeado; falta capturar verificación ejecutable en este tracker."
+    },
+    {
+      "id": "create-project-validation",
+      "priority": 6,
+      "area": "projects",
+      "title": "Validar nombre 3–200 al crear iniciativa para evitar 422",
+      "user_visible_behavior": "El usuario recibe validación inline al nombrar un proyecto en vez de un error 422 del backend.",
+      "status": "in_progress",
+      "verification": [
+        "Abrir /projects/new.",
+        "Probar nombres <3 y >200 caracteres y verificar validación inline.",
+        "Probar nombre válido y verificar creación sin 422.",
+        "Registrar evidencia ejecutable."
+      ],
+      "evidence": [
+        "PR #91 (fix(projects): validar nombre 3–200 en CreateProjectPage)"
+      ],
+      "notes": "Mergeado; falta verificación ejecutable registrada."
+    }
+  ]
+}

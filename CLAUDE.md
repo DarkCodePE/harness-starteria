@@ -200,3 +200,51 @@ Vocabulario canónico de 5 estados — todos existen como GitHub labels: `needs-
 ### Domain docs
 
 Single-context. `CONTEXT.md` (raíz, lazy — lo crea `/grill-with-docs` cuando haga falta). Product ADRs en `backend/docs/adr/`; AI-methodology ADRs (BHIL) en `docs/adr/`. UX writing rules en `docs/starteria-ux-writing.md`. See `docs/agents/domain.md`.
+
+## Bucle Operacional de Implementación de Larga Duración
+
+Este repo está diseñado para trabajo de implementación de larga duración. Prioriza la
+completación fiable, la continuidad entre sesiones y la verificación explícita sobre la velocidad.
+La plantilla canónica de este patrón vive en `docs/templates/`; las instancias **vivas** del proyecto
+están en la raíz: `feature_list.json`, `claude-progress.md`, `init.sh`, `session-handoff.md`.
+
+### Al comienzo de cada sesión
+
+1. Ejecuta `pwd` y confirma que estás en la raíz del repo (`.../Dashboardstarteria`).
+2. Lee `claude-progress.md`.
+3. Lee `feature_list.json`.
+4. Revisa los commits recientes con `git log --oneline -5`.
+5. Ejecuta `./init.sh`.
+6. Verifica si la ruta de smoke / end-to-end de referencia ya está rota
+   (`reference_smoke_path` en `feature_list.json`: PDF autofill → Step 0).
+
+Luego selecciona **exactamente una** característica inacabada (la de mayor prioridad en
+`feature_list.json`) y trabaja solo en esa característica hasta verificarla o documentar por qué
+está bloqueada.
+
+### Reglas
+
+- Una característica activa a la vez.
+- No afirmes completación sin evidencia ejecutable.
+- No reescribas la lista de características para ocultar trabajo inacabado.
+- No elimines ni debilites tests solo para hacer que la tarea parezca completa.
+- Usa los artefactos del repositorio (los 4 archivos de raíz) como el sistema de registro.
+
+### Puerta de Completación
+
+Una característica pasa a `passing` solo después de que la verificación requerida tenga éxito y el
+resultado quede registrado en `feature_list.json` (campo `evidence`).
+
+### Antes de Detenerte
+
+1. Actualiza `claude-progress.md`.
+2. Actualiza el estado de la característica en `feature_list.json`.
+3. Registra qué sigue roto o sin verificar (`session-handoff.md` cuando una entrega compacta es útil).
+4. Haz commit una vez que el repo sea seguro para reanudar.
+5. Deja una ruta de reinicio limpia para la próxima sesión.
+
+### Comandos reales (Starteria)
+
+- Inicio / baseline: `./init.sh` · app: `RUN_START_COMMAND=1 ./init.sh` (o `cd front && npm run dev:all`).
+- Verificación (unit): `cd front && npm test`.
+- Verificación (e2e de referencia): `cd front && npm run docker:up && npm run test:e2e`.
