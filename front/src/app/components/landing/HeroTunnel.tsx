@@ -39,37 +39,42 @@ const FRAG = /* glsl */ `
     float r = length(uv);
     float a = atan(uv.y, uv.x);
 
-    // Rayos angulares (radios finos que irradian del punto de fuga).
-    float spokes = 30.0;
+    // Rayos angulares (radios anchos que irradian del punto de fuga).
+    float spokes = 26.0;
     float ang = a / (2.0 * PI) + 0.5;
     float bars = ang * spokes;
     float seg = floor(bars);
     float fb = fract(bars);
-    float barMask = smoothstep(0.04, 0.18, fb) * smoothstep(0.04, 0.18, 1.0 - fb);
+    // Barras más anchas y de borde nítido -> haces sólidos, no hilos.
+    float barMask = smoothstep(0.03, 0.14, fb) * smoothstep(0.03, 0.14, 1.0 - fb);
 
-    // Parpadeo por rayo + bloques extruidos que viajan a lo largo del radio.
-    float flick = 0.55 + 0.45 * sin(uTime * 0.6 + seg * 1.7);
-    float blocks = 0.5 + 0.5 * sin(r * 20.0 - uTime * 1.1 + seg);
-    blocks = smoothstep(0.35, 1.0, blocks);
+    // Bloques extruidos que viajan por el radio, con PISO de brillo: el haz
+    // siempre se ve y los segmentos brillantes lo recorren (no parpadeo a cero).
+    float blockRaw = 0.5 + 0.5 * sin(r * 16.0 - uTime * 1.1 + seg);
+    float blocks = mix(0.45, 1.0, smoothstep(0.2, 1.0, blockRaw));
+    // Parpadeo suave por rayo (modula, no apaga).
+    float flick = 0.75 + 0.25 * sin(uTime * 0.6 + seg * 1.7);
 
-    float depth = smoothstep(0.0, 1.1, r);
+    float depth = smoothstep(0.0, 0.85, r);
     float streaks = barMask * flick * blocks * depth;
 
-    // Color de marca mezclado por rayo y tiempo.
+    // Color de marca mezclado por rayo y tiempo (azul -> cian).
     vec3 col = mix(uColorA, uColorB, 0.5 + 0.5 * sin(seg * 0.5 + uTime * 0.2));
 
-    // Viñeta: centro limpio (texto legible) + fade de bordes lejanos.
-    float centerClear = smoothstep(0.0, 0.42, r);
-    float edgeFade = 1.0 - smoothstep(0.72, 1.25, r);
+    // Viñeta: centro limpio (titular legible) pero la banda arranca más cerca,
+    // y se extiende hacia las esquinas para llenar el hero.
+    float centerClear = smoothstep(0.0, 0.30, r);
+    float edgeFade = 1.0 - smoothstep(0.95, 1.5, r);
     float alpha = streaks * centerClear * edgeFade * uIntensity;
 
     gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
   }
 `;
 
-// Azul de marca (#3b82f6) + acento cian-cielo (#38bdf8) en lineal aproximado.
-const COLOR_A: [number, number, number] = [0.231, 0.51, 0.965];
-const COLOR_B: [number, number, number] = [0.22, 0.741, 0.972];
+// Azul de marca intenso (#2563eb, blue-600) + acento cian-cielo (#0ea5e9,
+// sky-500). Más saturados que el set inicial para que el haz lea sobre blanco.
+const COLOR_A: [number, number, number] = [0.149, 0.388, 0.922];
+const COLOR_B: [number, number, number] = [0.055, 0.647, 0.914];
 
 export function HeroTunnel() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,7 +101,7 @@ export function HeroTunnel() {
         uResolution: { value: [gl.canvas.width, gl.canvas.height] },
         uColorA: { value: COLOR_A },
         uColorB: { value: COLOR_B },
-        uIntensity: { value: 0.42 },
+        uIntensity: { value: 1.1 },
       },
     });
     const mesh = new Mesh(gl, { geometry, program });
