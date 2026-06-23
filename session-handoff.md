@@ -3,7 +3,7 @@
 ## Verificado Ahora
 
 - Qué está funcionando actualmente: features con cobertura e2e — `admision-step0-chooser` (`front/e2e/pdf-autofill.spec.ts`, `public-pdf-autofill.spec.ts`) y `portfolio-team-model` (`front/e2e/team-inheritance.spec.ts`). Marcadas `passing` con evidencia.
-- Qué verificación se ejecutó realmente: ninguna en esta sesión de bootstrap. El sistema de registro quedó instalado pero los tests aún no se corrieron aquí.
+- Qué verificación se ejecutó realmente: baseline unit `cd front && npm test` ✅ — 606 tests passing (backend 394 + front 212), exit 0. E2E de referencia aún no corrido (requiere `docker:up`).
 
 ## Cambiado En Esta Sesión
 
