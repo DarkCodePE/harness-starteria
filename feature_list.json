@@ -20,6 +20,26 @@
   },
   "features": [
     {
+      "id": "landing-public-no-auth",
+      "priority": 0,
+      "area": "landing",
+      "title": "La landing (/) debe mostrarse sin logeo (fix 401→redirect a /auth)",
+      "user_visible_behavior": "Un visitante anónimo carga la landing completa sin ser redirigido a /auth; el logeo se pide recién al entrar a rutas protegidas.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test (tests del interceptor isPublicPath + hidratación gateada del PortfolioLeadProvider).",
+        "Merge del PR #124 con CI verde.",
+        "Despliegue vía CD (tag semver) y rollout exitoso."
+      ],
+      "evidence": [
+        "Unit: 219 front + 394 backend en verde (7 tests nuevos: api.test.ts isPublicPath/no-redirect/redirect, PortfolioLeadContext.hydration.test.tsx ×3).",
+        "PR #124 mergeado (squash b96e3d7) con CI verde (Node tests, Python tests, Lint and build).",
+        "CD run 28633924264 → success con tag v2.14.3.",
+        "Prod verificado: https://starter-ia.com/ → 200 y el bundle desplegado assets/index-D9txT19V.js contiene isPublicPath."
+      ],
+      "notes": "Causa raíz: PortfolioLeadProvider (RootLayout) hidrataba con llamadas autenticadas en la landing; el 401 con refresh fallido disparaba window.location='/auth' en api.ts. Resuelto en sesión 003."
+    },
+    {
       "id": "portfolio-steps-integration",
       "priority": 1,
       "area": "portfolio-lead",

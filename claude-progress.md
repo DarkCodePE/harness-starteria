@@ -36,7 +36,19 @@
 - Riesgo conocido o problema sin resolver: siguen sin evidencia ejecutable las features `steps-empty-start` (#117), `portfolio-persist-mutations` (#104) y `create-project-validation` (#91); el e2e no forma parte de la baseline de `./init.sh`.
 - Mejor próximo paso: abrir la feature `portfolio-steps-integration` (prioridad 1) siguiendo el bucle operacional completo.
 
-### Sesión 003
+### Sesión 003 — fix: landing pública pedía logeo al cargar
+
+- Fecha: 2026-07-02
+- Objetivo: la landing (`/`) expulsaba al visitante anónimo hacia `/auth` al cargar; DoD: landing visible sin logeo + fix desplegado vía CI/CD.
+- Completado: fix en `front/src/app/services/api.ts` (el redirect a `/auth` tras refresh fallido ahora solo aplica en rutas protegidas — nuevo `isPublicPath()`) y en `PortfolioLeadContext` (hidratación gateada por `authLoading`/`isAuthenticated`; un anónimo no dispara llamadas autenticadas). Causa raíz: `RootLayout` monta `PortfolioLeadProvider` globalmente y su hidratación (#100) hacía `GET /portfolio/strategic-fronts` sin sesión → 401 → refresh fallido → `window.location='/auth'`.
+- Verificación ejecutada: `./init.sh` (unit baseline) ✅ — 394 backend + 219 front (7 tests nuevos). CI del PR #124 ✅. CD run 28633924264 ✅ (tag `v2.14.3`). Prod: `https://starter-ia.com/` → 200 y el bundle `assets/index-D9txT19V.js` contiene `isPublicPath`.
+- Evidencia capturada: registrada en `feature_list.json` → `landing-public-no-auth` (passing).
+- Commits: `b96e3d7` (squash del PR #124; incluye también el commit del harness `ae1a847` de la sesión 002 porque la rama nació de él). Tag `v2.14.3`.
+- Archivos o artefactos actualizados: `api.ts`, `api.test.ts`, `PortfolioLeadContext.tsx`, `PortfolioLeadContext.hydration.test.tsx` (nuevo), `feature_list.json`, `claude-progress.md`.
+- Riesgo conocido o problema sin resolver: `usePortfolioData.ts` (hook alterno de portfolio) solo gatea por pathname `/auth`, no por sesión — hoy vive bajo rutas protegidas, pero si se reutiliza en una ruta pública repetiría el patrón. Sin verificación e2e dedicada de la landing anónima.
+- Mejor próximo paso: retomar `portfolio-steps-integration` (prioridad 1), o capturar evidencia de las 3 features `in_progress` heredadas.
+
+### Sesión 004
 
 - Fecha:
 - Objetivo:
