@@ -7,6 +7,7 @@ import {
   setAccessToken,
   getAccessToken,
   initAuth,
+  isPublicPath,
 } from '../api';
 
 /**
@@ -199,6 +200,26 @@ describe('msw handlers shape', () => {
   });
 });
 
+describe('isPublicPath', () => {
+  it('treats landing, auth and public flow as public', () => {
+    expect(isPublicPath('/')).toBe(true);
+    expect(isPublicPath('/auth')).toBe(true);
+    expect(isPublicPath('/auth/continue/draft-1')).toBe(true);
+    expect(isPublicPath('/public')).toBe(true);
+    expect(isPublicPath('/public/start')).toBe(true);
+    expect(isPublicPath('/public/draft/d1/edit')).toBe(true);
+  });
+
+  it('treats app routes as protected', () => {
+    expect(isPublicPath('/dashboard')).toBe(false);
+    expect(isPublicPath('/projects/p1')).toBe(false);
+    expect(isPublicPath('/portfolio/inicio')).toBe(false);
+    // Prefix must match a full segment, not a substring.
+    expect(isPublicPath('/authors')).toBe(false);
+    expect(isPublicPath('/publicidad')).toBe(false);
+  });
+});
+
 describe('api axios instance — request/response interceptors', () => {
   beforeEach(() => {
     setAccessToken(null);
@@ -279,6 +300,68 @@ describe('api axios instance — request/response interceptors', () => {
     const { default: api } = await import('../api');
     await expect(api.get('/projects')).rejects.toBeDefined();
     expect(getAccessToken()).toBeNull();
+
+    Object.defineProperty(window, 'location', {
+      value: orig,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it('does NOT redirect to /auth when refresh fails on a public route (landing)', async () => {
+    server.use(
+      http.get('*/portfolio/strategic-fronts', () =>
+        HttpResponse.json(
+          { success: false, error: { code: 'UNAUTHENTICATED', message: 'no token' } },
+          { status: 401 },
+        ),
+      ),
+      http.post('*/auth/refresh', () =>
+        HttpResponse.json({ success: false }, { status: 401 }),
+      ),
+    );
+
+    const orig = window.location;
+    Object.defineProperty(window, 'location', {
+      value: { ...orig, pathname: '/', href: 'http://localhost/' },
+      writable: true,
+      configurable: true,
+    });
+
+    const { default: api } = await import('../api');
+    await expect(api.get('/portfolio/strategic-fronts')).rejects.toBeDefined();
+    expect(window.location.href).toBe('http://localhost/');
+
+    Object.defineProperty(window, 'location', {
+      value: orig,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it('redirects to /auth when refresh fails on a protected route', async () => {
+    server.use(
+      http.get('*/projects', () =>
+        HttpResponse.json(
+          { success: false, error: { code: 'UNAUTHENTICATED', message: 'no token' } },
+          { status: 401 },
+        ),
+      ),
+      http.post('*/auth/refresh', () =>
+        HttpResponse.json({ success: false }, { status: 401 }),
+      ),
+    );
+
+    const orig = window.location;
+    Object.defineProperty(window, 'location', {
+      value: { ...orig, pathname: '/dashboard', href: 'http://localhost/dashboard' },
+      writable: true,
+      configurable: true,
+    });
+
+    const { default: api } = await import('../api');
+    await expect(api.get('/projects')).rejects.toBeDefined();
+    expect(window.location.href).toBe('/auth');
 
     Object.defineProperty(window, 'location', {
       value: orig,

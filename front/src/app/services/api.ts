@@ -100,6 +100,20 @@ export function parseApiError(err: unknown): AuthError {
   };
 }
 
+/**
+ * Rutas públicas (landing, auth y flujo público anónimo, ADR-019): un 401 en
+ * estas rutas NO debe expulsar al visitante hacia /auth — la página decide qué
+ * mostrar sin sesión. Solo las rutas protegidas redirigen al login.
+ */
+const PUBLIC_PATH_PREFIXES = ['/auth', '/public'];
+
+export function isPublicPath(pathname: string): boolean {
+  return (
+    pathname === '/' ||
+    PUBLIC_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  );
+}
+
 // In-memory token store (never persisted to sessionStorage)
 let accessToken: string | null = null;
 
@@ -190,7 +204,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         accessToken = null;
-        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+        if (typeof window !== 'undefined' && !isPublicPath(window.location.pathname)) {
           window.location.href = '/auth';
         }
         return Promise.reject(refreshError);

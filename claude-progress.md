@@ -24,7 +24,19 @@
 - Riesgo conocido o problema sin resolver: varias features mergeadas (`steps-empty-start`, `portfolio-persist-mutations`, `create-project-validation`) están en `in_progress` porque no tienen verificación ejecutable registrada en este tracker — no pasan la Puerta de Completación hasta capturarla.
 - Mejor próximo paso: correr `./init.sh` para confirmar que la línea base (unit tests) pasa, y luego abrir la feature `portfolio-steps-integration`.
 
-### Sesión 002
+### Sesión 002 — completar los archivos del harness
+
+- Fecha: 2026-07-02
+- Objetivo: instanciar los archivos del harness que faltaban de `docs/templates/` y cablear sus reglas en `CLAUDE.md`.
+- Completado: creados en la raíz `clean-state-checklist.md`, `evaluator-rubric.md` y `quality-document.md` con datos reales de Starteria; `CLAUDE.md` actualizado (paso 7 del inicio de sesión: leer quality-document; rúbrica en la Puerta de Completación; checklist en "Antes de Detenerte").
+- Verificación ejecutada: ninguna de código (sesión solo de documentación/harness; no se tocó código de la app).
+- Evidencia capturada: instantánea inicial de calidad en `quality-document.md` derivada de `feature_list.json` y el log de commits.
+- Commits: (ver commit de esta sesión: harness completo).
+- Archivos o artefactos actualizados: `clean-state-checklist.md`, `evaluator-rubric.md`, `quality-document.md`, `CLAUDE.md`, `claude-progress.md`.
+- Riesgo conocido o problema sin resolver: siguen sin evidencia ejecutable las features `steps-empty-start` (#117), `portfolio-persist-mutations` (#104) y `create-project-validation` (#91); el e2e no forma parte de la baseline de `./init.sh`.
+- Mejor próximo paso: abrir la feature `portfolio-steps-integration` (prioridad 1) siguiendo el bucle operacional completo.
+
+### Sesión 003
 
 - Fecha:
 - Objetivo:

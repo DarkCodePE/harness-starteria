@@ -206,7 +206,8 @@ Single-context. `CONTEXT.md` (raíz, lazy — lo crea `/grill-with-docs` cuando 
 Este repo está diseñado para trabajo de implementación de larga duración. Prioriza la
 completación fiable, la continuidad entre sesiones y la verificación explícita sobre la velocidad.
 La plantilla canónica de este patrón vive en `docs/templates/`; las instancias **vivas** del proyecto
-están en la raíz: `feature_list.json`, `claude-progress.md`, `init.sh`, `session-handoff.md`.
+están en la raíz: `feature_list.json`, `claude-progress.md`, `init.sh`, `session-handoff.md`,
+`clean-state-checklist.md`, `evaluator-rubric.md`, `quality-document.md`.
 
 ### Al comienzo de cada sesión
 
@@ -217,6 +218,7 @@ están en la raíz: `feature_list.json`, `claude-progress.md`, `init.sh`, `sessi
 5. Ejecuta `./init.sh`.
 6. Verifica si la ruta de smoke / end-to-end de referencia ya está rota
    (`reference_smoke_path` en `feature_list.json`: PDF autofill → Step 0).
+7. Consulta `quality-document.md` para saber dónde el código base es más débil.
 
 Luego selecciona **exactamente una** característica inacabada (la de mayor prioridad en
 `feature_list.json`) y trabaja solo en esa característica hasta verificarla o documentar por qué
@@ -233,15 +235,18 @@ está bloqueada.
 ### Puerta de Completación
 
 Una característica pasa a `passing` solo después de que la verificación requerida tenga éxito y el
-resultado quede registrado en `feature_list.json` (campo `evidence`).
+resultado quede registrado en `feature_list.json` (campo `evidence`). Antes de aceptarla, puntúala
+con `evaluator-rubric.md` — un PR mergeado NO cuenta como evidencia ejecutable.
 
 ### Antes de Detenerte
 
 1. Actualiza `claude-progress.md`.
 2. Actualiza el estado de la característica en `feature_list.json`.
 3. Registra qué sigue roto o sin verificar (`session-handoff.md` cuando una entrega compacta es útil).
-4. Haz commit una vez que el repo sea seguro para reanudar.
-5. Deja una ruta de reinicio limpia para la próxima sesión.
+4. Actualiza `quality-document.md` si la sesión cambió el estado de un dominio o capa.
+5. Recorre `clean-state-checklist.md` y confirma cada ítem con evidencia real.
+6. Haz commit una vez que el repo sea seguro para reanudar.
+7. Deja una ruta de reinicio limpia para la próxima sesión.
 
 ### Comandos reales (Starteria)
 

@@ -1,4 +1,5 @@
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { useApp } from '../../../app/context/AppContext';
 import * as portfolioService from '../../../app/services/portfolioService';
 import {
   adaptStrategicFront,
@@ -135,10 +136,16 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
   const [portfolioDecisions, setPortfolioDecisions] = useState(DEFAULT_PORTFOLIO_DECISIONS);
   const [executiveOutputs, setExecutiveOutputs] = useState(DEFAULT_EXECUTIVE_OUTPUTS);
 
+  // El provider monta global en RootLayout (también en la landing pública):
+  // solo hidrata con sesión resuelta y autenticada — un visitante anónimo no
+  // debe disparar llamadas autenticadas (401 → refresh → redirect a /auth).
+  const { isAuthenticated, authLoading } = useApp();
+
   // #100: hydrate the read path from the real backend (frentes → retos → iniciativas).
   // The mock fixtures above are the initial/fallback state, kept if the API is empty or
   // unreachable so local dev still works. Mutations remain local for now (follow-up).
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
     let cancelled = false;
     (async () => {
       try {
@@ -164,7 +171,7 @@ export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   const value = useMemo<PortfolioLeadContextValue>(() => ({
     strategicFronts,
