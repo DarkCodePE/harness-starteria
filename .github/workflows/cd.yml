@@ -56,7 +56,11 @@ env:
   # Images live on Docker Hub (kept public, matches the pre-CD setup).
   DOCKERHUB_NAMESPACE: orlandogtp
   NAMESPACE: starteria
-  ROLLOUT_TIMEOUT: 180s
+  # 360s (was 180s): a cold image pull of the ai-service image (~167 MB,
+  # imagePullPolicy: Always) from anonymous Docker Hub onto the single tight
+  # spot node can exceed 180s, timing out the rollout and triggering a full
+  # rollback. Warm rollouts finish in <10s; 360s gives ~2x cold-pull margin.
+  ROLLOUT_TIMEOUT: 360s
 
 jobs:
   # ---------------------------------------------------------------------------
