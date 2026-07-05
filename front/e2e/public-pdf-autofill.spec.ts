@@ -30,9 +30,11 @@ test.describe('Public landing PDF auto-fill (anonymous, full browser)', () => {
   test.setTimeout(700_000);
 
   test('upload PDF on /public/start → busy → navigate to editor → AI chips', async ({ page }) => {
-    await test.step('load landing + upload button visible', async () => {
+    await test.step('load landing + upload affordance visible', async () => {
       await page.goto('/public/start');
-      await expect(page.getByRole('button', { name: /Subir documento/i })).toBeVisible({
+      // Current UI: PublicPdfDropzone (role=button, aria-label "Arrastra un PDF…")
+      // replaced the old "Subir documento" button as the primary affordance.
+      await expect(page.getByRole('button', { name: /Arrastra un PDF/i })).toBeVisible({
         timeout: 15_000,
       });
     });
