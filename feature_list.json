@@ -156,17 +156,19 @@
       "priority": 7,
       "epic": "initial-review-guided (ADR-025)",
       "area": "initial-review",
-      "title": "Landear PR #122 (scaffold FE mock + flag) como base del épico",
+      "title": "Aterrizar el épico initial-review (decisión A: FE snapshot-REST, #122 cerrado)",
       "user_visible_behavior": "El flujo guiado (Start→Processing→Result, flag-gated) queda en main como base sobre la que cablear el backend real.",
-      "status": "blocked",
+      "status": "passing",
       "verification": [
         "PR #122 rebaseado sobre main sin conflictos + CI verde + merge."
       ],
       "evidence": [
-        "2026-07-06 trial-merge: #122 está detrás de main y choca en 9 archivos (PortfolioLeadContext, AppContext, RootLayout, routes.ts, DashboardPage, Step0Page, ProjectHomePage, AuthPage, init.sh) + reescribe project.service.ts 264 líneas sobre milestone #7.",
-        "Bloqueador: requiere que el autor (hermano) rebase #122 sobre main. No se resuelven sus conflictos por él."
+        "Decisión de producto A (2026-07-07): se eligió el FE snapshot-REST propio (#128) sobre el FE conversacional de #122.",
+        "PR #128 mergeado a main (8dfc4f9): backend IR-B1..B4 + frontend IR-F1/F2/F3. PR #127 (ADR-025) mergeado (1e558f1).",
+        "PR #122 CERRADO con explicación (backend obsoleto vs #129/#7; FE colisionaba en /initiatives/new).",
+        "CI de #128 verde (Node+Python+Lint/build). Épico completo verificado en main."
       ],
-      "notes": "Coordinación pendiente. IR-F1..F3 (frontend) dependen de este merge; IR-B1..B4 (backend) NO dependen y avanzan en paralelo."
+      "notes": "IR-00 resuelto: el épico aterrizó vía #128 (no vía #122). #122 quedó como referencia. Deploy a prod: pendiente de cortar tag semver (CD tag-triggered)."
     },
     {
       "id": "IR-B1-prisma-models",
