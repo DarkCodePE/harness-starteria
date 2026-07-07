@@ -54,6 +54,7 @@ async function main() {
         reviewId: review.id,
         version: 1,
         originalInput: review.originalInput,
+        addedContext: ['El proceso hoy se hace por correo.'], // congelado en el snapshot (#3)
         understandingSummary: 'Reducir demoras en aprobaciones de compras menores.',
         suggestedChallengeType: 'correccion',
         selectedChallengeType: 'correccion',
@@ -75,7 +76,7 @@ async function main() {
       await prisma.initialReviewSnapshot.create({
         data: {
           reviewId: review.id, version: 1, originalInput: 'x', understandingSummary: 'x',
-          suggestedChallengeType: 'correccion', selectedChallengeType: 'correccion',
+          suggestedChallengeType: 'correccion', selectedChallengeType: 'correccion', challengeTypeReason: 'x',
           critique: {}, strategicQuestions: [], improvedProposal: {}, routePreview: [], createdBy: user.id,
         },
       });
@@ -133,7 +134,24 @@ async function main() {
     assert(projWith?.initialReviewSnapshot?.id === snapshot.id, 'project.initialReviewSnapshot resuelve');
     assert(projWith?.routeConfirmation?.id === rc.id, 'project.routeConfirmation resuelve');
 
-    console.log('✅ IR-B1 OK — modelos InitialReview/Snapshot/RouteConfirmation + idempotencia + relaciones verificados.');
+    // 8. INVARIANTE de auditoría (#1): borrar el owner de una revisión YA convertida
+    //    está BLOQUEADO por Restrict — el rastro (snapshot + confirmación) no se destruye.
+    let ownerDeleteBlocked = false;
+    try {
+      await prisma.user.delete({ where: { id: user.id } });
+    } catch { ownerDeleteBlocked = true; }
+    assert(ownerDeleteBlocked, 'Restrict: no se puede borrar un User con revisión (audit trail protegido, #1)');
+
+    // 9. Un 2º Project NO puede apuntar al mismo snapshot (#2, guardarraíl de idempotencia).
+    let dupSnapshotProjectBlocked = false;
+    try {
+      await prisma.project.create({
+        data: { name: 'dup', ownerId: user.id, status: 'DRAFT', origin: 'from_initial_review', initialReviewSnapshotId: snapshot.id },
+      });
+    } catch { dupSnapshotProjectBlocked = true; }
+    assert(dupSnapshotProjectBlocked, '@@unique(initialReviewSnapshotId) impide 2 Projects del mismo snapshot (#2)');
+
+    console.log('✅ IR-B1 OK — modelos + idempotencia (reviewId, snapshot único) + audit-trail Restrict + relaciones verificados.');
   } finally {
     // Cleanup determinista (respeta FKs): confirmation → project → snapshot → review → user.
     if (created.reviewId) await prisma.routeConfirmation.deleteMany({ where: { reviewId: created.reviewId } });

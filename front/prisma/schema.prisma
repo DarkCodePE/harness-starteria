@@ -376,7 +376,9 @@ model Project {
   @@index([cohortId])
   @@index([status])
   @@index([pilotLeadId])
-  @@index([initialReviewSnapshotId])
+  // @@unique (no @@index): un snapshot origina a lo sumo UN Project (2º guardarraíl
+  // de idempotencia contra doble-clic concurrente, ADR-025 #2). NULL múltiple OK en PG.
+  @@unique([initialReviewSnapshotId])
 }
 
 model Step {
@@ -1110,15 +1112,27 @@ enum InitiativeOrigin {
   independent
 }
 
+enum InformationReadinessStatus {
+  very_low
+  low
+  medium
+  high
+}
+
 model InitialReview {
   id            String              @id @default(cuid())
   ownerId       String
-  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  // Restrict (default, como Project.owner): borrar un User NO debe cascadear y
+  // destruir el rastro de una revisión ya convertida (audit trail, AC-S0-005).
+  // El abandono usa status=abandoned (RB-IR-020), no un DELETE físico.
+  owner         User                @relation(fields: [ownerId], references: [id])
   status        InitialReviewStatus @default(draft)
   originalInput String
   addedContext  Json? // string[]
   sourceFileIds Json? // string[]
-  challengeId   String? // vínculo opcional a un reto (portfolio-lead)
+  // Scalar FK suelto (patrón ADR-022) para no acoplar bounded contexts; indexado
+  // para "revisiones de este reto".
+  challengeId   String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
@@ -1127,6 +1141,7 @@ model InitialReview {
 
   @@index([ownerId])
   @@index([status])
+  @@index([challengeId])
 }
 
 model InitialReviewSnapshot {
@@ -1135,12 +1150,16 @@ model InitialReviewSnapshot {
   review                 InitialReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   version                Int           @default(1)
   originalInput          String
+  // Contexto/fuentes CONGELADOS en el snapshot (PRD §18): releer una versión debe
+  // reflejar el contexto que la produjo, aunque el InitialReview padre cambie.
+  addedContext           Json? // string[]
+  sourceFileIds          Json? // string[]
   understandingSummary   String
   understandingConfirmed Boolean       @default(false)
   suggestedChallengeType ChallengeType
   selectedChallengeType  ChallengeType
-  challengeTypeReason    String?
-  informationReadiness   String? // very_low | low | medium | high
+  challengeTypeReason    String // se genera junto al tipo → requerido
+  informationReadiness   InformationReadinessStatus?
   critique               Json // ExpertCritique { solid, weak, risky, recommendedAdjustment, mainRisk }
   strategicQuestions     Json // StrategicQuestion[]
   improvedProposal       Json // ImprovedProposal { suggestedName, improvedDescription, initialFocus, expectedImpact, nextRecommendedStep }
@@ -1172,4 +1191,5 @@ model RouteConfirmation {
   updatedAt                DateTime                @updatedAt
 
   @@index([snapshotId])
+  @@index([status])
 }
