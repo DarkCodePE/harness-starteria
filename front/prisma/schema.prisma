@@ -376,9 +376,12 @@ model Project {
   @@index([cohortId])
   @@index([status])
   @@index([pilotLeadId])
-  // @@unique (no @@index): un snapshot origina a lo sumo UN Project (2º guardarraíl
-  // de idempotencia contra doble-clic concurrente, ADR-025 #2). NULL múltiple OK en PG.
-  @@unique([initialReviewSnapshotId])
+  // Plain @@index (NOT @@unique): igual que `pilotLeadId`, agregar un @@unique a una
+  // tabla EXISTENTE dispara el guard de data-loss de `prisma db push` y aborta el deploy
+  // (el CD corre db push SIN --accept-data-loss). La idempotencia real (un snapshot →
+  // ≤1 Project, RB-IR-017/018) ya la garantizan RouteConfirmation.reviewId @@unique + el
+  // claim-antes-de-crear en RouteConfirmationService, así que el unique aquí era redundante.
+  @@index([initialReviewSnapshotId])
 }
 
 model Step {
