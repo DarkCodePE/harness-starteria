@@ -1,8 +1,10 @@
 # CD pipeline — Rackspace Spot deploy
 #
 # Triggers:
-#   - push of a semver tag v*.*.*  → full deploy of that tag
+#   - push to main (PR merge)      → auto-deploy, images tagged main-<shortsha>
+#   - push of a semver tag v*.*.*  → full deploy of that tag (deliberate release)
 #   - workflow_dispatch (input: tag) → manual (re)deploy / rollback
+#     (accepts vX.Y.Z or main-<shortsha> — any tag already pushed to Docker Hub)
 #
 # Flow:
 #   tests (reuses ci.yml via workflow_call)
@@ -36,12 +38,14 @@ name: CD
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*.*.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to (re)deploy (e.g. v2.1.0). Must already exist on the repo.'
+        description: 'Tag to (re)deploy (e.g. v2.1.0 or main-abc1234). Must exist as an image tag on Docker Hub.'
         required: true
         type: string
 
@@ -103,11 +107,14 @@ jobs:
           set -euo pipefail
           if [ -n "${DISPATCH_TAG:-}" ]; then
             tag="${DISPATCH_TAG}"
+          elif [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            # Auto-deploy on merge to main: traceable, commit-addressed tag.
+            tag="main-${GITHUB_SHA:0:7}"
           else
             tag="${GITHUB_REF_NAME}"
           fi
-          if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$'; then
-            echo "::error::Tag '$tag' is not valid semver (vX.Y.Z[-suffix])"
+          if ! printf '%s' "$tag" | grep -Eq '^(v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?|main-[0-9a-f]{7,40})$'; then
+            echo "::error::Tag '$tag' is not semver (vX.Y.Z[-suffix]) nor a main build (main-<sha>)"
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -158,6 +165,8 @@ jobs:
           set -euo pipefail
           if [ -n "${DISPATCH_TAG:-}" ]; then
             tag="${DISPATCH_TAG}"
+          elif [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            tag="main-${GITHUB_SHA:0:7}"
           else
             tag="${GITHUB_REF_NAME}"
           fi
