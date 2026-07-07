@@ -142,16 +142,12 @@ async function main() {
     } catch { ownerDeleteBlocked = true; }
     assert(ownerDeleteBlocked, 'Restrict: no se puede borrar un User con revisión (audit trail protegido, #1)');
 
-    // 9. Un 2º Project NO puede apuntar al mismo snapshot (#2, guardarraíl de idempotencia).
-    let dupSnapshotProjectBlocked = false;
-    try {
-      await prisma.project.create({
-        data: { name: 'dup', ownerId: user.id, status: 'DRAFT', origin: 'from_initial_review', initialReviewSnapshotId: snapshot.id },
-      });
-    } catch { dupSnapshotProjectBlocked = true; }
-    assert(dupSnapshotProjectBlocked, '@@unique(initialReviewSnapshotId) impide 2 Projects del mismo snapshot (#2)');
+    // 9. Idempotencia por RouteConfirmation: la 2ª confirmación de la MISMA revisión
+    //    falla (ya cubierto en el paso 6). El unique en Project se removió a propósito
+    //    (rompía `db push` sin --accept-data-loss); la garantía real es reviewId @@unique
+    //    + el claim del RouteConfirmationService.
 
-    console.log('✅ IR-B1 OK — modelos + idempotencia (reviewId, snapshot único) + audit-trail Restrict + relaciones verificados.');
+    console.log('✅ IR-B1 OK — modelos + idempotencia (RouteConfirmation.reviewId) + audit-trail Restrict + relaciones verificados.');
   } finally {
     // Cleanup determinista (respeta FKs): confirmation → project → snapshot → review → user.
     if (created.reviewId) await prisma.routeConfirmation.deleteMany({ where: { reviewId: created.reviewId } });
