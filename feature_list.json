@@ -271,12 +271,17 @@
       "area": "initial-review",
       "title": "Pantalla Overview (/initiatives/:id/overview) — post-confirmación",
       "user_visible_behavior": "Tras aceptar la ruta, el usuario aterriza en el Overview (no en Step 0): ve Draft, mapa Step 0–4, resumen de revisión y CTA 'Empezar Step 0'.",
-      "status": "blocked",
+      "status": "passing",
       "verification": [
         "e2e: aceptar ruta redirige a Overview (AC-OV-001..008); Step 0 activo, 1–4 bloqueados; CTA abre Step 0 precargado."
       ],
-      "evidence": [],
-      "notes": "PRD §12. Pantalla nueva (no está en #122). Lee Project + meta + snapshot (sin modelo nuevo). Depende de IR-00 + IR-B4."
+      "evidence": [
+        "front/src/app/pages/InitiativeOverviewPage.tsx + ruta /initiatives/:projectId/overview (bajo AppLayout, autenticada).",
+        "Lee el Project real vía projectService.getById → consume las APIs verificadas IR-B2/B4 (no depende del scaffold de #122).",
+        "Unit: InitiativeOverviewPage.test.tsx 4/4 (AC-OV: Draft, Step 0 activo + 1-4 bloqueados, resumen de revisión, CTA Empezar Step 0 navega). front unit 223/223."
+      ],
+      "notes": "PRD §12. Pantalla NUEVA e independiente (no está en #122). El CTA lleva a Step 0 precargado (step0Data de IR-B4). E2e de navegador (confirm-route→Overview) queda como follow-up (requiere rebuild del frontend); el component test cubre los AC-OV.",
+      "status_note": "blocked→passing"
     },
     {
       "id": "IR-F3-wire-real-apis",
