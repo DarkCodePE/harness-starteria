@@ -4,8 +4,8 @@
 
 - Raíz del repositorio: `/home/orlando/Desktop/innova-app-yape/Dashboardstarteria`
 - App: vive en `front/` (Vite + backend `tsx`); Prisma + Postgres vía `docker compose`.
-- Ruta de inicio estándar: `./init.sh` (instala, genera Prisma client, corre unit tests). `RUN_START_COMMAND=1 ./init.sh` levanta la app.
-- Ruta de verificación estándar (unit): `cd front && npm test` (backend + front vitest).
+- Ruta de inicio estándar: `npm run dev:all`
+- Ruta de verificación estándar: `npm test`
 - Ruta de verificación de referencia (e2e): `cd front && npm run docker:up && npm run test:e2e` — escenario register → login → create project → PDF upload+extract → assert UI en Step 0 (`front/e2e/pdf-autofill.spec.ts`).
 - Característica inacabada de mayor prioridad actual: `portfolio-steps-integration` (milestone #7 — integrar portfolio-lead con el flujo de steps del participante).
 - Bloqueador actual: ninguno registrado.
@@ -50,15 +50,15 @@
 
 ### Sesión 004
 
-- Fecha:
-- Objetivo:
-- Completado:
-- Verificación ejecutada:
-- Evidencia capturada:
+- Fecha: 2026-07-04
+- Objetivo: abordar `portfolio-steps-integration` para que una iniciativa creada desde un reto se materialice como Project navegable con contexto heredado en Step 0.
+- Completado: `ProjectService.createProject` acepta `challengeLink`, valida el reto, crea `Project`, crea `InitiativePortfolioMeta`, hereda frente/reto/squad/meta y prellena `step0Data`; `CreateProjectPage` prellena nombre/descripción desde el reto; `project.adapter` reconstruye `challengeLink` desde `portfolioMeta`; `usePortfolioData` adapta metas backend a iniciativas frontend.
+- Verificación ejecutada: `cd front && npm test` exit 0; `./init.sh` exit 0; `npm run build` exit 0; `npm run build:backend` exit 0; `cd front && npm run test:portfolio-steps` exit 0.
+- Evidencia capturada: build frontend exitoso (`vite build`), build backend exitoso, baseline `./init.sh` exit 0, prueba de integración `portfolio-steps-integration OK` validando Project + InitiativePortfolioMeta + Step 0 heredado + `challengeLink` frontend.
 - Commits:
-- Archivos o artefactos actualizados:
-- Riesgo conocido o problema sin resolver:
-- Mejor próximo paso:
+- Archivos o artefactos actualizados: `backend/modules/projects/project.schemas.ts`, `backend/modules/projects/project.service.ts`, `front/src/app/context/AppContext.tsx`, `front/src/app/services/project.adapter.ts`, `front/src/app/pages/CreateProjectPage.tsx`, `front/src/app/hooks/usePortfolioData.ts`, `feature_list.json`.
+- Riesgo conocido o problema sin resolver: no queda bloqueador registrado para `portfolio-steps-integration`; queda pendiente un e2e navegador si se quiere cubrir UI completa.
+- Mejor próximo paso: pasar al siguiente pendiente del tracker: capturar evidencia para `steps-empty-start`.
 
 ### Sesión 005 — épico initial-review (ADR-025): IR-00 + IR-B1 + WIP
 

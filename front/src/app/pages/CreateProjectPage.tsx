@@ -55,6 +55,12 @@ export function CreateProjectPage() {
     }
   }, [linkedChallenge]);
 
+  useEffect(() => {
+    if (!linkedChallenge) return;
+    setName(current => current || linkedChallenge.name || '');
+    setDescription(current => current || linkedChallenge.objective || linkedChallenge.whatWeWantToMove || '');
+  }, [linkedChallenge]);
+
   const addInvite = () => {
     if (!inviteEmail.trim()) return;
     if (!validateEmail(inviteEmail)) { setEmailError('El correo no es válido. Verifica que tenga @empresa.com'); return; }

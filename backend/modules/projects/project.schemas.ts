@@ -9,6 +9,10 @@ export const createProjectSchema = z.object({
   // standalone iniciativas omit it. The link is persisted as InitiativePortfolioMeta
   // (Project has no direct challengeId column).
   challengeId: z.string().optional(),
+  challengeLink: z.object({
+    challengeId: z.string().min(1),
+    createdFrom: z.literal('challenge').default('challenge'),
+  }).optional(),
 });
 
 export const updateProjectSchema = z.object({

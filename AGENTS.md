@@ -1,5 +1,10 @@
 # Startería - Instrucciones del proyecto
 
+## Comienza aqui
+- La app vive en `front/`.
+- Para iniciar frontend y backend juntos, usa `npm run dev:all` desde `front/`.
+- Antes de marcar un trabajo como completo, ejecuta `npm test` desde `front/`.
+
 ## Qué es este producto
 Startería es una plataforma guiada para diseñar iniciativas de intraemprendimiento desde un problema real hasta una propuesta probada y presentada con claridad.
 

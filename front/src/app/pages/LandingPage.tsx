@@ -9,13 +9,13 @@ import dashboardImage from '../../assets/starteria-dashboard.webp';
 //  - el asset se importa relativo (front no usa el figmaAssetResolver),
 //  - las CTAs del piloto navegan internamente a /public/start (no al taplink),
 //  - el botón del header depende de la sesión (useApp).
-const PILOT_ROUTE = '/public/start';
+const PRE_PROJECT_ROUTE = '/public/start';
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useApp();
 
-  const goToPilot = () => navigate(PILOT_ROUTE);
+  const goToPreProject = () => navigate(PRE_PROJECT_ROUTE);
   const goToApp = () => navigate(isAuthenticated ? '/dashboard' : '/auth');
 
   return (
@@ -37,10 +37,10 @@ export function LandingPage() {
           </nav>
           <button
             type="button"
-            onClick={goToPilot}
+            onClick={goToPreProject}
             className="px-6 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition-all hover:shadow-lg"
           >
-            Postular al piloto
+            Crear pre proyecto
           </button>
         </div>
       </header>
@@ -65,16 +65,20 @@ export function LandingPage() {
             </h1>
 
             <p className="text-xl md:text-2xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+              Escribe tu iniciativa en un prompt y Starteria la convierte en un pre proyecto que se adapta a la ruta de 4 pasos.
+            </p>
+
+            <p className="hidden">
               Starteria es un sistema que ayuda a abordar, dar trazabilidad y sustentar retos y oportunidades a los líderes de tu empresa en 4 pasos.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
               <button
                 type="button"
-                onClick={goToPilot}
+                onClick={goToPreProject}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 text-white text-lg font-medium rounded-xl hover:bg-slate-800 transition-all hover:shadow-xl hover:scale-[1.02]"
               >
-                Postular al piloto
+                Crear pre proyecto
                 <ArrowRight className="w-5 h-5" />
               </button>
               <a href="#como-funciona" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 border-2 border-slate-200 text-lg font-medium rounded-xl hover:border-slate-300 transition-all">
@@ -529,20 +533,28 @@ export function LandingPage() {
             </div>
 
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+              Empieza con un prompt y crea tu pre proyecto
+            </h2>
+
+            <h2 className="hidden">
               Sé parte del primer piloto de Starteria
             </h2>
 
             <p className="text-xl text-purple-100 mb-10 leading-relaxed max-w-2xl mx-auto">
+              Describe tu iniciativa con tus propias palabras. Starteria la ordena como propuesta inicial y la conecta con la ruta para seguir avanzando.
+            </p>
+
+            <p className="hidden">
               Únete a los primeros usuarios que están transformando problemas internos en iniciativas con impacto real.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 type="button"
-                onClick={goToPilot}
+                onClick={goToPreProject}
                 className="inline-flex items-center gap-2 px-10 py-5 bg-white text-purple-700 rounded-xl hover:bg-purple-50 transition-all hover:shadow-2xl hover:scale-[1.02] text-lg font-semibold"
               >
-                Quiero sumarme al piloto
+                Crear mi pre proyecto
                 <ArrowRight className="w-6 h-6" />
               </button>
             </div>

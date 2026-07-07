@@ -700,6 +700,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         name,
         description,
         challengeId: options?.challengeLink?.challengeId,
+        challengeLink: options?.challengeLink,
       });
       const ownerMember: TeamMember | null = user
         ? { id: user.id, name: user.name, email: user.email, role: 'Owner', status: 'Activo', initials: user.initials }
