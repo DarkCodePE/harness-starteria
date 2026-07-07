@@ -10,13 +10,20 @@ import { validate } from '../../shared/middleware/validate';
 import { InitialReviewService } from './initial-review.service';
 import { InitialReviewController } from './initial-review.controller';
 import { MockInitialReviewGenerator } from './mock-generator';
+import { AiInitialCritiqueService } from './ai-generator';
+import type { InitialReviewGenerator } from './initial-review.types';
 import {
   createInitialReviewSchema,
   addContextSchema,
   strategicAnswersSchema,
 } from './initial-review.schemas';
 
-const service = new InitialReviewService(prisma, new MockInitialReviewGenerator());
+// IR-B3: el generador real (ai-service + guardrails §25) se activa con INITIAL_REVIEW_AI=real.
+// Por defecto, mock determinista (el endpoint /initial-review del ai-service es pendiente).
+const generator: InitialReviewGenerator =
+  process.env.INITIAL_REVIEW_AI === 'real' ? new AiInitialCritiqueService() : new MockInitialReviewGenerator();
+
+const service = new InitialReviewService(prisma, generator);
 const controller = new InitialReviewController(service);
 
 export const initialReviewRouter = Router();

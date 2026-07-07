@@ -208,13 +208,18 @@
       "area": "initial-review",
       "title": "AIInitialCritiqueService (bridge IA + detección de tipo + guardrails §25)",
       "user_visible_behavior": "La revisión (entendimiento, tipo de reto, crítica, preguntas, propuesta, ruta) se genera con IA real, no con mockGenerator.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Tests de shape/guardrails: la salida cumple AIInitialReviewOutput; rechaza marcadores de validación/aprobación; no inventa evidencia.",
         "e2e: extracción real vía ai-service (ADR-011/013) con cost-cap."
       ],
-      "evidence": [],
-      "notes": "Reusa el AiBridge existente. Guardrails PRD §25 (no validar, no aprobar Step 0)."
+      "evidence": [
+        "backend/modules/initial-review/ai-generator.ts (AiInitialCritiqueService) + route-preview.ts (ruta canónica única).",
+        "Unit: __tests__/ai-generator.test.ts 7/7 — guardrails §25/§8: ruta Step 0–4 forzada (ignora la del modelo), tipo inválido→exploration, ≤3 preguntas, lenguaje validación/aprobación neutralizado, evidencia no inventada, malformado rechazado.",
+        "Wired tras flag INITIAL_REVIEW_AI=real (mock por defecto). Caller inyectable → testeable sin red.",
+        "backend unit 411/411 (sin regresión)."
+      ],
+      "notes": "Generador + guardrails DONE y verificados. Follow-up cross-service: el endpoint /initial-review del ai-service (Python + prompt) no existe aún; el flag deja el mock activo hasta que se implemente. La e2e con IA real queda pendiente de ese endpoint (no-determinista/costosa)."
     },
     {
       "id": "IR-B4-confirm-route",

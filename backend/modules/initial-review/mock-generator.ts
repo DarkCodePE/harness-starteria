@@ -14,14 +14,7 @@ import type {
   InitialReviewGenerator,
   CanonicalChallengeType,
 } from './initial-review.types';
-
-const ROUTE: GeneratedReview['routePreview'] = [
-  { step: 0, name: 'Ordenar contexto', whatWillHappen: 'Aterrizar alcance, actores, sponsor, restricciones y tiempo.', expectedOutput: 'Card inicial clara y contexto base', status: 'active' },
-  { step: 1, name: 'Definir y validar foco', whatWillHappen: 'Validar problema u oportunidad con evidencia.', expectedOutput: 'Foco validado', status: 'locked' },
-  { step: 2, name: 'Diseñar apuesta', whatWillHappen: 'Convertir el foco en solución priorizada e hipótesis.', expectedOutput: 'Test Card o piloto pequeño', status: 'future' },
-  { step: 3, name: 'Probar y aprender', whatWillHappen: 'Ejecutar una prueba y capturar evidencia.', expectedOutput: 'Aprendizajes y recomendación', status: 'future' },
-  { step: 4, name: 'Presentar propuesta', whatWillHappen: 'Organizar historia, evidencia y siguiente paso.', expectedOutput: 'Reporte o pitch para sponsor', status: 'future' },
-];
+import { canonicalRoute } from './route-preview';
 
 /** Heurística determinista de tipo de reto a partir de palabras del input. */
 function classify(text: string): CanonicalChallengeType {
@@ -68,7 +61,7 @@ export class MockInitialReviewGenerator implements InitialReviewGenerator {
         expectedImpact: 'Menor tiempo, menor retrabajo, mayor trazabilidad.',
         nextRecommendedStep: 'Completar Step 0 para aterrizar alcance, actores, sponsor y restricciones.',
       },
-      routePreview: ROUTE.map((r) => ({ ...r })),
+      routePreview: canonicalRoute(),
     };
   }
 }
