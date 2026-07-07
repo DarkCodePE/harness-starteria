@@ -28,7 +28,8 @@
     "test:coverage:front": "vitest run --config vitest.front.config.ts --coverage",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "test:portfolio-steps": "tsx scripts/verify-portfolio-steps-integration.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

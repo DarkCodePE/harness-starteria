@@ -50,11 +50,32 @@ const DEFAULT_STEPS = [
 export class ProjectService {
   constructor(private prisma: PrismaClient) {}
 
+  private projectInclude = {
+    steps: { include: { modules: true } },
+    teamMembers: true,
+    evidence: true,
+    portfolioMeta: {
+      include: {
+        challenge: {
+          select: {
+            id: true,
+            title: true,
+            name: true,
+            type: true,
+            strategicFrontId: true,
+            challengeOwner: true,
+            successCriteria: true,
+          },
+        },
+      },
+    },
+  } as const;
+
   async listProjects(userId: string, role: Role): Promise<Project[]> {
     switch (role) {
       case 'admin':
         return this.prisma.project.findMany({
-          include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+          include: this.projectInclude,
         }) as unknown as Project[];
 
       case 'mentor':
@@ -65,28 +86,70 @@ export class ProjectService {
               { status: 'EXPERT_SESSION_PENDING' },
             ],
           },
-          include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+          include: this.projectInclude,
         }) as unknown as Project[];
 
       default:
         return this.prisma.project.findMany({
           where: { teamMembers: { some: { userId } } },
-          include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+          include: this.projectInclude,
         }) as unknown as Project[];
     }
   }
 
   async createProject(userId: string, data: CreateProjectInput): Promise<Project> {
-    return this.prisma.$transaction(async (tx) => {
-      const project = await tx.project.create({
+    const challengeLinkId = data.challengeLink?.challengeId;
+    const legacyChallengeId = challengeLinkId ? undefined : data.challengeId;
+    const linkedChallenge = challengeLinkId
+      ? await this.prisma.challenge.findUnique({
+          where: { id: challengeLinkId },
+          include: {
+            strategicFront: true,
+            assignedSquad: true,
+          },
+        })
+      : null;
+
+    if (challengeLinkId && !linkedChallenge) {
+      throw AppError.notFound('Desafio', 'CHALLENGE_NOT_FOUND', {
+        hint: 'Verifica el ID del reto antes de crear la iniciativa.',
+      });
+    }
+
+    const inheritedTeam = linkedChallenge?.assignedSquad
+      .map(member => member.value.trim())
+      .filter(Boolean) ?? [];
+
+    const inheritedStep0Data = linkedChallenge ? {
+      mode: 'linked_to_challenge',
+      initiativeTitle: data.name,
+      initiativeFrame: linkedChallenge.type,
+      clarityLevel: 'hipotesis_clara',
+      primaryObjective: 'aprendizaje',
+      specificChallengePart: linkedChallenge.whatWeWantToMove ?? linkedChallenge.title,
+      challengeGoalConnection: linkedChallenge.objective ?? linkedChallenge.successCriteria ?? '',
+      linkedContributionType: 'descubrir_problema',
+      whyNowText: linkedChallenge.whyNow ?? linkedChallenge.strategicFront.whyNow ?? '',
+      validationSignal: linkedChallenge.successCriteria ?? linkedChallenge.strategicFront.target ?? '',
+      currentEvidence: linkedChallenge.description ?? linkedChallenge.objective ?? '',
+      quienEscuchar: linkedChallenge.challengeOwner ?? linkedChallenge.strategicFront.sponsor ?? '',
+      additionalStakeholders: inheritedTeam.length > 0 ? 'si' : 'no_claro',
+      additionalStakeholdersDetail: inheritedTeam.join(', '),
+      sponsorInterestReason: linkedChallenge.strategicFront.strategicObjective ?? '',
+      decisionRequested: 'Validar si esta iniciativa debe avanzar dentro del reto.',
+    } : undefined;
+
+    const project = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.project.create({
         data: {
           name: data.name,
           description: data.description,
           ownerId: userId,
           cohortId: data.cohort,
           status: 'DRAFT',
-          currentStep: 1,
-          step0Status: 'NOT_STARTED',
+          currentStep: linkedChallenge ? 0 : 1,
+          step0Status: linkedChallenge ? 'IN_PROGRESS' : 'NOT_STARTED',
+          step0Data: linkedChallenge ? inheritedStep0Data as any : undefined,
           mentorCredits: 3,
           riskLevel: 'LOW',
           teamMembers: {
@@ -108,46 +171,64 @@ export class ProjectService {
             })),
           },
         },
-        include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
       });
 
-      // Issue #92: if this iniciativa is created from within a reto (Challenge),
-      // persist the link so the portfolio-lead dashboard can track it under that reto.
-      // The link lives in InitiativePortfolioMeta (Project has no direct challengeId).
-      // An unknown challengeId is ignored — creating a standalone iniciativa, or one
-      // referencing a since-deleted reto, must never fail here.
-      if (data.challengeId) {
-        const challenge = await tx.challenge.findUnique({
-          where: { id: data.challengeId },
+      if (linkedChallenge) {
+        await tx.initiativePortfolioMeta.create({
+          data: {
+            projectId: created.id,
+            challengeId: linkedChallenge.id,
+            strategicFrontId: linkedChallenge.strategicFrontId,
+            teamOwner: linkedChallenge.challengeOwner,
+            currentStep: 'Step 0',
+            status: 'en_step_0',
+            sponsorTouchpoint: linkedChallenge.strategicFront.sponsor,
+            mainMetric: linkedChallenge.successCriteria ?? linkedChallenge.strategicFront.mainKpi,
+            contributionType: 'descubrir',
+            estimatedContribution: 'bajo',
+            lastActivity: 'Iniciativa creada desde reto',
+            signalSummary: linkedChallenge.objective ?? linkedChallenge.whatWeWantToMove,
+            teamLabel: inheritedTeam.join(', '),
+            teamMembers: inheritedTeam,
+            executiveSummary: linkedChallenge.objective ?? linkedChallenge.description,
+            experimentSummary: linkedChallenge.successCriteria,
+            stepsTimeline: [
+              {
+                step: 'Step 0',
+                state: 'current',
+                note: 'Debe completar Step 0 con el contexto heredado del reto.',
+              },
+            ],
+          } as any,
+        });
+      } else if (legacyChallengeId) {
+        const legacyChallenge = await tx.challenge.findUnique({
+          where: { id: legacyChallengeId },
           select: { id: true, strategicFrontId: true },
         });
-        if (challenge) {
+        if (legacyChallenge) {
           await tx.initiativePortfolioMeta.upsert({
             where: {
-              projectId_challengeId: { projectId: project.id, challengeId: challenge.id },
+              projectId_challengeId: { projectId: created.id, challengeId: legacyChallenge.id },
             },
             create: {
-              projectId: project.id,
-              challengeId: challenge.id,
-              strategicFrontId: challenge.strategicFrontId,
+              projectId: created.id,
+              challengeId: legacyChallenge.id,
+              strategicFrontId: legacyChallenge.strategicFrontId,
               status: 'en_step_0',
             },
             update: {},
           });
 
-          // Issue #111 (ADR-023): materialize the reto's team into this iniciativa.
-          // Snapshot ChallengeTeamMember rows that point to a real User into TeamMember
-          // (inheritedFromChallenge=true). Dedupe the owner (already created above as
-          // OWNER) and use skipDuplicates so the @@unique([projectId, userId]) never trips.
           const challengeTeam = await tx.challengeTeamMember.findMany({
-            where: { challengeId: challenge.id, userId: { not: null } },
+            where: { challengeId: legacyChallenge.id, userId: { not: null } },
             select: { userId: true, role: true, status: true },
           });
           const inherited = challengeTeam.filter((m) => m.userId && m.userId !== userId);
           if (inherited.length > 0) {
             await tx.teamMember.createMany({
               data: inherited.map((m) => ({
-                projectId: project.id,
+                projectId: created.id,
                 userId: m.userId as string,
                 role: m.role,
                 status: m.status,
@@ -159,14 +240,23 @@ export class ProjectService {
         }
       }
 
-      return project as unknown as Project;
+      if (typeof tx.project.findUniqueOrThrow === 'function') {
+        return tx.project.findUniqueOrThrow({
+          where: { id: created.id },
+          include: this.projectInclude,
+        });
+      }
+
+      return created;
     });
+
+    return project as unknown as Project;
   }
 
   async getProject(projectId: string, userId: string, role: Role): Promise<Project> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+      include: this.projectInclude,
     });
 
     if (!project) {
@@ -202,10 +292,10 @@ export class ProjectService {
     const updated = await this.prisma.project.update({
       where: { id: projectId },
       data: {
-        ...data,
+        ...(data as any),
         lastModified: new Date().toISOString(),
       },
-      include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+      include: this.projectInclude,
     });
 
     return updated as unknown as Project;
@@ -238,14 +328,12 @@ export class ProjectService {
       where: { id: projectId },
       data: {
         step0Data: data as any,
-        step0Status: status ?? undefined,
+        step0Status: status as any,
         lastModified: new Date().toISOString(),
       },
-      include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+      include: this.projectInclude,
     });
 
-    // Issue #95: completing/advancing Step 0 should move the iniciativa forward in the
-    // portfolio-lead dashboard (best-effort, never throws).
     await syncInitiativeProgress(this.prisma, projectId);
 
     return updated as unknown as Project;
@@ -267,7 +355,7 @@ export class ProjectService {
         sponsorComments: data.sponsorComments as any,
         lastModified: new Date().toISOString(),
       },
-      include: { steps: { include: { modules: true } }, teamMembers: true, evidence: true },
+      include: this.projectInclude,
     });
 
     return updated as unknown as Project;

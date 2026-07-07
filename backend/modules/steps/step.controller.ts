@@ -105,8 +105,7 @@ export class StepController {
       const result = await this.service.requestMentorSession(
         req.params.projectId,
         Number(req.params.number),
-        req.body.preferredDate,
-        req.body.notes
+        req.user!.id
       );
       res.status(201).json({ success: true, data: result });
     } catch (err) {
