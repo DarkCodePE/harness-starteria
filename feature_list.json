@@ -188,13 +188,18 @@
       "area": "initial-review",
       "title": "InitialReviewService + router REST /api/v1/initial-reviews/*",
       "user_visible_behavior": "El frontend puede crear/consultar/versionar una revisión inicial vía API real (deja de usar localStorage mock).",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Tests unit del service (mock tx) con casos adversariales (add-context versiona, abandono no crea Project).",
         "e2e API: POST /initial-reviews → GET → PATCH → snapshot (Playwright contra stack real)."
       ],
-      "evidence": [],
-      "notes": "PRD §20/§21. Endpoints: POST, GET/:id, PATCH/:id, add-context, regenerate, strategic-answers, snapshot."
+      "evidence": [
+        "backend/modules/initial-review/* + mount en app.ts. Commit cfc866c.",
+        "Unit: initial-review.service.test.ts 7/7 (mapeo canonical↔legacy, versionado v2, forbidden, conflict convertida, fallo generador).",
+        "E2E: front/e2e/initial-review-api.spec.ts 2/2 contra backend+Postgres reales (2026-07-06): crear→snapshot canónico(EN)→add-context v2→answers→snapshot; privacidad 403; input corto 400.",
+        "Generación IA inyectable (MockInitialReviewGenerator); IR-B3 sustituye por el real."
+      ],
+      "notes": "PRD §20/§21. Creación de iniciativa NO ocurre aquí (RB-IR-001/002; es IR-B4). Verificado unit + e2e (backend local :3002 sobre Postgres del stack)."
     },
     {
       "id": "IR-B3-ai-critique",
