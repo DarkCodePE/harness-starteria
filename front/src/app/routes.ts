@@ -10,6 +10,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CreateProjectPage } from './pages/CreateProjectPage';
 import { ProjectHomePage } from './pages/ProjectHomePage';
 import { InitiativeOverviewPage } from './pages/InitiativeOverviewPage';
+import { InitiativeReviewStartPage } from '../features/initiative-review/pages/InitiativeReviewStartPage';
+import { InitiativeReviewResultPage } from '../features/initiative-review/pages/InitiativeReviewResultPage';
 import { Step0Page } from './pages/Step0Page';
 import { Step1Page } from './pages/Step1Page';
 import { Step2Page } from './pages/Step2Page';
@@ -81,6 +83,8 @@ export const router = createBrowserRouter([
           { path: '/continuar-piloto', Component: ContinuePilotPage },
           { path: '/retos/:challengeId', Component: ParticipantChallengeDetailPage },
           { path: '/projects/new', Component: CreateProjectPage },
+          { path: '/initiatives/new', Component: InitiativeReviewStartPage },
+          { path: '/initiatives/review/:reviewId', Component: InitiativeReviewResultPage },
           { path: '/initiatives/:projectId/overview', Component: InitiativeOverviewPage },
           { path: '/projects/:projectId', Component: ProjectHomePage },
           { path: '/projects/:projectId/step/0', Component: Step0Page },

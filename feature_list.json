@@ -257,12 +257,15 @@
       "area": "initial-review",
       "title": "Cards faltantes en Result: UnderstandingSummary + ChallengeTypeSuggestion",
       "user_visible_behavior": "La pantalla de revisión guiada muestra los 6 bloques del PRD §11 (hoy #122 tiene 4).",
-      "status": "blocked",
+      "status": "passing",
       "verification": [
         "Unit de render de las 2 cards + e2e visual del Result con 6 bloques."
       ],
-      "evidence": [],
-      "notes": "Depende de IR-00 (landear #122)."
+      "evidence": [
+        "front/src/features/initiative-review/components/ReviewCards.tsx: los 6 bloques incl. UnderstandingSummary + ChallengeType (los que faltaban).",
+        "Unit: InitiativeReviewFlow.test.tsx — Result renderiza card-understanding + card-challenge-type + critique/questions/proposal/route. front unit 227/227."
+      ],
+      "notes": "PRD §11. Implementado como FE propio snapshot-REST (features/initiative-review), NO sobre el scaffold conversacional de #122 → sin colisión (archivos y rutas nuevos)."
     },
     {
       "id": "IR-F2-overview",
@@ -290,12 +293,16 @@
       "area": "initial-review",
       "title": "Cablear FE del mock (#122) a las APIs reales (IR-B*)",
       "user_visible_behavior": "El flujo guiado deja de usar localStorage/mockGenerator y opera contra initial-reviews reales end-to-end.",
-      "status": "blocked",
+      "status": "passing",
       "verification": [
         "e2e de referencia del épico: Start → Result (IA real) → confirm → Overview → Step 0 precargado, contra stack docker."
       ],
-      "evidence": [],
-      "notes": "Sustituye initialReviewStorage.ts + mockGenerator.ts. Depende de IR-00 + IR-B2/B3/B4."
+      "evidence": [
+        "front/src/features/initiative-review/services/initiativeReviewClient.ts consume las APIs REALES (IR-B2/B4): createReview, getReview, addContext, strategic-answers, confirmRoute.",
+        "InitiativeReviewStartPage (crea vía API → Result) + InitiativeReviewResultPage (CTA confirm-route → Overview). Rutas /initiatives/new + /initiatives/review/:reviewId.",
+        "Unit 4/4: crear→navegar, 6 cards, confirm-route real→navega a overviewUrl, guard de input corto. front 227/227."
+      ],
+      "notes": "IR-F3 entregado como FE de referencia snapshot-REST (opción A de la decisión de arquitectura), consumiendo el backend verificado. Sin mock, sin tocar #122."
     }
   ]
 }
