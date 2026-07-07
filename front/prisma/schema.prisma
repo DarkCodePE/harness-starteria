@@ -321,6 +321,7 @@ model User {
   helpRequests       HelpRequest[]       @relation("HelpRequester")
   mentorHelpRequests HelpRequest[]       @relation("HelpMentor")
   sponsorCheckpoints SponsorCheckpoint[] @relation("SponsorCheckpoints")
+  initialReviews     InitialReview[] // ADR-025: revisiones iniciales del usuario
 
   @@index([email])
   @@index([role])
@@ -348,6 +349,10 @@ model Project {
   lastPosition       Json?
   sponsorTouchpoints Json?
   sponsorComments    Json?
+  // ADR-025: procedencia de la iniciativa + snapshot de la revisión inicial que la
+  // originó (nullable → additivo, seguro para `prisma db push`).
+  origin                  InitiativeOrigin? @default(from_scratch)
+  initialReviewSnapshotId String?
   createdAt          DateTime      @default(now())
   lastModified       DateTime      @updatedAt
 
@@ -356,19 +361,24 @@ model Project {
   cohortId String?
   cohort   Cohort? @relation(fields: [cohortId], references: [id])
 
-  steps              Step[]
-  evidence           Evidence[]
-  teamMembers        TeamMember[]
-  mentorSessions     MentorSession[]
-  helpRequests       HelpRequest[]
-  sponsorCheckpoints SponsorCheckpoint[]
-  portfolioMeta      InitiativePortfolioMeta[]
-  initiativePdfs     InitiativePdf[]
+  steps                 Step[]
+  evidence              Evidence[]
+  teamMembers           TeamMember[]
+  mentorSessions        MentorSession[]
+  helpRequests          HelpRequest[]
+  sponsorCheckpoints    SponsorCheckpoint[]
+  portfolioMeta         InitiativePortfolioMeta[]
+  initiativePdfs        InitiativePdf[]
+  initialReviewSnapshot InitialReviewSnapshot?   @relation("ProjectFromSnapshot", fields: [initialReviewSnapshotId], references: [id])
+  routeConfirmation     RouteConfirmation?       @relation("ProjectRouteConfirmation")
 
   @@index([ownerId])
   @@index([cohortId])
   @@index([status])
   @@index([pilotLeadId])
+  // @@unique (no @@index): un snapshot origina a lo sumo UN Project (2º guardarraíl
+  // de idempotencia contra doble-clic concurrente, ADR-025 #2). NULL múltiple OK en PG.
+  @@unique([initialReviewSnapshotId])
 }
 
 model Step {
@@ -1067,4 +1077,119 @@ model OrganizationMember {
 
   @@index([organizationId])
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Revisión inicial guiada (ADR-025) — capa pre-Project. La revisión NO crea
+// Project hasta que el usuario confirma la ruta; entonces RouteConfirmation
+// delega en ProjectService.createProject (milestone #7). Reusa ChallengeType.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum InitialReviewStatus {
+  draft
+  processing
+  generated
+  updated
+  route_confirmed
+  converted_to_initiative
+  abandoned
+  failed
+}
+
+enum RouteConfirmationStatus {
+  pending
+  confirmed
+  initiative_created
+  failed
+}
+
+enum InitiativeOrigin {
+  from_scratch
+  from_initial_review
+  from_public_draft
+  imported
+  linked_existing
+  independent
+}
+
+enum InformationReadinessStatus {
+  very_low
+  low
+  medium
+  high
+}
+
+model InitialReview {
+  id            String              @id @default(cuid())
+  ownerId       String
+  // Restrict (default, como Project.owner): borrar un User NO debe cascadear y
+  // destruir el rastro de una revisión ya convertida (audit trail, AC-S0-005).
+  // El abandono usa status=abandoned (RB-IR-020), no un DELETE físico.
+  owner         User                @relation(fields: [ownerId], references: [id])
+  status        InitialReviewStatus @default(draft)
+  originalInput String
+  addedContext  Json? // string[]
+  sourceFileIds Json? // string[]
+  // Scalar FK suelto (patrón ADR-022) para no acoplar bounded contexts; indexado
+  // para "revisiones de este reto".
+  challengeId   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  snapshots    InitialReviewSnapshot[]
+  confirmation RouteConfirmation? // idempotente: a lo sumo una confirmación por revisión
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([challengeId])
+}
+
+model InitialReviewSnapshot {
+  id                     String        @id @default(cuid())
+  reviewId               String
+  review                 InitialReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  version                Int           @default(1)
+  originalInput          String
+  // Contexto/fuentes CONGELADOS en el snapshot (PRD §18): releer una versión debe
+  // reflejar el contexto que la produjo, aunque el InitialReview padre cambie.
+  addedContext           Json? // string[]
+  sourceFileIds          Json? // string[]
+  understandingSummary   String
+  understandingConfirmed Boolean       @default(false)
+  suggestedChallengeType ChallengeType
+  selectedChallengeType  ChallengeType
+  challengeTypeReason    String // se genera junto al tipo → requerido
+  informationReadiness   InformationReadinessStatus?
+  critique               Json // ExpertCritique { solid, weak, risky, recommendedAdjustment, mainRisk }
+  strategicQuestions     Json // StrategicQuestion[]
+  improvedProposal       Json // ImprovedProposal { suggestedName, improvedDescription, initialFocus, expectedImpact, nextRecommendedStep }
+  routePreview           Json // StepRoutePreviewItem[]
+  createdBy              String
+  createdAt              DateTime      @default(now())
+
+  routeConfirmations RouteConfirmation[]
+  projects           Project[]           @relation("ProjectFromSnapshot")
+
+  @@unique([reviewId, version])
+  @@index([reviewId])
+}
+
+model RouteConfirmation {
+  id                       String                  @id @default(cuid())
+  reviewId                 String                  @unique // idempotencia (RB-IR-017/018): 1 confirmación por revisión
+  review                   InitialReview           @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  snapshotId               String
+  snapshot                 InitialReviewSnapshot   @relation(fields: [snapshotId], references: [id])
+  confirmedBy              String
+  confirmedAt              DateTime                @default(now())
+  selectedChallengeType    ChallengeType
+  acceptedImprovedProposal Boolean                 @default(true)
+  createdProjectId         String?                 @unique
+  createdProject           Project?                @relation("ProjectRouteConfirmation", fields: [createdProjectId], references: [id])
+  status                   RouteConfirmationStatus @default(pending)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  @@index([snapshotId])
+  @@index([status])
 }

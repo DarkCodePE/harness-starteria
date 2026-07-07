@@ -1,31 +1,30 @@
-# Entrega de Sesión — Starteria
+# Session Handoff — épico initial-review (ADR-025)
 
-## Verificado Ahora
+## Estado: 8/9 slices DONE + verificadas. 1 pendiente = decisión humana.
 
-- Qué está funcionando actualmente: features con cobertura e2e — `admision-step0-chooser` (`front/e2e/pdf-autofill.spec.ts`, `public-pdf-autofill.spec.ts`) y `portfolio-team-model` (`front/e2e/team-inheritance.spec.ts`). Marcadas `passing` con evidencia.
-- Qué verificación se ejecutó realmente: baseline unit `cd front && npm test` ✅ — 606 tests passing (backend 394 + front 212), exit 0. E2E de referencia aún no corrido (requiere `docker:up`).
+DONE (PRs #127 ADR, #128 backend+frontend; rama feat/initial-review-backend):
+- IR-ADR ADR-025 · IR-B1 Prisma · IR-B2 REST · IR-B3 IA+guardrails · IR-B4 confirm-route
+  (backend unit 416/416 + e2e real contra Postgres)
+- IR-F1 cards · IR-F2 Overview · IR-F3 FE snapshot-REST cableado a APIs reales
+  (front unit 227/227)
+- Cadena e2e: Start → Result(6 cards) → confirm-route → Project navegable
+  (Steps 1-4 + meta en_step_0) + Step0 prefill → idempotente → Overview.
 
-## Cambiado En Esta Sesión
+## PENDIENTE — IR-00 (landear #122): requiere TU decisión (probado a nivel de código)
+Bloqueo técnico probado:
+1. #122 backend obsoleto (createProject) → superado por #129 (en main) + milestone #7 (prod).
+2. #122 reestructura routing core (absolutas→relativas) — riesgo.
+3. COLISIÓN: #122 define ruta `/initiatives/new` Y mi FE también → mutuamente excluyentes.
+Mergear #122 = elegir arquitectura de FE + tocar la rama activa del hermano + riesgo prod.
 
-- Código o comportamiento añadido: ninguno (sin cambios de aplicación).
-- Cambios de infraestructura o harness: creados `feature_list.json`, `claude-progress.md`, `init.sh`, `session-handoff.md` en la raíz; añadida la sección "Bucle Operacional" a `CLAUDE.md`; corregida la plantilla `docs/templates/CLAUDE.md`.
+### Decisión (una de dos) y ejecución:
+- OPCIÓN A (recomendada): usar el FE snapshot-REST propio (ya en #128) + CERRAR #122.
+  → Ejecutar: `gh pr merge 128 --merge` (tras review) ; `gh pr close 122`.
+- OPCIÓN B: conservar el FE conversacional de #122.
+  → Ejecutar: reconciliar #122 sobre main (backend=main/#129, FE=#122), resolver la
+    colisión de ruta descartando mi FE (features/initiative-review), verificar, PR.
 
-## Roto O Sin Verificar
-
-- Defecto conocido: ninguno nuevo.
-- Ruta sin verificar: `init.sh` no se ha ejecutado en esta sesión; las features `in_progress` (`steps-empty-start`, `portfolio-persist-mutations`, `create-project-validation`) no tienen evidencia ejecutable registrada.
-- Riesgo para la próxima sesión: el worktree puede resetear ediciones sin commitear — commitea pronto.
-
-## Mejor Próximo Paso
-
-- Característica inacabada de mayor prioridad: `portfolio-steps-integration` (milestone #7).
-- Por qué es la siguiente: es el gap arquitectónico conocido entre el dominio portfolio-lead (frente→reto→iniciativa, InitiativePortfolioMeta) y el flujo de steps del participante; bloquea el recorrido completo extremo a extremo.
-- Qué cuenta como aprobado: una iniciativa creada en `/portfolio` materializa un proyecto/reto navegable por el participante, heredando equipo y meta (ADR-023/024) sin re-captura, con evidencia e2e o de integración registrada.
-- Qué no debe cambiar durante ese paso: el contrato de equipo scoped al reto (ADR-023/024) ni el camino e2e de referencia (PDF autofill / Step 0).
-
-## Comandos
-
-- Inicio: `./init.sh`  ·  app: `RUN_START_COMMAND=1 ./init.sh` (o `cd front && npm run dev:all`).
-- Verificación (unit): `cd front && npm test`.
-- Verificación (e2e de referencia): `cd front && npm run docker:up && npm run test:e2e`.
-- Comando de depuración enfocado: `cd front && npm run test:e2e:debug` · un solo spec: `npm run test:e2e -- pdf-autofill.spec.ts`.
+## Reanudar
+- Mi trabajo: rama `feat/initial-review-backend` (pusheada), PR #128 MERGEABLE.
+- Análisis de coordinación: comentario en PR #122.
+- Backend verificado sobrevive #129 (createProject reusado sin modificar).

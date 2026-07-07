@@ -20,6 +20,7 @@ import { userRouter, teamRouter } from './modules/users/user.router';
 import { helpRouter } from './modules/mentor/mentor.router';
 import { sponsorRouter } from './modules/sponsor/sponsor.router';
 import { portfolioRouter } from './modules/portfolio/portfolio.router';
+import { initialReviewRouter } from './modules/initial-review/initial-review.router';
 import { pdfRouter, initiativePdfService } from './modules/initiative-pdfs/pdf.router';
 import { publicPdfRouter } from './modules/initiative-pdfs/public-pdf.router';
 import { pilotLeadRouter } from './modules/pilot-leads';
@@ -57,6 +58,7 @@ export function createApp() {
   app.use('/api/v1/projects', helpRouter);
   app.use('/api/v1/sponsor', sponsorRouter);
   app.use('/api/v1/portfolio', portfolioRouter);
+  app.use('/api/v1/initial-reviews', initialReviewRouter);
   // PRD-005 / issue #85: AUTHENTICATED AI bridge (refine-field). Same ai-service
   // contract as the public path, but behind `authenticate` so usage is
   // attributable to a user and metered by the entitlement layer (`ai_refine`,

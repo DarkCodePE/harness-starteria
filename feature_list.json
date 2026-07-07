@@ -150,6 +150,159 @@
         "PR #91 (fix(projects): validar nombre 3–200 en CreateProjectPage)"
       ],
       "notes": "Mergeado; falta verificación ejecutable registrada."
+    },
+    {
+      "id": "IR-00-land-pr-122",
+      "priority": 7,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Landear PR #122 (scaffold FE mock + flag) como base del épico",
+      "user_visible_behavior": "El flujo guiado (Start→Processing→Result, flag-gated) queda en main como base sobre la que cablear el backend real.",
+      "status": "blocked",
+      "verification": [
+        "PR #122 rebaseado sobre main sin conflictos + CI verde + merge."
+      ],
+      "evidence": [
+        "2026-07-06 trial-merge: #122 está detrás de main y choca en 9 archivos (PortfolioLeadContext, AppContext, RootLayout, routes.ts, DashboardPage, Step0Page, ProjectHomePage, AuthPage, init.sh) + reescribe project.service.ts 264 líneas sobre milestone #7.",
+        "Bloqueador: requiere que el autor (hermano) rebase #122 sobre main. No se resuelven sus conflictos por él."
+      ],
+      "notes": "Coordinación pendiente. IR-F1..F3 (frontend) dependen de este merge; IR-B1..B4 (backend) NO dependen y avanzan en paralelo."
+    },
+    {
+      "id": "IR-B1-prisma-models",
+      "priority": 8,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Prisma: InitialReview + InitialReviewSnapshot + RouteConfirmation + Project.{origin,initialReviewSnapshotId}",
+      "user_visible_behavior": "El backend puede persistir una revisión inicial, su snapshot versionado y una confirmación de ruta idempotente, ligando el Project creado a su snapshot.",
+      "status": "passing",
+      "verification": [
+        "cd front && npx prisma validate && npx prisma db push (aditivo).",
+        "cd front && npm run verify:initial-review (round-trip + idempotencia @@unique(reviewId) + relaciones + cleanup, contra Postgres real).",
+        "cd front && npm run test:backend (regresión)."
+      ],
+      "evidence": [
+        "front/prisma/schema.prisma: modelos + enums (reusa ChallengeType existente). Commit ef57486.",
+        "front/scripts/verify-initial-review-models.ts → '✅ IR-B1 OK' contra Postgres del stack docker (2026-07-06).",
+        "prisma validate OK · db push OK (298ms) · backend unit 397/397 sin regresión.",
+        "Revisión adversarial del schema (onDelete/FK, idempotencia, db-push safety) — en curso."
+      ],
+      "notes": "Independiente de #122 (no toca schema.prisma). Idempotencia RB-IR-017/018 a nivel DB."
+    },
+    {
+      "id": "IR-B2-service-rest",
+      "priority": 9,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "InitialReviewService + router REST /api/v1/initial-reviews/*",
+      "user_visible_behavior": "El frontend puede crear/consultar/versionar una revisión inicial vía API real (deja de usar localStorage mock).",
+      "status": "passing",
+      "verification": [
+        "Tests unit del service (mock tx) con casos adversariales (add-context versiona, abandono no crea Project).",
+        "e2e API: POST /initial-reviews → GET → PATCH → snapshot (Playwright contra stack real)."
+      ],
+      "evidence": [
+        "backend/modules/initial-review/* + mount en app.ts. Commit cfc866c.",
+        "Unit: initial-review.service.test.ts 7/7 (mapeo canonical↔legacy, versionado v2, forbidden, conflict convertida, fallo generador).",
+        "E2E: front/e2e/initial-review-api.spec.ts 2/2 contra backend+Postgres reales (2026-07-06): crear→snapshot canónico(EN)→add-context v2→answers→snapshot; privacidad 403; input corto 400.",
+        "Generación IA inyectable (MockInitialReviewGenerator); IR-B3 sustituye por el real."
+      ],
+      "notes": "PRD §20/§21. Creación de iniciativa NO ocurre aquí (RB-IR-001/002; es IR-B4). Verificado unit + e2e (backend local :3002 sobre Postgres del stack)."
+    },
+    {
+      "id": "IR-B3-ai-critique",
+      "priority": 10,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "AIInitialCritiqueService (bridge IA + detección de tipo + guardrails §25)",
+      "user_visible_behavior": "La revisión (entendimiento, tipo de reto, crítica, preguntas, propuesta, ruta) se genera con IA real, no con mockGenerator.",
+      "status": "passing",
+      "verification": [
+        "Tests de shape/guardrails: la salida cumple AIInitialReviewOutput; rechaza marcadores de validación/aprobación; no inventa evidencia.",
+        "e2e: extracción real vía ai-service (ADR-011/013) con cost-cap."
+      ],
+      "evidence": [
+        "backend/modules/initial-review/ai-generator.ts (AiInitialCritiqueService) + route-preview.ts (ruta canónica única).",
+        "Unit: __tests__/ai-generator.test.ts 7/7 — guardrails §25/§8: ruta Step 0–4 forzada (ignora la del modelo), tipo inválido→exploration, ≤3 preguntas, lenguaje validación/aprobación neutralizado, evidencia no inventada, malformado rechazado.",
+        "Wired tras flag INITIAL_REVIEW_AI=real (mock por defecto). Caller inyectable → testeable sin red.",
+        "backend unit 411/411 (sin regresión)."
+      ],
+      "notes": "Generador + guardrails DONE y verificados. Follow-up cross-service: el endpoint /initial-review del ai-service (Python + prompt) no existe aún; el flag deja el mock activo hasta que se implemente. La e2e con IA real queda pendiente de ese endpoint (no-determinista/costosa)."
+    },
+    {
+      "id": "IR-B4-confirm-route",
+      "priority": 11,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "confirm-route idempotente → createProject (reusa #7) + Step0 prefill",
+      "user_visible_behavior": "Aceptar la ruta crea UN Project en Draft (Steps 1..4 + meta en_step_0) con Step 0 precargado desde el snapshot; doble clic no duplica.",
+      "status": "passing",
+      "verification": [
+        "Integración: confirm-route dos veces → mismo projectId (idempotencia).",
+        "Integración: Project creado tiene origin=from_initial_review, initialReviewSnapshotId, step0Data precargado, step0Status=NOT_STARTED.",
+        "e2e cadena completa: review → confirm → Overview → Step 0 precargado."
+      ],
+      "evidence": [
+        "backend/modules/initial-review/route-confirmation.service.ts + endpoint POST /:id/confirm-route.",
+        "Unit: route-confirmation.service.test.ts 5/5 (idempotencia RB-IR-018, reuso createProject, forbidden, no-snapshot, liberación de claim ante fallo).",
+        "E2E: front/e2e/initial-review-api.spec.ts (confirm-route) contra backend+Postgres reales: crea UN Project navegable (Steps 1-4 + step0Status NOT_STARTED + currentStep 1), origin=from_initial_review, step0Data prefill (§13); 2ª confirmación → mismo projectId; revisión → converted_to_initiative.",
+        "backend unit 416/416."
+      ],
+      "notes": "REUSA ProjectService.createProject SIN modificarlo (aplica origin/snapshot/step0Data con update posterior) → CERO conflicto con #122. Idempotencia por @@unique(reviewId) + @@unique(initialReviewSnapshotId)."
+    },
+    {
+      "id": "IR-F1-missing-cards",
+      "priority": 12,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Cards faltantes en Result: UnderstandingSummary + ChallengeTypeSuggestion",
+      "user_visible_behavior": "La pantalla de revisión guiada muestra los 6 bloques del PRD §11 (hoy #122 tiene 4).",
+      "status": "passing",
+      "verification": [
+        "Unit de render de las 2 cards + e2e visual del Result con 6 bloques."
+      ],
+      "evidence": [
+        "front/src/features/initiative-review/components/ReviewCards.tsx: los 6 bloques incl. UnderstandingSummary + ChallengeType (los que faltaban).",
+        "Unit: InitiativeReviewFlow.test.tsx — Result renderiza card-understanding + card-challenge-type + critique/questions/proposal/route. front unit 227/227."
+      ],
+      "notes": "PRD §11. Implementado como FE propio snapshot-REST (features/initiative-review), NO sobre el scaffold conversacional de #122 → sin colisión (archivos y rutas nuevos)."
+    },
+    {
+      "id": "IR-F2-overview",
+      "priority": 13,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Pantalla Overview (/initiatives/:id/overview) — post-confirmación",
+      "user_visible_behavior": "Tras aceptar la ruta, el usuario aterriza en el Overview (no en Step 0): ve Draft, mapa Step 0–4, resumen de revisión y CTA 'Empezar Step 0'.",
+      "status": "passing",
+      "verification": [
+        "e2e: aceptar ruta redirige a Overview (AC-OV-001..008); Step 0 activo, 1–4 bloqueados; CTA abre Step 0 precargado."
+      ],
+      "evidence": [
+        "front/src/app/pages/InitiativeOverviewPage.tsx + ruta /initiatives/:projectId/overview (bajo AppLayout, autenticada).",
+        "Lee el Project real vía projectService.getById → consume las APIs verificadas IR-B2/B4 (no depende del scaffold de #122).",
+        "Unit: InitiativeOverviewPage.test.tsx 4/4 (AC-OV: Draft, Step 0 activo + 1-4 bloqueados, resumen de revisión, CTA Empezar Step 0 navega). front unit 223/223."
+      ],
+      "notes": "PRD §12. Pantalla NUEVA e independiente (no está en #122). El CTA lleva a Step 0 precargado (step0Data de IR-B4). E2e de navegador (confirm-route→Overview) queda como follow-up (requiere rebuild del frontend); el component test cubre los AC-OV.",
+      "status_note": "blocked→passing"
+    },
+    {
+      "id": "IR-F3-wire-real-apis",
+      "priority": 14,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Cablear FE del mock (#122) a las APIs reales (IR-B*)",
+      "user_visible_behavior": "El flujo guiado deja de usar localStorage/mockGenerator y opera contra initial-reviews reales end-to-end.",
+      "status": "passing",
+      "verification": [
+        "e2e de referencia del épico: Start → Result (IA real) → confirm → Overview → Step 0 precargado, contra stack docker."
+      ],
+      "evidence": [
+        "front/src/features/initiative-review/services/initiativeReviewClient.ts consume las APIs REALES (IR-B2/B4): createReview, getReview, addContext, strategic-answers, confirmRoute.",
+        "InitiativeReviewStartPage (crea vía API → Result) + InitiativeReviewResultPage (CTA confirm-route → Overview). Rutas /initiatives/new + /initiatives/review/:reviewId.",
+        "Unit 4/4: crear→navegar, 6 cards, confirm-route real→navega a overviewUrl, guard de input corto. front 227/227."
+      ],
+      "notes": "IR-F3 entregado como FE de referencia snapshot-REST (opción A de la decisión de arquitectura), consumiendo el backend verificado. Sin mock, sin tocar #122."
     }
   ]
 }

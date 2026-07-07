@@ -59,3 +59,31 @@
 - Archivos o artefactos actualizados: `backend/modules/projects/project.schemas.ts`, `backend/modules/projects/project.service.ts`, `front/src/app/context/AppContext.tsx`, `front/src/app/services/project.adapter.ts`, `front/src/app/pages/CreateProjectPage.tsx`, `front/src/app/hooks/usePortfolioData.ts`, `feature_list.json`.
 - Riesgo conocido o problema sin resolver: no queda bloqueador registrado para `portfolio-steps-integration`; queda pendiente un e2e navegador si se quiere cubrir UI completa.
 - Mejor próximo paso: pasar al siguiente pendiente del tracker: capturar evidencia para `steps-empty-start`.
+
+### Sesión 005 — épico initial-review (ADR-025): IR-00 + IR-B1 + WIP
+
+- Fecha: 2026-07-06
+- Objetivo: ejecutar la secuencia WIP del épico "revisión inicial guiada" (PRD) con validación adversarial + E2E.
+- IR-ADR: `backend/docs/adr/ADR-025-...md` (rama `docs/adr-025-initial-review`, commit 70753bc). Decisión: capa pre-Project que reusa `createProject` (milestone #7); no duplica Project/Step.
+- IR-00 (coordinación): trial-merge de #122 sobre main → **9 conflictos** + reescribe `project.service.ts` (264 líneas). #122 está detrás de main → **requiere rebase del hermano**. No se mergea por él. Registrado como `blocked`.
+- IR-B1 (backend, **passing**): modelos Prisma `InitialReview` + `InitialReviewSnapshot` + `RouteConfirmation` + `Project.{origin,initialReviewSnapshotId}`. Reusa `ChallengeType`. Idempotencia `@@unique(reviewId)`. Commit ef57486 en rama `feat/initial-review-backend`.
+- Verificación IR-B1: `prisma validate` OK · `db push` OK · `npm run verify:initial-review` (round-trip + idempotencia + relaciones + cleanup contra Postgres real) → ✅ · backend unit 397/397 sin regresión.
+- WIP: `feature_list.json` +8 slices del épico (IR-00..IR-F3), IR-B1 `passing`, resto `not_started`/`blocked` con verificación adversarial + E2E.
+- Riesgo/pendiente: IR-B4 extenderá `createProject` que #122 también reescribe → coordinar. IR-F1..F3 bloqueados hasta landear #122. Revisión adversarial del schema en curso.
+- Mejor próximo paso: incorporar hallazgos de la revisión adversarial del schema; luego IR-B2 (InitialReviewService + REST).
+
+### Sesión 006 — épico initial-review: BACKEND COMPLETO (IR-B1..B4)
+
+- Fecha: 2026-07-06
+- Objetivo: ejecutar la secuencia WIP con validación adversarial + E2E.
+- **Todo el P0 backend DONE + passing** (rama `feat/initial-review-backend`, PR #128):
+    - IR-B1 modelos Prisma (endurecidos por revisión adversarial: audit-trail Restrict, @@unique snapshot, snapshot congela contexto).
+    - IR-B2 InitialReviewService + REST (unit 7/7 + e2e 2/2).
+    - IR-B3 AiInitialCritiqueService + guardrails §25 (unit 7/7: ruta fija, ≤3 preguntas, tipo coercido, lenguaje validación neutralizado, no inventa evidencia).
+    - IR-B4 confirm-route idempotente → createProject (REUSA #7 sin tocarlo → cero conflicto con #122) + Step0 prefill (unit 5/5 + e2e confirm-route).
+- Verificación: backend unit **416/416**; e2e de la cadena completa (crear→snapshot→add-context→answers→confirm-route→Project navegable+prefill→idempotente) contra Postgres real (backend local :3002).
+- ADR-025 en PR #127.
+- BLOQUEADO (requiere rebase de #122 por el hermano, fuera de mi alcance): IR-00, IR-F1, IR-F2, IR-F3 (frontend debe construirse sobre el árbol post-#122).
+- Follow-up cross-service: endpoint /initial-review del ai-service (Python) para activar IR-B3 real (flag INITIAL_REVIEW_AI=real; mock por defecto).
+- Riesgo entorno: worktree reseteado 2× por rama externa ci/auto-deploy-on-main → todo pusheado a origin.
+- Mejor próximo paso: que el hermano rebase #122; luego IR-F1..F3 cablean el FE a estas APIs reales.
