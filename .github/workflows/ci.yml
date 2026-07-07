@@ -11,10 +11,9 @@ name: CI
 on:
   pull_request:
     branches: ['**']
-  push:
-    branches:
-      - main
-  # Allow cd.yml to gate deploys on this same test suite (no duplication).
+  # No standalone `push: main` trigger: cd.yml now runs on every push to main
+  # and its `tests` gate calls this workflow, so a separate run would be a
+  # duplicate of the exact same suite.
   workflow_call:
 
 # Cancel superseded runs on the same branch/PR to save minutes.
