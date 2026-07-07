@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import type { Request } from 'express';
 import { User } from './user.types';
 
 export interface AuthPayload {
@@ -7,7 +7,15 @@ export interface AuthPayload {
   role: string;
 }
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<
+  Params = Record<string, string>,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any
+> extends Request<Params, ResBody, ReqBody, ReqQuery> {
+  params: Params;
+  body: ReqBody;
+  query: ReqQuery;
   user?: User;
 }
 

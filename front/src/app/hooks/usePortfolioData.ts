@@ -191,10 +191,9 @@ export function usePortfolioData(): UsePortfolioDataReturn {
         ]);
         if (cancelled) return;
 
-        // The backend returns Initiative objects directly from listInitiatives.
-        // If the backend returns raw BackendInitiativeMeta instead, wrap with:
-        //   initiativeArrays.flat().map(adaptInitiative)
-        const allInitiatives = initiativeArrays.flat() as Initiative[];
+        const allInitiatives = initiativeArrays
+          .flat()
+          .map(item => adaptInitiative(item as unknown as BackendInitiativeMeta));
         const allOverlaps = overlapArrays.flat();
         const allOutputs = outputArrays.flat();
 

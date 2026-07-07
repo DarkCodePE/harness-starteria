@@ -45,15 +45,23 @@
       "area": "portfolio-lead",
       "title": "Integrar portfolio-lead con el flujo de steps del participante (milestone #7)",
       "user_visible_behavior": "Una iniciativa creada por el portfolio-lead aparece como reto/proyecto navegable para el participante y comparte equipo/meta sin re-captura.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Crear un frente → reto → iniciativa desde /portfolio.",
         "Verificar que la iniciativa materializa un proyecto/reto accesible en el flujo de participante (Step 0–4).",
         "Verificar que el equipo y la meta heredados (ADR-023/024) se reflejan sin volver a pedirlos.",
         "Registrar evidencia ejecutable (e2e o test de integración)."
       ],
-      "evidence": [],
-      "notes": "Gap conocido entre el dominio portfolio-lead (frente→reto→iniciativa, InitiativePortfolioMeta) y el flujo de steps. Bridge: InitiativePortfolioMeta. Feature activa de mayor prioridad."
+      "evidence": [
+        "Implementado puente backend en ProjectService.createProject: challengeLink crea Project + InitiativePortfolioMeta y prefill Step 0.",
+        "Implementado frontend: CreateProjectPage prellena nombre/descripcion desde reto y envia challengeLink; project.adapter reconstruye challengeLink desde portfolioMeta.",
+        "Verificacion estandar: cd front && npm test exit 0.",
+        "Baseline: ./init.sh exit 0.",
+        "Build frontend: npm run build exit 0.",
+        "Build backend: npm run build:backend exit 0 tras corregir AuthenticatedRequest y requestMentorSession.",
+        "Integracion dedicada: cd front && npm run test:portfolio-steps exit 0; valida Project + InitiativePortfolioMeta + Step 0 heredado + challengeLink frontend."
+      ],
+      "notes": "Bridge validado con prueba de integracion dedicada contra Prisma/Postgres. La prueba crea datos temporales, llama ProjectService.createProject con challengeLink, valida Step 0 heredado y limpia los registros creados."
     },
     {
       "id": "admision-step0-chooser",

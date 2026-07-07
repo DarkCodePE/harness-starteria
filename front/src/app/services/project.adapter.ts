@@ -83,7 +83,7 @@ export function adaptModuleStatusToBackend(frontend: string): string {
 }
 
 export function adaptStep0Status(backend: string): string {
-  return STEP0_STATUS_MAP[backend] ?? backend;
+  return STEP0_STATUS_MAP[backend?.toUpperCase?.() ?? backend] ?? backend;
 }
 
 export function adaptStep0StatusToBackend(frontend: string): string {
@@ -105,6 +105,10 @@ export interface BackendProject {
   evidence?: unknown[];
   createdAt?: string;
   updatedAt?: string;
+  portfolioMeta?: Array<{
+    challengeId?: string;
+    challenge?: { id?: string };
+  }>;
   [key: string]: unknown;
 }
 
@@ -178,9 +182,14 @@ function adaptSteps(steps?: BackendStep[]): FrontendStep[] | undefined {
 }
 
 export function adaptProject(backend: BackendProject): FrontendProject {
+  const linkedMeta = Array.isArray(backend.portfolioMeta) ? backend.portfolioMeta[0] : undefined;
+  const challengeId = linkedMeta?.challengeId ?? linkedMeta?.challenge?.id;
+
   return {
     ...backend,
     status: adaptProjectStatus(backend.status),
+    step0Status: typeof backend.step0Status === 'string' ? adaptStep0Status(backend.step0Status) : backend.step0Status,
+    challengeLink: challengeId ? { challengeId, createdFrom: 'challenge' } : backend.challengeLink,
     steps: adaptSteps(backend.steps),
     modules: adaptModules(backend.modules),
   };

@@ -1433,7 +1433,7 @@ function ChallengeFormDrawer({
                 />
               </div>
 
-              {Object.keys(formErrors).length > 0 ? (
+              {Object.keys(errors).length > 0 ? (
                 <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                   <p style={{ fontWeight: 700 }}>Revisa los campos marcados</p>
                   <p className="mt-1">Faltan datos mínimos para dejar este reto listo de forma consistente.</p>
