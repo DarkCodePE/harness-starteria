@@ -166,9 +166,10 @@
         "Decisión de producto A (2026-07-07): se eligió el FE snapshot-REST propio (#128) sobre el FE conversacional de #122.",
         "PR #128 mergeado a main (8dfc4f9): backend IR-B1..B4 + frontend IR-F1/F2/F3. PR #127 (ADR-025) mergeado (1e558f1).",
         "PR #122 CERRADO con explicación (backend obsoleto vs #129/#7; FE colisionaba en /initiatives/new).",
-        "CI de #128 verde (Node+Python+Lint/build). Épico completo verificado en main."
+        "CI de #128 verde (Node+Python+Lint/build). Épico completo verificado en main.",
+        "Deploy: tag v2.15.1 → CD run 28872401463 completed/success (prisma db push OK + rollout Rackspace Spot). Prod https://starter-ia.com/ → 200."
       ],
-      "notes": "IR-00 resuelto: el épico aterrizó vía #128 (no vía #122). #122 quedó como referencia. Deploy a prod: pendiente de cortar tag semver (CD tag-triggered)."
+      "notes": "IR-00 resuelto (decisión A) y DESPLEGADO A PROD: tag v2.15.1 → CD success (db push OK tras hotfix @@unique→@@index, rollout completo). v2.15.0 falló por el guard de data-loss del unique en Project (prod quedó intacto)."
     },
     {
       "id": "IR-B1-prisma-models",
