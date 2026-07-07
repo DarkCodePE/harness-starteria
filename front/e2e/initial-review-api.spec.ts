@@ -108,6 +108,47 @@ test.describe('initial-review API (IR-B2, real stack)', () => {
     expect(forbidden.status(), 'un tercero recibe 403').toBe(403);
   });
 
+  test('confirm-route crea UN Project navegable (reusa #7) + prefill Step 0; idempotente', async () => {
+    const owner = await registerAndLogin(api, 'confirm');
+
+    // Crear la revisión.
+    const review = (await (await api.post('/api/v1/initial-reviews', {
+      headers: auth(owner),
+      data: { originalInput: 'Quiero validar si una oportunidad comercial nueva vale la pena antes de invertir.' },
+      failOnStatusCode: false,
+    })).json()).data;
+
+    // Confirmar la ruta → crea la iniciativa.
+    const confirmRes = await api.post(`/api/v1/initial-reviews/${review.id}/confirm-route`, { headers: auth(owner), data: {}, failOnStatusCode: false });
+    expect(confirmRes.status(), `confirm-route: ${await confirmRes.text()}`).toBe(201);
+    const confirm = (await confirmRes.json()).data;
+    expect(confirm.initiativeId).toBeTruthy();
+    expect(confirm.overviewUrl).toBe(`/initiatives/${confirm.initiativeId}/overview`);
+    const projectId = confirm.initiativeId as string;
+
+    // El Project es real y navegable (Steps 1–4 materializados por createProject / #7).
+    const projRes = await api.get(`/api/v1/projects/${projectId}`, { headers: auth(owner) });
+    expect(projRes.ok(), `get project: ${await projRes.text()}`).toBeTruthy();
+    const project = (await projRes.json()).data;
+    expect(project.currentStep).toBe(1);
+    expect(project.step0Status).toBe('NOT_STARTED'); // Step 0 NO aprobado (RB-IR-005)
+    const s1 = (project.steps as any[]).find((s) => s.number === 1);
+    expect(s1.status).toBe('NOT_STARTED');
+    // Prefill de Step 0 desde el snapshot (PRD §13).
+    expect(project.origin).toBe('from_initial_review');
+    expect(project.step0Data?.source).toBe('initial_review');
+    expect(project.step0Data?.challengeType).toBeTruthy();
+
+    // Idempotencia (RB-IR-018): confirmar de nuevo → MISMO projectId.
+    const again = await api.post(`/api/v1/initial-reviews/${review.id}/confirm-route`, { headers: auth(owner), data: {}, failOnStatusCode: false });
+    expect(again.ok()).toBeTruthy();
+    expect((await again.json()).data.initiativeId).toBe(projectId);
+
+    // La revisión quedó convertida.
+    const afterReview = (await (await api.get(`/api/v1/initial-reviews/${review.id}`, { headers: auth(owner) })).json()).data;
+    expect(afterReview.status).toBe('converted_to_initiative');
+  });
+
   test('input demasiado corto es rechazado (validación §Pantalla 1)', async () => {
     const owner = await registerAndLogin(api, 'short');
     const res = await api.post('/api/v1/initial-reviews', { headers: auth(owner), data: { originalInput: 'corto' }, failOnStatusCode: false });

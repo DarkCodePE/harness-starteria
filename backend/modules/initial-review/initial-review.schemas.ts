@@ -17,6 +17,11 @@ export const addContextSchema = z.object({
 });
 export type AddContextInput = z.infer<typeof addContextSchema>;
 
+export const confirmRouteSchema = z.object({
+  snapshotId: z.string().max(120).optional(), // por defecto: el último snapshot
+});
+export type ConfirmRouteInput = z.infer<typeof confirmRouteSchema>;
+
 export const strategicAnswersSchema = z.object({
   answers: z
     .array(

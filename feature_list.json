@@ -228,14 +228,19 @@
       "area": "initial-review",
       "title": "confirm-route idempotente → createProject (reusa #7) + Step0 prefill",
       "user_visible_behavior": "Aceptar la ruta crea UN Project en Draft (Steps 1..4 + meta en_step_0) con Step 0 precargado desde el snapshot; doble clic no duplica.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Integración: confirm-route dos veces → mismo projectId (idempotencia).",
         "Integración: Project creado tiene origin=from_initial_review, initialReviewSnapshotId, step0Data precargado, step0Status=NOT_STARTED.",
         "e2e cadena completa: review → confirm → Overview → Step 0 precargado."
       ],
-      "evidence": [],
-      "notes": "Extiende ProjectService.createProject (origin, snapshotId, step0Prefill). ⚠️ #122 también reescribe createProject → coordinar para evitar doble conflicto."
+      "evidence": [
+        "backend/modules/initial-review/route-confirmation.service.ts + endpoint POST /:id/confirm-route.",
+        "Unit: route-confirmation.service.test.ts 5/5 (idempotencia RB-IR-018, reuso createProject, forbidden, no-snapshot, liberación de claim ante fallo).",
+        "E2E: front/e2e/initial-review-api.spec.ts (confirm-route) contra backend+Postgres reales: crea UN Project navegable (Steps 1-4 + step0Status NOT_STARTED + currentStep 1), origin=from_initial_review, step0Data prefill (§13); 2ª confirmación → mismo projectId; revisión → converted_to_initiative.",
+        "backend unit 416/416."
+      ],
+      "notes": "REUSA ProjectService.createProject SIN modificarlo (aplica origin/snapshot/step0Data con update posterior) → CERO conflicto con #122. Idempotencia por @@unique(reviewId) + @@unique(initialReviewSnapshotId)."
     },
     {
       "id": "IR-F1-missing-cards",

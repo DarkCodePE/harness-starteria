@@ -6,9 +6,22 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../shared/types/auth.types';
 import { ApiResponse } from '../../shared/types/api.types';
 import { InitialReviewService } from './initial-review.service';
+import { RouteConfirmationService } from './route-confirmation.service';
 
 export class InitialReviewController {
-  constructor(private readonly service: InitialReviewService) {}
+  constructor(
+    private readonly service: InitialReviewService,
+    private readonly routeConfirmations: RouteConfirmationService,
+  ) {}
+
+  confirmRoute = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
+    try {
+      const result = await this.routeConfirmations.confirmRoute(req.params.id, req.user!.id, req.body?.snapshotId);
+      res.status(201).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  };
 
   create = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
     try {
