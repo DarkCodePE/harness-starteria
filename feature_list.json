@@ -142,6 +142,132 @@
         "PR #91 (fix(projects): validar nombre 3–200 en CreateProjectPage)"
       ],
       "notes": "Mergeado; falta verificación ejecutable registrada."
+    },
+    {
+      "id": "IR-00-land-pr-122",
+      "priority": 7,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Landear PR #122 (scaffold FE mock + flag) como base del épico",
+      "user_visible_behavior": "El flujo guiado (Start→Processing→Result, flag-gated) queda en main como base sobre la que cablear el backend real.",
+      "status": "blocked",
+      "verification": [
+        "PR #122 rebaseado sobre main sin conflictos + CI verde + merge."
+      ],
+      "evidence": [
+        "2026-07-06 trial-merge: #122 está detrás de main y choca en 9 archivos (PortfolioLeadContext, AppContext, RootLayout, routes.ts, DashboardPage, Step0Page, ProjectHomePage, AuthPage, init.sh) + reescribe project.service.ts 264 líneas sobre milestone #7.",
+        "Bloqueador: requiere que el autor (hermano) rebase #122 sobre main. No se resuelven sus conflictos por él."
+      ],
+      "notes": "Coordinación pendiente. IR-F1..F3 (frontend) dependen de este merge; IR-B1..B4 (backend) NO dependen y avanzan en paralelo."
+    },
+    {
+      "id": "IR-B1-prisma-models",
+      "priority": 8,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Prisma: InitialReview + InitialReviewSnapshot + RouteConfirmation + Project.{origin,initialReviewSnapshotId}",
+      "user_visible_behavior": "El backend puede persistir una revisión inicial, su snapshot versionado y una confirmación de ruta idempotente, ligando el Project creado a su snapshot.",
+      "status": "passing",
+      "verification": [
+        "cd front && npx prisma validate && npx prisma db push (aditivo).",
+        "cd front && npm run verify:initial-review (round-trip + idempotencia @@unique(reviewId) + relaciones + cleanup, contra Postgres real).",
+        "cd front && npm run test:backend (regresión)."
+      ],
+      "evidence": [
+        "front/prisma/schema.prisma: modelos + enums (reusa ChallengeType existente). Commit ef57486.",
+        "front/scripts/verify-initial-review-models.ts → '✅ IR-B1 OK' contra Postgres del stack docker (2026-07-06).",
+        "prisma validate OK · db push OK (298ms) · backend unit 397/397 sin regresión.",
+        "Revisión adversarial del schema (onDelete/FK, idempotencia, db-push safety) — en curso."
+      ],
+      "notes": "Independiente de #122 (no toca schema.prisma). Idempotencia RB-IR-017/018 a nivel DB."
+    },
+    {
+      "id": "IR-B2-service-rest",
+      "priority": 9,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "InitialReviewService + router REST /api/v1/initial-reviews/*",
+      "user_visible_behavior": "El frontend puede crear/consultar/versionar una revisión inicial vía API real (deja de usar localStorage mock).",
+      "status": "not_started",
+      "verification": [
+        "Tests unit del service (mock tx) con casos adversariales (add-context versiona, abandono no crea Project).",
+        "e2e API: POST /initial-reviews → GET → PATCH → snapshot (Playwright contra stack real)."
+      ],
+      "evidence": [],
+      "notes": "PRD §20/§21. Endpoints: POST, GET/:id, PATCH/:id, add-context, regenerate, strategic-answers, snapshot."
+    },
+    {
+      "id": "IR-B3-ai-critique",
+      "priority": 10,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "AIInitialCritiqueService (bridge IA + detección de tipo + guardrails §25)",
+      "user_visible_behavior": "La revisión (entendimiento, tipo de reto, crítica, preguntas, propuesta, ruta) se genera con IA real, no con mockGenerator.",
+      "status": "not_started",
+      "verification": [
+        "Tests de shape/guardrails: la salida cumple AIInitialReviewOutput; rechaza marcadores de validación/aprobación; no inventa evidencia.",
+        "e2e: extracción real vía ai-service (ADR-011/013) con cost-cap."
+      ],
+      "evidence": [],
+      "notes": "Reusa el AiBridge existente. Guardrails PRD §25 (no validar, no aprobar Step 0)."
+    },
+    {
+      "id": "IR-B4-confirm-route",
+      "priority": 11,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "confirm-route idempotente → createProject (reusa #7) + Step0 prefill",
+      "user_visible_behavior": "Aceptar la ruta crea UN Project en Draft (Steps 1..4 + meta en_step_0) con Step 0 precargado desde el snapshot; doble clic no duplica.",
+      "status": "not_started",
+      "verification": [
+        "Integración: confirm-route dos veces → mismo projectId (idempotencia).",
+        "Integración: Project creado tiene origin=from_initial_review, initialReviewSnapshotId, step0Data precargado, step0Status=NOT_STARTED.",
+        "e2e cadena completa: review → confirm → Overview → Step 0 precargado."
+      ],
+      "evidence": [],
+      "notes": "Extiende ProjectService.createProject (origin, snapshotId, step0Prefill). ⚠️ #122 también reescribe createProject → coordinar para evitar doble conflicto."
+    },
+    {
+      "id": "IR-F1-missing-cards",
+      "priority": 12,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Cards faltantes en Result: UnderstandingSummary + ChallengeTypeSuggestion",
+      "user_visible_behavior": "La pantalla de revisión guiada muestra los 6 bloques del PRD §11 (hoy #122 tiene 4).",
+      "status": "blocked",
+      "verification": [
+        "Unit de render de las 2 cards + e2e visual del Result con 6 bloques."
+      ],
+      "evidence": [],
+      "notes": "Depende de IR-00 (landear #122)."
+    },
+    {
+      "id": "IR-F2-overview",
+      "priority": 13,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Pantalla Overview (/initiatives/:id/overview) — post-confirmación",
+      "user_visible_behavior": "Tras aceptar la ruta, el usuario aterriza en el Overview (no en Step 0): ve Draft, mapa Step 0–4, resumen de revisión y CTA 'Empezar Step 0'.",
+      "status": "blocked",
+      "verification": [
+        "e2e: aceptar ruta redirige a Overview (AC-OV-001..008); Step 0 activo, 1–4 bloqueados; CTA abre Step 0 precargado."
+      ],
+      "evidence": [],
+      "notes": "PRD §12. Pantalla nueva (no está en #122). Lee Project + meta + snapshot (sin modelo nuevo). Depende de IR-00 + IR-B4."
+    },
+    {
+      "id": "IR-F3-wire-real-apis",
+      "priority": 14,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Cablear FE del mock (#122) a las APIs reales (IR-B*)",
+      "user_visible_behavior": "El flujo guiado deja de usar localStorage/mockGenerator y opera contra initial-reviews reales end-to-end.",
+      "status": "blocked",
+      "verification": [
+        "e2e de referencia del épico: Start → Result (IA real) → confirm → Overview → Step 0 precargado, contra stack docker."
+      ],
+      "evidence": [],
+      "notes": "Sustituye initialReviewStorage.ts + mockGenerator.ts. Depende de IR-00 + IR-B2/B3/B4."
     }
   ]
 }

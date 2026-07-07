@@ -59,3 +59,15 @@
 - Archivos o artefactos actualizados:
 - Riesgo conocido o problema sin resolver:
 - Mejor próximo paso:
+
+### Sesión 005 — épico initial-review (ADR-025): IR-00 + IR-B1 + WIP
+
+- Fecha: 2026-07-06
+- Objetivo: ejecutar la secuencia WIP del épico "revisión inicial guiada" (PRD) con validación adversarial + E2E.
+- IR-ADR: `backend/docs/adr/ADR-025-...md` (rama `docs/adr-025-initial-review`, commit 70753bc). Decisión: capa pre-Project que reusa `createProject` (milestone #7); no duplica Project/Step.
+- IR-00 (coordinación): trial-merge de #122 sobre main → **9 conflictos** + reescribe `project.service.ts` (264 líneas). #122 está detrás de main → **requiere rebase del hermano**. No se mergea por él. Registrado como `blocked`.
+- IR-B1 (backend, **passing**): modelos Prisma `InitialReview` + `InitialReviewSnapshot` + `RouteConfirmation` + `Project.{origin,initialReviewSnapshotId}`. Reusa `ChallengeType`. Idempotencia `@@unique(reviewId)`. Commit ef57486 en rama `feat/initial-review-backend`.
+- Verificación IR-B1: `prisma validate` OK · `db push` OK · `npm run verify:initial-review` (round-trip + idempotencia + relaciones + cleanup contra Postgres real) → ✅ · backend unit 397/397 sin regresión.
+- WIP: `feature_list.json` +8 slices del épico (IR-00..IR-F3), IR-B1 `passing`, resto `not_started`/`blocked` con verificación adversarial + E2E.
+- Riesgo/pendiente: IR-B4 extenderá `createProject` que #122 también reescribe → coordinar. IR-F1..F3 bloqueados hasta landear #122. Revisión adversarial del schema en curso.
+- Mejor próximo paso: incorporar hallazgos de la revisión adversarial del schema; luego IR-B2 (InitialReviewService + REST).
