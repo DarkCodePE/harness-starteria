@@ -106,7 +106,7 @@ const challengeSeverityClasses: Record<StrategicObjectiveChallengeRow['severity'
 
 export function normalizePortfolioText(value?: string) {
   if (!value) return '';
-  if (!/[ÃÂ]/.test(value)) return value;
+  if (!/[\u00c3\u00c2]/.test(value)) return value;
   try {
     return decodeURIComponent(escape(value));
   } catch {

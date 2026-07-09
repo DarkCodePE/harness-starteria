@@ -16,6 +16,32 @@ type FieldErrors = {
 };
 
 const KNOWN_FIELDS: Array<keyof FieldErrors> = ['email', 'password', 'name'];
+const PENDING_PUBLIC_DRAFT_ID_KEY = 'starteria.pendingPublicDraftId';
+const PENDING_CONVERSION_KEY = 'starteria.publicStart.pendingConversion';
+
+function isExplicitDemoEnabled() {
+  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem('starteria.demo.enabled') === 'true';
+}
+
+function readPendingPublicDraftId() {
+  if (typeof window === 'undefined') return null;
+  const direct = window.sessionStorage.getItem(PENDING_PUBLIC_DRAFT_ID_KEY);
+  if (direct) return direct;
+  try {
+    const pending = JSON.parse(window.sessionStorage.getItem(PENDING_CONVERSION_KEY) ?? '{}') as { draftId?: string; status?: string };
+    if (pending.draftId && pending.status !== 'converted') return pending.draftId;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function clearPendingPublicDraftId() {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.removeItem(PENDING_PUBLIC_DRAFT_ID_KEY);
+}
 
 function isKnownField(value: unknown): value is keyof FieldErrors {
   return typeof value === 'string' && (KNOWN_FIELDS as string[]).includes(value);
@@ -49,8 +75,9 @@ export function AuthPage() {
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
+  const postLoginHandledRef = useRef(false);
 
-  const { login, register, googleSignIn, isAuthenticated, user } = useApp();
+  const { login, register, googleSignIn, isAuthenticated, user, createProjectFromPublicDraft } = useApp();
   const navigate = useNavigate();
 
   // Tick para refrescar la cuenta regresiva del bloqueo.
@@ -68,11 +95,32 @@ export function AuthPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    navigate(
-      claimRedirect() ?? (user?.role === 'portfolio_lead' ? '/portfolio/inicio' : '/dashboard'),
-      { replace: true },
-    );
-  }, [isAuthenticated, navigate, user?.role]);
+    if (postLoginHandledRef.current) return;
+    postLoginHandledRef.current = true;
+
+    const pilotRedirect = claimRedirect();
+    if (pilotRedirect) {
+      navigate(pilotRedirect, { replace: true });
+      return;
+    }
+
+    const pendingDraftId = readPendingPublicDraftId();
+    if (pendingDraftId && user?.role !== 'portfolio_lead') {
+      (async () => {
+        try {
+          const project = await createProjectFromPublicDraft(pendingDraftId);
+          clearPendingPublicDraftId();
+          navigate(`/projects/${project.id}/step/0`, { replace: true });
+        } catch {
+          clearPendingPublicDraftId();
+          navigate('/dashboard', { replace: true });
+        }
+      })();
+      return;
+    }
+
+    navigate(user?.role === 'portfolio_lead' ? '/portfolio/inicio' : '/dashboard', { replace: true });
+  }, [createProjectFromPublicDraft, isAuthenticated, navigate, user?.role]);
 
   // Focus management on submit failure: prioriza el primer campo inválido,
   // si no hay errores de campo enfoca el banner (que tiene tabIndex -1).
@@ -164,11 +212,21 @@ export function AuthPage() {
     setLoading(false);
 
     if (result.success) {
-      navigate(claimRedirect() ?? (email.toLowerCase() === 'portfolio@starteria.io' ? '/portfolio/inicio' : '/dashboard'));
       return;
     }
 
     if (result.error) {
+      if (mode === 'login' && result.error.code === 'INTERNAL_ERROR') {
+        setFieldErrors({});
+        setTopError({
+          code: 'AUTH_LOGIN_NEEDS_ACCOUNT',
+          message: 'No encontramos una cuenta activa con este correo en este entorno.',
+          hint: 'Para probar Starteria como usuario nuevo, usa Regístrate y crea la cuenta con esta misma dirección.',
+        });
+        setSubmitErrorKey((k) => k + 1);
+        return;
+      }
+
       applyServerError(result.error);
     } else {
       setTopError({
@@ -186,7 +244,6 @@ export function AuthPage() {
     setLoading(false);
 
     if (result.success) {
-      navigate(claimRedirect() ?? '/dashboard');
       return;
     }
 
@@ -218,6 +275,11 @@ export function AuthPage() {
 
   const handleSwitchToLoginKeepEmail = () => {
     setMode('login');
+    resetErrors();
+  };
+
+  const handleSwitchToRegisterKeepEmail = () => {
+    setMode('register');
     resetErrors();
   };
 
@@ -368,9 +430,12 @@ export function AuthPage() {
                   }}
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={8}
                   aria-invalid={!!fieldErrors.password}
-                  aria-describedby={fieldErrors.password ? 'auth-password-error' : undefined}
+                  aria-describedby={[
+                    fieldErrors.password ? 'auth-password-error' : null,
+                    mode === 'register' ? 'auth-password-help' : null,
+                  ].filter(Boolean).join(' ') || undefined}
                   className={`w-full border rounded-xl px-4 py-2.5 pr-10 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${fieldErrors.password ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                 />
                 <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -380,6 +445,11 @@ export function AuthPage() {
               {fieldErrors.password && (
                 <p id="auth-password-error" className="flex items-center gap-1 text-xs text-red-600 mt-1">
                   <AlertCircle size={11} /> {fieldErrors.password}
+                </p>
+              )}
+              {mode === 'register' && !fieldErrors.password && (
+                <p id="auth-password-help" className="text-xs text-slate-500 mt-1">
+                  Usa mínimo 8 caracteres, con mayúscula, minúscula y número. Ejemplo: Demo1234.
                 </p>
               )}
             </div>
@@ -413,15 +483,38 @@ export function AuthPage() {
                     </button>
                   )}
 
-                  {topError.code === 'AUTH_INVALID_CREDENTIALS' && (
+                  {topError.code === 'AUTH_LOGIN_NEEDS_ACCOUNT' && (
                     <button
                       type="button"
-                      onClick={handleForgotPassword}
+                      onClick={handleSwitchToRegisterKeepEmail}
                       className="inline-flex items-center gap-1 text-red-700 hover:text-red-800 underline underline-offset-2"
                       style={{ fontWeight: 500 }}
                     >
-                      ¿Olvidaste tu contraseña?
+                      Crear cuenta <ArrowRight size={11} />
                     </button>
+                  )}
+
+                  {topError.code === 'AUTH_INVALID_CREDENTIALS' && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="inline-flex items-center gap-1 text-red-700 hover:text-red-800 underline underline-offset-2"
+                        style={{ fontWeight: 500 }}
+                      >
+                        ¿Olvidaste tu contraseña?
+                      </button>
+                      {mode === 'login' ? (
+                        <button
+                          type="button"
+                          onClick={handleSwitchToRegisterKeepEmail}
+                          className="inline-flex items-center gap-1 text-red-700 hover:text-red-800 underline underline-offset-2"
+                          style={{ fontWeight: 500 }}
+                        >
+                          Crear cuenta <ArrowRight size={11} />
+                        </button>
+                      ) : null}
+                    </div>
                   )}
 
                   {topError.code === 'NETWORK_ERROR' && (
@@ -462,6 +555,7 @@ export function AuthPage() {
         </div>
 
         {/* Demo accounts */}
+        {isExplicitDemoEnabled() ? (
         <div className="mt-6 bg-white rounded-2xl border border-slate-200 p-5">
           <p className="text-xs text-slate-500 mb-3" style={{ fontWeight: 600 }}>CUENTAS DEMO · contraseña: demo123</p>
           <div className="grid grid-cols-2 gap-2">
@@ -483,6 +577,7 @@ export function AuthPage() {
             ))}
           </div>
         </div>
+        ) : null}
       </div>
     </div>
   );

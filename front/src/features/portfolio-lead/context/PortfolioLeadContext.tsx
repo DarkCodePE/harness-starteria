@@ -37,9 +37,13 @@ import type {
   ChallengeActivationMode,
   CreateChallengeInput,
   CreateStrategicFrontInput,
+  ExecutiveOutput,
   ExecutiveOutputStatus,
   InitiativeEditableMeta,
   InvitationStatus,
+  Initiative,
+  InitiativeOverlap,
+  PortfolioDecisionItem,
   PortfolioDecisionOutcome,
   PortfolioLeadContextValue,
   SquadRole,
@@ -128,13 +132,38 @@ function persistChallengeMutation(
 
 const PortfolioLeadContext = createContext<PortfolioLeadContextValue | null>(null);
 
-export function PortfolioLeadProvider({ children }: { children: ReactNode }) {
-  const [strategicFronts, setStrategicFronts] = useState(DEFAULT_STRATEGIC_FRONTS);
-  const [challenges, setChallenges] = useState(DEFAULT_CHALLENGES);
-  const [initiatives, setInitiatives] = useState(DEFAULT_INITIATIVES);
-  const [initiativeOverlaps, setInitiativeOverlaps] = useState(DEFAULT_INITIATIVE_OVERLAPS);
-  const [portfolioDecisions, setPortfolioDecisions] = useState(DEFAULT_PORTFOLIO_DECISIONS);
-  const [executiveOutputs, setExecutiveOutputs] = useState(DEFAULT_EXECUTIVE_OUTPUTS);
+export function PortfolioLeadProvider({
+  children,
+  enableDemoData = false,
+}: {
+  children: ReactNode;
+  enableDemoData?: boolean;
+}) {
+  const [strategicFronts, setStrategicFronts] = useState<StrategicFront[]>(() => enableDemoData ? DEFAULT_STRATEGIC_FRONTS : []);
+  const [challenges, setChallenges] = useState<Challenge[]>(() => enableDemoData ? DEFAULT_CHALLENGES : []);
+  const [initiatives, setInitiatives] = useState<Initiative[]>(() => enableDemoData ? DEFAULT_INITIATIVES : []);
+  const [initiativeOverlaps, setInitiativeOverlaps] = useState<InitiativeOverlap[]>(() => enableDemoData ? DEFAULT_INITIATIVE_OVERLAPS : []);
+  const [portfolioDecisions, setPortfolioDecisions] = useState<PortfolioDecisionItem[]>(() => enableDemoData ? DEFAULT_PORTFOLIO_DECISIONS : []);
+  const [executiveOutputs, setExecutiveOutputs] = useState<ExecutiveOutput[]>(() => enableDemoData ? DEFAULT_EXECUTIVE_OUTPUTS : []);
+
+  useEffect(() => {
+    if (!enableDemoData) {
+      setStrategicFronts([]);
+      setChallenges([]);
+      setInitiatives([]);
+      setInitiativeOverlaps([]);
+      setPortfolioDecisions([]);
+      setExecutiveOutputs([]);
+      return;
+    }
+
+    setStrategicFronts(DEFAULT_STRATEGIC_FRONTS);
+    setChallenges(DEFAULT_CHALLENGES);
+    setInitiatives(DEFAULT_INITIATIVES);
+    setInitiativeOverlaps(DEFAULT_INITIATIVE_OVERLAPS);
+    setPortfolioDecisions(DEFAULT_PORTFOLIO_DECISIONS);
+    setExecutiveOutputs(DEFAULT_EXECUTIVE_OUTPUTS);
+  }, [enableDemoData]);
 
   // El provider monta global en RootLayout (también en la landing pública):
   // solo hidrata con sesión resuelta y autenticada — un visitante anónimo no

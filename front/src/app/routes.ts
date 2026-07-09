@@ -1,4 +1,5 @@
-import { createBrowserRouter, redirect } from 'react-router';
+import React from 'react';
+import { createBrowserRouter, Navigate, redirect } from 'react-router';
 import { RootLayout } from './layout/RootLayout';
 import { LandingPage } from './pages/LandingPage';
 import { AppLayout } from './layout/AppLayout';
@@ -22,6 +23,7 @@ import { MentorPanelPage } from './pages/MentorPanelPage';
 import { AdminCohorte } from './pages/AdminCohorte';
 import { PerfilPage } from './pages/PerfilPage';
 import { ParticipantChallengeDetailPage } from './pages/ParticipantChallengeDetailPage';
+import { PortfolioLeadIntroPage } from './pages/PortfolioLeadIntroPage';
 import { PortfolioLeadHomePage } from './pages/PortfolioLeadHomePage';
 import { PortfolioLeadStartPage } from './pages/PortfolioLeadStartPage';
 import { PortfolioLeadSectionPage } from './pages/PortfolioLeadSectionPage';
@@ -37,6 +39,52 @@ import { PublicProposalResultPage } from './pages/public/PublicProposalResultPag
 import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePage';
 import { ContinuePilotPage } from './pages/ContinuePilotPage';
+import { getInitialReviewFlagDebug, isInitialReviewEnabled } from './featureFlags';
+import { InitialReviewStartPage } from '../features/initial-review/pages/InitialReviewStartPage';
+import { InitialReviewProcessingPage } from '../features/initial-review/pages/InitialReviewProcessingPage';
+import { InitialReviewResultPage } from '../features/initial-review/pages/InitialReviewResultPage';
+
+function InitialReviewFlagGate({ children, routeName }: { children: React.ReactNode; routeName: string }) {
+  const enabled = isInitialReviewEnabled();
+
+  if (import.meta.env.DEV) {
+    const debug = getInitialReviewFlagDebug();
+    console.info('[initial-review-flag]', {
+      routeName,
+      routeRendered: enabled ? routeName : '/projects/new',
+      envValue: debug.envValue,
+      localStorageValue: debug.storageValue,
+      enabled: debug.enabled,
+    });
+  }
+
+  if (!enabled) return React.createElement(Navigate, { to: '/projects/new', replace: true });
+  return React.createElement(React.Fragment, null, children);
+}
+
+function InitialReviewStartRoute() {
+  return React.createElement(
+    InitialReviewFlagGate,
+    { routeName: '/initiatives/new' },
+    React.createElement(InitialReviewStartPage),
+  );
+}
+
+function InitialReviewProcessingRoute() {
+  return React.createElement(
+    InitialReviewFlagGate,
+    { routeName: '/initial-reviews/:reviewId/processing' },
+    React.createElement(InitialReviewProcessingPage),
+  );
+}
+
+function InitialReviewResultRoute() {
+  return React.createElement(
+    InitialReviewFlagGate,
+    { routeName: '/initial-reviews/:reviewId' },
+    React.createElement(InitialReviewResultPage),
+  );
+}
 
 export const router = createBrowserRouter([
   {
@@ -82,6 +130,9 @@ export const router = createBrowserRouter([
           { path: '/dashboard', Component: DashboardPage },
           { path: '/continuar-piloto', Component: ContinuePilotPage },
           { path: '/retos/:challengeId', Component: ParticipantChallengeDetailPage },
+          { path: '/initiatives/new', Component: InitialReviewStartRoute },
+          { path: '/initial-reviews/:reviewId/processing', Component: InitialReviewProcessingRoute },
+          { path: '/initial-reviews/:reviewId', Component: InitialReviewResultRoute },
           { path: '/projects/new', Component: CreateProjectPage },
           { path: '/initiatives/new', Component: InitiativeReviewStartPage },
           { path: '/initiatives/review/:reviewId', Component: InitiativeReviewResultPage },

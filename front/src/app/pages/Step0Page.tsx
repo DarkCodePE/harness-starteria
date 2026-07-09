@@ -25,6 +25,7 @@ import {
 import type { Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 import { AutofillField } from '../components/autofill/AutofillField';
+import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
 
 type ModuleId = 'start' | 'impact' | 'decision';
 type ModuleState = 'No iniciado' | 'En progreso' | 'Listo' | 'Necesita ajuste';
@@ -385,6 +386,7 @@ export function Step0Page() {
   const [showPendingWarning, setShowPendingWarning] = useState(false);
   const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
   const [publicDraftCardDismissed, setPublicDraftCardDismissed] = useState(false);
+  const [showInitialReviewOnePager, setShowInitialReviewOnePager] = useState(false);
   const [activeModule, setActiveModule] = useState<ModuleId>('start');
   const [optionalOpen, setOptionalOpen] = useState<Record<ModuleId, boolean>>({ start: false, impact: false, decision: false });
   const [highlightField, setHighlightField] = useState<keyof Step0Data | null>(null);
@@ -453,6 +455,18 @@ export function Step0Page() {
   const alignmentHasContext = Boolean(alignmentStatus && alignmentStatus !== 'pending' && alignmentStatus !== 'unknown') || leaderFeedbackComplete;
   const feedbackReceived = Boolean(form.alignmentFeedback?.trim()) || alignmentStatus === 'feedback_received' || alignmentStatus === 'aligned_with_observations';
   const isImportedInitiative = hasImportMetadata(project);
+  const publicDraftContext = project.publicDraftContext;
+  const initialReviewMeta = (project.step0Data as unknown as {
+    initialReview?: {
+      reviewId: string;
+      challengeType?: ChallengeType;
+      risk?: string;
+      pendingQuestions?: string[];
+      nextRecommendedStep?: string;
+      artifact?: InitialReviewArtifact;
+    };
+  } | undefined)?.initialReview;
+  const initialReviewArtifact = initialReviewMeta?.artifact ?? null;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
 
@@ -488,7 +502,10 @@ export function Step0Page() {
 
   const persistStep0 = async (overrides: Partial<Step0Data> = {}) => {
     const nextForm = { ...form, ...overrides };
-    const synced = syncLegacyFields({ ...nextForm, mode });
+    const syncedBase = syncLegacyFields({ ...nextForm, mode });
+    const synced = initialReviewMeta
+      ? ({ ...syncedBase, initialReview: initialReviewMeta } as Step0Data)
+      : syncedBase;
     setSaving(true);
     await new Promise(resolve => window.setTimeout(resolve, 450));
     if ((synced.initiativeTitle ?? '').trim() && synced.initiativeTitle!.trim() !== project.name.trim()) {
@@ -631,19 +648,95 @@ export function Step0Page() {
 
         {shouldShowPublicDraftCard && (
           <div className="border-b border-indigo-100 bg-indigo-50/60 px-5 py-4">
-            <div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-indigo-600" />
-                <div>
-                  <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Partimos de tu borrador inicial</p>
-                  <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                    Puedes usarlo como base y ajustarlo en este paso. No necesitas evidencia perfecta todavía; eso viene en Step 1.
-                  </p>
+            <div className="mx-auto max-w-[1480px] rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-indigo-600" />
+                  <div>
+                    <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Contexto inicial de tu propuesta</p>
+                    <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                      Puedes usarlo como base y ajustarlo en este paso. No necesitas evidencia perfecta todavía; eso viene en Step 1.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={focusFirstBlock} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" style={{ fontWeight: 600 }}>Editar</button>
+                  <button onClick={() => setPublicDraftCardDismissed(true)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" style={{ fontWeight: 600 }}>Mantener original</button>
+                  <button
+                    onClick={() => {
+                      if (publicDraftContext?.suggestedTitle) setField('initiativeTitle', publicDraftContext.suggestedTitle);
+                      if (publicDraftContext?.suggestedSummary) setField('quePasaQueQuieres', publicDraftContext.suggestedSummary);
+                      focusFirstBlock();
+                    }}
+                    className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Aplicar versión sugerida
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={focusFirstBlock} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white" style={{ fontWeight: 600 }}>Continuar con este borrador</button>
-                <button onClick={focusFirstBlock} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50" style={{ fontWeight: 600 }}>Editar antes de avanzar</button>
+              {publicDraftContext && (
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Texto original</p>
+                    <p className="mt-2 text-sm leading-5 text-slate-700">{publicDraftContext.originalText}</p>
+                  </div>
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-indigo-500">Versión sugerida por Starteria</p>
+                    <p className="mt-2 text-sm leading-5 text-slate-800">
+                      {publicDraftContext.suggestedSummary || form.quePasaQueQuieres || 'Starteria no agregó datos nuevos; solo usó lo que escribiste como punto de partida.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {initialReviewMeta && (
+          <div className="border-b border-indigo-100 bg-indigo-50/60 px-5 py-4">
+            <div className="mx-auto max-w-[1480px] rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-indigo-600" />
+                  <div>
+                    <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Base importada desde tu revision inicial</p>
+                    <p className="mt-1 max-w-3xl text-sm text-slate-500">
+                      Ya tenemos una primera lectura de tu iniciativa. Ahora vamos a completarla con mas precision para que puedas avanzar con claridad.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {initialReviewMeta.challengeType && (
+                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 800 }}>
+                      {CHALLENGE_TYPE_LABELS[initialReviewMeta.challengeType]}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => initialReviewArtifact ? setShowInitialReviewOnePager(true) : navigate(`/initial-reviews/${initialReviewMeta.reviewId}`)}
+                    className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50"
+                    style={{ fontWeight: 800 }}
+                  >
+                    Ver one-pager inicial
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {initialReviewMeta.risk && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Riesgo a cuidar</p>
+                    <p className="mt-2 text-sm leading-5 text-slate-700">{initialReviewMeta.risk}</p>
+                  </div>
+                )}
+                {(initialReviewMeta.pendingQuestions?.length ?? 0) > 0 && (
+                  <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-amber-600">Pendiente para completar</p>
+                    <ul className="mt-2 space-y-1 text-sm leading-5 text-amber-800">
+                      {initialReviewMeta.pendingQuestions?.slice(0, 3).map(question => <li key={question}>{question}</li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1103,6 +1196,52 @@ export function Step0Page() {
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button onClick={() => { setShowPendingWarning(false); openAlignmentCard(); }} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Registrar feedback ahora</button>
               <button onClick={() => { setShowPendingWarning(false); void goToStep1({ alignmentStatus: 'pending', alignmentAdvancedPending: true, leaderFeedbackStatus: form.leaderFeedbackStatus ?? 'pending' }); }} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Avanzar a Step 1</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInitialReviewOnePager && initialReviewArtifact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4 py-6">
+          <div className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.12em] text-indigo-500" style={{ fontWeight: 800 }}>One-pager inicial</p>
+                <h2 className="mt-1 text-lg text-slate-950" style={{ fontWeight: 800 }}>{initialReviewArtifact.onePager.title}</h2>
+                <p className="mt-1 text-sm text-slate-500">Este artefacto fue usado para crear la iniciativa. Step 0 sigue editable.</p>
+              </div>
+              <button onClick={() => setShowInitialReviewOnePager(false)} className="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" aria-label="Cerrar one-pager">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="max-h-[72vh] overflow-y-auto p-5">
+              <div className="grid gap-3 md:grid-cols-2">
+                {[
+                  ['Que quiere mover', initialReviewArtifact.onePager.whatToMove],
+                  ['Tipo de reto', CHALLENGE_TYPE_LABELS[initialReviewArtifact.onePager.challengeType]],
+                  ['Por que importa ahora', initialReviewArtifact.onePager.whyNow],
+                  ['A quien impacta', initialReviewArtifact.onePager.impactedAudience],
+                  ['Evidencia inicial disponible', initialReviewArtifact.onePager.initialEvidence],
+                  ['Riesgo principal', initialReviewArtifact.onePager.mainRisk],
+                  ['Ruta recomendada', initialReviewArtifact.onePager.recommendedRoute],
+                  ['Siguiente paso', initialReviewArtifact.onePager.nextStep],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400" style={{ fontWeight: 800 }}>{label}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-800">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-amber-700" style={{ fontWeight: 800 }}>Preguntas pendientes</p>
+                {initialReviewArtifact.onePager.pendingQuestions.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-sm leading-6 text-amber-900">
+                    {initialReviewArtifact.onePager.pendingQuestions.map(question => <li key={question}>- {question}</li>)}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-amber-900">Sin preguntas pendientes registradas.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

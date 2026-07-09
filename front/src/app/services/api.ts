@@ -74,6 +74,14 @@ export function parseApiError(err: unknown): AuthError {
     }
 
     // 3) 5xx sin envelope => error genérico de servidor.
+    if (status === 401) {
+      return {
+        code: 'AUTH_INVALID_CREDENTIALS',
+        message: 'Correo o contraseña incorrectos.',
+        hint: 'Verifica tus datos. Si todavía no tienes cuenta, regístrate primero.',
+      };
+    }
+
     if (status >= 500) {
       return {
         code: 'INTERNAL_ERROR',

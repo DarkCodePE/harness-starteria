@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { ArrowLeft, Plus, X, AlertCircle, CheckCircle2, Users, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, X, AlertCircle, CheckCircle2, Users, ChevronDown, Info } from 'lucide-react';
 import { createTeamMember, useApp } from '../context/AppContext';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
@@ -25,6 +25,9 @@ export function CreateProjectPage() {
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [sponsorInfoOpen, setSponsorInfoOpen] = useState(false);
+  const [sponsorInfoPinned, setSponsorInfoPinned] = useState(false);
+  const sponsorInfoRef = useRef<HTMLDivElement>(null);
   const linkedChallengeId = searchParams.get('challengeId') ?? '';
   const linkedChallenge = useMemo(() => challenges.find(item => item.id === linkedChallengeId) ?? null, [challenges, linkedChallengeId]);
   const linkedFront = useMemo(
@@ -33,6 +36,31 @@ export function CreateProjectPage() {
   );
 
   const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const inviteReady = inviteEmail.trim().length > 0;
+  const sponsorReady = sponsorEmail.trim().length > 0 && sponsorInvites.length < 2;
+
+  useEffect(() => {
+    if (!sponsorInfoOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (sponsorInfoRef.current?.contains(event.target as Node)) return;
+      setSponsorInfoOpen(false);
+      setSponsorInfoPinned(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setSponsorInfoOpen(false);
+      setSponsorInfoPinned(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [sponsorInfoOpen]);
 
   // #96: when creating an iniciativa from a reto, pre-fill the team invites with the
   // reto's assigned squad (only members whose value is a valid email — the squad can
@@ -76,7 +104,7 @@ export function CreateProjectPage() {
     if (!sponsorEmail.trim()) return;
     if (!validateEmail(sponsorEmail)) { setSponsorError('El correo del sponsor no es válido.'); return; }
     if (sponsorInvites.length >= 2) { setSponsorError('Solo puedes asignar hasta 2 sponsors por iniciativa.'); return; }
-    if (sponsorInvites.some(i => i.email === sponsorEmail) || invites.some(i => i.email === sponsorEmail)) { setSponsorError('Este correo ya fue agregado al proyecto.'); return; }
+    if (sponsorInvites.some(i => i.email === sponsorEmail) || invites.some(i => i.email === sponsorEmail)) { setSponsorError('Este correo ya fue agregado a la iniciativa.'); return; }
     setSponsorInvites(prev => [...prev, { id: `${Date.now()}-s`, email: sponsorEmail, status: 'Pendiente' }]);
     setSponsorEmail('');
     setSponsorError(null);
@@ -126,7 +154,7 @@ export function CreateProjectPage() {
           <ArrowLeft size={18} className="text-slate-500" />
         </button>
         <div>
-          <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>Crear nuevo proyecto</h1>
+          <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>Crear nueva iniciativa</h1>
           <p className="text-sm text-slate-500">Paso {step} de 2</p>
         </div>
       </div>
@@ -137,7 +165,7 @@ export function CreateProjectPage() {
           <div key={n} className="contents">
             <div className="flex items-center gap-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${step >= n ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`} style={{ fontWeight: 600 }}>
-                {step > n ? '✓' : n}
+                {step > n ? <CheckCircle2 size={15} /> : n}
               </div>
               <span className={`text-sm ${step >= n ? 'text-slate-800' : 'text-slate-400'}`} style={{ fontWeight: step >= n ? 500 : 400 }}>{label}</span>
             </div>
@@ -153,10 +181,10 @@ export function CreateProjectPage() {
               <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
                 <p className="text-sm text-sky-900" style={{ fontWeight: 600 }}>Crear iniciativa dentro de reto definido</p>
                 <p className="mt-1 text-xs text-sky-700">
-                  Esta iniciativa quedara vinculada al reto "{linkedChallenge.name}"{linkedFront ? ` del frente ${linkedFront.name}` : ''}.
+                  Esta iniciativa quedará vinculada al reto "{linkedChallenge.name}"{linkedFront ? ` del frente ${linkedFront.name}` : ''}.
                 </p>
                 <p className="mt-2 text-xs text-sky-700">
-                  Tipo de reto: {challengeTypeLabel(linkedChallenge.challengeType)}. En Step 0 veras el contexto heredado del reto.
+                  Tipo de reto: {challengeTypeLabel(linkedChallenge.challengeType)}. En Step 0 verás el contexto heredado del reto.
                 </p>
                 {linkedChallenge.assignedSquad?.some(member => validateEmail(member.value)) && (
                   <p className="mt-2 text-xs text-sky-700" style={{ fontWeight: 600 }}>
@@ -167,7 +195,7 @@ export function CreateProjectPage() {
             )}
             <div>
               <label className="block text-sm text-slate-800 mb-1.5" style={{ fontWeight: 500 }}>
-                Nombre del proyecto <span className="text-red-500">*</span>
+                Nombre de la iniciativa <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -248,7 +276,11 @@ export function CreateProjectPage() {
                 </div>
                 <button
                   onClick={addInvite}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3 py-2.5 transition-colors"
+                  aria-label="Agregar integrante"
+                  title="Agregar integrante"
+                  className={`rounded-xl px-3 py-2.5 text-white transition-colors ${
+                    inviteReady ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-300 hover:bg-slate-400'
+                  }`}
                 >
                   <Plus size={16} />
                 </button>
@@ -266,10 +298,32 @@ export function CreateProjectPage() {
 
             <div className="border border-indigo-100 bg-indigo-50 rounded-2xl p-4">
               <div className="mb-3">
-                <p className="text-sm text-indigo-900" style={{ fontWeight: 600 }}>Asignar sponsor</p>
-                <p className="text-xs text-indigo-700 mt-1">
-                  El sponsor acompaña tres hitos: alineamiento inicial, revisión estratégica al cierre del Step 2 y presentación final. Puedes dejarlo pendiente y definirlo después.
-                </p>
+                <div ref={sponsorInfoRef} className="relative inline-flex items-center gap-1.5">
+                  <p className="text-sm text-indigo-900" style={{ fontWeight: 600 }}>Sponsor de la iniciativa (opcional)</p>
+                  <button
+                    type="button"
+                    aria-label="Qué es un sponsor"
+                    aria-expanded={sponsorInfoOpen}
+                    onMouseEnter={() => setSponsorInfoOpen(true)}
+                    onMouseLeave={() => {
+                      if (!sponsorInfoPinned) setSponsorInfoOpen(false);
+                    }}
+                    onClick={() => {
+                      const nextPinned = !sponsorInfoPinned;
+                      setSponsorInfoPinned(nextPinned);
+                      setSponsorInfoOpen(nextPinned || !sponsorInfoOpen);
+                    }}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-indigo-600 transition-colors hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  >
+                    <Info size={14} />
+                  </button>
+                  {sponsorInfoOpen && (
+                    <div className="absolute left-0 top-7 z-20 w-[min(22rem,calc(100vw-3rem))] rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600 shadow-lg">
+                      Un sponsor es una persona que puede orientar, respaldar o abrir camino para tu iniciativa dentro de la empresa. Su alineación ayuda a que la propuesta tenga más visibilidad y más posibilidades de avanzar. Si aún no sabes quién debería ser, puedes agregarlo después.
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-indigo-700 mt-1">Puedes agregarlo ahora o definirlo después.</p>
               </div>
               <div className="flex gap-2">
                 <input
@@ -283,7 +337,11 @@ export function CreateProjectPage() {
                 <button
                   onClick={addSponsorInvite}
                   disabled={sponsorInvites.length >= 2}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl px-3 py-2.5 transition-colors"
+                  aria-label="Agregar sponsor"
+                  title="Agregar sponsor"
+                  className={`rounded-xl px-3 py-2.5 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    sponsorReady ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-300 hover:bg-slate-400'
+                  }`}
                 >
                   <Plus size={16} />
                 </button>
@@ -339,7 +397,7 @@ export function CreateProjectPage() {
             {invites.length === 0 && (
               <div className="flex items-center gap-2 p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
                 <Users size={16} className="text-slate-400" />
-                <p className="text-sm text-slate-400">Puedes invitar personas después desde la configuración del proyecto.</p>
+                <p className="text-sm text-slate-400">Puedes invitar personas después desde la configuración de la iniciativa.</p>
               </div>
             )}
 
@@ -360,7 +418,7 @@ export function CreateProjectPage() {
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl py-3 text-sm transition-colors"
                 style={{ fontWeight: 500 }}
               >
-                {saving ? 'Creando proyecto…' : 'Crear proyecto'}
+                {saving ? 'Creando iniciativa…' : 'Crear iniciativa'}
               </button>
             </div>
           </div>

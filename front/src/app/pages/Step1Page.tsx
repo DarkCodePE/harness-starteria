@@ -633,12 +633,12 @@ export function Step1Page() {
     setTimeout(() => {
       if (projectId && project) {
         updateProject(projectId, {
-          status: 'SesiÃ³n experto pendiente',
+          status: 'Sesión experto pendiente',
           steps: project.steps.map(item =>
             item.number === 1
               ? {
                   ...item,
-                  status: 'SesiÃ³n experto pendiente',
+                  status: 'Sesión experto pendiente',
                   progress: 100,
                   feedbackIA: {
                     status: 'Aprobado',
@@ -729,13 +729,13 @@ export function Step1Page() {
 
   const updateStep1MentorValidation = (
     updates: NonNullable<typeof step>['mentorSession'],
-    stepStatus: 'SesiÃ³n experto pendiente' | 'Aprobado' | 'Ajustado' = 'SesiÃ³n experto pendiente',
+    stepStatus: 'Sesión experto pendiente' | 'Aprobado' | 'Ajustado' = 'Sesión experto pendiente',
   ) => {
     if (!projectId || !project) return;
 
     updateProject(projectId, {
       currentStep: stepStatus === 'Aprobado' ? Math.max(project.currentStep, 2) : project.currentStep,
-      status: stepStatus === 'Aprobado' ? 'Paso aprobado' : 'SesiÃ³n experto pendiente',
+      status: stepStatus === 'Aprobado' ? 'Paso aprobado' : 'Sesión experto pendiente',
       steps: project.steps.map(item => {
         if (item.number === 1) {
           return {
@@ -768,7 +768,7 @@ export function Step1Page() {
         : 'Pendiente la evaluacion y aprobacion directa del mentor.',
     };
 
-    updateStep1MentorValidation(baseSession, 'SesiÃ³n experto pendiente');
+    updateStep1MentorValidation(baseSession, 'Sesión experto pendiente');
     setShowSendModal(false);
     if (mode === 'meeting') {
       setShowSessionModal(true);

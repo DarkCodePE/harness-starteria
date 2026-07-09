@@ -17,6 +17,12 @@ const ROLE_LABELS: Record<string, string> = {
   portfolio_lead: 'Portfolio Lead',
 };
 
+function isExplicitDemoEnabled() {
+  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem('starteria.demo.enabled') === 'true';
+}
+
 export function AppLayout() {
   const { user, logout, setUserRole, currentProject, isAuthenticated, canAccessProject } = useApp();
   const navigate = useNavigate();
@@ -52,7 +58,7 @@ export function AppLayout() {
 
     if (user?.role !== 'sponsor') return;
 
-    const blockedStaticPaths = ['/projects/new', '/mentor', '/admin'];
+    const blockedStaticPaths = ['/projects/new', '/initiatives/new', '/initial-reviews', '/mentor', '/admin'];
     if (blockedStaticPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))) {
       navigate('/dashboard', { replace: true });
       return;
@@ -91,7 +97,7 @@ export function AppLayout() {
   const canOpenProjectSteps = user?.role !== 'sponsor';
 
   const ownerLinks = [
-    { icon: LayoutDashboard, label: 'Mis proyectos', path: '/dashboard' },
+    { icon: LayoutDashboard, label: 'Mis iniciativas', path: '/dashboard' },
     { icon: FolderOpen, label: 'Evidencias', path: '/evidencias' },
     { icon: User, label: 'Mi perfil', path: '/perfil' },
   ];
@@ -228,6 +234,7 @@ export function AppLayout() {
       )}
 
       {/* Role switcher (demo) */}
+      {isExplicitDemoEnabled() ? (
       <div className="px-3 py-3 border-t border-slate-100">
         <p className="text-xs text-slate-400 px-1 mb-1.5" style={{ fontWeight: 600 }}>VER COMO (demo)</p>
         <div className="grid grid-cols-2 gap-1">
@@ -243,6 +250,24 @@ export function AppLayout() {
           ))}
         </div>
       </div>
+      ) : null}
+
+      {user?.role === 'owner' && (
+        <div className="mx-3 mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs text-slate-500" style={{ fontWeight: 600 }}>¿Gestionas iniciativas de un equipo?</p>
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/portfolio-lead/intro');
+              setSidebarOpen(false);
+            }}
+            className="mt-2 text-left text-xs text-indigo-700 hover:text-indigo-800"
+            style={{ fontWeight: 700 }}
+          >
+            Conocer Portfolio Lead
+          </button>
+        </div>
+      )}
 
       {/* User */}
       <div className="px-3 pb-4 space-y-1">

@@ -250,6 +250,13 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  origin?: 'manual' | 'from_public_draft';
+  publicDraftContext?: {
+    draftId: string;
+    originalText: string;
+    suggestedTitle?: string;
+    suggestedSummary?: string;
+  };
   status: ProjectStatus;
   currentStep: number;
   step0Status: Step0Status;
@@ -383,6 +390,13 @@ function writeSessionJson(key: string, value: unknown) {
 }
 
 function enrichProject(raw: any, currentUser: User | null): Project {
+  const normalizeStep0Status = (status: unknown): Step0Status => {
+    if (status === 'NOT_STARTED' || status === 'not_started' || status === 'No iniciado') return 'No iniciado';
+    if (status === 'IN_PROGRESS' || status === 'in_progress' || status === 'En progreso') return 'En progreso';
+    if (status === 'COMPLETED' || status === 'completed' || status === 'Completado') return 'Completado';
+    return 'No iniciado';
+  };
+
   const steps = Array.isArray(raw.steps)
     ? raw.steps.map((s: any, idx: number) => ({
         ...s,
@@ -434,8 +448,46 @@ function enrichProject(raw: any, currentUser: User | null): Project {
     lastModified: raw.lastModified ?? raw.updatedAt ?? new Date().toISOString(),
     riskLevel: raw.riskLevel ?? 'Bajo',
     mentorCredits: typeof raw.mentorCredits === 'number' ? raw.mentorCredits : 3,
-    step0Status: raw.step0Status ?? 'No iniciado',
+    step0Status: normalizeStep0Status(raw.step0Status),
   } as unknown as Project;
+}
+
+function createLocalProjectDraft(
+  name: string,
+  description: string | undefined,
+  user: User | null,
+  teamMembers: TeamMember[],
+  options?: { challengeLink?: ProjectChallengeLink },
+): Project {
+  const now = new Date().toISOString();
+  const ownerMember: TeamMember | null = user
+    ? { id: user.id, name: user.name, email: user.email, role: 'Owner', status: 'Activo', initials: user.initials }
+    : null;
+
+  return {
+    id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    description,
+    origin: 'manual',
+    status: 'Draft',
+    currentStep: 0,
+    step0Status: 'No iniciado',
+    mentorCredits: 3,
+    steps: [
+      { number: 1, name: 'Entender el problema', status: 'No iniciado', progress: 0, modules: [] },
+      { number: 2, name: 'Diseñar la validación', status: 'No iniciado', progress: 0, modules: [] },
+      { number: 3, name: 'Ejecutar experimento', status: 'No iniciado', progress: 0, modules: [] },
+      { number: 4, name: 'Presentar decisión', status: 'No iniciado', progress: 0, modules: [] },
+    ],
+    team: ownerMember ? [ownerMember, ...teamMembers] : teamMembers,
+    sponsorTouchpoints: DEFAULT_SPONSOR_TOUCHPOINTS,
+    sponsorComments: [],
+    evidence: [],
+    createdAt: now,
+    lastModified: now,
+    riskLevel: 'Bajo',
+    challengeLink: options?.challengeLink,
+  };
 }
 
 const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
@@ -718,9 +770,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { success: true, project: merged };
     } catch (err) {
       const parsed = parseApiError(err);
+      if (parsed.code === 'INTERNAL_ERROR' || parsed.code === 'NETWORK_ERROR') {
+        const localProject = createLocalProjectDraft(name, description, user, teamMembers, options);
+        setProjects(prev => [localProject, ...prev]);
+        return { success: true, project: localProject };
+      }
+
       return {
         success: false,
-        error: parsed.message || 'No pudimos guardar tu proyecto. Intenta de nuevo.',
+        error: parsed.message || 'No pudimos guardar tu iniciativa. Intenta de nuevo.',
       };
     }
   };
@@ -766,6 +824,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...response,
       name: response.name ?? projectName,
       description: response.description ?? projectDescription,
+      origin: 'from_public_draft',
+      publicDraftContext: {
+        draftId: draft.id,
+        originalText: draft.inputText,
+        suggestedTitle: draft.aiOutput.proposalTitle,
+        suggestedSummary: draft.aiOutput.whatToMove,
+      },
       currentStep: 0,
       step0Status: 'En progreso',
       step0Data: mappedStep0Data,

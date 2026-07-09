@@ -211,6 +211,15 @@ export class AuthService {
         return { user: demoUser, tokens: issueDevTokenPair(demoUser) };
       }
 
+      if (isDevelopment() && isLikelyDatabaseConnectionError(err)) {
+        logger.warn({ email: email.toLowerCase() }, 'Database unavailable; login fallback requires a demo account or registration');
+        throw AppError.unauthorized(
+          'No encontramos una cuenta activa con este correo en este entorno.',
+          'AUTH_LOGIN_NEEDS_ACCOUNT',
+          { hint: 'Para probar Starteria como usuario nuevo, usa Regístrate y crea la cuenta con esta misma dirección.' },
+        );
+      }
+
       throw err;
     }
 

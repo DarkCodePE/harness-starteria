@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Plus, Clock, Users, AlertTriangle, ChevronRight, Search, Folder, BellRing, MessageSquare, FolderOpen, Layers3 } from 'lucide-react';
+import { Plus, Clock, Users, AlertTriangle, ChevronRight, Search, Folder, BellRing, MessageSquare, FolderOpen, Layers3, UploadCloud } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { Project, SponsorTouchpoint } from '../context/AppContext';
 import { StatusChip } from '../components/StatusChip';
@@ -8,6 +8,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { activationLabel, challengeStatusLabel, challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
 import { DashboardPdfDropzone } from '../components/DashboardPdfDropzone';
+import { isInitialReviewEnabled } from '../featureFlags';
 
 function SkeletonCard() {
   return (
@@ -77,6 +78,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const loading = projectsLoading;
+  const createInitiativePath = isInitialReviewEnabled() ? '/initiatives/new' : '/projects/new';
 
   const isOwner = user?.role === 'owner';
   const isSponsor = user?.role === 'sponsor';
@@ -115,6 +117,14 @@ export function DashboardPage() {
     navigate(`/projects/${id}`);
   };
 
+  const handleContinueProject = (id: string) => {
+    const project = projects.find(item => item.id === id);
+    if (!project) return;
+    setCurrentProject(project);
+    const current = getCurrentWorkStep(project);
+    navigate(`/projects/${id}/step/${current.number}`);
+  };
+
   const timeAgo = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
@@ -131,7 +141,7 @@ export function DashboardPage() {
         <div>
           <h1 className="text-2xl text-slate-900 mb-1" style={{ fontWeight: 700 }}>
             {user?.role === 'owner'
-              ? 'Mis proyectos'
+              ? 'Mis iniciativas'
               : user?.role === 'mentor'
                 ? 'Proyectos a revisar'
                 : user?.role === 'admin'
@@ -140,17 +150,17 @@ export function DashboardPage() {
           </h1>
           {user?.role === 'owner' && (
             <p className="text-sm text-slate-500">
-              Explora retos disponibles y mantén separados tus proyectos propios.
+              Crea, ordena y continúa tus iniciativas desde el recorrido Step 0-4.
             </p>
           )}
         </div>
         {user?.role === 'owner' && (
           <button
-            onClick={() => navigate('/projects/new')}
+            onClick={() => navigate(createInitiativePath)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm"
             style={{ fontWeight: 500 }}
           >
-            <Plus size={16} /> Crear proyecto
+            <Plus size={16} /> Crear iniciativa
           </button>
         )}
       </div>
@@ -226,32 +236,13 @@ export function DashboardPage() {
         </div>
       )}
 
-      {isOwner && (
-        <div className="mb-6 grid gap-6 xl:grid-cols-2">
-          <ParticipantChallengePanel
-            title="Retos abiertos"
-            description="Aqui ves retos abiertos como una bandeja de entrada. Primero entiendes el reto y luego decides si te conviene avanzar."
-            emptyTitle="No hay retos abiertos por ahora"
-            emptyDescription="Cuando Portfolio Lead publique una convocatoria abierta, aparecera aqui."
-            challenges={openChallenges}
-          />
-          <ParticipantChallengePanel
-            title="Retos donde fui invitado"
-            description="Aqui aparecen los retos donde ya tienes acceso de lectura por invitacion o por squad, sin asumir participacion todavia."
-            emptyTitle="No tienes invitaciones activas"
-            emptyDescription="Cuando te inviten a un reto publicado, aparecera aqui para que primero revises el contexto."
-            challenges={invitedChallenges}
-          />
-        </div>
-      )}
-
       <div className="relative mb-6">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           value={search}
           onChange={event => setSearch(event.target.value)}
-          placeholder="Buscar proyectos..."
+          placeholder="Buscar iniciativas..."
           className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
@@ -260,31 +251,42 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(index => <SkeletonCard key={index} />)}
         </div>
+      ) : visibleProjects.length === 0 && !search && user?.role === 'owner' ? (
+        <DashboardEmptyState firstChallengeId={publishedChallenges[0]?.id} userName={user?.name} />
       ) : visibleProjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
             <Folder size={24} className="text-indigo-400" />
           </div>
           <h3 className="text-slate-800 mb-2" style={{ fontWeight: 600 }}>
-            {search ? 'Sin resultados' : isSponsor ? 'No tienes iniciativas asignadas como sponsor' : 'No tienes proyectos aún'}
+            {search ? 'Sin resultados' : isSponsor ? 'No tienes iniciativas asignadas como sponsor' : 'No tienes iniciativas aún'}
           </h3>
           <p className="text-sm text-slate-500 mb-6 max-w-xs">
             {search
               ? `No encontramos proyectos con "${search}". Prueba con otro término.`
               : isSponsor
                 ? 'Cuando te asignen como sponsor verás aquí el avance, los hitos donde debes intervenir y la siguiente convocatoria.'
-                : 'Crea tu primer proyecto y empieza a trabajar en tu desafío.'}
+                : 'Crea tu primera iniciativa y empieza a ordenarla desde Step 0.'}
           </p>
           {!search && user?.role === 'owner' && (
             <button
-              onClick={() => navigate('/projects/new')}
+              onClick={() => navigate(createInitiativePath)}
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm transition-colors"
               style={{ fontWeight: 500 }}
             >
-              <Plus size={16} /> Crear primer proyecto
+              <Plus size={16} /> Crear primera iniciativa
             </button>
           )}
         </div>
+      ) : isOwner ? (
+        <ParticipantInitiativesDashboard
+          projects={visibleProjects}
+          openChallenges={openChallenges}
+          invitedChallenges={invitedChallenges}
+          onOpenProject={handleOpenProject}
+          onContinueProject={handleContinueProject}
+          timeAgo={timeAgo}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleProjects.map(project => {
@@ -404,6 +406,253 @@ export function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function isFromPublicDraft(project: Project) {
+  return project.origin === 'from_public_draft' || !!project.publicDraftContext;
+}
+
+function getCurrentWorkStep(project: Project) {
+  if (project.currentStep === 0 || project.step0Status !== 'Completado') {
+    return {
+      number: 0,
+      label: project.step0Status === 'No iniciado' ? 'Step 0 pendiente' : `Step 0 ${project.step0Status.toLowerCase()}`,
+      progress: project.step0Status === 'Completado' ? 100 : project.step0Status === 'En progreso' ? 35 : 0,
+      status: project.step0Status,
+    };
+  }
+
+  const currentStep = project.steps.find(step => step.number === project.currentStep) ?? project.steps[0];
+  return {
+    number: currentStep?.number ?? 1,
+    label: currentStep ? `Step ${currentStep.number} ${currentStep.status.toLowerCase()}` : 'Step 1 pendiente',
+    progress: currentStep?.progress ?? 0,
+    status: currentStep?.status ?? 'No iniciado',
+  };
+}
+
+function getParticipantStatus(project: Project) {
+  if (project.steps.some(step => step.status === 'Bloqueado')) return 'Bloqueada';
+  if (project.steps.some(step => ['Enviado', 'Feedback IA', 'Sesión experto pendiente'].includes(step.status))) return 'En revisión';
+  if (project.step0Status !== 'Completado' || project.status === 'Borrador') return 'Borrador';
+  return 'En progreso';
+}
+
+function getNextParticipantAction(project: Project) {
+  const current = getCurrentWorkStep(project);
+  if (project.steps.some(step => step.status === 'Bloqueado')) return 'Revisar bloqueo';
+  if (current.number === 0) {
+    return project.step0Status === 'No iniciado' ? 'Completar contexto inicial' : 'Continuar Step 0';
+  }
+  if (current.status === 'Feedback IA') return 'Revisar feedback';
+  if (current.status === 'Enviado' || current.status === 'Sesión experto pendiente') return 'Revisar estado de validación';
+  return `Continuar Step ${current.number}`;
+}
+
+function getProjectProgress(project: Project) {
+  const step0Progress = project.step0Status === 'Completado' ? 100 : project.step0Status === 'En progreso' ? 35 : 0;
+  const stepProgress = project.steps.reduce((sum, step) => sum + (step.progress ?? 0), 0);
+  return Math.round((step0Progress + stepProgress) / (project.steps.length + 1));
+}
+
+type ParticipantChallenge = ReturnType<typeof usePortfolioLead>['challenges'][number];
+
+function ParticipantInitiativesDashboard({
+  projects,
+  openChallenges,
+  invitedChallenges,
+  onOpenProject,
+  onContinueProject,
+  timeAgo,
+}: {
+  projects: Project[];
+  openChallenges: ParticipantChallenge[];
+  invitedChallenges: ParticipantChallenge[];
+  onOpenProject: (id: string) => void;
+  onContinueProject: (id: string) => void;
+  timeAgo: (iso: string) => string;
+}) {
+  const sortedProjects = [...projects].sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+  const continueProjects = sortedProjects
+    .filter(project => project.step0Status !== 'Completado' || project.steps.some(step => step.status !== 'No iniciado' && step.status !== 'Aprobado'))
+    .slice(0, 3);
+
+  return (
+    <div className="space-y-7">
+      {continueProjects.length > 0 && (
+        <section>
+          <div className="mb-3">
+            <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>Continúa donde lo dejaste</h2>
+            <p className="mt-1 text-sm text-slate-500">Retoma las iniciativas activas o recientes.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {continueProjects.map(project => (
+              <ParticipantContinueCard key={project.id} project={project} onContinueProject={onContinueProject} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <div className="mb-3">
+          <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>Mis iniciativas</h2>
+          <p className="mt-1 text-sm text-slate-500">Vista compacta para revisar estado, avance y siguiente acción.</p>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          {sortedProjects.map(project => (
+            <ParticipantInitiativeRow key={project.id} project={project} onOpenProject={onOpenProject} timeAgo={timeAgo} />
+          ))}
+        </div>
+      </section>
+
+      {(openChallenges.length > 0 || invitedChallenges.length > 0) && (
+        <section className="grid gap-6 xl:grid-cols-2">
+          <ParticipantChallengePanel
+            title="Retos abiertos"
+            description="Revisa convocatorias abiertas y decide si alguna conecta con lo que quieres mover."
+            emptyTitle="No hay retos abiertos por ahora"
+            emptyDescription="Cuando Portfolio Lead publique una convocatoria abierta, aparecerá aquí."
+            challenges={openChallenges}
+          />
+          <ParticipantChallengePanel
+            title="Retos donde fui invitado"
+            description="Estos retos ya tienen acceso de lectura para ti o para tu squad."
+            emptyTitle="No tienes invitaciones activas"
+            emptyDescription="Cuando te inviten a un reto publicado, aparecerá aquí."
+            challenges={invitedChallenges}
+          />
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ParticipantContinueCard({ project, onContinueProject }: { project: Project; onContinueProject: (id: string) => void }) {
+  const current = getCurrentWorkStep(project);
+  const nextAction = getNextParticipantAction(project);
+  const ctaLabel = current.number === 0 ? 'Continuar Step 0' : `Continuar Step ${current.number}`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onContinueProject(project.id)}
+      className="rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-indigo-200 hover:shadow-sm"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="min-w-0 text-sm text-slate-900 line-clamp-2" style={{ fontWeight: 700 }}>{project.name}</h3>
+        <ChevronRight size={16} className="shrink-0 text-slate-300" />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <StatusChip status={getParticipantStatus(project)} size="sm" />
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">{current.label}</span>
+        {isFromPublicDraft(project) ? <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-700">Creada desde propuesta inicial</span> : null}
+      </div>
+      <div className="mt-4">
+        <ProgressBar value={current.progress} size="sm" label={`Avance ${current.progress}%`} />
+      </div>
+      <p className="mt-3 text-xs text-slate-500">Siguiente acción: <span className="text-slate-700" style={{ fontWeight: 600 }}>{nextAction}</span></p>
+      <p className="mt-4 text-sm text-indigo-700" style={{ fontWeight: 700 }}>{ctaLabel}</p>
+    </button>
+  );
+}
+
+function ParticipantInitiativeRow({
+  project,
+  onOpenProject,
+  timeAgo,
+}: {
+  project: Project;
+  onOpenProject: (id: string) => void;
+  timeAgo: (iso: string) => string;
+}) {
+  const current = getCurrentWorkStep(project);
+  const hasBlock = project.steps.some(step => step.status === 'Bloqueado');
+  const nextAction = getNextParticipantAction(project);
+  const actionLabel = hasBlock ? 'Ver bloqueo' : nextAction.includes('feedback') ? 'Ver feedback' : current.number === 0 ? 'Continuar en Step 0' : 'Continuar';
+  const progress = getProjectProgress(project);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenProject(project.id)}
+      className="flex w-full flex-col gap-3 border-b border-slate-100 p-4 text-left transition-colors last:border-b-0 hover:bg-slate-50 md:flex-row md:items-center md:justify-between"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="min-w-0 text-sm text-slate-900" style={{ fontWeight: 700 }}>{project.name}</h3>
+          {isFromPublicDraft(project) ? <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-700">Creada desde propuesta inicial</span> : null}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <StatusChip status={getParticipantStatus(project)} size="sm" />
+          <span>{current.label}</span>
+          <span>Última actividad: {timeAgo(project.lastModified)}</span>
+          {hasBlock ? <span className="text-amber-700">Bloqueo activo</span> : null}
+        </div>
+      </div>
+      <div className="flex items-center gap-3 md:w-52">
+        <div className="hidden flex-1 md:block">
+          <ProgressBar value={progress} size="sm" label={`${progress}%`} />
+        </div>
+        <span className="shrink-0 text-sm text-indigo-700" style={{ fontWeight: 700 }}>{actionLabel}</span>
+      </div>
+    </button>
+  );
+}
+
+function getWelcomeCopy(name?: string) {
+  const displayName = name?.trim().split(/\s+/)[0] || 'bienvenido';
+  const feminine = displayName.toLowerCase().endsWith('a');
+  return `${feminine ? 'Bienvenida' : 'Bienvenido'}, ${displayName}`;
+}
+
+function DashboardEmptyState({ firstChallengeId, userName }: { firstChallengeId?: string; userName?: string }) {
+  const navigate = useNavigate();
+  const createInitiativePath = isInitialReviewEnabled() ? '/initiatives/new' : '/projects/new';
+  return (
+    <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
+      <div className="max-w-2xl">
+        <p className="text-xs uppercase text-indigo-600" style={{ fontWeight: 800, letterSpacing: '0.08em' }}>{getWelcomeCopy(userName)}</p>
+        <h2 className="mt-3 text-3xl text-slate-950" style={{ fontWeight: 800, letterSpacing: '-0.03em' }}>
+          Empieza ordenando tu primera iniciativa
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          Describe una idea, problema u oportunidad. Starteria te ayudará a convertirla en un borrador claro desde Step 0.
+        </p>
+        <p className="mt-2 text-xs text-slate-500">
+          Tu iniciativa empieza como borrador privado. Podrás editarla antes de compartirla.
+        </p>
+      </div>
+
+      <div className="mt-7 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={() => navigate(createInitiativePath)}
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
+          style={{ fontWeight: 700 }}
+        >
+          <Plus size={16} /> Crear mi primera iniciativa
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(isInitialReviewEnabled() ? '/initiatives/new' : '/projects/new?mode=import')}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+          style={{ fontWeight: 700 }}
+        >
+          <UploadCloud size={16} /> Importar iniciativa existente
+        </button>
+        {firstChallengeId ? (
+          <button
+            type="button"
+            onClick={() => navigate(`/retos/${firstChallengeId}`)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+            style={{ fontWeight: 700 }}
+          >
+            <FolderOpen size={16} /> Explorar retos disponibles
+          </button>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

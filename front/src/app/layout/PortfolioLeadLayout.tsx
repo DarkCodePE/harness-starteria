@@ -14,7 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { PortfolioLeadProvider, usePortfolioLead } from '../portfolio/PortfolioLeadContext';
+import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 
 const ROLE_LABELS = {
   owner: 'Participante',
@@ -24,12 +24,14 @@ const ROLE_LABELS = {
   portfolio_lead: 'Portfolio Lead',
 } as const;
 
+function isExplicitDemoEnabled() {
+  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem('starteria.demo.enabled') === 'true';
+}
+
 export function PortfolioLeadLayout() {
-  return (
-    <PortfolioLeadProvider>
-      <PortfolioLeadLayoutContent />
-    </PortfolioLeadProvider>
-  );
+  return <PortfolioLeadLayoutContent />;
 }
 
 function PortfolioLeadLayoutContent() {
@@ -127,6 +129,7 @@ function PortfolioLeadLayoutContent() {
         ))}
       </nav>
 
+      {isExplicitDemoEnabled() ? (
       <div className="border-t border-slate-100 px-3 py-3">
         <p className="mb-1.5 px-1 text-xs text-slate-400" style={{ fontWeight: 600 }}>VER COMO (demo)</p>
         <div className="grid grid-cols-2 gap-1">
@@ -146,6 +149,7 @@ function PortfolioLeadLayoutContent() {
           ))}
         </div>
       </div>
+      ) : null}
 
       <div className="px-3 pb-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-3">

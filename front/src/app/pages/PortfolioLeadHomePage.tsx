@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  getAttentionQueue,
   getHomeCommandCenterModel,
   getPortfolioHomeExperienceModel,
   PortfolioSummaryCards,
@@ -9,7 +8,6 @@ import {
 } from '../../features/portfolio-lead';
 import { PortfolioLeadBreadcrumbs } from '../components/portfolio/PortfolioLeadPageElements';
 import {
-  PortfolioAttentionQueueSection,
   PortfolioPrimaryActionRail,
   PortfolioWelcomeBanner,
   RecentActivitySection,
@@ -28,7 +26,6 @@ export function PortfolioLeadHomePage() {
   );
 
   const commandCenter = useMemo(() => getHomeCommandCenterModel(portfolioState), [portfolioState]);
-  const attentionQueue = useMemo(() => getAttentionQueue(portfolioState), [portfolioState]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -44,8 +41,6 @@ export function PortfolioLeadHomePage() {
       <PortfolioPrimaryActionRail summary={commandCenter.summary} onNavigate={path => navigate(path)} />
 
       <StrategicObjectivesOverview overview={model.strategicOverview} onNavigate={path => navigate(path)} />
-
-      <PortfolioAttentionQueueSection items={attentionQueue} onNavigate={path => navigate(path)} />
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-6 md:p-7">
         <div className="max-w-3xl">

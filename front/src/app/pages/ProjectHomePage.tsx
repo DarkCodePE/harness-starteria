@@ -17,9 +17,12 @@ import { isPdfAutofillEnabled } from '../services/featureFlags';
 // Sparkles & CheckCircle2 already come from the lucide import at the top of
 // this file; only Loader2 & AlertCircle are new here.
 import { Loader2, AlertCircle } from 'lucide-react';
-import type { Step } from '../context/AppContext';
+import type { Project, Step } from '../context/AppContext';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { buildInheritedChallengeContext, getStep0Mode, getSummaryBlocks, normalizeStep0Data } from '../step0/step0Config';
+import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
+import { getInitialReview } from '../../features/initial-review/services/initialReviewStorage';
+import { buildInitialReviewArtifact } from '../../features/initial-review/services/initialReviewMappers';
 
 const STEP_DESCRIPTIONS = [
   'Entiende el problema con claridad: documenta el proceso actual, mide el impacto y conoce a los actores involucrados.',
@@ -50,6 +53,45 @@ const INTRO_STEP_SUMMARY = [
 ] as const;
 
 type ProjectStepOverviewStatus = 'current' | 'completed' | 'available' | 'locked' | 'review_pending' | 'blocked';
+type StepPreviewState = {
+  selectedStepId: string | null;
+  isOpen: boolean;
+  source: 'card_click' | 'explore_button' | 'auto';
+};
+type InitialReviewArtifactTab = 'onePager' | 'conversation';
+type PersonalizedStepStatus = 'active' | 'locked' | 'completed' | 'in_review' | 'pending';
+
+interface PersonalizedStepRouteItem {
+  step: 0 | 1 | 2 | 3 | 4;
+  title: string;
+  shortDescription: string;
+  previewTitle: string;
+  previewSubtitle: string;
+  workItems: string[];
+  whyItMatters: string;
+  expectedOutputs: string[];
+  requirementsToAdvance: string[];
+  status: PersonalizedStepStatus;
+  ctaLabel: string;
+}
+
+interface BuildPersonalizedStepRouteInput {
+  initiative: Project;
+  initialReviewSnapshot?: InitialReviewArtifact | null;
+  challengeType?: ChallengeType;
+  focus: string;
+  evidence: string;
+  risk: string;
+  stepStatuses: Record<number, ProjectStepOverviewStatus>;
+}
+
+interface InitialReviewArtifactDrawerProps {
+  artifact: InitialReviewArtifact;
+  open: boolean;
+  tab: InitialReviewArtifactTab;
+  onTabChange: (tab: InitialReviewArtifactTab) => void;
+  onClose: () => void;
+}
 
 const PROJECT_STEPS_OVERVIEW = [
   {
@@ -126,6 +168,185 @@ function getJourneySubtitle(step: number) {
   }
 }
 
+function normalizeRouteStatus(status: ProjectStepOverviewStatus): PersonalizedStepStatus {
+  if (status === 'current' || status === 'available') return 'active';
+  if (status === 'completed') return 'completed';
+  if (status === 'review_pending') return 'in_review';
+  if (status === 'blocked' || status === 'locked') return 'locked';
+  return 'pending';
+}
+
+function getRouteFocus(input: BuildPersonalizedStepRouteInput) {
+  const onePager = input.initialReviewSnapshot?.onePager;
+  return {
+    name: onePager?.title || input.initiative.name,
+    focus: (onePager?.whatToMove || input.focus || input.initiative.description || input.initiative.name).trim(),
+    evidence: (onePager?.initialEvidence || input.evidence || 'evidencia inicial pendiente de validar').trim(),
+    risk: (onePager?.mainRisk || input.risk || 'avanzar con una definicion demasiado amplia').trim(),
+    audience: (onePager?.impactedAudience || 'los usuarios o equipos afectados').trim(),
+    pendingQuestions: onePager?.pendingQuestions?.slice(0, 3) ?? [],
+    type: input.challengeType || onePager?.challengeType || 'exploration',
+  };
+}
+
+function buildPersonalizedStepRoute(input: BuildPersonalizedStepRouteInput): PersonalizedStepRouteItem[] {
+  const context = getRouteFocus(input);
+  const blockedCopy = 'Este step se desbloqueara cuando completes el paso anterior con los minimos necesarios.';
+
+  const byType: Record<ChallengeType, Record<0 | 1 | 2 | 3 | 4, Pick<PersonalizedStepRouteItem, 'shortDescription' | 'previewSubtitle' | 'workItems' | 'whyItMatters' | 'expectedOutputs' | 'requirementsToAdvance'>>> = {
+    correction: {
+      0: {
+        shortDescription: `Ordena alcance, actores y condiciones de ${context.focus}.`,
+        previewSubtitle: `Aterriza la friccion que quieres corregir antes de investigar o disenar.`,
+        workItems: ['Alcance inicial de la friccion', `Actores afectados: ${context.audience}`, 'Evidencia disponible y senales faltantes'],
+        whyItMatters: `Reduce el riesgo de tratar ${context.focus} como una solucion antes de entender la friccion real.`,
+        expectedOutputs: ['Base inicial clara', 'Actores y contexto definidos', 'Pendientes para validar en Step 1'],
+        requirementsToAdvance: ['Completar campos minimos de Step 0', 'Registrar evidencia inicial', 'Definir que decision necesitas'],
+      },
+      1: {
+        shortDescription: `Valida si la friccion es real, frecuente y medible.`,
+        previewSubtitle: `Confirma impacto, frecuencia y actores antes de proponer una mejora.`,
+        workItems: ['Evidencia de la friccion', 'Frecuencia e impacto actual', 'Actores que viven el problema'],
+        whyItMatters: `El principal riesgo es ${context.risk}. Step 1 evita avanzar solo con intuicion.`,
+        expectedOutputs: ['Foco validado', 'Evidencia del dolor', 'Criterio de exito inicial'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      2: {
+        shortDescription: `Convierte el foco validado en una apuesta testeable para reducir la friccion.`,
+        previewSubtitle: `Disena una mejora acotada y medible.`,
+        workItems: ['Hipotesis de mejora', 'Solucion o piloto pequeno', 'Metrica de reduccion de friccion'],
+        whyItMatters: 'Ayuda a probar una correccion sin comprometer recursos grandes desde el inicio.',
+        expectedOutputs: ['Apuesta priorizada', 'Experimento definido', 'Umbral Go/No-Go'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      3: {
+        shortDescription: `Mide reduccion de error, tiempo, retrabajo o friccion en pequeno.`,
+        previewSubtitle: `Ejecuta la prueba y captura evidencia real de mejora.`,
+        workItems: ['Registro de ejecucion', 'Medicion antes/despues', 'Aprendizajes y efectos no esperados'],
+        whyItMatters: `La evidencia disponible hoy es: ${context.evidence}. Step 3 busca convertirla en evidencia de resultado.`,
+        expectedOutputs: ['Resultados de prueba', 'Evidencia de mejora', 'Decision de ajustar o escalar'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      4: {
+        shortDescription: `Prepara una propuesta de implementacion o piloto formal.`,
+        previewSubtitle: `Convierte la evidencia en una recomendacion clara para sponsor o comite.`,
+        workItems: ['Narrativa del caso', 'Evidencia seleccionada', 'Riesgos y siguiente decision'],
+        whyItMatters: 'Permite pedir apoyo con una historia defendible y conectada al impacto observado.',
+        expectedOutputs: ['Propuesta ejecutiva', 'Recomendacion de implementacion', 'Plan siguiente'],
+        requirementsToAdvance: [blockedCopy],
+      },
+    },
+    growth: {
+      0: {
+        shortDescription: `Ordena la oportunidad, segmento y metrica de ${context.focus}.`,
+        previewSubtitle: 'Aterriza que quieres mover y a quien impacta primero.',
+        workItems: ['Oportunidad inicial', `Segmento o audiencia: ${context.audience}`, 'Senal de demanda o adopcion'],
+        whyItMatters: `Ayuda a enfocar la oportunidad sin asumir que el crecimiento ya esta validado.`,
+        expectedOutputs: ['Base inicial clara', 'Audiencia priorizada', 'Preguntas para validar demanda'],
+        requirementsToAdvance: ['Completar campos minimos de Step 0', 'Definir audiencia afectada', 'Registrar evidencia inicial'],
+      },
+      1: {
+        shortDescription: 'Valida oportunidad, segmento, demanda o adopcion.',
+        previewSubtitle: 'Confirma si existe una senal real de crecimiento.',
+        workItems: ['Comportamiento actual del segmento', 'Senales de demanda o adopcion', 'Barreras para crecer'],
+        whyItMatters: `El riesgo a cuidar es ${context.risk}; Step 1 separa oportunidad real de deseo interno.`,
+        expectedOutputs: ['Oportunidad validada', 'Segmento claro', 'Criterio de crecimiento'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      2: {
+        shortDescription: 'Disena una apuesta de crecimiento concreta y medible.',
+        previewSubtitle: 'Convierte el foco validado en una prueba de crecimiento.',
+        workItems: ['Hipotesis de crecimiento', 'Palanca a probar', 'Metrica de traccion'],
+        whyItMatters: 'Permite aprender que palanca mueve adopcion, conversion o uso.',
+        expectedOutputs: ['Apuesta de crecimiento', 'Experimento definido', 'Metrica y umbral'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      3: {
+        shortDescription: 'Mide senal de traccion en pequeno.',
+        previewSubtitle: 'Ejecuta la prueba y observa si aparece cambio medible.',
+        workItems: ['Resultados de traccion', 'Aprendizajes por segmento', 'Barreras observadas'],
+        whyItMatters: `La evidencia inicial es ${context.evidence}; Step 3 busca validar si escala a comportamiento real.`,
+        expectedOutputs: ['Evidencia de traccion', 'Lectura de resultados', 'Decision de ampliar o ajustar'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      4: {
+        shortDescription: 'Prepara recomendacion comercial, expansion o roadmap.',
+        previewSubtitle: 'Organiza el aprendizaje para decidir si invertir mas.',
+        workItems: ['Caso de crecimiento', 'Evidencia y riesgos', 'Roadmap o recomendacion'],
+        whyItMatters: 'Permite pedir recursos o priorizacion con evidencia de traccion.',
+        expectedOutputs: ['Recomendacion ejecutiva', 'Plan de expansion o ajuste', 'Decision solicitada'],
+        requirementsToAdvance: [blockedCopy],
+      },
+    },
+    exploration: {
+      0: {
+        shortDescription: `Ordena incertidumbres, actores y condiciones de ${context.focus}.`,
+        previewSubtitle: 'Aterriza que necesitas aprender antes de avanzar.',
+        workItems: ['Incertidumbre principal', `Actores o audiencia: ${context.audience}`, 'Evidencia disponible y vacios'],
+        whyItMatters: `El riesgo principal es ${context.risk}; Step 0 ayuda a no explorar demasiado amplio.`,
+        expectedOutputs: ['Base inicial clara', 'Supuestos visibles', 'Preguntas para validar'],
+        requirementsToAdvance: ['Completar campos minimos de Step 0', 'Definir que evidencia falta', 'Aclarar siguiente decision'],
+      },
+      1: {
+        shortDescription: 'Valida incertidumbre, senales y supuestos criticos.',
+        previewSubtitle: 'Convierte la duda inicial en preguntas validables.',
+        workItems: ['Supuestos criticos', 'Senales de demanda o viabilidad', 'Evidencia que reduce incertidumbre'],
+        whyItMatters: `Evita seguir explorando ${context.focus} sin senales reales.`,
+        expectedOutputs: ['Pregunta de exploracion clara', 'Supuestos priorizados', 'Evidencia inicial'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      2: {
+        shortDescription: 'Disena un experimento para aprender rapido.',
+        previewSubtitle: 'Crea una prueba liviana antes de comprometer recursos grandes.',
+        workItems: ['Hipotesis de aprendizaje', 'Experimento liviano', 'Criterio para decidir'],
+        whyItMatters: 'Permite aprender con bajo costo antes de construir una solucion completa.',
+        expectedOutputs: ['Experimento de aprendizaje', 'Metrica o senal esperada', 'Umbral de decision'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      3: {
+        shortDescription: 'Reduce incertidumbre con evidencia.',
+        previewSubtitle: 'Ejecuta la prueba y registra lo aprendido.',
+        workItems: ['Resultados de la prueba', 'Aprendizajes clave', 'Incertidumbres restantes'],
+        whyItMatters: `La evidencia inicial es ${context.evidence}; Step 3 busca convertirla en aprendizaje accionable.`,
+        expectedOutputs: ['Evidencia de aprendizaje', 'Decision de seguir, pivotear o cerrar', 'Riesgos pendientes'],
+        requirementsToAdvance: [blockedCopy],
+      },
+      4: {
+        shortDescription: 'Decide si seguir explorando, pivotear o cerrar.',
+        previewSubtitle: 'Prepara una recomendacion clara con lo aprendido.',
+        workItems: ['Narrativa de aprendizaje', 'Evidencia relevante', 'Recomendacion de siguiente paso'],
+        whyItMatters: 'Evita que la exploracion quede abierta sin decision.',
+        expectedOutputs: ['Recomendacion ejecutiva', 'Decision solicitada', 'Plan siguiente o cierre'],
+        requirementsToAdvance: [blockedCopy],
+      },
+    },
+  };
+
+  return PROJECT_STEPS_OVERVIEW.map(config => {
+    const step = config.step as 0 | 1 | 2 | 3 | 4;
+    const personalized = byType[context.type][step];
+    const rawStatus = input.stepStatuses[step] ?? 'locked';
+    const status = normalizeRouteStatus(rawStatus);
+    const ctaLabel = step === 0
+      ? rawStatus === 'current' ? 'Empezar Step 0' : rawStatus === 'completed' ? 'Ver Step 0' : 'Continuar Step 0'
+      : status === 'locked' ? 'Preview' : rawStatus === 'completed' ? `Ver Step ${step}` : `Continuar Step ${step}`;
+
+    return {
+      step,
+      title: config.shortTitle,
+      shortDescription: personalized.shortDescription,
+      previewTitle: `Step ${step}: ${config.title}`,
+      previewSubtitle: personalized.previewSubtitle,
+      workItems: personalized.workItems.slice(0, 5),
+      whyItMatters: personalized.whyItMatters,
+      expectedOutputs: personalized.expectedOutputs.slice(0, 5),
+      requirementsToAdvance: personalized.requirementsToAdvance.slice(0, 5),
+      status,
+      ctaLabel,
+    };
+  });
+}
+
 const STEP_STATUS_COPY: Record<ProjectStepOverviewStatus, { label: string; badge: string; card: string; dot: string }> = {
   current: {
     label: 'Estás aquí',
@@ -188,6 +409,188 @@ function InfoBlock({ title, items, tone }: { title: string; items: string[]; ton
   );
 }
 
+const STEP_PREVIEW_BASE: Record<number, {
+  goal: string;
+  asksFor: string[];
+  expectedOutput: string[];
+  prerequisite: string;
+}> = {
+  0: {
+    goal: 'Ordenar el punto de partida antes de pedir tiempo, apoyo o avance.',
+    asksFor: ['Qué quieres mover', 'Por qué importa ahora', 'A quién impacta', 'Qué evidencia o señal existe', 'Qué decisión o apoyo necesitas'],
+    expectedOutput: ['Base inicial compartible', 'Contexto y alcance claros', 'Primer criterio para decidir si avanzar'],
+    prerequisite: 'Puedes empezar este paso desde el overview.',
+  },
+  1: {
+    goal: 'Definir y validar el foco real de la iniciativa antes de diseñar solución.',
+    asksFor: ['Foco del reto', 'Evidencia disponible', 'Actores involucrados', 'Restricciones', 'Criterio de éxito'],
+    expectedOutput: ['Foco validado', 'Mapa de evidencia y actores', 'Criterio de avance hacia solución'],
+    prerequisite: 'Completa tu base inicial para desbloquear este paso.',
+  },
+  2: {
+    goal: 'Convertir el foco validado en una apuesta clara y un experimento medible.',
+    asksFor: ['Ideas de solución', 'Hipótesis', 'Métrica principal', 'Diseño del experimento', 'Umbral Go/No-Go'],
+    expectedOutput: ['Apuesta priorizada', 'Experimento diseñado', 'Métrica y umbral de decisión'],
+    prerequisite: 'Necesitas el Step 1 aprobado para diseñar desde evidencia.',
+  },
+  3: {
+    goal: 'Ejecutar la prueba, capturar evidencia y decidir con aprendizaje real.',
+    asksFor: ['Registro de ejecución', 'Resultados contra métrica', 'Evidencia observada', 'Aprendizajes', 'Decisión recomendada'],
+    expectedOutput: ['Evidencia de ejecución', 'Lectura de resultados', 'Decisión de continuar, ajustar o cerrar'],
+    prerequisite: 'Necesitas el experimento diseñado y aprobado en Step 2.',
+  },
+  4: {
+    goal: 'Cerrar el aprendizaje y preparar una propuesta clara para sponsor o comité.',
+    asksFor: ['Narrativa del caso', 'Evidencia seleccionada', 'Recomendación', 'Decisión solicitada', 'Plan siguiente'],
+    expectedOutput: ['Historia ejecutiva', 'Recomendación defendible', 'Plan de acción o cierre'],
+    prerequisite: 'Necesitas aprendizajes y resultados del Step 3.',
+  },
+};
+
+const STEP_TYPE_ADAPTATION: Record<ChallengeType, Record<number, string[]>> = {
+  correction: {
+    0: ['Aterriza la fricción operativa que quieres corregir y el costo actual de dejarla igual.'],
+    1: ['Define foco del problema, evidencia del dolor actual y restricciones operativas.'],
+    2: ['Diseña una mejora acotada para reducir demora, error, retrabajo o fricción.'],
+    3: ['Mide si la corrección reduce el dolor sin crear una carga nueva para el equipo.'],
+    4: ['Presenta el problema corregido, la evidencia de mejora y el costo de escalar o no escalar.'],
+  },
+  growth: {
+    0: ['Aclara la oportunidad a capturar, la métrica que quieres mover y el segmento afectado.'],
+    1: ['Valida segmento, canal, comportamiento actual y señal de crecimiento más relevante.'],
+    2: ['Diseña una apuesta para aumentar adopción, conversión, uso, ventas o retención.'],
+    3: ['Observa si aparece señal de crecimiento y qué palanca parece explicar el cambio.'],
+    4: ['Cuenta la oportunidad, la evidencia de tracción y la decisión para ampliar o ajustar.'],
+  },
+  exploration: {
+    0: ['Declara qué incertidumbre quieres reducir y qué aprendizaje haría útil seguir.'],
+    1: ['Define la pregunta de exploración, supuestos críticos y señales de demanda o viabilidad.'],
+    2: ['Diseña una prueba liviana para aprender antes de comprometer recursos grandes.'],
+    3: ['Evalúa qué aprendiste, qué sigue incierto y si conviene seguir, pivotear o cerrar.'],
+    4: ['Presenta aprendizajes, evidencia disponible y recomendación para la siguiente decisión.'],
+  },
+};
+
+function getStepPreviewModel(
+  stepNumber: number,
+  challengeType: ChallengeType | undefined,
+  focus: string,
+  evidence: string,
+  risk: string,
+) {
+  const base = STEP_PREVIEW_BASE[stepNumber] ?? STEP_PREVIEW_BASE[0];
+  const type = challengeType ?? 'exploration';
+  const typeCopy = STEP_TYPE_ADAPTATION[type][stepNumber] ?? [];
+
+  return {
+    ...base,
+    adapted: [
+      `Tipo de reto detectado: ${CHALLENGE_TYPE_LABELS[type]}.`,
+      focus ? `Foco actual: ${focus}.` : 'Foco actual: pendiente de precisar en Step 0.',
+      ...typeCopy,
+      evidence ? `Señal o evidencia relevante: ${evidence}.` : 'Señal o evidencia relevante: pendiente de validar.',
+      risk ? `Riesgo a cuidar: ${risk}.` : 'Riesgo a cuidar: no asumir validación antes de generar evidencia.',
+    ],
+  };
+}
+
+function InitialReviewArtifactDrawer({
+  artifact,
+  open,
+  tab,
+  onTabChange,
+  onClose,
+}: InitialReviewArtifactDrawerProps) {
+  if (!open) return null;
+
+  const onePagerRows = [
+    ['Nombre', artifact.onePager.title],
+    ['Que quiere mover', artifact.onePager.whatToMove],
+    ['Tipo de reto', CHALLENGE_TYPE_LABELS[artifact.onePager.challengeType]],
+    ['Por que importa ahora', artifact.onePager.whyNow],
+    ['A quien impacta', artifact.onePager.impactedAudience],
+    ['Evidencia inicial disponible', artifact.onePager.initialEvidence],
+    ['Riesgo principal', artifact.onePager.mainRisk],
+    ['Ruta recomendada', artifact.onePager.recommendedRoute],
+    ['Siguiente paso', artifact.onePager.nextStep],
+  ] as const;
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30">
+      <button type="button" aria-label="Cerrar" className="absolute inset-0 cursor-default" onClick={onClose} />
+      <aside className="relative h-full w-full max-w-2xl overflow-y-auto border-l border-slate-200 bg-white shadow-2xl">
+        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.08em] text-indigo-500" style={{ fontWeight: 800 }}>Revision inicial</p>
+              <h2 className="mt-1 text-lg text-slate-950" style={{ fontWeight: 800 }}>Artefacto guardado</h2>
+              <p className="mt-1 text-sm text-slate-500">Usada para crear esta iniciativa.</p>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => onTabChange('onePager')}
+              className={`rounded-full px-4 py-2 text-sm ${tab === 'onePager' ? 'bg-slate-950 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              style={{ fontWeight: 800 }}
+            >
+              One-pager inicial
+            </button>
+            <button
+              type="button"
+              onClick={() => onTabChange('conversation')}
+              className={`rounded-full px-4 py-2 text-sm ${tab === 'conversation' ? 'bg-slate-950 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              style={{ fontWeight: 800 }}
+            >
+              Conversacion
+            </button>
+          </div>
+        </div>
+
+        <div className="px-5 py-5">
+          {tab === 'onePager' ? (
+            <div className="space-y-4">
+              {onePagerRows.map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400" style={{ fontWeight: 800 }}>{label}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-800">{value || 'Pendiente'}</p>
+                </div>
+              ))}
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                <p className="text-[11px] uppercase tracking-[0.08em] text-amber-700" style={{ fontWeight: 800 }}>Preguntas pendientes</p>
+                {artifact.onePager.pendingQuestions.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-sm leading-6 text-amber-900">
+                    {artifact.onePager.pendingQuestions.map(question => <li key={question}>- {question}</li>)}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-amber-900">Sin preguntas pendientes registradas.</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
+                <p className="text-sm text-indigo-950" style={{ fontWeight: 800 }}>Usada para crear esta iniciativa</p>
+                <p className="mt-1 text-xs text-indigo-700">Creada el {new Date(artifact.createdAt).toLocaleString()}</p>
+              </div>
+              {artifact.conversation.map(message => (
+                <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
+                    {message.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 export function ProjectHomePage() {
   const { projectId } = useParams();
   const { projects, setCurrentProject, user, updateProject, getProjectMember, canAccessProject, markSponsorInvitationSent, acceptSponsorInvitation, updateSponsorTouchpoint, addSponsorComment } = useApp();
@@ -204,7 +607,10 @@ export function ProjectHomePage() {
   const [sponsorError, setSponsorError] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [alignmentCopied, setAlignmentCopied] = useState(false);
-  const [selectedJourneyStep, setSelectedJourneyStep] = useState<number | null>(null);
+  const [stepPreview, setStepPreview] = useState<StepPreviewState>({ selectedStepId: null, isOpen: true, source: 'auto' });
+  const [initialReviewArtifactOpen, setInitialReviewArtifactOpen] = useState(false);
+  const [initialReviewArtifactTab, setInitialReviewArtifactTab] = useState<InitialReviewArtifactTab>('onePager');
+  const [artifactDownloadReady, setArtifactDownloadReady] = useState(false);
 
   const project = projects.find(p => p.id === projectId);
   if (!project) return (
@@ -436,6 +842,19 @@ export function ProjectHomePage() {
   const isFirstRun = project.step0Status === 'No iniciado' && overallProgress === 0;
   const step0Mode = getStep0Mode(project);
   const step0Data = normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? '');
+  const initialReviewMeta = (project.step0Data as unknown as {
+    initialReview?: {
+      reviewId: string;
+      challengeType?: ChallengeType;
+      risk?: string;
+      pendingQuestions?: string[];
+      nextRecommendedStep?: string;
+      artifact?: InitialReviewArtifact;
+    };
+  } | undefined)?.initialReview;
+  const initialReview = initialReviewMeta?.reviewId ? getInitialReview(initialReviewMeta.reviewId) : null;
+  const initialReviewArtifact = initialReviewMeta?.artifact
+    ?? (initialReview?.output ? buildInitialReviewArtifact(initialReview, project.id) : null);
   const inheritedStep0 = buildInheritedChallengeContext(project, challenges, strategicFronts);
   const step0SummaryBlocks = getSummaryBlocks(step0Data, inheritedStep0);
   const step0ContactHint = (
@@ -486,7 +905,7 @@ export function ProjectHomePage() {
     step0ContactHint ? `Contacto clave sugerido: ${step0ContactHint}` : null,
   ].filter(Boolean).join('\n');
   const currentJourneyStep = !step0Complete ? 0 : Math.min(Math.max(project.currentStep ?? 1, 1), 4);
-  const selectedStepNumber = selectedJourneyStep ?? currentJourneyStep;
+  const selectedStepNumber = stepPreview.selectedStepId ? Number(stepPreview.selectedStepId) : currentJourneyStep;
   const getStepOverviewState = (stepNumber: number) => {
     const config = PROJECT_STEPS_OVERVIEW.find(item => item.step === stepNumber) ?? PROJECT_STEPS_OVERVIEW[0];
     const appStep = project.steps.find(item => item.number === stepNumber);
@@ -498,7 +917,7 @@ export function ProjectHomePage() {
       lockReason = '';
     } else if (appStep?.status === 'Aprobado') {
       status = 'completed';
-    } else if (appStep?.status === 'Enviado' || appStep?.status === 'Feedback IA' || appStep?.status === 'SesiÃ³n experto pendiente') {
+    } else if (appStep?.status === 'Enviado' || appStep?.status === 'Feedback IA' || appStep?.status === 'Sesión experto pendiente') {
       status = 'review_pending';
     } else if (appStep?.status === 'Bloqueado') {
       status = canAccessStep(stepNumber) ? 'blocked' : 'locked';
@@ -533,6 +952,53 @@ export function ProjectHomePage() {
   const selectedStepOverview = getStepOverviewState(selectedStepNumber);
   const selectedStepStyle = STEP_STATUS_COPY[selectedStepOverview.status];
   const selectedStepIsComplete = selectedStepOverview.status === 'completed';
+  const challengeTypeFromStep0 = initialReviewMeta?.challengeType
+    ?? (step0Data.initiativeFrame === 'correccion'
+      ? 'correction'
+      : step0Data.initiativeFrame === 'crecimiento'
+        ? 'growth'
+        : step0Data.initiativeFrame === 'exploracion'
+          ? 'exploration'
+          : undefined);
+  const initiativeFocus = (
+    step0Data.quePasaQueQuieres
+    || step0Data.initiativeTitle
+    || initialReview?.output?.understandingSummary
+    || project.description
+    || project.name
+  ).trim();
+  const initiativeEvidence = (
+    step0Data.currentEvidence
+    || step0Data.validationSignal
+    || initialReview?.answers?.evidence
+    || ''
+  ).trim();
+  const initiativeRisk = (
+    initialReviewMeta?.risk
+    || initialReview?.output?.critique.risky
+    || initialReview?.answers?.riskContext
+    || ''
+  ).trim();
+  const selectedStepPreview = getStepPreviewModel(
+    selectedStepNumber,
+    challengeTypeFromStep0,
+    initiativeFocus,
+    initiativeEvidence,
+    initiativeRisk,
+  );
+  const personalizedStepRoute = buildPersonalizedStepRoute({
+    initiative: project,
+    initialReviewSnapshot: initialReviewArtifact,
+    challengeType: challengeTypeFromStep0,
+    focus: initiativeFocus,
+    evidence: initiativeEvidence,
+    risk: initiativeRisk,
+    stepStatuses: journeySteps.reduce<Record<number, ProjectStepOverviewStatus>>((acc, item) => {
+      acc[item.config.step] = item.status;
+      return acc;
+    }, {}),
+  });
+  const selectedPersonalizedStep = personalizedStepRoute.find(item => item.step === selectedStepNumber) ?? personalizedStepRoute[0];
   const selectedStepCta = selectedStepOverview.status === 'completed'
     ? `Editar Paso ${selectedStepNumber}`
     : selectedStepOverview.appStep?.status === 'En progreso' || project.step0Status === 'En progreso'
@@ -572,6 +1038,56 @@ export function ProjectHomePage() {
   const openStep0 = () => {
     setCurrentProject(project);
     navigate(`/projects/${project.id}/step/0`);
+  };
+
+  const openInitialReviewArtifact = (tab: InitialReviewArtifactTab) => {
+    setInitialReviewArtifactTab(tab);
+    setInitialReviewArtifactOpen(true);
+  };
+
+  const downloadInitialReviewOnePager = () => {
+    if (!initialReviewArtifact) return;
+    const onePager = initialReviewArtifact.onePager;
+    const markdown = [
+      `# ${onePager.title}`,
+      '',
+      `**Que quiere mover**`,
+      onePager.whatToMove,
+      '',
+      `**Tipo de reto sugerido**`,
+      CHALLENGE_TYPE_LABELS[onePager.challengeType],
+      '',
+      `**Por que importa ahora**`,
+      onePager.whyNow,
+      '',
+      `**A quien impacta**`,
+      onePager.impactedAudience,
+      '',
+      `**Evidencia inicial**`,
+      onePager.initialEvidence,
+      '',
+      `**Riesgo principal**`,
+      onePager.mainRisk,
+      '',
+      `**Preguntas pendientes**`,
+      ...(onePager.pendingQuestions.length ? onePager.pendingQuestions.map(question => `- ${question}`) : ['- Sin preguntas pendientes registradas.']),
+      '',
+      `**Ruta recomendada**`,
+      onePager.recommendedRoute,
+      '',
+      `**Siguiente paso**`,
+      onePager.nextStep,
+      '',
+    ].join('\n');
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${onePager.title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'one-pager-inicial'}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setArtifactDownloadReady(true);
+    window.setTimeout(() => setArtifactDownloadReady(false), 2200);
   };
 
   const openAlignmentSection = () => {
@@ -622,12 +1138,10 @@ export function ProjectHomePage() {
             )}
           </div>
           <h1 className="text-2xl text-slate-900" style={{ fontWeight: 700 }}>{project.name}</h1>
-          {project.description && (
-            <p className="text-sm text-slate-500 mt-1">{project.description}</p>
-          )}
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+          {initialReviewMeta && <p className="mt-1 text-sm text-slate-500">Iniciativa creada desde una revision inicial. Empieza completando el Step 0.</p>}
+          {/*
             Aquí vas a ordenar el contexto, diseñar una solución, probarla en pequeño y preparar una propuesta con mayor claridad. No necesitas tener todo resuelto desde el inicio.
-          </p>
+          */}
         </div>
         <div className="flex gap-2 shrink-0 flex-wrap">
           {!isSponsorViewer && (
@@ -646,6 +1160,62 @@ export function ProjectHomePage() {
           </button>
         </div>
       </div>
+
+      {initialReviewMeta && !isSponsorViewer && (
+        <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-indigo-950" style={{ fontWeight: 800 }}>Tu one-pager inicial esta listo</p>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-indigo-800">
+                Starteria guardo la primera lectura de tu iniciativa. Revisala o descargala antes de completar el Step 0.
+              </p>
+              <p className="mt-1 text-sm text-indigo-700">Step 0 usara esta base como punto de partida.</p>
+            </div>
+            <button
+              type="button"
+              onClick={openStep0}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700"
+              style={{ fontWeight: 800 }}
+            >
+              <ClipboardList size={15} /> Empezar Step 0
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-indigo-100 bg-white p-4">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-indigo-400">Tipo de reto</p>
+              <p className="mt-2 text-sm text-slate-900" style={{ fontWeight: 800 }}>
+                {CHALLENGE_TYPE_LABELS[initialReviewMeta.challengeType ?? initialReviewArtifact?.onePager.challengeType ?? 'exploration']}
+              </p>
+            </div>
+            <div className="rounded-xl border border-indigo-100 bg-white p-4">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-indigo-400">Riesgo principal</p>
+              <p className="mt-2 text-sm leading-5 text-slate-700">{initialReviewMeta.risk || 'Definicion aun amplia o basada en intuicion.'}</p>
+            </div>
+            <div className="rounded-xl border border-indigo-100 bg-white p-4">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-indigo-400">Pendientes clave</p>
+              <p className="mt-2 text-sm leading-5 text-slate-700">
+                {(initialReviewMeta.pendingQuestions?.length ?? 0) > 0
+                  ? initialReviewMeta.pendingQuestions?.slice(0, 3).map(question => question.replace(/:.*$/, '')).join(', ')
+                  : 'Validar senal real, usuario afectado y evidencia inicial.'}
+              </p>
+            </div>
+          </div>
+          {initialReviewArtifact && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={() => openInitialReviewArtifact('onePager')} className="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50" style={{ fontWeight: 800 }}>Ver one-pager</button>
+              <button
+                type="button"
+                onClick={downloadInitialReviewOnePager}
+                className="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50"
+                style={{ fontWeight: 800 }}
+              >
+                Descargar
+              </button>
+              {artifactDownloadReady && <span className="self-center text-xs text-indigo-700">Descarga del one-pager preparada.</span>}
+            </div>
+          )}
+        </div>
+      )}
 
       {isSponsorViewer && (
         <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
@@ -841,6 +1411,13 @@ export function ProjectHomePage() {
         </div>
       )}
 
+      <div className="mb-4 rounded-2xl border border-indigo-100 bg-white p-4">
+        <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>Este es tu espacio de trabajo.</p>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+          Aqui vas a desarrollar paso a paso la ruta que definiste con Starteria, empezando por ordenar la base inicial de tu iniciativa.
+        </p>
+      </div>
+
       <div id="project-journey" className="rounded-2xl border border-slate-200 bg-white p-5 mb-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -852,18 +1429,18 @@ export function ProjectHomePage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
           {journeySteps.map(({ config, status, canNavigate }) => {
             const style = STEP_STATUS_COPY[status];
             const selected = selectedStepNumber === config.step;
+            const personalizedStep = personalizedStepRoute.find(item => item.step === config.step) ?? personalizedStepRoute[0];
             return (
-              <button
+              <div
                 key={config.step}
-                type="button"
                 onClick={() => {
-                  setSelectedJourneyStep(config.step);
+                  setStepPreview({ selectedStepId: String(config.step), isOpen: true, source: 'card_click' });
                 }}
-                className={`min-h-[132px] rounded-2xl border p-4 text-left transition-all ${style.card} ${selected ? 'shadow-sm ring-2 ring-indigo-200' : ''}`}
+                className={`min-h-[168px] rounded-2xl border p-4 text-left transition-all ${style.card} ${selected ? 'shadow-sm ring-2 ring-indigo-200' : ''}`}
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs ${style.dot}`} style={{ fontWeight: 800 }}>
@@ -873,18 +1450,36 @@ export function ProjectHomePage() {
                     {status === 'current' && config.step === 0 ? 'Comienza aquí' : style.label}
                   </span>
                 </div>
-                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{config.shortTitle}</p>
-                {canNavigate && (status === 'current' || status === 'available') && (
-                  <span className="mt-3 inline-flex rounded-lg bg-white px-2.5 py-1 text-[11px] text-indigo-700 ring-1 ring-indigo-100" style={{ fontWeight: 700 }}>
-                    {status === 'current' ? 'Continuar' : 'Abrir'}
-                  </span>
-                )}
-              </button>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{personalizedStep.title}</p>
+                <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{personalizedStep.shortDescription}</p>
+                <div className="mt-4 flex flex-wrap gap-2" onClick={event => event.stopPropagation()}>
+                  {canNavigate && (status === 'current' || status === 'available') && (
+                    <button
+                      type="button"
+                      onClick={() => navigateToJourneyStep(config.step)}
+                      className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] text-white hover:bg-indigo-700"
+                      style={{ fontWeight: 800 }}
+                    >
+                      {personalizedStep.ctaLabel}
+                    </button>
+                  )}
+                  {canNavigate && status === 'completed' && (
+                    <button
+                      type="button"
+                      onClick={() => navigateToJourneyStep(config.step)}
+                      className="rounded-lg bg-white px-2.5 py-1.5 text-[11px] text-emerald-700 ring-1 ring-emerald-100 hover:bg-emerald-50"
+                      style={{ fontWeight: 800 }}
+                    >
+                      Ver resumen
+                    </button>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
 
-        <div className="mt-5">
+        <div className="hidden mt-5">
           <div className={`rounded-2xl border p-5 ${selectedStepStyle.card}`}>
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -942,6 +1537,103 @@ export function ProjectHomePage() {
               )}
             </div>
           </div>
+        </div>
+
+        <div className="mt-5">
+          {stepPreview.isOpen ? (
+            <div className={`rounded-2xl border p-5 ${selectedStepStyle.card}`}>
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-3 py-1 text-xs ${selectedStepStyle.badge}`} style={{ fontWeight: 700 }}>
+                      {selectedStepOverview.status === 'current' ? 'Estas aqui' : selectedStepStyle.label}
+                    </span>
+                    {(selectedStepOverview.status === 'locked' || selectedStepOverview.status === 'blocked') && (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs text-slate-500 ring-1 ring-slate-200" style={{ fontWeight: 700 }}>
+                        Vista previa read-only
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="mt-3 text-lg text-slate-900" style={{ fontWeight: 800 }}>
+                    {selectedPersonalizedStep.previewTitle}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">{selectedPersonalizedStep.previewSubtitle}</p>
+                  {(selectedStepOverview.status === 'locked' || selectedStepOverview.status === 'blocked') && (
+                    <p className="mt-2 inline-flex items-start gap-2 rounded-xl border border-amber-100 bg-white/70 px-3 py-2 text-xs text-amber-800">
+                      <Lock size={12} className="mt-0.5 shrink-0" />
+                      Este step se desbloqueara cuando completes el paso anterior con los minimos necesarios.
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedStepOverview.appStep?.progress ? (
+                    <span className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200" style={{ fontWeight: 700 }}>
+                      {selectedStepOverview.appStep.progress}% avance
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setStepPreview(prev => ({ ...prev, isOpen: false }))}
+                    className="rounded-full bg-white p-2 text-slate-400 ring-1 ring-slate-200 hover:text-slate-700"
+                    aria-label="Cerrar vista previa"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <InfoBlock title="Que vas a trabajar en este step" items={selectedPersonalizedStep.workItems} tone="indigo" />
+                <InfoBlock title="Por que este step importa para tu iniciativa" items={[selectedPersonalizedStep.whyItMatters]} tone="slate" />
+                <InfoBlock title="Output esperado" items={selectedPersonalizedStep.expectedOutputs} tone="emerald" />
+                <InfoBlock
+                  title="Para avanzar necesitas"
+                  items={selectedPersonalizedStep.requirementsToAdvance}
+                  tone={selectedStepOverview.status === 'locked' || selectedStepOverview.status === 'blocked' ? 'amber' : 'slate'}
+                />
+              </div>
+
+              {selectedStepIsComplete && (
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <InfoBlock title="Ya tienes" items={selectedStepOverview.completionBullets.length ? selectedStepOverview.completionBullets : ['Step completado.']} tone="emerald" />
+                  <InfoBlock title="Todavía podrías revisar" items={selectedStepOverview.pendingBullets.length ? selectedStepOverview.pendingBullets : ['No hay pendientes críticos detectados.']} tone="slate" />
+                </div>
+              )}
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                {selectedStepOverview.canNavigate && selectedStepOverview.status !== 'locked' && selectedStepOverview.status !== 'blocked' ? (
+                  <button
+                    onClick={() => navigateToJourneyStep(selectedStepNumber)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 transition-colors"
+                    style={{ fontWeight: 700 }}
+                  >
+                    <ClipboardList size={15} /> {selectedStepIsComplete ? 'Ver detalle' : selectedPersonalizedStep.ctaLabel}
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-500">
+                    Este step se desbloqueara cuando completes el paso anterior con los minimos necesarios.
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setStepPreview({ selectedStepId: String(currentJourneyStep), isOpen: true, source: 'auto' })}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                  style={{ fontWeight: 700 }}
+                >
+                  Volver al step actual
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setStepPreview(prev => ({ ...prev, isOpen: true }))}
+              className="w-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 hover:bg-white"
+              style={{ fontWeight: 700 }}
+            >
+              Mostrar preview del step seleccionado
+            </button>
+          )}
         </div>
       </div>
 
@@ -1537,6 +2229,55 @@ export function ProjectHomePage() {
       </div>
 
       {/* ── Team Modal ── */}
+      {initialReviewArtifact && !isSponsorViewer && (
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+          <div>
+            <h2 className="text-base text-slate-950" style={{ fontWeight: 800 }}>Artefactos de la iniciativa</h2>
+            <p className="mt-1 text-sm text-slate-500">Consulta los documentos, conversaciones y salidas generadas durante el avance.</p>
+          </div>
+          <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <div>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 800 }}>One-pager inicial</p>
+                <p className="mt-1 text-xs text-slate-500">Origen: Revision inicial</p>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 800 }}>Guardado</span>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => openInitialReviewArtifact('onePager')} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" style={{ fontWeight: 800 }}>Ver</button>
+                <button type="button" onClick={downloadInitialReviewOnePager} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" style={{ fontWeight: 800 }}>Descargar</button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <div>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 800 }}>Conversacion inicial</p>
+                <p className="mt-1 text-xs text-slate-500">Origen: Chat Starteria</p>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 800 }}>Guardada</span>
+              <button type="button" onClick={() => openInitialReviewArtifact('conversation')} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" style={{ fontWeight: 800 }}>Ver</button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4">
+              <div>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 800 }}>Resumen Step 0</p>
+                <p className="mt-1 text-xs text-slate-500">Origen: Step 0</p>
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs ${step0Complete ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`} style={{ fontWeight: 800 }}>
+                {step0Complete ? 'Guardado' : 'Pendiente'}
+              </span>
+              <button
+                type="button"
+                onClick={openStep0}
+                disabled={!step0Complete}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ fontWeight: 800 }}
+              >
+                {step0Complete ? 'Ver' : 'Pendiente'}
+              </button>
+            </div>
+          </div>
+          {artifactDownloadReady && <p className="mt-3 text-xs text-emerald-700">Descarga del one-pager preparada.</p>}
+        </div>
+      )}
+
       {showTeamModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
@@ -1603,6 +2344,15 @@ export function ProjectHomePage() {
         onClose={() => setShowIAPanel(false)}
         context={iaPanelContext}
       />
+      {initialReviewArtifact && (
+        <InitialReviewArtifactDrawer
+          artifact={initialReviewArtifact}
+          open={initialReviewArtifactOpen}
+          tab={initialReviewArtifactTab}
+          onTabChange={setInitialReviewArtifactTab}
+          onClose={() => setInitialReviewArtifactOpen(false)}
+        />
+      )}
     </div>
   );
 }
