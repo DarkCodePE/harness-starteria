@@ -8,7 +8,9 @@ import { ProgressBar } from '../components/ProgressBar';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { activationLabel, challengeStatusLabel, challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
 import { DashboardPdfDropzone } from '../components/DashboardPdfDropzone';
-import { isInitialReviewEnabled } from '../featureFlags';
+
+const CREATE_INITIATIVE_PATH = '/initiatives/new';
+const IMPORT_INITIATIVE_PATH = '/projects/new?mode=import';
 
 function SkeletonCard() {
   return (
@@ -78,7 +80,6 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const loading = projectsLoading;
-  const createInitiativePath = isInitialReviewEnabled() ? '/initiatives/new' : '/projects/new';
 
   const isOwner = user?.role === 'owner';
   const isSponsor = user?.role === 'sponsor';
@@ -156,7 +157,7 @@ export function DashboardPage() {
         </div>
         {user?.role === 'owner' && (
           <button
-            onClick={() => navigate(createInitiativePath)}
+            onClick={() => navigate(CREATE_INITIATIVE_PATH)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm"
             style={{ fontWeight: 500 }}
           >
@@ -270,7 +271,7 @@ export function DashboardPage() {
           </p>
           {!search && user?.role === 'owner' && (
             <button
-              onClick={() => navigate(createInitiativePath)}
+              onClick={() => navigate(CREATE_INITIATIVE_PATH)}
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm transition-colors"
               style={{ fontWeight: 500 }}
             >
@@ -608,7 +609,6 @@ function getWelcomeCopy(name?: string) {
 
 function DashboardEmptyState({ firstChallengeId, userName }: { firstChallengeId?: string; userName?: string }) {
   const navigate = useNavigate();
-  const createInitiativePath = isInitialReviewEnabled() ? '/initiatives/new' : '/projects/new';
   return (
     <section className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm">
       <div className="max-w-2xl">
@@ -627,7 +627,7 @@ function DashboardEmptyState({ firstChallengeId, userName }: { firstChallengeId?
       <div className="mt-7 flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={() => navigate(createInitiativePath)}
+          onClick={() => navigate(CREATE_INITIATIVE_PATH)}
           className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
           style={{ fontWeight: 700 }}
         >
@@ -635,7 +635,7 @@ function DashboardEmptyState({ firstChallengeId, userName }: { firstChallengeId?
         </button>
         <button
           type="button"
-          onClick={() => navigate(isInitialReviewEnabled() ? '/initiatives/new' : '/projects/new?mode=import')}
+          onClick={() => navigate(IMPORT_INITIATIVE_PATH)}
           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
           style={{ fontWeight: 700 }}
         >
