@@ -28,6 +28,7 @@ import { refineFieldRouter } from './modules/public-ai';
 import { createAiWebhookRouter } from './modules/initiative-pdfs/webhook.router';
 import { billingRouter } from './modules/billing/billing.router';
 import { aiRouter } from './modules/ai';
+import { companyRouter, initiativeContextRouter } from './modules/companies/company.router';
 
 export function createApp() {
   const app = express();
@@ -59,6 +60,7 @@ export function createApp() {
   app.use('/api/v1/sponsor', sponsorRouter);
   app.use('/api/v1/portfolio', portfolioRouter);
   app.use('/api/v1/initial-reviews', initialReviewRouter);
+  app.use('/api/v1/companies', companyRouter);
   // PRD-005 / issue #85: AUTHENTICATED AI bridge (refine-field). Same ai-service
   // contract as the public path, but behind `authenticate` so usage is
   // attributable to a user and metered by the entitlement layer (`ai_refine`,
@@ -66,6 +68,7 @@ export function createApp() {
   app.use('/api/v1/ai', aiRouter);
   // TASK-006: PDF storage + extraction routes mirror evidence/step registration.
   app.use('/api/v1/initiatives', pdfRouter);
+  app.use('/api/v1/initiatives', initiativeContextRouter);
   // issue #23: PUBLIC (no-auth) PDF extraction for the anonymous landing flow.
   // Hardened, Project-row-free, Step0-scoped, PII-redaction-enforced. NO
   // `authenticate` middleware — guardrails live in the router/multipart layer.

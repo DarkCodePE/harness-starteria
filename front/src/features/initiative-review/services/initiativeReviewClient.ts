@@ -33,6 +33,7 @@ export interface InitiativeReview {
   originalInput: string;
   addedContext: string[];
   challengeId: string | null;
+  companyContext?: { companyId: string; areaId?: string } | null;
   snapshot: ReviewSnapshot | null;
 }
 
@@ -42,8 +43,16 @@ export interface ConfirmRouteResult {
   overviewUrl: string;
 }
 
-export async function createReview(originalInput: string, addedContext: string[] = []): Promise<InitiativeReview> {
-  const payload = addedContext.length > 0 ? { originalInput, addedContext } : { originalInput };
+export async function createReview(
+  originalInput: string,
+  addedContext: string[] = [],
+  companyContext?: { companyId: string; areaId?: string } | null,
+): Promise<InitiativeReview> {
+  const payload = {
+    originalInput,
+    ...(addedContext.length > 0 ? { addedContext } : {}),
+    ...(companyContext?.companyId ? { companyContext } : {}),
+  };
   const { data } = await api.post<ApiEnvelope<InitiativeReview>>('/initial-reviews', payload);
   return data.data;
 }

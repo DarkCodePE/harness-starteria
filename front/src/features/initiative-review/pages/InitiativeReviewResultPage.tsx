@@ -152,6 +152,35 @@ export function InitiativeReviewResultPage() {
         <RoutePreviewCard snapshot={snapshot} />
       </div>
 
+      {review.companyContext?.companyId && (
+        <section className="mt-6 rounded-lg border border-indigo-200 bg-indigo-50 p-5">
+          <h2 className="text-sm font-semibold text-indigo-900">Como influyo el contexto de tu empresa</h2>
+          <p className="mt-2 text-sm text-indigo-800">
+            Al confirmar esta ruta, Starteria creara un snapshot versionado del contexto de empresa seleccionado y lo usara para ajustar esfuerzo, riesgos, actores, indicadores, viabilidad y lenguaje de la iniciativa.
+          </p>
+          <ul className="mt-3 space-y-1 text-sm text-indigo-800">
+            <li>Informacion considerada: empresa seleccionada, area opcional, fuentes procesadas y version disponible al confirmar.</li>
+            <li>Informacion faltante: aprobaciones internas, recursos disponibles y criterios de escalamiento si no han sido completados.</li>
+            <li>La informacion agregada aqui no actualiza automaticamente el contexto de empresa.</li>
+          </ul>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setContextText('Agregar solo a este analisis: ')}
+              className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+            >
+              Agregar solo a este analisis
+            </button>
+            <a
+              href="/companies"
+              className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              Completar contexto de empresa
+            </a>
+          </div>
+        </section>
+      )}
+
       <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agregar contexto antes de confirmar</h2>
         <p className="mt-2 text-sm text-slate-600">

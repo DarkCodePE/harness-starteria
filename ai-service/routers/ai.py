@@ -16,6 +16,7 @@ from agents.mentor_virtual import MentorVirtualAgent
 from agents.narrative_builder import NarrativeBuilderAgent
 from agents.orchestrator import OrchestratorAgent
 from agents.field_refiner import refine_field
+from agents.company_context_extractor import extract_context, extract_file
 from agents.pdf_extractor import PdfExtractorAgent, get_run_registry
 from agents.research_assistant import ResearchAssistantAgent
 from agents.solution_design import SolutionDesignAgent
@@ -37,6 +38,8 @@ from schemas.requests import (
     PrototypeSuggestRequest,
     RefineFieldRequest,
     ResearchAssistRequest,
+    ContextExtractRequest,
+    ContextExtractFileRequest,
 )
 from schemas.responses import (
     ErrorResponse,
@@ -52,6 +55,7 @@ from schemas.responses import (
     PrototypeSuggestResponse,
     RefineFieldResponse,
     ResearchAssistResponse,
+    ContextExtractResponse,
 )
 from services.context_assembler import ContextAssembler
 from services.cost_tracker import CostLimitExceededError
@@ -482,6 +486,59 @@ async def refine_field_endpoint(body: RefineFieldRequest) -> RefineFieldResponse
         )
     except Exception as exc:  # noqa: BLE001 — surface as clean 503; FE falls back
         logger.exception("refine-field error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),
+        ) from exc
+
+
+@router.post("/context-extract", response_model=ContextExtractResponse)
+async def context_extract_endpoint(
+    body: ContextExtractRequest,
+    x_internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+) -> ContextExtractResponse:
+    _verify_internal_token(x_internal_token)
+    try:
+        return await run_in_threadpool(
+            extract_context,
+            body.cleanContent,
+            body.sourceType,
+            body.title,
+            body.url,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("context-extract error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),
+        ) from exc
+
+
+@router.post("/context-extract-file", response_model=ContextExtractResponse)
+async def context_extract_file_endpoint(
+    body: ContextExtractFileRequest,
+    x_internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+) -> ContextExtractResponse:
+    _verify_internal_token(x_internal_token)
+    try:
+        raw, clean = await run_in_threadpool(
+            extract_file,
+            body.fileBase64,
+            body.mimeType,
+            body.fileName,
+        )
+        response = await run_in_threadpool(
+            extract_context,
+            clean,
+            body.sourceType,
+            body.fileName,
+            None,
+        )
+        response.cleanContent = clean
+        response.rawContent = raw
+        return response
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("context-extract-file error: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),

@@ -30,7 +30,7 @@ import {
   ImprovedProposal,
 } from './initial-review.types';
 
-export type InitialReviewAiCaller = (payload: { originalInput: string; addedContext?: string[] }) => Promise<unknown>;
+export type InitialReviewAiCaller = (payload: { originalInput: string; addedContext?: string[]; companyContext?: unknown }) => Promise<unknown>;
 
 const AI_PATH = '/initial-review';
 const defaultCaller: InitialReviewAiCaller = (payload) =>
@@ -45,7 +45,7 @@ export class AiInitialCritiqueService implements InitialReviewGenerator {
   constructor(private readonly call: InitialReviewAiCaller = defaultCaller) {}
 
   async generate(input: GenerateInput): Promise<GeneratedReview> {
-    const raw = await this.call({ originalInput: input.originalInput, addedContext: input.addedContext });
+    const raw = await this.call({ originalInput: input.originalInput, addedContext: input.addedContext, companyContext: input.companyContext });
     return this.applyGuardrails(raw);
   }
 

@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { CompanyContextSelector, SelectedCompanyContext } from '../../../app/components/company-context/CompanyContextSelector';
 import { createReview } from '../services/initiativeReviewClient';
 import { trackInitialReviewEvent } from '../services/initialReviewTelemetry';
 
@@ -13,6 +14,7 @@ export function InitiativeReviewStartPage() {
   const [context, setContext] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [companyContext, setCompanyContext] = useState<SelectedCompanyContext | null>(null);
 
   const canSubmit = input.trim().length >= 40 && !busy;
 
@@ -23,12 +25,13 @@ export function InitiativeReviewStartPage() {
     try {
       const addedContext = context.trim() ? [context.trim()] : [];
       trackInitialReviewEvent('initial_review_started', { source: 'initiatives_new' });
-      const review = await createReview(input.trim(), addedContext);
+      const review = await createReview(input.trim(), addedContext, companyContext);
       trackInitialReviewEvent('initial_review_generated', {
         reviewId: review.id,
         snapshotId: review.snapshot?.id,
         snapshotVersion: review.snapshot?.version,
         contextCount: addedContext.length,
+        hasCompanyContext: Boolean(companyContext?.companyId),
       });
       navigate(`/initiatives/review/${review.id}`);
     } catch {
@@ -65,6 +68,10 @@ export function InitiativeReviewStartPage() {
         placeholder="Agrega restricciones, recursos disponibles, equipo, plazo o información que Starteria deba considerar."
         className="mt-2 w-full rounded-lg border border-slate-300 p-3 text-sm"
       />
+
+      <div className="mt-4">
+        <CompanyContextSelector value={companyContext} onChange={setCompanyContext} />
+      </div>
 
       <p className="mt-1 text-xs text-slate-400">
         Escribe al menos 40 caracteres. Evita subir información sensible o confidencial en esta etapa. Los archivos se agregarán cuando el flujo de evidencias esté disponible.

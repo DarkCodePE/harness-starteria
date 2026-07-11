@@ -5,6 +5,10 @@ export const createInitialReviewSchema = z.object({
   addedContext: z.array(z.string().max(8000)).max(20).optional(),
   sourceFileIds: z.array(z.string().max(120)).max(20).optional(),
   challengeId: z.string().max(120).optional(),
+  companyContext: z.object({
+    companyId: z.string().min(1),
+    areaId: z.string().min(1).optional(),
+  }).optional(),
 });
 export type CreateInitialReviewInput = z.infer<typeof createInitialReviewSchema>;
 

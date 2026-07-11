@@ -54,13 +54,14 @@ export class RouteConfirmationService {
     }
 
     // Crea el Project reusando createProject (su propia tx, sin modificar).
-    const proposal = (snapshot.improvedProposal ?? {}) as ImprovedProposal;
+    const proposal = (snapshot.improvedProposal ?? {}) as unknown as ImprovedProposal;
     let project;
     try {
       project = await this.projects.createProject(userId, {
         name: this.clampName(proposal.suggestedName),
         description: proposal.improvedDescription ? proposal.improvedDescription.slice(0, 1000) : undefined,
         challengeId: review.challengeId ?? undefined,
+        companyContext: (snapshot as any).companyContextSelection ?? undefined,
       } as any);
     } catch (err) {
       // Falla la creación → liberar el claim para permitir reintento (edge §26).

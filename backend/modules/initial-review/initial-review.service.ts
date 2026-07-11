@@ -11,6 +11,7 @@
  */
 import type { PrismaClient, InitialReview, InitialReviewSnapshot } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
+import { calculateContextScore } from '../companies/context-score';
 import {
   InitialReviewGenerator,
   GeneratedReview,
@@ -21,6 +22,7 @@ import {
 import { CreateInitialReviewInput, StrategicAnswersInput } from './initial-review.schemas';
 
 const READ_ROLES = new Set(['admin', 'mentor']);
+const COMPANY_READ_ROLES = new Set(['OWNER', 'CURATOR', 'EDITOR', 'VIEWER']);
 
 export interface InitialReviewDto {
   id: string;
@@ -28,6 +30,7 @@ export interface InitialReviewDto {
   originalInput: string;
   addedContext: string[];
   challengeId: string | null;
+  companyContext: unknown | null;
   snapshot: SnapshotDto | null;
 }
 export interface SnapshotDto {
@@ -42,6 +45,7 @@ export interface SnapshotDto {
   strategicQuestions: unknown;
   improvedProposal: unknown;
   routePreview: unknown;
+  companyContext: unknown | null;
 }
 
 export class InitialReviewService {
@@ -59,13 +63,15 @@ export class InitialReviewService {
         originalInput: data.originalInput,
         addedContext: data.addedContext ?? undefined,
         sourceFileIds: data.sourceFileIds ?? undefined,
+        companyContextSelection: data.companyContext ?? undefined,
         challengeId: data.challengeId ?? undefined,
       },
     });
 
     try {
-      const gen = await this.generator.generate({ originalInput: data.originalInput, addedContext: data.addedContext });
-      const snapshot = await this.persistSnapshot(review, 1, data.addedContext, data.sourceFileIds, gen, userId);
+      const companyContext = await this.buildCompanyContextForGeneration(userId, data.companyContext);
+      const gen = await this.generator.generate({ originalInput: data.originalInput, addedContext: data.addedContext, companyContext });
+      const snapshot = await this.persistSnapshot(review, 1, data.addedContext, data.sourceFileIds, gen, userId, companyContext ?? data.companyContext);
       const updated = await this.prisma.initialReview.update({ where: { id: review.id }, data: { status: 'generated' } });
       return this.toDto(updated, snapshot);
     } catch (err) {
@@ -100,8 +106,9 @@ export class InitialReviewService {
     }
     const merged = [...this.asStringArray(review.addedContext), context];
     const nextVersion = await this.nextVersion(id);
-    const gen = await this.generator.generate({ originalInput: review.originalInput, addedContext: merged });
-    const snapshot = await this.persistSnapshot(review, nextVersion, merged, this.asStringArray(review.sourceFileIds), gen, userId);
+    const companyContext = await this.buildCompanyContextForGeneration(userId, (review as any).companyContextSelection);
+    const gen = await this.generator.generate({ originalInput: review.originalInput, addedContext: merged, companyContext });
+    const snapshot = await this.persistSnapshot(review, nextVersion, merged, this.asStringArray(review.sourceFileIds), gen, userId, companyContext ?? (review as any).companyContextSelection);
     const updated = await this.prisma.initialReview.update({ where: { id }, data: { addedContext: merged, status: 'updated' } });
     return this.toDto(updated, snapshot);
   }
@@ -135,6 +142,7 @@ export class InitialReviewService {
     sourceFileIds: string[] | undefined,
     gen: GeneratedReview,
     createdBy: string,
+    companyContext?: unknown,
   ): Promise<InitialReviewSnapshot> {
     const dbType = toDbChallengeType(gen.suggestedChallengeType);
     return this.prisma.initialReviewSnapshot.create({
@@ -144,6 +152,7 @@ export class InitialReviewService {
         originalInput: review.originalInput,
         addedContext: addedContext ?? undefined,
         sourceFileIds: sourceFileIds ?? undefined,
+        companyContextSelection: (companyContext ?? undefined) as any,
         understandingSummary: gen.understandingSummary,
         suggestedChallengeType: dbType,
         selectedChallengeType: dbType, // el usuario aún no lo cambió
@@ -187,6 +196,74 @@ export class InitialReviewService {
     return Array.isArray(v) ? (v as string[]) : [];
   }
 
+  private async buildCompanyContextForGeneration(userId: string, selection: unknown): Promise<unknown | null> {
+    const selected = (selection && typeof selection === 'object' ? selection : {}) as { companyId?: string; areaId?: string };
+    if (!selected.companyId) return null;
+    const [company, entries, sources, version, areas] = await Promise.all([
+      this.prisma.company.findUnique({ where: { id: selected.companyId }, include: { memberships: true } }),
+      this.prisma.companyContextEntry.findMany({ where: { companyId: selected.companyId }, orderBy: { createdAt: 'asc' } }),
+      this.prisma.contextSource.findMany({ where: { companyId: selected.companyId, deletedAt: null }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.companyContextVersion.findFirst({ where: { companyId: selected.companyId, status: { in: ['PUBLISHED', 'DRAFT'] as any } }, orderBy: { versionNumber: 'desc' } }),
+      this.prisma.companyArea.findMany({ where: { companyId: selected.companyId, status: 'ACTIVE' as any }, include: { contexts: { orderBy: { version: 'desc' }, take: 1 } } }),
+    ]);
+    if (!company || company.deletedAt) throw AppError.notFound('Empresa', 'COMPANY_NOT_FOUND');
+    const membership = company.memberships.find((m: any) => m.userId === userId && m.status === 'APPROVED');
+    const canRead = company.ownerUserId === userId || Boolean(membership && COMPANY_READ_ROLES.has(membership.role)) || company.scope === 'ORGANIZATION';
+    if (!canRead) throw AppError.forbidden('No tienes acceso a esta empresa.', 'COMPANY_ACCESS_DENIED');
+    const score = calculateContextScore(entries as any, sources as any);
+    const area = selected.areaId ? areas.find((item: any) => item.id === selected.areaId) : null;
+    return {
+      companyId: company.id,
+      areaId: area?.id,
+      companyVersionId: version?.id ?? null,
+      companyVersionNumber: version?.versionNumber ?? null,
+      contextScore: score.score,
+      contextLevel: score.level,
+      contextLevelLabel: score.label,
+      missing: score.missing,
+      company: {
+        id: company.id,
+        name: company.name,
+        sector: company.sector,
+        country: company.country,
+        employeeRange: company.employeeRange,
+        websiteUrl: company.websiteUrl,
+        linkedinUrl: company.linkedinUrl,
+        scope: company.scope,
+      },
+      area: area ? {
+        id: area.id,
+        name: area.name,
+        description: area.description,
+        leadRole: area.leadRole,
+        context: area.contexts[0] ?? null,
+      } : null,
+      confirmedInformation: entries
+        .filter((entry: any) => entry.verificationStatus === 'USER_CONFIRMED')
+        .map((entry: any) => ({ dimension: entry.dimension, fieldKey: entry.fieldKey, value: entry.valueJson })),
+      inferredInformation: entries
+        .filter((entry: any) => entry.verificationStatus === 'INFERRED' || entry.sourceType === 'AGENT_INFERENCE')
+        .map((entry: any) => ({ dimension: entry.dimension, fieldKey: entry.fieldKey, value: entry.valueJson, sourceType: entry.sourceType })),
+      entries: entries.map((entry: any) => ({
+        dimension: entry.dimension,
+        fieldKey: entry.fieldKey,
+        value: entry.valueJson,
+        sourceType: entry.sourceType,
+        sourceId: entry.sourceId,
+        confidence: entry.confidence,
+        verificationStatus: entry.verificationStatus,
+      })),
+      sources: sources.map((source: any) => ({
+        id: source.id,
+        sourceType: source.sourceType,
+        url: source.url,
+        originalFilename: source.originalFilename,
+        status: source.status,
+        processedAt: source.processedAt,
+      })),
+    };
+  }
+
   private toDto(review: InitialReview, snapshot: InitialReviewSnapshot | null): InitialReviewDto {
     return {
       id: review.id,
@@ -194,6 +271,7 @@ export class InitialReviewService {
       originalInput: review.originalInput,
       addedContext: this.asStringArray(review.addedContext),
       challengeId: review.challengeId ?? null,
+      companyContext: (review as any).companyContextSelection ?? null,
       snapshot: snapshot ? this.toSnapshotDto(snapshot) : null,
     };
   }
@@ -211,6 +289,7 @@ export class InitialReviewService {
       strategicQuestions: s.strategicQuestions,
       improvedProposal: s.improvedProposal,
       routePreview: s.routePreview,
+      companyContext: (s as any).companyContextSelection ?? null,
     };
   }
 }

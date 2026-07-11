@@ -20,7 +20,7 @@ export class ProjectController {
   create = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
     try {
       const user = req.user!;
-      const project = await this.service.createProject(user.id, req.body);
+      const project = await this.service.createProject(user.id, req.body, user.role);
       res.status(201).json({ success: true, data: project });
     } catch (err) {
       next(err);

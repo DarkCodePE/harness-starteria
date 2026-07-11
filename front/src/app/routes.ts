@@ -39,6 +39,7 @@ import { PublicProposalResultPage } from './pages/public/PublicProposalResultPag
 import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePage';
 import { ContinuePilotPage } from './pages/ContinuePilotPage';
+import { CompaniesPage } from './pages/CompaniesPage';
 
 export const router = createBrowserRouter([
   {
@@ -96,6 +97,7 @@ export const router = createBrowserRouter([
           { path: '/projects/:projectId/step/4', Component: Step4Page },
           { path: '/projects/:projectId/evidencias', Component: EvidenciasPage },
           { path: '/evidencias', Component: EvidenciasPage },
+          { path: '/companies', Component: CompaniesPage },
           { path: '/mentor', Component: MentorPanelPage },
           { path: '/admin', Component: AdminCohorte },
           { path: '/perfil', Component: PerfilPage },
@@ -115,6 +117,7 @@ export const router = createBrowserRouter([
           { path: 'salida-ejecutiva', Component: PortfolioLeadExecutiveOutputPage },
           { path: 'sponsors', Component: PortfolioLeadSectionPage },
           { path: 'reportes', Component: PortfolioLeadSectionPage },
+          { path: 'empresa', Component: CompaniesPage },
         ],
       },
     ],

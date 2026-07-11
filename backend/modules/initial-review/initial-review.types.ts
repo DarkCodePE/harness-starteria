@@ -77,6 +77,7 @@ export interface GeneratedReview {
 export interface GenerateInput {
   originalInput: string;
   addedContext?: string[];
+  companyContext?: unknown;
 }
 
 /**

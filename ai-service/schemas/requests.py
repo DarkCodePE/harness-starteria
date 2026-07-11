@@ -146,3 +146,19 @@ class RefineFieldRequest(BaseModel):
     draftContext: dict[str, Any] | None = Field(
         None, description="Contexto no-PII del borrador (tipo de reto, otros campos)"
     )
+
+
+class ContextExtractRequest(BaseModel):
+    sourceType: str = Field(..., description="WEBSITE, LINKEDIN or FILE")
+    title: str | None = None
+    url: str | None = None
+    mimeType: str | None = None
+    fileName: str | None = None
+    cleanContent: str = Field(..., min_length=1, max_length=1_500_000)
+
+
+class ContextExtractFileRequest(BaseModel):
+    sourceType: str = Field("FILE")
+    mimeType: str
+    fileName: str
+    fileBase64: str = Field(..., min_length=1)

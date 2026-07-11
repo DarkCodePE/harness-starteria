@@ -5,6 +5,7 @@ import { StatusMapper } from '../../shared/utils/status-mapper';
 import { validateTransition } from './state-machine';
 import { syncInitiativeProgress } from '../portfolio/initiative-progress';
 import { CreateProjectInput, UpdateProjectInput, UpdateSponsorDataInput } from './project.schemas';
+import { calculateContextScore } from '../companies/context-score';
 
 const DEFAULT_STEPS = [
   {
@@ -69,6 +70,10 @@ export class ProjectService {
         },
       },
     },
+    contextSnapshots: {
+      orderBy: { createdAt: 'desc' as const },
+      take: 1,
+    },
   } as const;
 
   async listProjects(userId: string, role: Role): Promise<Project[]> {
@@ -97,7 +102,116 @@ export class ProjectService {
     }
   }
 
-  async createProject(userId: string, data: CreateProjectInput): Promise<Project> {
+  private async createCompanyContextSnapshot(tx: any, input: {
+    userId: string;
+    role: Role;
+    projectId: string;
+    companyId: string;
+    areaId?: string;
+  }) {
+    const company = await tx.company.findFirst({
+      where: {
+        id: input.companyId,
+        deletedAt: null,
+        OR: [
+          { ownerUserId: input.userId },
+          { memberships: { some: { userId: input.userId, status: 'APPROVED' } } },
+          ...(input.role === 'admin' ? [{}] : []),
+        ],
+      },
+    });
+    if (!company) {
+      throw AppError.forbidden('No tienes acceso a esta empresa.', 'COMPANY_ACCESS_DENIED');
+    }
+    if (input.areaId) {
+      const area = await tx.companyArea.findFirst({
+        where: { id: input.areaId, companyId: input.companyId, status: 'ACTIVE' },
+      });
+      if (!area) throw AppError.notFound('Area', 'COMPANY_AREA_NOT_FOUND');
+    }
+
+    const [entries, sources, areas] = await Promise.all([
+      tx.companyContextEntry.findMany({ where: { companyId: input.companyId }, orderBy: { createdAt: 'asc' } }),
+      tx.contextSource.findMany({ where: { companyId: input.companyId, deletedAt: null }, orderBy: { createdAt: 'desc' } }),
+      tx.companyArea.findMany({ where: { companyId: input.companyId, status: 'ACTIVE' }, include: { contexts: { orderBy: { version: 'desc' }, take: 1 } } }),
+    ]);
+    const score = calculateContextScore(entries, sources);
+    let version = await tx.companyContextVersion.findFirst({
+      where: { companyId: input.companyId, status: { in: ['PUBLISHED', 'DRAFT'] } },
+      orderBy: { versionNumber: 'desc' },
+    });
+    const snapshotJson = {
+      company: {
+        id: company.id,
+        name: company.name,
+        sector: company.sector,
+        country: company.country,
+        employeeRange: company.employeeRange,
+        websiteUrl: company.websiteUrl,
+        linkedinUrl: company.linkedinUrl,
+        scope: company.scope,
+      },
+      contextScore: score.score,
+      contextLevel: score.level,
+      scoreBreakdown: score.breakdown,
+      missing: score.missing,
+      entries: entries.map((entry: any) => ({
+        dimension: entry.dimension,
+        fieldKey: entry.fieldKey,
+        value: entry.valueJson,
+        sourceType: entry.sourceType,
+        sourceId: entry.sourceId,
+        confidence: entry.confidence,
+        verificationStatus: entry.verificationStatus,
+      })),
+      sources: sources.map((source: any) => ({
+        id: source.id,
+        sourceType: source.sourceType,
+        url: source.url,
+        originalFilename: source.originalFilename,
+        status: source.status,
+        processedAt: source.processedAt,
+      })),
+      areas: areas.map((area: any) => ({
+        id: area.id,
+        name: area.name,
+        description: area.description,
+        context: area.contexts[0] ?? null,
+      })),
+    };
+    if (!version) {
+      version = await tx.companyContextVersion.create({
+        data: {
+          companyId: input.companyId,
+          versionNumber: 1,
+          status: 'DRAFT',
+          contextScore: score.score,
+          contextLevel: score.level,
+          snapshotJson,
+          scoreBreakdownJson: score.breakdown,
+          missingJson: score.missing,
+          createdByUserId: input.userId,
+        },
+      });
+    }
+    const areaVersion = input.areaId
+      ? (await tx.companyAreaContext.findFirst({ where: { areaId: input.areaId }, orderBy: { version: 'desc' } }))?.version ?? null
+      : null;
+    await tx.initiativeContextSnapshot.create({
+      data: {
+        initiativeId: input.projectId,
+        companyId: input.companyId,
+        companyVersionId: version.id,
+        areaId: input.areaId,
+        areaVersion,
+        snapshotJson: { ...snapshotJson, versionId: version.id, versionNumber: version.versionNumber },
+        contextScore: score.score,
+        createdByUserId: input.userId,
+      },
+    });
+  }
+
+  async createProject(userId: string, data: CreateProjectInput, role: Role = 'participante'): Promise<Project> {
     const challengeLinkId = data.challengeLink?.challengeId;
     const legacyChallengeId = challengeLinkId ? undefined : data.challengeId;
     const linkedChallenge = challengeLinkId
@@ -238,6 +352,16 @@ export class ProjectService {
             });
           }
         }
+      }
+
+      if (data.companyContext?.companyId) {
+        await this.createCompanyContextSnapshot(tx, {
+          userId,
+          role,
+          projectId: created.id,
+          companyId: data.companyContext.companyId,
+          areaId: data.companyContext.areaId,
+        });
       }
 
       if (typeof tx.project.findUniqueOrThrow === 'function') {

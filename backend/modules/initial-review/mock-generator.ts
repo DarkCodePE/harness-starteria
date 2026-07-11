@@ -26,7 +26,11 @@ function classify(text: string): CanonicalChallengeType {
 
 export class MockInitialReviewGenerator implements InitialReviewGenerator {
   async generate(input: GenerateInput): Promise<GeneratedReview> {
-    const base = [input.originalInput, ...(input.addedContext ?? [])].join(' ').trim();
+    const companyContext = (input.companyContext && typeof input.companyContext === 'object' ? input.companyContext : {}) as any;
+    const companyName = companyContext.company?.name ?? '';
+    const contextLevel = companyContext.contextLevelLabel ?? companyContext.contextLevel ?? '';
+    const missing = Array.isArray(companyContext.missing) ? companyContext.missing.slice(0, 3).join(', ') : '';
+    const base = [input.originalInput, ...(input.addedContext ?? []), companyName, contextLevel].join(' ').trim();
     const type = classify(base);
     const firstWords = input.originalInput.trim().split(/\s+/).slice(0, 8).join(' ');
 
@@ -43,9 +47,11 @@ export class MockInitialReviewGenerator implements InitialReviewGenerator {
       informationReadiness: base.length > 220 ? 'medium' : 'low',
       critique: {
         solid: 'La propuesta aborda una necesidad concreta.',
-        weak: 'Todavía falta precisar frecuencia, alcance e impacto.',
-        risky: 'Podrías saltar a una solución antes de entender el problema real.',
-        recommendedAdjustment: 'Antes de diseñar, delimita proceso, actores y señal de éxito.',
+        weak: missing ? `Todavía falta completar contexto de empresa: ${missing}.` : 'Todavía falta precisar frecuencia, alcance e impacto.',
+        risky: companyName ? `El riesgo principal es proponer algo que no encaje con la realidad operativa de ${companyName}.` : 'Podrías saltar a una solución antes de entender el problema real.',
+        recommendedAdjustment: companyName
+          ? `Antes de diseñar, valida actores, permisos y recursos usando el contexto disponible de ${companyName}.`
+          : 'Antes de diseñar, delimita proceso, actores y señal de éxito.',
         mainRisk: 'Solución prematura sin evidencia del problema.',
         missingEvidence: [], // guardrail §25: no inventamos evidencia
       },
@@ -57,7 +63,7 @@ export class MockInitialReviewGenerator implements InitialReviewGenerator {
       improvedProposal: {
         suggestedName: firstWords.length > 3 ? firstWords.replace(/^./, (c) => c.toUpperCase()) : 'Iniciativa sin nombre',
         improvedDescription: `${input.originalInput.trim()} — comenzando por delimitar dónde se rompe el proceso actual, qué actores intervienen y qué señal demostraría mejora.`,
-        initialFocus: 'Proceso o área más afectada.',
+        initialFocus: companyName ? `Proceso o área más afectada en ${companyName}.` : 'Proceso o área más afectada.',
         expectedImpact: 'Menor tiempo, menor retrabajo, mayor trazabilidad.',
         nextRecommendedStep: 'Completar Step 0 para aterrizar alcance, actores, sponsor y restricciones.',
       },

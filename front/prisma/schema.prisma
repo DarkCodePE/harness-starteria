@@ -286,6 +286,105 @@ enum ProposalStatus {
   DISCARDED
 }
 
+// Company context (PRD: Contexto de empresa para iniciativas)
+
+enum CompanyScope {
+  PERSONAL
+  ORGANIZATION
+}
+
+enum CompanyStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum CompanyMembershipRole {
+  OWNER
+  CURATOR
+  EDITOR
+  VIEWER
+}
+
+enum CompanyMembershipStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REMOVED
+}
+
+enum CompanyContextVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CompanyContextLevel {
+  INITIAL
+  BASIC
+  USEFUL
+  SOLID
+}
+
+enum CompanyContextSourceType {
+  USER_INPUT
+  WEBSITE
+  LINKEDIN
+  FILE
+  PROJECT_NOTE
+  AGENT_INFERENCE
+}
+
+enum CompanyContextDimension {
+  IDENTITY
+  CULTURE
+  STRUCTURE
+  POLICIES
+  INNOVATION
+  RESOURCES
+  AREA
+  OTHER
+}
+
+enum ContextVerificationStatus {
+  UNVERIFIED
+  USER_CONFIRMED
+  INFERRED
+  NEEDS_REVIEW
+}
+
+enum CompanyAreaStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ContextSourceStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  PARTIAL
+  BLOCKED
+  ERROR
+  NEEDS_REVIEW
+  STALE
+  DELETED
+}
+
+enum ContextExtractionRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+  BLOCKED
+}
+
+enum CompanyContributionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─── Models ─────────────────────────────────────────────────────────────────
 
 model User {
@@ -371,6 +470,9 @@ model Project {
   initiativePdfs        InitiativePdf[]
   initialReviewSnapshot InitialReviewSnapshot?   @relation("ProjectFromSnapshot", fields: [initialReviewSnapshotId], references: [id])
   routeConfirmation     RouteConfirmation?       @relation("ProjectRouteConfirmation")
+  contextSources        ContextSource[]
+  contextSnapshots      InitiativeContextSnapshot[]
+  contextNotes          InitiativeContextNote[]
 
   @@index([ownerId])
   @@index([cohortId])
@@ -898,6 +1000,261 @@ model PdfFieldProposal {
   @@index([projectId, status])
 }
 
+// Company context models. Personal companies are owned by ownerUserId; official
+// companies are scoped to organizationId. Initiative snapshots are immutable and
+// intentionally restricted from cascading deletes.
+
+model Company {
+  id               String        @id @default(cuid())
+  name             String
+  slug             String
+  normalizedDomain String?
+  sector           String
+  country          String
+  employeeRange    String?
+  websiteUrl       String?
+  linkedinUrl      String?
+  ownerUserId      String?
+  organizationId   String?
+  scope            CompanyScope  @default(PERSONAL)
+  status           CompanyStatus @default(ACTIVE)
+  originCompanyId  String?
+  originAuthorId   String?
+  clonedFromAt     DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  memberships CompanyMembership[]
+  versions    CompanyContextVersion[]
+  entries     CompanyContextEntry[]
+  areas       CompanyArea[]
+  sources     ContextSource[]
+  snapshots   InitiativeContextSnapshot[]
+  contributions CompanyContribution[]
+
+  @@index([ownerUserId])
+  @@index([organizationId])
+  @@index([scope])
+  @@index([status])
+  @@index([normalizedDomain])
+}
+
+model CompanyMembership {
+  id               String                  @id @default(cuid())
+  companyId        String
+  company          Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId           String
+  role             CompanyMembershipRole   @default(VIEWER)
+  status           CompanyMembershipStatus @default(PENDING)
+  approvedByUserId String?
+  approvedAt       DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@unique([companyId, userId])
+  @@index([companyId])
+  @@index([userId])
+  @@index([status])
+}
+
+model CompanyContextVersion {
+  id                String                      @id @default(cuid())
+  companyId         String
+  company           Company                     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  versionNumber     Int
+  status            CompanyContextVersionStatus @default(DRAFT)
+  contextScore      Int                         @default(0)
+  contextLevel      CompanyContextLevel         @default(INITIAL)
+  snapshotJson      Json
+  scoreBreakdownJson Json?
+  missingJson       Json?
+  createdByUserId   String
+  publishedByUserId String?
+  createdAt         DateTime                    @default(now())
+  publishedAt       DateTime?
+
+  entries   CompanyContextEntry[]
+  snapshots InitiativeContextSnapshot[]
+
+  @@unique([companyId, versionNumber])
+  @@index([companyId])
+  @@index([status])
+}
+
+model CompanyContextEntry {
+  id                 String                    @id @default(cuid())
+  companyId          String
+  company            Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  versionId          String?
+  version            CompanyContextVersion?    @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  dimension          CompanyContextDimension
+  fieldKey           String
+  valueJson          Json
+  sourceType         CompanyContextSourceType
+  sourceId           String?
+  source             ContextSource?            @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  confidence         Float?
+  verificationStatus ContextVerificationStatus  @default(UNVERIFIED)
+  createdByUserId    String
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([companyId])
+  @@index([versionId])
+  @@index([sourceId])
+  @@index([dimension, fieldKey])
+}
+
+model CompanyArea {
+  id          String            @id @default(cuid())
+  companyId   String
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  leadRole    String?
+  status      CompanyAreaStatus @default(ACTIVE)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  contexts  CompanyAreaContext[]
+  sources   ContextSource[]
+  snapshots InitiativeContextSnapshot[]
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model CompanyAreaContext {
+  id               String      @id @default(cuid())
+  areaId           String
+  area             CompanyArea @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  version          Int         @default(1)
+  purpose          String?
+  autonomyLevel    String?
+  dependenciesJson Json?
+  prioritiesJson   Json?
+  createdByUserId  String
+  createdAt        DateTime    @default(now())
+
+  @@unique([areaId, version])
+  @@index([areaId])
+}
+
+model ContextSource {
+  id                String                   @id @default(cuid())
+  companyId         String?
+  company           Company?                 @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  areaId            String?
+  area              CompanyArea?             @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  initiativeId      String?
+  initiative        Project?                 @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  challengeId       String?
+  sourceType        CompanyContextSourceType
+  url               String?
+  storageKey        String?
+  mimeType          String?
+  originalFilename  String?
+  status            ContextSourceStatus      @default(PENDING)
+  rawContent        String?
+  cleanContent      String?
+  contentHash       String?
+  metadataJson      Json?
+  extractedDataJson Json?
+  createdByUserId   String
+  processedAt       DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  deletedAt         DateTime?
+
+  extractionRuns ContextExtractionRun[]
+  entries        CompanyContextEntry[]
+  contributions  CompanyContribution[]
+
+  @@index([companyId])
+  @@index([areaId])
+  @@index([initiativeId])
+  @@index([challengeId])
+  @@index([status])
+  @@index([contentHash])
+}
+
+model ContextExtractionRun {
+  id               String                     @id @default(cuid())
+  sourceId         String
+  source           ContextSource              @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  status           ContextExtractionRunStatus @default(PENDING)
+  provider         String?
+  model            String?
+  extractorVersion String
+  tokensUsed       Int?
+  estimatedCost    Decimal?                   @db.Decimal(10, 4)
+  errorCode        String?
+  errorMessage     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([sourceId])
+  @@index([status])
+}
+
+model InitiativeContextSnapshot {
+  id               String                @id @default(cuid())
+  initiativeId     String
+  initiative       Project               @relation(fields: [initiativeId], references: [id], onDelete: Restrict)
+  companyId        String
+  company          Company               @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  companyVersionId String
+  companyVersion   CompanyContextVersion @relation(fields: [companyVersionId], references: [id], onDelete: Restrict)
+  areaId           String?
+  area             CompanyArea?          @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  areaVersion      Int?
+  snapshotJson     Json
+  contextScore     Int
+  createdByUserId  String
+  createdAt        DateTime              @default(now())
+
+  @@index([initiativeId])
+  @@index([companyId])
+  @@index([companyVersionId])
+  @@index([areaId])
+}
+
+model InitiativeContextNote {
+  id                  String                   @id @default(cuid())
+  initiativeId        String
+  initiative          Project                  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  authorUserId        String
+  content             String
+  sourceType          CompanyContextSourceType @default(PROJECT_NOTE)
+  promotedToCompanyAt DateTime?
+  createdAt           DateTime                 @default(now())
+
+  @@index([initiativeId])
+  @@index([authorUserId])
+}
+
+model CompanyContribution {
+  id                String                    @id @default(cuid())
+  companyId         String
+  company           Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  submittedByUserId String
+  targetDimension   CompanyContextDimension
+  proposedValueJson Json
+  evidenceSourceId  String?
+  evidenceSource    ContextSource?            @relation(fields: [evidenceSourceId], references: [id], onDelete: SetNull)
+  status            CompanyContributionStatus @default(PENDING)
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  createdAt         DateTime                  @default(now())
+
+  @@index([companyId])
+  @@index([submittedByUserId])
+  @@index([status])
+}
+
 // ─── Public pilot leads (ADR-015, PRD-003 / SPEC-003) ─────────────────────────
 // Captura de interés en piloto desde el landing público (anónimo). Reemplaza la
 // conversión pública borrador→proyecto. `draftId` es el id del borrador en
@@ -1133,6 +1490,7 @@ model InitialReview {
   originalInput String
   addedContext  Json? // string[]
   sourceFileIds Json? // string[]
+  companyContextSelection Json?
   // Scalar FK suelto (patrón ADR-022) para no acoplar bounded contexts; indexado
   // para "revisiones de este reto".
   challengeId   String?
@@ -1157,6 +1515,7 @@ model InitialReviewSnapshot {
   // reflejar el contexto que la produjo, aunque el InitialReview padre cambie.
   addedContext           Json? // string[]
   sourceFileIds          Json? // string[]
+  companyContextSelection Json?
   understandingSummary   String
   understandingConfirmed Boolean       @default(false)
   suggestedChallengeType ChallengeType

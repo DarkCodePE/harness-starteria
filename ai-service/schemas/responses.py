@@ -214,3 +214,23 @@ class RefineFieldResponse(BaseModel):
     suggestedValue: str
     rationale: str
     confidence: float
+
+
+class ContextExtractEntry(BaseModel):
+    dimension: str
+    fieldKey: str
+    value: Any
+    confidence: float
+    verificationStatus: Literal["UNVERIFIED", "INFERRED", "NEEDS_REVIEW"]
+
+
+class ContextExtractResponse(BaseModel):
+    entries: list[ContextExtractEntry]
+    summary: str
+    missing: list[str]
+    warnings: list[str]
+    tokensUsed: int = 0
+    model: str = "heuristic/company-context-v1"
+    estimatedCost: float = 0.0
+    cleanContent: str | None = None
+    rawContent: str | None = None
