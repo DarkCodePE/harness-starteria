@@ -3,10 +3,12 @@ export type InitialReviewEventName =
   | 'initial_review_generated'
   | 'initial_review_context_added'
   | 'initial_review_question_answered'
-  | 'initial_review_route_confirmed'
-  | 'initial_review_route_confirm_failed'
-  | 'initial_review_overview_viewed'
-  | 'initial_review_step0_started';
+  | 'route_preview_viewed'
+  | 'route_confirmed'
+  | 'route_confirm_failed'
+  | 'initiative_created_from_route'
+  | 'initiative_overview_opened'
+  | 'step0_started_from_overview';
 
 export interface InitialReviewEventDimensions {
   reviewId?: string;

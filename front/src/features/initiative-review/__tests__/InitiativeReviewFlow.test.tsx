@@ -32,13 +32,13 @@ const SNAPSHOT = {
   understandingSummary: 'Entiendo que quieres ordenar las compras.',
   suggestedChallengeType: 'correction',
   selectedChallengeType: 'correction',
-  challengeTypeReason: 'Reduce una friccion existente.',
+  challengeTypeReason: 'Reduce una fricción existente.',
   informationReadiness: 'low',
   critique: { solid: 's', weak: 'w', risky: 'r', recommendedAdjustment: 'a', mainRisk: 'mr' },
   strategicQuestions: [
-    { id: 'q1', question: 'Donde empezar?', options: ['Un area', 'Un proceso'], allowsUnknown: true, status: 'unanswered' },
+    { id: 'q1', question: '¿Dónde empezar?', options: ['Un área', 'Un proceso'], allowsUnknown: true, status: 'unanswered' },
   ],
-  improvedProposal: { suggestedName: 'Optimizacion de compras', improvedDescription: 'd', initialFocus: 'f', expectedImpact: 'menos tiempo', nextRecommendedStep: 'Step 0' },
+  improvedProposal: { suggestedName: 'Optimización de compras', improvedDescription: 'd', initialFocus: 'f', expectedImpact: 'menos tiempo', nextRecommendedStep: 'Step 0' },
   routePreview: [0, 1, 2, 3, 4].map((n) => ({ step: n, name: `Step ${n}`, whatWillHappen: 'x', expectedOutput: 'y', status: n === 0 ? 'active' : 'locked' })),
 };
 
@@ -62,15 +62,15 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
   it('renderiza los 6 bloques, incl. understanding y challenge type', async () => {
     render(<InitiativeReviewResultPage />);
     expect(await screen.findByTestId('card-understanding')).toHaveTextContent('ordenar las compras');
-    expect(screen.getByTestId('card-challenge-type')).toHaveTextContent('Correccion');
+    expect(screen.getByTestId('card-challenge-type')).toHaveTextContent('Corrección');
     for (const id of ['card-critique', 'card-questions', 'card-proposal', 'card-route']) {
       expect(screen.getByTestId(id)).toBeInTheDocument();
     }
   });
 
-  it('guarda respuestas estrategicas incluyendo No lo se aun', async () => {
+  it('guarda respuestas estratégicas incluyendo No lo sé aún', async () => {
     render(<InitiativeReviewResultPage />);
-    const unknown = await screen.findByRole('button', { name: /No lo se aun/i });
+    const unknown = await screen.findByRole('button', { name: /No lo sé aún/i });
     fireEvent.click(unknown);
     await waitFor(() => expect(client.saveStrategicAnswers).toHaveBeenCalledWith('rev1', [{ id: 'q1', unknown: true }]));
   });
@@ -78,7 +78,7 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
   it('agrega contexto y regenera el snapshot via API real', async () => {
     render(<InitiativeReviewResultPage />);
     fireEvent.change(await screen.findByLabelText(/Agregar contexto antes de confirmar/i), { target: { value: 'Tenemos dos semanas.' } });
-    fireEvent.click(screen.getByRole('button', { name: /Actualizar revision/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Actualizar revisión/i }));
     await waitFor(() => expect(client.addContext).toHaveBeenCalledWith('rev1', 'Tenemos dos semanas.'));
   });
 

@@ -2,9 +2,9 @@ import React from 'react';
 import type { ReviewSnapshot, CanonicalChallengeType } from '../services/initiativeReviewClient';
 
 const CHALLENGE_LABEL: Record<CanonicalChallengeType, { label: string; hint: string }> = {
-  correction: { label: 'Correccion', hint: 'Reducir una friccion o ineficiencia existente.' },
-  growth: { label: 'Crecimiento', hint: 'Capturar una oportunidad de negocio o adopcion.' },
-  exploration: { label: 'Exploracion', hint: 'Reducir incertidumbre antes de decidir avanzar.' },
+  correction: { label: 'Corrección', hint: 'Reducir una fricción o ineficiencia existente.' },
+  growth: { label: 'Crecimiento', hint: 'Capturar una oportunidad de negocio o adopción.' },
+  exploration: { label: 'Exploración', hint: 'Reducir incertidumbre antes de decidir avanzar.' },
 };
 
 function Card({ title, testid, children }: { title: string; testid: string; children: React.ReactNode }) {
@@ -18,7 +18,7 @@ function Card({ title, testid, children }: { title: string; testid: string; chil
 
 export function UnderstandingSummaryCard({ snapshot }: { snapshot: ReviewSnapshot }) {
   return (
-    <Card title="Lo que Starteria entendio" testid="card-understanding">
+    <Card title="Lo que Starteria entendió" testid="card-understanding">
       <p>{snapshot.understandingSummary}</p>
     </Card>
   );
@@ -40,13 +40,13 @@ export function ChallengeTypeCard({ snapshot }: { snapshot: ReviewSnapshot }) {
 export function CritiqueCard({ snapshot }: { snapshot: ReviewSnapshot }) {
   const c = snapshot.critique;
   const rows: Array<[string, string | undefined]> = [
-    ['Lo solido', c.solid],
-    ['Lo debil', c.weak],
+    ['Lo sólido', c.solid],
+    ['Lo débil', c.weak],
     ['Lo riesgoso', c.risky],
     ['Conviene ajustar', c.recommendedAdjustment],
   ];
   return (
-    <Card title="Mirada critica" testid="card-critique">
+    <Card title="Mirada crítica" testid="card-critique">
       <dl className="grid gap-2">
         {rows.filter(([, v]) => v).map(([k, v]) => (
           <div key={k}>
@@ -69,13 +69,13 @@ export function QuestionsCard({
   onAnswer?: (questionId: string, answer: string, unknown?: boolean) => void;
 }) {
   return (
-    <Card title="Preguntas estrategicas" testid="card-questions">
+    <Card title="Preguntas estratégicas" testid="card-questions">
       <ul className="grid gap-3">
         {snapshot.strategicQuestions.slice(0, 3).map((q) => (
           <li key={q.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
             <p className="font-medium text-slate-900">{q.question}</p>
             {q.status === 'answered' && q.answer && <p className="mt-1 text-xs text-emerald-700">Respondida: {q.answer}</p>}
-            {q.status === 'unknown' && <p className="mt-1 text-xs text-amber-700">Marcada como "No lo se aun".</p>}
+            {q.status === 'unknown' && <p className="mt-1 text-xs text-amber-700">Marcada como "No lo sé aún".</p>}
             {onAnswer && q.status !== 'answered' && q.status !== 'unknown' && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {q.options.slice(0, 6).map((option) => (
@@ -93,10 +93,10 @@ export function QuestionsCard({
                   <button
                     type="button"
                     disabled={answeringQuestionId === q.id}
-                    onClick={() => onAnswer(q.id, 'No lo se aun', true)}
+                    onClick={() => onAnswer(q.id, 'No lo sé aún', true)}
                     className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
                   >
-                    No lo se aun
+                    No lo sé aún
                   </button>
                 )}
               </div>
@@ -111,7 +111,7 @@ export function QuestionsCard({
 export function ImprovedProposalCard({ snapshot }: { snapshot: ReviewSnapshot }) {
   const p = snapshot.improvedProposal;
   return (
-    <Card title="Version mejorada de tu iniciativa" testid="card-proposal">
+    <Card title="Versión mejorada de tu iniciativa" testid="card-proposal">
       <p className="font-medium text-slate-900">{p.suggestedName}</p>
       {p.improvedDescription && <p className="mt-1">{p.improvedDescription}</p>}
       {p.expectedImpact && <p className="mt-1 text-slate-600"><span className="font-medium">Impacto esperado:</span> {p.expectedImpact}</p>}
@@ -124,8 +124,10 @@ export function RoutePreviewCard({ snapshot }: { snapshot: ReviewSnapshot }) {
     <Card title="Ruta recomendada Step 0-4" testid="card-route">
       <ol className="grid gap-1">
         {snapshot.routePreview.map((r) => (
-          <li key={r.step}>
-            <span className="font-medium">Step {r.step}</span> - {r.name}
+          <li key={r.step} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p><span className="font-medium">Step {r.step}</span> - {r.name}</p>
+            <p className="mt-1 text-xs text-slate-600"><span className="font-medium">Qué pasará:</span> {r.whatWillHappen}</p>
+            <p className="mt-1 text-xs text-slate-600"><span className="font-medium">Output esperado:</span> {r.expectedOutput}</p>
           </li>
         ))}
       </ol>

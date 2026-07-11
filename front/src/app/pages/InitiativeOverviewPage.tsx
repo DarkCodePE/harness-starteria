@@ -34,6 +34,7 @@ export function InitiativeOverviewPage() {
   const [project, setProject] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showInitialReview, setShowInitialReview] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +44,7 @@ export function InitiativeOverviewPage() {
         const p = await getById(projectId);
         if (!cancelled) {
           setProject(p);
-          trackInitialReviewEvent('initial_review_overview_viewed', {
+          trackInitialReviewEvent('initiative_overview_opened', {
             initiativeId: projectId,
             snapshotId: p?.initialReviewSnapshotId,
           });
@@ -137,11 +138,29 @@ export function InitiativeOverviewPage() {
         )}
       </section>
 
+      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+        <button
+          type="button"
+          onClick={() => setShowInitialReview((open) => !open)}
+          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          {showInitialReview ? 'Ocultar revisión inicial' : 'Ver revisión inicial'}
+        </button>
+        {showInitialReview && (
+          <div className="mt-4 grid gap-3 text-sm text-slate-700">
+            {prefill.suggestedName && <p><span className="font-medium">Nombre sugerido:</span> {prefill.suggestedName}</p>}
+            {prefill.initialFocus && <p><span className="font-medium">Foco inicial:</span> {prefill.initialFocus}</p>}
+            {prefill.expectedImpact && <p><span className="font-medium">Impacto esperado:</span> {prefill.expectedImpact}</p>}
+            {prefill.nextRecommendedStep && <p><span className="font-medium">Siguiente paso recomendado:</span> {prefill.nextRecommendedStep}</p>}
+          </div>
+        )}
+      </section>
+
       <div className="mt-8 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => {
-            trackInitialReviewEvent('initial_review_step0_started', {
+            trackInitialReviewEvent('step0_started_from_overview', {
               initiativeId: projectId,
               snapshotId: project.initialReviewSnapshotId,
             });

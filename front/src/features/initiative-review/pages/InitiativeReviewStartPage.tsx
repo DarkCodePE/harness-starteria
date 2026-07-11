@@ -14,7 +14,7 @@ export function InitiativeReviewStartPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = input.trim().length >= 10 && !busy;
+  const canSubmit = input.trim().length >= 40 && !busy;
 
   const onSubmit = async () => {
     if (!canSubmit) return;
@@ -32,16 +32,16 @@ export function InitiativeReviewStartPage() {
       });
       navigate(`/initiatives/review/${review.id}`);
     } catch {
-      setError('No pudimos iniciar la revision. Intenta nuevamente.');
+      setError('No pudimos iniciar la revisión. Intenta nuevamente.');
       setBusy(false);
     }
   };
 
   return (
     <div className="mx-auto max-w-2xl p-6 md:p-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Que iniciativa quieres ordenar?</h1>
+      <h1 className="text-2xl font-semibold text-slate-900">¿Qué iniciativa quieres ordenar?</h1>
       <p className="mt-2 text-sm text-slate-500">
-        Describe una idea, problema, oportunidad o proyecto. Starteria lo revisara y te ayudara a convertirlo en una ruta clara.
+        Describe una idea, problema, oportunidad o proyecto. Starteria lo revisará y te ayudará a convertirlo en una ruta clara.
       </p>
 
       <label htmlFor="ir-input" className="sr-only">Describe tu iniciativa</label>
@@ -62,12 +62,12 @@ export function InitiativeReviewStartPage() {
         value={context}
         onChange={(e) => setContext(e.target.value)}
         rows={4}
-        placeholder="Agrega restricciones, recursos disponibles, equipo, plazo o informacion que Starteria deba considerar."
+        placeholder="Agrega restricciones, recursos disponibles, equipo, plazo o información que Starteria deba considerar."
         className="mt-2 w-full rounded-lg border border-slate-300 p-3 text-sm"
       />
 
       <p className="mt-1 text-xs text-slate-400">
-        Evita subir informacion sensible o confidencial en esta etapa. Los archivos se agregaran cuando el flujo de evidencias este disponible.
+        Escribe al menos 40 caracteres. Evita subir información sensible o confidencial en esta etapa. Los archivos se agregarán cuando el flujo de evidencias esté disponible.
       </p>
 
       {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}

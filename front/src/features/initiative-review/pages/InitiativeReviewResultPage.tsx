@@ -1,5 +1,5 @@
 /**
- * InitiativeReviewResultPage - revision guiada API-backed.
+ * InitiativeReviewResultPage - revisión guiada API-backed.
  * Muestra el snapshot real, permite responder preguntas/agregar contexto y confirma
  * la ruta para crear la iniciativa Draft antes de aterrizar en Overview.
  */
@@ -47,10 +47,15 @@ export function InitiativeReviewResultPage() {
               snapshotId: r.snapshot.id,
               snapshotVersion: r.snapshot.version,
             });
+            trackInitialReviewEvent('route_preview_viewed', {
+              reviewId: r.id,
+              snapshotId: r.snapshot.id,
+              snapshotVersion: r.snapshot.version,
+            });
           }
         }
       } catch {
-        if (!cancelled) setError('No pudimos cargar la revision.');
+        if (!cancelled) setError('No pudimos cargar la revisión.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -108,7 +113,13 @@ export function InitiativeReviewResultPage() {
     setError(null);
     try {
       const result = await confirmRoute(reviewId);
-      trackInitialReviewEvent('initial_review_route_confirmed', {
+      trackInitialReviewEvent('route_confirmed', {
+        reviewId,
+        initiativeId: result.initiativeId,
+        snapshotId: review?.snapshot?.id,
+        snapshotVersion: review?.snapshot?.version,
+      });
+      trackInitialReviewEvent('initiative_created_from_route', {
         reviewId,
         initiativeId: result.initiativeId,
         snapshotId: review?.snapshot?.id,
@@ -116,7 +127,7 @@ export function InitiativeReviewResultPage() {
       });
       navigate(result.overviewUrl);
     } catch {
-      trackInitialReviewEvent('initial_review_route_confirm_failed', { reviewId });
+      trackInitialReviewEvent('route_confirm_failed', { reviewId });
       setError('No pudimos crear la iniciativa. Intenta nuevamente.');
       setConfirming(false);
     }
@@ -124,7 +135,7 @@ export function InitiativeReviewResultPage() {
 
   if (loading) return <div role="status" className="p-8 text-slate-500">Revisando tu propuesta...</div>;
   if (error && !review) return <div role="alert" className="p-8 text-red-600">{error}</div>;
-  if (!review?.snapshot) return <div role="alert" className="p-8 text-red-600">La revision aun no esta lista.</div>;
+  if (!review?.snapshot) return <div role="alert" className="p-8 text-red-600">La revisión aún no está lista.</div>;
 
   const snapshot = review.snapshot;
 
@@ -144,7 +155,7 @@ export function InitiativeReviewResultPage() {
       <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agregar contexto antes de confirmar</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Si falta informacion clave, agrega restricciones, recursos, alcance o senales esperadas. Starteria regenerara el snapshot y mantendra historial.
+          Si falta información clave, agrega restricciones, recursos, alcance o señales esperadas. Starteria regenerará el snapshot y mantendrá historial.
         </p>
         <textarea
           aria-label="Agregar contexto antes de confirmar"
@@ -160,7 +171,7 @@ export function InitiativeReviewResultPage() {
           disabled={!contextText.trim() || addingContext}
           className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {addingContext ? 'Actualizando revision...' : 'Actualizar revision'}
+          {addingContext ? 'Actualizando revisión...' : 'Actualizar revisión'}
         </button>
       </section>
 
