@@ -42,8 +42,9 @@ export interface ConfirmRouteResult {
   overviewUrl: string;
 }
 
-export async function createReview(originalInput: string): Promise<InitiativeReview> {
-  const { data } = await api.post<ApiEnvelope<InitiativeReview>>('/initial-reviews', { originalInput });
+export async function createReview(originalInput: string, addedContext: string[] = []): Promise<InitiativeReview> {
+  const payload = addedContext.length > 0 ? { originalInput, addedContext } : { originalInput };
+  const { data } = await api.post<ApiEnvelope<InitiativeReview>>('/initial-reviews', payload);
   return data.data;
 }
 

@@ -12,6 +12,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { getById } from '../services/projectService';
+import { trackInitialReviewEvent } from '../../features/initiative-review/services/initialReviewTelemetry';
 
 const ROUTE_STEPS = [
   { n: 0, name: 'Ordenar contexto' },
@@ -40,7 +41,13 @@ export function InitiativeOverviewPage() {
     (async () => {
       try {
         const p = await getById(projectId);
-        if (!cancelled) setProject(p);
+        if (!cancelled) {
+          setProject(p);
+          trackInitialReviewEvent('initial_review_overview_viewed', {
+            initiativeId: projectId,
+            snapshotId: p?.initialReviewSnapshotId,
+          });
+        }
       } catch {
         if (!cancelled) setError('No pudimos cargar tu iniciativa. Intenta nuevamente.');
       } finally {
@@ -133,7 +140,13 @@ export function InitiativeOverviewPage() {
       <div className="mt-8 flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={() => navigate(`/projects/${projectId}/step/0`)}
+          onClick={() => {
+            trackInitialReviewEvent('initial_review_step0_started', {
+              initiativeId: projectId,
+              snapshotId: project.initialReviewSnapshotId,
+            });
+            navigate(`/projects/${projectId}/step/0`);
+          }}
           className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
         >
           Empezar Step 0
