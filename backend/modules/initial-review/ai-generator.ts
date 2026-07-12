@@ -12,9 +12,11 @@
  *   - Lenguaje de validación/aprobación/escalamiento se neutraliza (§25).
  *   - No inventa evidencia: missingEvidence solo como "faltantes" (strings), acotado.
  *
- * NOTA: el endpoint `/initial-review` del ai-service (Python) es una dependencia
- * cross-service pendiente; por eso el router usa el mock por defecto (flag
- * INITIAL_REVIEW_AI=real activa este generador).
+ * El endpoint del ai-service es `POST /api/v1/ai/initial-review` (CC-01,
+ * ai-service/agents/initial_reviewer.py). El router usa el mock por defecto;
+ * INITIAL_REVIEW_AI=real activa este generador envuelto en
+ * ResilientInitialReviewGenerator (fallback a mock, CC-02) y
+ * INITIAL_REVIEW_AI=real-strict lo activa sin fallback (debug).
  */
 import { callAiService } from '../ai/bridge.service';
 import { AppError } from '../../shared/errors/AppError';
@@ -32,7 +34,7 @@ import {
 
 export type InitialReviewAiCaller = (payload: { originalInput: string; addedContext?: string[]; companyContext?: unknown }) => Promise<unknown>;
 
-const AI_PATH = '/initial-review';
+const AI_PATH = '/api/v1/ai/initial-review';
 const defaultCaller: InitialReviewAiCaller = (payload) =>
   callAiService('POST', AI_PATH, payload, { costCapUsd: '0.05', timeoutMs: 60_000 });
 

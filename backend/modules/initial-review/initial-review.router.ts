@@ -12,6 +12,7 @@ import { RouteConfirmationService } from './route-confirmation.service';
 import { InitialReviewController } from './initial-review.controller';
 import { MockInitialReviewGenerator } from './mock-generator';
 import { AiInitialCritiqueService } from './ai-generator';
+import { ResilientInitialReviewGenerator } from './resilient-generator';
 import type { InitialReviewGenerator } from './initial-review.types';
 import { ProjectService } from '../projects/project.service';
 import {
@@ -21,10 +22,16 @@ import {
   confirmRouteSchema,
 } from './initial-review.schemas';
 
-// IR-B3: el generador real (ai-service + guardrails §25) se activa con INITIAL_REVIEW_AI=real.
-// Por defecto, mock determinista (el endpoint /initial-review del ai-service es pendiente).
-const generator: InitialReviewGenerator =
-  process.env.INITIAL_REVIEW_AI === 'real' ? new AiInitialCritiqueService() : new MockInitialReviewGenerator();
+// IR-B3/CC-02: el generador real (ai-service + guardrails §25) se activa con INITIAL_REVIEW_AI=real
+// (con fallback al mock ante fallo del ai-service). `real-strict` desactiva el fallback (debug).
+// Por defecto, mock determinista.
+function buildGenerator(): InitialReviewGenerator {
+  const mode = process.env.INITIAL_REVIEW_AI;
+  if (mode === 'real') return new ResilientInitialReviewGenerator(new AiInitialCritiqueService(), new MockInitialReviewGenerator());
+  if (mode === 'real-strict') return new AiInitialCritiqueService();
+  return new MockInitialReviewGenerator();
+}
+const generator: InitialReviewGenerator = buildGenerator();
 
 const service = new InitialReviewService(prisma, generator);
 // IR-B4: reusa ProjectService.createProject (milestone #7) sin modificarlo.
