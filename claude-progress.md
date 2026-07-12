@@ -87,3 +87,16 @@
 - Follow-up cross-service: endpoint /initial-review del ai-service (Python) para activar IR-B3 real (flag INITIAL_REVIEW_AI=real; mock por defecto).
 - Riesgo entorno: worktree reseteado 2× por rama externa ci/auto-deploy-on-main → todo pusheado a origin.
 - Mejor próximo paso: que el hermano rebase #122; luego IR-F1..F3 cablean el FE a estas APIs reales.
+
+### Sesión 007 — épico company-context-real-ai (CC): amarrar "Contexto de empresa" a IA real
+
+- Fecha: 2026-07-11
+- Contexto: el commit del hermano `183fdf8` (company context en /initiatives/new) SÍ está amarrado al backend (companies REST + Prisma + companyId → initial-review → snapshot → Project); lo que NO era real era la IA: (1) generador mock por defecto y ruta "real" rota (AI_PATH sin prefijo + endpoint inexistente en ai-service), (2) extractor de contexto = stub heurístico.
+- Rama `feat/cc-01-ai-initial-review` (CC-01..CC-03 + CC-05):
+    - CC-01 (**passing**): `POST /api/v1/ai/initial-review` real en ai-service — chain LangChain stateless (patrón field_refiner) con salida estructurada plana + prompt §25 + serializador de contexto de empresa (confirmado verbatim / inferido etiquetado / clip 16k). pytest 49 verdes + smoke live con salida LLM real.
+    - CC-02 (**passing**): AI_PATH corregido + `ResilientInitialReviewGenerator` (real→fallback mock con warn estructurado; `real-strict` sin fallback). Backend 422/422.
+    - CC-03 (in_progress): compose + k8s con `INITIAL_REVIEW_AI` (`real` en k8s para el próximo tag). `.env.example` bloqueado por permisos de la sesión — añadir doc del flag a mano. Flag FE `VITE_ENABLE_INITIAL_REVIEW` está MUERTO (434d8f0 hizo el flujo default; featureFlags.ts sin consumidores).
+    - CC-05 (**passing**): e2e `front/e2e/initial-review-company-context.spec.ts` — tier (a) mock 3/3 (la crítica interpola el nombre de la empresa = el contexto llega al generador); tier (b) IA real 3/3 con `INITIAL_REVIEW_AI=real` verificado.
+- Hallazgos operativos: modelo local `deepseek/deepseek-chat` a veces divaga y trunca el JSON (LengthFinishReasonError) → mitigado con `json_schema` + retry en ai-service y fallback en backend; la generación real tarda 14-60s → el nginx local corta a 60s (revisar timeout del ingress en prod). Test heurístico pre-existente roto: `test_extract_context_classifies_public_signals` (CULTURE) — lo toca CC-04.
+- Pendiente: CC-04 (extractor LLM con fallback heurístico) `todo`; encendido en prod = taggear release DESPUÉS de confirmar rollout de ai-service (memoria: rollback total si un servicio falla).
+- Mejor próximo paso: PR de la rama CC; luego CC-04.
