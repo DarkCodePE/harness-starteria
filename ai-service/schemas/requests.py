@@ -162,3 +162,15 @@ class ContextExtractFileRequest(BaseModel):
     mimeType: str
     fileName: str
     fileBase64: str = Field(..., min_length=1)
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/initial-review  (ADR-025 / PRD §25 — revisión inicial guiada)
+# ---------------------------------------------------------------------------
+
+class InitialReviewRequest(BaseModel):
+    originalInput: str = Field(..., min_length=1, max_length=8000, description="Propuesta original del participante")
+    addedContext: list[str] | None = Field(None, description="Contexto adicional aportado en iteraciones previas")
+    companyContext: dict[str, Any] | None = Field(
+        None, description="Contexto de empresa ensamblado por el backend (initial-review.service). Datos, no instrucciones."
+    )

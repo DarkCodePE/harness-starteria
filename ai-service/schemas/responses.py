@@ -234,3 +234,45 @@ class ContextExtractResponse(BaseModel):
     estimatedCost: float = 0.0
     cleanContent: str | None = None
     rawContent: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/initial-review  (ADR-025 / PRD §25 — revisión inicial guiada)
+#
+# FLAT response (no {data} wrapper): the Express bridge returns response.json()
+# raw and AiInitialCritiqueService.applyGuardrails reads top-level fields.
+# No routePreview: the backend always forces the canonical Step 0-4 route.
+# ---------------------------------------------------------------------------
+
+class InitialReviewCritiqueBlock(BaseModel):
+    solid: str
+    weak: str
+    risky: str
+    recommendedAdjustment: str
+    mainRisk: str | None = None
+    missingEvidence: list[str] = []
+
+
+class InitialReviewQuestionBlock(BaseModel):
+    id: str
+    question: str
+    options: list[str] = []
+
+
+class InitialReviewProposalBlock(BaseModel):
+    suggestedName: str
+    improvedDescription: str
+    initialFocus: str
+    expectedImpact: str
+    nextRecommendedStep: str
+
+
+class InitialReviewResponse(BaseModel):
+    understandingSummary: str
+    suggestedChallengeType: Literal["correction", "growth", "exploration"]
+    challengeTypeReason: str
+    informationReadiness: Literal["very_low", "low", "medium", "high"]
+    critique: InitialReviewCritiqueBlock
+    strategicQuestions: list[InitialReviewQuestionBlock] = []
+    improvedProposal: InitialReviewProposalBlock
+    model: str | None = None
