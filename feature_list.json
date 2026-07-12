@@ -314,12 +314,15 @@
       "area": "ai-service",
       "title": "Endpoint real POST /api/v1/ai/initial-review (LLM con contexto de empresa)",
       "user_visible_behavior": "El ai-service puede generar la crítica inicial con un LLM real (patrón field_refiner), consciente del contexto de empresa seleccionado en /initiatives/new.",
-      "status": "in_progress",
+      "status": "passing",
       "verification": [
         "cd ai-service && uv run pytest tests/test_initial_reviewer.py tests/test_routers_ai.py",
         "curl local POST /api/v1/ai/initial-review con OPENROUTER_API_KEY real → respuesta plana con 6 bloques"
       ],
-      "evidence": [],
+      "evidence": [
+        "pytest hermético: 49 passed (tests/test_initial_reviewer.py 11 + test_routers_ai.py 38) — shape plano, 503, 401 token, formatter con clipping/etiquetado inferido",
+        "smoke live 2026-07-11: POST http://ai-service:8001/api/v1/ai/initial-review con X-Internal-Token → 200 con salida LLM real (OpenRouter) en español, 6 bloques; sin token → 401; ruta registrada (no 404)"
+      ],
       "notes": "Aditivo, cero riesgo de rollout: backend sigue en mock hasta CC-03. Respuesta plana (sin wrapper data, sin routePreview) porque applyGuardrails lee top-level."
     },
     {
@@ -329,12 +332,15 @@
       "area": "initial-review",
       "title": "Fix AI_PATH + ResilientInitialReviewGenerator (fallback a mock)",
       "user_visible_behavior": "Con INITIAL_REVIEW_AI=real, la creación de iniciativas usa IA real y degrada a mock (nunca INITIAL_REVIEW_GEN_FAILED) si el ai-service falla.",
-      "status": "todo",
+      "status": "passing",
       "verification": [
         "cd backend && npm test -- initial-review",
         "smoke: INITIAL_REVIEW_AI=real con ai-service apagado → POST /initial-reviews devuelve generated (mock)"
       ],
-      "evidence": [],
+      "evidence": [
+        "vitest: 23 tests initial-review verdes (4 nuevos resilient-generator: passthrough, fallback BridgeError con warn estructurado, fallback MALFORMED, doble fallo propaga)",
+        "suite backend completa 48 files / 422 tests verdes"
+      ],
       "notes": "AI_PATH /initial-review → /api/v1/ai/initial-review. Modo real-strict sin fallback para debug. Warn estructurado greppeable en el fallback."
     },
     {
@@ -372,11 +378,14 @@
       "area": "e2e",
       "title": "E2E: empresa → initial-review con companyContext → confirm-route → Project",
       "user_visible_behavior": "El flujo completo de /initiatives/new con empresa queda cubierto por un e2e determinista (mock) + tier opcional con IA real.",
-      "status": "todo",
+      "status": "in_progress",
       "verification": [
         "docker compose up -d --build backend ai-service && cd front && npm run test:e2e -- initial-review-company-context"
       ],
-      "evidence": [],
+      "evidence": [
+        "tier (a) 2026-07-11: 3/3 passed contra stack docker real — empresa creada → review con companyContext → crítica del snapshot interpola nombre de empresa (contexto LLEGÓ al generador) → confirm-route → Project origin=from_initial_review; companyContext opcional OK; companyId inexistente → 404 sin 500",
+        "tier (b) (E2E_REAL_AI con INITIAL_REVIEW_AI=real) pendiente de CC-03"
+      ],
       "notes": "Tier (a) determinista siempre (mock interpola nombre de empresa); tier (b) test.skip(!process.env.E2E_REAL_AI), asserta forma, nunca contenido."
     }
   ]
