@@ -26,15 +26,17 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { user, tokens } = await this.service.registerUser(req.body);
+      const result = await this.service.registerUser(req.body);
 
-      res.cookie(COOKIE_NAME, tokens.refreshToken, COOKIE_OPTIONS);
+      if ('tokens' in result) {
+        res.cookie(COOKIE_NAME, result.tokens.refreshToken, COOKIE_OPTIONS);
+      }
 
       res.status(201).json({
         success: true,
         data: {
-          accessToken: tokens.accessToken,
-          user,
+          ...('tokens' in result ? { accessToken: result.tokens.accessToken } : { waitlisted: true }),
+          user: result.user,
         },
       });
     } catch (err) {
@@ -81,15 +83,17 @@ export class AuthController {
   ): Promise<void> => {
     try {
       const { idToken } = req.body;
-      const { user, tokens } = await this.service.googleSignInOrCreate(idToken);
+      const result = await this.service.googleSignInOrCreate(idToken);
 
-      res.cookie(COOKIE_NAME, tokens.refreshToken, COOKIE_OPTIONS);
+      if ('tokens' in result) {
+        res.cookie(COOKIE_NAME, result.tokens.refreshToken, COOKIE_OPTIONS);
+      }
 
       res.json({
         success: true,
         data: {
-          accessToken: tokens.accessToken,
-          user,
+          ...('tokens' in result ? { accessToken: result.tokens.accessToken } : { waitlisted: true }),
+          user: result.user,
         },
       });
     } catch (err) {

@@ -12,7 +12,9 @@ export interface AuthUser {
 
 export interface LoginResponse {
   user: AuthUser;
-  tokens: { accessToken: string; refreshToken: string };
+  tokens?: { accessToken: string; refreshToken: string };
+  accessToken?: string;
+  waitlisted?: boolean;
 }
 
 export const authService = {
@@ -20,7 +22,7 @@ export const authService = {
     const { data } = await api.post('/auth/login', { email, password });
     const result = data.data;
     const token = result.tokens?.accessToken || result.accessToken;
-    setAccessToken(token);
+    if (token) setAccessToken(token);
     return result;
   },
 
@@ -33,7 +35,7 @@ export const authService = {
     });
     const result = data.data;
     const token = result.tokens?.accessToken || result.accessToken;
-    setAccessToken(token);
+    if (token) setAccessToken(token);
     return result;
   },
 
@@ -44,7 +46,7 @@ export const authService = {
     const { data } = await api.post('/auth/google', { idToken });
     const result = data.data;
     const token = result.tokens?.accessToken || result.accessToken;
-    setAccessToken(token);
+    if (token) setAccessToken(token);
     return result;
   },
 

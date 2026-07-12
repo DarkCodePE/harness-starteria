@@ -73,12 +73,12 @@ describe('authService', () => {
     expect(setAccessToken).toHaveBeenCalledWith('flat-token');
   });
 
-  it('register hits /auth/register with role=participante and stores token', async () => {
+  it('register hits /auth/register with role=participante and does not store a token when waitlisted', async () => {
     apiMock.post.mockResolvedValueOnce({
       data: {
         data: {
           user: { id: 'u2', name: 'B', email: 'b@c.d', role: 'participante', initials: 'B' },
-          tokens: { accessToken: 'tok-B', refreshToken: 'r-B' },
+          waitlisted: true,
         },
       },
     });
@@ -91,11 +91,12 @@ describe('authService', () => {
       password: 'pw',
       role: 'participante',
     });
-    expect(setAccessToken).toHaveBeenCalledWith('tok-B');
+    expect(setAccessToken).not.toHaveBeenCalled();
+    expect(res.waitlisted).toBe(true);
     expect(res.user.id).toBe('u2');
   });
 
-  it('register also accepts top-level accessToken shape', async () => {
+  it('register stores token when backend explicitly returns accessToken', async () => {
     apiMock.post.mockResolvedValueOnce({
       data: {
         data: {
@@ -106,6 +107,22 @@ describe('authService', () => {
     });
     await authService.register('C', 'c@d.e', 'pw');
     expect(setAccessToken).toHaveBeenCalledWith('flat-reg-token');
+  });
+
+  it('googleSignIn returns waitlisted without storing token when backend does not issue access', async () => {
+    apiMock.post.mockResolvedValueOnce({
+      data: {
+        data: {
+          user: { id: 'u4', name: 'G', email: 'g@d.e', role: 'participante', initials: 'G' },
+          waitlisted: true,
+        },
+      },
+    });
+
+    const res = await authService.googleSignIn('google-token');
+    expect(apiMock.post).toHaveBeenCalledWith('/auth/google', { idToken: 'google-token' });
+    expect(setAccessToken).not.toHaveBeenCalled();
+    expect(res.waitlisted).toBe(true);
   });
 
   it('logout calls backend and clears token even on error', async () => {

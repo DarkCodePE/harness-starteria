@@ -291,9 +291,9 @@ interface AppContextType {
   projects: Project[];
   projectsLoading: boolean;
   currentProject: Project | null;
-  login: (email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
-  register: (name: string, email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
-  googleSignIn: (idToken: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; error?: AuthError }>;
+  login: (email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; waitlisted?: boolean; waitlistedEmail?: string; error?: AuthError }>;
+  register: (name: string, email: string, password: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; waitlisted?: boolean; waitlistedEmail?: string; error?: AuthError }>;
+  googleSignIn: (idToken: string, options?: { loadProjects?: boolean }) => Promise<{ success: boolean; waitlisted?: boolean; waitlistedEmail?: string; error?: AuthError }>;
   logout: () => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
@@ -566,7 +566,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     options: { loadProjects?: boolean } = {},
-  ): Promise<{ success: boolean; error?: AuthError }> => {
+  ): Promise<{ success: boolean; waitlisted?: boolean; waitlistedEmail?: string; error?: AuthError }> => {
     try {
       const result = await authService.login(email, password);
       const mappedUser = mapBackendUser(result.user);
@@ -586,9 +586,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     options: { loadProjects?: boolean } = {},
-  ): Promise<{ success: boolean; error?: AuthError }> => {
+  ): Promise<{ success: boolean; waitlisted?: boolean; waitlistedEmail?: string; error?: AuthError }> => {
     try {
       const result = await authService.register(name, email, password);
+      if (result.waitlisted || !result.accessToken && !result.tokens?.accessToken) {
+        return { success: true, waitlisted: true, waitlistedEmail: result.user.email };
+      }
       const mappedUser = mapBackendUser(result.user);
       setUser(mappedUser);
       setIsAuthenticated(true);
@@ -604,9 +607,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const googleSignIn = async (
     idToken: string,
     options: { loadProjects?: boolean } = {},
-  ): Promise<{ success: boolean; error?: AuthError }> => {
+  ): Promise<{ success: boolean; waitlisted?: boolean; waitlistedEmail?: string; error?: AuthError }> => {
     try {
       const result = await authService.googleSignIn(idToken);
+      if (result.waitlisted || !result.accessToken && !result.tokens?.accessToken) {
+        return { success: true, waitlisted: true, waitlistedEmail: result.user.email };
+      }
       const mappedUser = mapBackendUser(result.user);
       setUser(mappedUser);
       setIsAuthenticated(true);

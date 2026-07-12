@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Zap, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
+import { Zap, Eye, EyeOff, AlertCircle, ArrowRight, Clock3, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { AuthError } from '../services/api';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
@@ -68,6 +68,7 @@ export function AuthPage() {
   const [emailFormatError, setEmailFormatError] = useState<string | null>(null);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [now, setNow] = useState<number>(() => Date.now());
+  const [waitlistEmail, setWaitlistEmail] = useState<string | null>(null);
   // Counter incremented on every submit failure — drives focus-management effect.
   const [submitErrorKey, setSubmitErrorKey] = useState(0);
 
@@ -212,6 +213,9 @@ export function AuthPage() {
     setLoading(false);
 
     if (result.success) {
+      if (result.waitlisted) {
+        setWaitlistEmail(result.waitlistedEmail ?? email.trim().toLowerCase());
+      }
       return;
     }
 
@@ -244,6 +248,9 @@ export function AuthPage() {
     setLoading(false);
 
     if (result.success) {
+      if (result.waitlisted) {
+        setWaitlistEmail(result.waitlistedEmail ?? (email.trim().toLowerCase() || 'tu correo'));
+      }
       return;
     }
 
@@ -271,6 +278,7 @@ export function AuthPage() {
     setMode(next);
     resetErrors();
     setLockedUntil(null);
+    setWaitlistEmail(null);
   };
 
   const handleSwitchToLoginKeepEmail = () => {
@@ -332,11 +340,46 @@ export function AuthPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+          {waitlistEmail ? (
+            <div className="text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                <Clock3 size={22} />
+              </div>
+              <h1 className="mt-5 text-xl text-slate-900" style={{ fontWeight: 600 }}>
+                Estas en la lista de espera
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Recibimos tu registro con <span className="font-medium text-slate-700">{waitlistEmail}</span>. Tu cuenta fue creada, pero aun no tiene acceso a la plataforma.
+              </p>
+              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+                <p className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                  <Mail size={15} className="text-indigo-600" />
+                  Te avisaremos cuando tu acceso este habilitado.
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Mientras Starteria sigue en preparacion, estamos aprobando accesos manualmente para cuidar la calidad del producto.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setWaitlistEmail(null);
+                  setMode('login');
+                  resetErrors();
+                }}
+                className="mt-6 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                style={{ fontWeight: 500 }}
+              >
+                Volver al inicio de sesion
+              </button>
+            </div>
+          ) : (
+          <>
           <h1 className="text-xl text-slate-900 mb-1" style={{ fontWeight: 600 }}>
             {mode === 'login' ? 'Bienvenido de vuelta' : 'Crea tu cuenta'}
           </h1>
           <p className="text-sm text-slate-500 mb-6">
-            {mode === 'login' ? 'Ingresa para continuar con tu proyecto.' : 'Regístrate para empezar tu primer proyecto.'}
+            {mode === 'login' ? 'Ingresa para continuar con tu proyecto.' : 'Registrate para entrar a la lista de espera.'}
           </p>
 
           {/* Google Identity Services — renders only when VITE_GOOGLE_CLIENT_ID is set.
@@ -552,6 +595,8 @@ export function AuthPage() {
               {mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
             </button>
           </p>
+          </>
+          )}
         </div>
 
         {/* Demo accounts */}

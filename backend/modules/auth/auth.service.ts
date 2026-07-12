@@ -78,6 +78,10 @@ interface SafeUser {
   cohort?: string | null;
 }
 
+type AuthenticatedResult = { user: SafeUser; tokens: AuthTokens; waitlisted?: false };
+type WaitlistedResult = { user: SafeUser; waitlisted: true };
+type AuthResult = AuthenticatedResult | WaitlistedResult;
+
 function isDevelopment(): boolean {
   return process.env.NODE_ENV !== 'production';
 }
@@ -129,7 +133,7 @@ export class AuthService {
    */
   async registerUser(
     data: RegisterInput,
-  ): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+  ): Promise<AuthResult> {
     // Only participante can self-register
     if (data.role !== 'participante') {
       throw AppError.registerRoleForbidden();
@@ -155,7 +159,7 @@ export class AuthService {
 
         logger.warn({ email: user.email }, 'Database unavailable; using development auth fallback for registration');
 
-        return { user, tokens: issueDevTokenPair(user) };
+        return { user, waitlisted: true };
       }
 
       throw err;
@@ -171,12 +175,11 @@ export class AuthService {
         passwordHash,
         role: data.role,
         initials,
+        isActive: false,
       },
     });
 
-    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);
-
-    logger.info({ userId: user.id }, 'User registered');
+    logger.info({ userId: user.id }, 'User registered on waitlist');
 
     return {
       user: {
@@ -187,7 +190,7 @@ export class AuthService {
         initials: user.initials,
         cohort: user.cohortId,
       },
-      tokens,
+      waitlisted: true,
     };
   }
 
@@ -228,6 +231,10 @@ export class AuthService {
       // for "user not found" matches "wrong password". Result is discarded.
       await verifyPassword(password, DUMMY_PASSWORD_HASH);
       throw AppError.invalidCredentials();
+    }
+
+    if (!user.isActive) {
+      throw AppError.authWaitlisted();
     }
 
     // Google-OAuth-only accounts have passwordHash === null. Send a distinct
@@ -398,7 +405,7 @@ export class AuthService {
    */
   async googleSignInOrCreate(
     idToken: string,
-  ): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+  ): Promise<AuthResult> {
     const payload = await verifyGoogleIdToken(idToken);
 
     if (!payload.emailVerified) {
@@ -444,11 +451,12 @@ export class AuthService {
             avatarUrl: payload.picture ?? null,
             role: 'participante',
             initials,
+            isActive: false,
           },
         });
         logger.info(
           { userId: user.id, googleId: payload.googleId },
-          'Created new user via Google sign-in',
+          'Created new waitlisted user via Google sign-in',
         );
       } catch (err) {
         // Race: another request created the same googleId between our lookup
@@ -468,6 +476,20 @@ export class AuthService {
           throw err;
         }
       }
+    }
+
+    if (!user.isActive) {
+      return {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          initials: user.initials,
+          cohort: user.cohortId,
+        },
+        waitlisted: true,
+      };
     }
 
     const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);

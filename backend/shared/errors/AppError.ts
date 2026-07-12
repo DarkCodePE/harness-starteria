@@ -133,6 +133,16 @@ export class AppError extends Error {
     );
   }
 
+  static authWaitlisted(): AppError {
+    return new AppError(
+      403,
+      'Tu cuenta esta en lista de espera.',
+      'AUTH_WAITLISTED',
+      true,
+      { hint: 'Te avisaremos cuando tu acceso a Starteria este habilitado.' },
+    );
+  }
+
   static refreshInvalid(): AppError {
     return new AppError(
       401,
