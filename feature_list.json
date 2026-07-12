@@ -1,6 +1,6 @@
 {
   "project": "Starteria (Dashboardstarteria)",
-  "last_updated": "2026-06-23",
+  "last_updated": "2026-07-11",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -306,6 +306,78 @@
         "Unit 4/4: crear→navegar, 6 cards, confirm-route real→navega a overviewUrl, guard de input corto. front 227/227."
       ],
       "notes": "IR-F3 entregado como FE de referencia snapshot-REST (opción A de la decisión de arquitectura), consumiendo el backend verificado. Sin mock, sin tocar #122."
+    },
+    {
+      "id": "CC-01-ai-endpoint-initial-review",
+      "priority": 15,
+      "epic": "company-context-real-ai",
+      "area": "ai-service",
+      "title": "Endpoint real POST /api/v1/ai/initial-review (LLM con contexto de empresa)",
+      "user_visible_behavior": "El ai-service puede generar la crítica inicial con un LLM real (patrón field_refiner), consciente del contexto de empresa seleccionado en /initiatives/new.",
+      "status": "in_progress",
+      "verification": [
+        "cd ai-service && uv run pytest tests/test_initial_reviewer.py tests/test_routers_ai.py",
+        "curl local POST /api/v1/ai/initial-review con OPENROUTER_API_KEY real → respuesta plana con 6 bloques"
+      ],
+      "evidence": [],
+      "notes": "Aditivo, cero riesgo de rollout: backend sigue en mock hasta CC-03. Respuesta plana (sin wrapper data, sin routePreview) porque applyGuardrails lee top-level."
+    },
+    {
+      "id": "CC-02-backend-path-fix-fallback",
+      "priority": 16,
+      "epic": "company-context-real-ai",
+      "area": "initial-review",
+      "title": "Fix AI_PATH + ResilientInitialReviewGenerator (fallback a mock)",
+      "user_visible_behavior": "Con INITIAL_REVIEW_AI=real, la creación de iniciativas usa IA real y degrada a mock (nunca INITIAL_REVIEW_GEN_FAILED) si el ai-service falla.",
+      "status": "todo",
+      "verification": [
+        "cd backend && npm test -- initial-review",
+        "smoke: INITIAL_REVIEW_AI=real con ai-service apagado → POST /initial-reviews devuelve generated (mock)"
+      ],
+      "evidence": [],
+      "notes": "AI_PATH /initial-review → /api/v1/ai/initial-review. Modo real-strict sin fallback para debug. Warn estructurado greppeable en el fallback."
+    },
+    {
+      "id": "CC-03-env-deploy-plumbing",
+      "priority": 17,
+      "epic": "company-context-real-ai",
+      "area": "infra",
+      "title": "Plumbing INITIAL_REVIEW_AI en .env.example, compose y k8s",
+      "user_visible_behavior": "Prod genera la revisión inicial con IA real (flag encendido vía k8s), con fallback de CC-02 como red de seguridad.",
+      "status": "todo",
+      "verification": [
+        "post-deploy: logs backend sin warns de fallback; crear iniciativa en prod y confirmar snapshot no-mock"
+      ],
+      "evidence": [],
+      "notes": "CD tag-triggered: taggear DESPUÉS de confirmar rollout de la imagen ai-service con CC-01. Sin cambios de schema (cero riesgo prisma db push). Decisión pendiente de producto: build-arg VITE_ENABLE_INITIAL_REVIEW en Dockerfile.frontend."
+    },
+    {
+      "id": "CC-04-llm-context-extractor",
+      "priority": 18,
+      "epic": "company-context-real-ai",
+      "area": "companies",
+      "title": "Extractor de contexto de empresa con LLM (heurística como fallback)",
+      "user_visible_behavior": "Subir una fuente (PDF/URL) en /companies/:id produce entradas de contexto extraídas por LLM, con la heurística actual como fallback.",
+      "status": "todo",
+      "verification": [
+        "cd ai-service && uv run pytest tests/test_company_context_extractor.py tests/test_routers_ai.py"
+      ],
+      "evidence": [],
+      "notes": "verificationStatus=INFERRED forzado server-side; test de injection-safety intacto; si el archivo supera 500 líneas, extraer chain a company_context_llm.py."
+    },
+    {
+      "id": "CC-05-e2e-company-context-flow",
+      "priority": 19,
+      "epic": "company-context-real-ai",
+      "area": "e2e",
+      "title": "E2E: empresa → initial-review con companyContext → confirm-route → Project",
+      "user_visible_behavior": "El flujo completo de /initiatives/new con empresa queda cubierto por un e2e determinista (mock) + tier opcional con IA real.",
+      "status": "todo",
+      "verification": [
+        "docker compose up -d --build backend ai-service && cd front && npm run test:e2e -- initial-review-company-context"
+      ],
+      "evidence": [],
+      "notes": "Tier (a) determinista siempre (mock interpola nombre de empresa); tier (b) test.skip(!process.env.E2E_REAL_AI), asserta forma, nunca contenido."
     }
   ]
 }
