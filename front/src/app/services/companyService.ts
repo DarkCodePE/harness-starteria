@@ -60,6 +60,12 @@ export interface CreateCompanyPayload {
   areaName?: string;
 }
 
+export interface CreateAreaPayload {
+  name: string;
+  description?: string;
+  leadRole?: string;
+}
+
 export async function listCompanies(): Promise<Company[]> {
   const { data } = await api.get<ApiEnvelope<Company[]>>('/companies');
   return data.data;
@@ -77,6 +83,11 @@ export async function getCompanyScore(companyId: string): Promise<ContextScore> 
 
 export async function listAreas(companyId: string): Promise<CompanyArea[]> {
   const { data } = await api.get<ApiEnvelope<CompanyArea[]>>(`/companies/${companyId}/areas`);
+  return data.data;
+}
+
+export async function createArea(companyId: string, payload: CreateAreaPayload): Promise<CompanyArea> {
+  const { data } = await api.post<ApiEnvelope<CompanyArea>>(`/companies/${companyId}/areas`, payload);
   return data.data;
 }
 
