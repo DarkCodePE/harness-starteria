@@ -367,11 +367,15 @@
       "area": "companies",
       "title": "Extractor de contexto de empresa con LLM (heurística como fallback)",
       "user_visible_behavior": "Subir una fuente (PDF/URL) en /companies/:id produce entradas de contexto extraídas por LLM, con la heurística actual como fallback.",
-      "status": "todo",
+      "status": "in_progress",
       "verification": [
         "cd ai-service && uv run pytest tests/test_company_context_extractor.py tests/test_routers_ai.py"
       ],
-      "evidence": [],
+      "evidence": [
+        "pytest ai-service completo: 256 passed (4 tests del extractor: fallback heurístico clasifica 4 dimensiones incl. CULTURE, ruta LLM mapea entradas con INFERRED forzado + clamp, injection-safety en markdown)",
+        "fix de paso: umbral de oraciones 40→20 chars — causa del test pre-existente roto test_extract_context_classifies_public_signals (CULTURE con 36 chars se descartaba)",
+        "pendiente: smoke live del endpoint /api/v1/ai/context-extract con LLM real (tras rebuild del contenedor)"
+      ],
       "notes": "verificationStatus=INFERRED forzado server-side; test de injection-safety intacto; si el archivo supera 500 líneas, extraer chain a company_context_llm.py."
     },
     {
