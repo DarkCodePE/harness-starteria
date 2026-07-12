@@ -56,9 +56,10 @@ describe('ResilientInitialReviewGenerator (CC-02)', () => {
     expect(out.understandingSummary).toContain('Entiendo que quieres ordenar');
     expect(out.critique.risky).toContain('Acme');
     expect(out.routePreview.map((r) => r.step)).toEqual([0, 1, 2, 3, 4]);
+    // pino: metadatos primero, mensaje después.
     expect(logger.warn).toHaveBeenCalledWith(
-      'initial-review AI fallback: degradando al generador mock',
       expect.objectContaining({ code: 'SERVICE_UNAVAILABLE', requestId: 'req-123' }),
+      'initial-review AI fallback: degradando al generador mock',
     );
   });
 

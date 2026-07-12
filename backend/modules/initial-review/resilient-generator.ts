@@ -25,11 +25,11 @@ export class ResilientInitialReviewGenerator implements InitialReviewGenerator {
       return await this.primary.generate(input);
     } catch (err) {
       const e = err as { code?: string; requestId?: string; message?: string };
-      logger.warn('initial-review AI fallback: degradando al generador mock', {
-        code: e?.code ?? 'UNKNOWN',
-        requestId: e?.requestId,
-        message: e?.message,
-      });
+      // pino: el objeto de metadatos va PRIMERO (logger.warn(obj, msg)).
+      logger.warn(
+        { code: e?.code ?? 'UNKNOWN', requestId: e?.requestId, cause: e?.message },
+        'initial-review AI fallback: degradando al generador mock',
+      );
       return this.fallback.generate(input);
     }
   }

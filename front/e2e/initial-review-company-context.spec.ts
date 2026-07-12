@@ -17,6 +17,8 @@
 import { test, expect, request as pwRequest, APIRequestContext } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost';
+// Con IA real (tier b) la generación puede tardar 20-60s; el default de 15s no alcanza.
+const GEN_TIMEOUT = process.env.E2E_REAL_AI ? 90_000 : 15_000;
 
 function extractToken(body: any): string {
   return body?.data?.tokens?.accessToken ?? body?.data?.accessToken ?? body?.tokens?.accessToken ?? body?.accessToken ?? '';
@@ -72,6 +74,7 @@ test.describe('initial-review con contexto de empresa (CC-05, real stack)', () =
         companyContext: { companyId: company.id, ...(areaId ? { areaId } : {}) },
       },
       failOnStatusCode: false,
+      timeout: GEN_TIMEOUT,
     });
     expect(createRes.status(), `create review: ${await createRes.text()}`).toBe(201);
     const review = (await createRes.json()).data;
@@ -147,6 +150,7 @@ test.describe('initial-review con contexto de empresa (CC-05, real stack)', () =
       headers: auth(owner),
       data: { originalInput: 'Quiero explorar si un canal de ventas digital vale la pena para nuestra zona.' },
       failOnStatusCode: false,
+      timeout: GEN_TIMEOUT,
     });
     expect(res.status(), `create: ${await res.text()}`).toBe(201);
     expect((await res.json()).data.status).toBe('generated');

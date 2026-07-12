@@ -121,7 +121,10 @@ def _build_llm() -> ChatOpenAI:
         model=model,
         api_key=api_key,
         temperature=0.3,
-        max_tokens=2000,
+        # La salida estructurada (6 bloques en español) puede superar 2000 tokens con
+        # modelos verbosos (deepseek-chat): un límite corto trunca el JSON y el parseo
+        # falla con "length limit was reached" → 503 → fallback innecesario al mock.
+        max_tokens=4000,
         max_retries=2,
         model_kwargs={"extra_body": {"provider": {"allow_fallbacks": True, "sort": "throughput"}}},
     )
@@ -132,7 +135,10 @@ def _get_chain():
     """Lazily build prompt | llm.with_structured_output(InitialReviewOutput)."""
     prompt = ChatPromptTemplate.from_messages([("system", _SYSTEM), ("human", _HUMAN)])
     llm = _build_llm()
-    return prompt | llm.with_structured_output(InitialReviewOutput)
+    # method="json_schema" usa response_format estructurado (OpenRouter lo soporta
+    # para qwen/deepseek): restringe la generación al schema y evita que modelos
+    # verbosos divaguen hasta agotar max_tokens y truncar el JSON.
+    return prompt | llm.with_structured_output(InitialReviewOutput, method="json_schema")
 
 
 def _fmt_value(value: Any) -> str:
@@ -214,13 +220,24 @@ def generate_initial_review(
     """Generate the initial review. Raises on misconfiguration / upstream failure;
     the backend maps that to 503 and its resilient wrapper falls back to the mock."""
     chain = _get_chain()
-    result = chain.invoke(
-        {
-            "original_input": (original_input or "").strip()[:_MAX_INPUT_CHARS] or "(vacío)",
-            "added_context": _format_added_context(added_context),
-            "company_context": format_company_context(company_context),
-        }
-    )
+    payload = {
+        "original_input": (original_input or "").strip()[:_MAX_INPUT_CHARS] or "(vacío)",
+        "added_context": _format_added_context(added_context),
+        "company_context": format_company_context(company_context),
+    }
+    # OpenRouter puede enrutar a un proveedor que ignora response_format y el modelo
+    # divaga hasta truncar el JSON (LengthFinishReasonError). Un reintento suele caer
+    # en un proveedor/muestra distinta; si vuelve a fallar, el backend degrada al mock.
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            result = chain.invoke(payload)
+            break
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            logger.warning("initial-review attempt %d failed: %s", attempt + 1, exc)
+    else:
+        raise last_exc  # type: ignore[misc]
     if isinstance(result, InitialReviewOutput):
         return result
     return InitialReviewOutput(**dict(result))

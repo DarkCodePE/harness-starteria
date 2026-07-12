@@ -350,12 +350,15 @@
       "area": "infra",
       "title": "Plumbing INITIAL_REVIEW_AI en .env.example, compose y k8s",
       "user_visible_behavior": "Prod genera la revisión inicial con IA real (flag encendido vía k8s), con fallback de CC-02 como red de seguridad.",
-      "status": "todo",
+      "status": "in_progress",
       "verification": [
         "post-deploy: logs backend sin warns de fallback; crear iniciativa en prod y confirmar snapshot no-mock"
       ],
-      "evidence": [],
-      "notes": "CD tag-triggered: taggear DESPUÉS de confirmar rollout de la imagen ai-service con CC-01. Sin cambios de schema (cero riesgo prisma db push). Decisión pendiente de producto: build-arg VITE_ENABLE_INITIAL_REVIEW en Dockerfile.frontend."
+      "evidence": [
+        "compose valida (docker compose config); backend local recreado con INITIAL_REVIEW_AI=real y verificado con printenv; k8s/backend-deployment.yaml con INITIAL_REVIEW_AI=\"real\" listo para el próximo tag",
+        "PENDIENTE prod: .env.example no editable en esta sesión (permisos); taggear release DESPUÉS de confirmar rollout de la imagen ai-service con CC-01; verificar post-deploy logs sin warns \"initial-review AI fallback\""
+      ],
+      "notes": "CD tag-triggered: taggear DESPUÉS de confirmar rollout de la imagen ai-service con CC-01. Sin cambios de schema (cero riesgo prisma db push). Decisión pendiente de producto: build-arg VITE_ENABLE_INITIAL_REVIEW en Dockerfile.frontend. NOTA: VITE_ENABLE_INITIAL_REVIEW quedó muerto — 434d8f0 hizo el flujo guiado default incondicional (featureFlags.ts ya no se consume); no se necesita build-arg. Latencia LLM real 14-60s: el proxy nginx local corta a 60s — revisar timeout del ingress de prod. Modelo local deepseek/deepseek-chat divaga a veces (trunca JSON): mitigado con json_schema + retry en ai-service y fallback a mock en backend; para prod preferir un modelo con salida estructurada confiable (p.ej. qwen3.6-flash default)."
     },
     {
       "id": "CC-04-llm-context-extractor",
@@ -378,13 +381,14 @@
       "area": "e2e",
       "title": "E2E: empresa → initial-review con companyContext → confirm-route → Project",
       "user_visible_behavior": "El flujo completo de /initiatives/new con empresa queda cubierto por un e2e determinista (mock) + tier opcional con IA real.",
-      "status": "in_progress",
+      "status": "passing",
       "verification": [
         "docker compose up -d --build backend ai-service && cd front && npm run test:e2e -- initial-review-company-context"
       ],
       "evidence": [
         "tier (a) 2026-07-11: 3/3 passed contra stack docker real — empresa creada → review con companyContext → crítica del snapshot interpola nombre de empresa (contexto LLEGÓ al generador) → confirm-route → Project origin=from_initial_review; companyContext opcional OK; companyId inexistente → 404 sin 500",
-        "tier (b) (E2E_REAL_AI con INITIAL_REVIEW_AI=real) pendiente de CC-03"
+        "tier (b) (E2E_REAL_AI con INITIAL_REVIEW_AI=real) pendiente de CC-03",
+        "tier (b) 2026-07-11: 3/3 passed con INITIAL_REVIEW_AI=real verificado (printenv) contra backend directo; 1 de ~3 generaciones degradó a mock por truncamiento del modelo local (warn estructurado presente) y el flujo completó igual — resiliencia CC-02 probada en vivo"
       ],
       "notes": "Tier (a) determinista siempre (mock interpola nombre de empresa); tier (b) test.skip(!process.env.E2E_REAL_AI), asserta forma, nunca contenido."
     }

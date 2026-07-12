@@ -61,6 +61,8 @@ services:
       AI_SERVICE_URL: http://ai-service:8001
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-dev-shared-secret-change-me}
       BRIDGE_SHARED_SECRET: ${BRIDGE_SHARED_SECRET:-dev-shared-secret-change-me}
+      # Revisión inicial guiada (CC-02): vacío=mock, real=IA con fallback, real-strict=sin fallback.
+      INITIAL_REVIEW_AI: ${INITIAL_REVIEW_AI:-}
     volumes:
       - pdfstorage:/app/storage
     depends_on:
