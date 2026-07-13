@@ -119,3 +119,8 @@
 - PR #133 mergeado (CI verde) → CD de main OK → tag `v2.16.0` → CD del tag OK (run 29265396804): backend/frontend/ai-service "successfully rolled out", `prisma db push` in sync, sin auto-undo. starter-ia.com responde 200.
 - `INITIAL_REVIEW_AI=real` quedó activo en prod vía manifest k8s; el fallback de CC-02 protege la creación de iniciativas.
 - Pendiente de humano: smoke funcional con cuenta real (la waitlist bloquea usuarios de prueba) — crear 1 iniciativa en /initiatives/new y confirmar que la crítica no es el template del mock ("Entiendo que quieres ordenar: …"); si aparece el mock, buscar warns "initial-review AI fallback" en los logs del backend.
+
+### Addendum sesión 009 — smoke de prod confirmado (2026-07-13)
+
+- El usuario creó una iniciativa real en prod: la crítica es IA real y usa el contexto de empresa registrado ("banco pequeño", "EFECTIVA", "11-50 personas"). Épico CC verificado end-to-end en producción.
+- Observación UX (follow-up candidato): el scrub §25 (`FORBIDDEN → '[revisar]'`, ai-generator.ts:44,128) deja frases raras cuando el modelo usa "escalar" ("antes de [revisar] a múltiples fuentes"). Opciones: reforzar el prompt con la lista de palabras prohibidas y/o reemplazar por sinónimo neutro ("ampliar") en vez del placeholder.
