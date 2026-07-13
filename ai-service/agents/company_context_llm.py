@@ -22,7 +22,9 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_MODEL = "openrouter:qwen/qwen3.6-flash".split(":", 1)[1]
+# Mismo default validado que initial_reviewer.py (benchmark 2026-07-12):
+# deepseek-v4-flash es el único candidato 3/3 confiable Y el más barato ($0.0004).
+_DEFAULT_MODEL = "openrouter:deepseek/deepseek-v4-flash".split(":", 1)[1]
 _DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 
 # El texto de la fuente se recorta antes de entrar al prompt (~40k chars ≈
@@ -63,7 +65,9 @@ _SYSTEM = (
     "- No inventes: extrae solo señales presentes en el texto; si una dimensión no "
     "aparece, repórtala en missing.\n"
     "- Máximo 12 entradas, valores concisos (1-2 frases), sin datos personales "
-    "innecesarios ni credenciales."
+    "innecesarios ni credenciales.\n"
+    "Responde exclusivamente con un objeto JSON válido según el schema solicitado, "
+    "con TODOS los textos en español."
 )
 
 _HUMAN = (
