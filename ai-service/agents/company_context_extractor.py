@@ -3,17 +3,26 @@
 Sources are untrusted data. This module never executes instructions found in
 documents or websites; it only classifies visible text into structured context
 dimensions for human review.
+
+CC-04: `extract_context` intenta primero el chain LLM (`company_context_llm`,
+patrón field_refiner) y ante CUALQUIER fallo degrada a la heurística de
+keywords original (`_extract_context_heuristic`), así el endpoint nunca pierde
+la fiabilidad previa. `verificationStatus="INFERRED"` se fuerza server-side en
+ambas rutas; el campo `model` de la respuesta reporta qué ruta respondió.
 """
 
 from __future__ import annotations
 
 import base64
 import io
+import logging
 import re
 import zipfile
 from typing import Any
 
 from schemas.responses import ContextExtractEntry, ContextExtractResponse
+
+logger = logging.getLogger(__name__)
 
 MODEL_ID = "heuristic/company-context-v1"
 
@@ -34,7 +43,10 @@ def _entry(dimension: str, field_key: str, value: Any, confidence: float) -> Con
 
 def _sentences(text: str) -> list[str]:
     chunks = re.split(r"(?<=[.!?])\s+", text)
-    return [_clip(chunk, 500) for chunk in chunks if len(chunk.strip()) > 40]
+    # Umbral 20 (antes 40): oraciones cortas pero informativas como
+    # "Nuestra cultura promueve innovacion." (36 chars) se descartaban y la
+    # dimensión CULTURE nunca clasificaba.
+    return [_clip(chunk, 500) for chunk in chunks if len(chunk.strip()) > 20]
 
 
 def _match_any(text: str, words: list[str]) -> bool:
@@ -43,6 +55,41 @@ def _match_any(text: str, words: list[str]) -> bool:
 
 
 def extract_context(clean_content: str, source_type: str, title: str | None = None, url: str | None = None) -> ContextExtractResponse:
+    """Ruta pública: LLM primero, heurística como fallback (CC-04)."""
+    try:
+        return _extract_context_llm(clean_content, source_type, title, url)
+    except Exception as exc:  # noqa: BLE001 — la heurística es el piso de fiabilidad
+        logger.warning("context-extract LLM failed, falling back to heuristic: %s", exc)
+        return _extract_context_heuristic(clean_content, source_type, title, url)
+
+
+def _extract_context_llm(clean_content: str, source_type: str, title: str | None, url: str | None) -> ContextExtractResponse:
+    # Import perezoso: mantiene el módulo importable (y la heurística usable)
+    # aunque langchain/openai no estén disponibles en el entorno.
+    from agents.company_context_llm import MAX_PROMPT_CHARS, extract_context_llm, llm_model_id
+
+    result = extract_context_llm(clean_content, source_type, title=title, url=url)
+    entries: list[ContextExtractEntry] = []
+    if title:
+        entries.append(_entry("IDENTITY", "publicTitle", title, 0.55))
+    if url:
+        entries.append(_entry("IDENTITY", "publicUrl", url, 0.5))
+    for item in result.entries[:12]:
+        # _entry fuerza verificationStatus="INFERRED" pase lo que pase el modelo.
+        entries.append(_entry(item.dimension, item.fieldKey, item.value, max(0.0, min(item.confidence, 1.0))))
+    prompt_chars = min(len(clean_content or ""), MAX_PROMPT_CHARS)
+    return ContextExtractResponse(
+        entries=entries,
+        summary=_clip(result.summary, 700) or "No se pudo extraer texto util.",
+        missing=[_clip(m, 200) for m in result.missing[:10]],
+        warnings=[],
+        tokensUsed=max(1, prompt_chars // 4),
+        model=llm_model_id(),
+        estimatedCost=round(prompt_chars / 4 / 1000 * 0.00025, 6),
+    )
+
+
+def _extract_context_heuristic(clean_content: str, source_type: str, title: str | None = None, url: str | None = None) -> ContextExtractResponse:
     text = _clip(clean_content, 80_000)
     sentences = _sentences(text)
     entries: list[ContextExtractEntry] = []

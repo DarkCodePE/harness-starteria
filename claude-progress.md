@@ -87,3 +87,28 @@
 - Follow-up cross-service: endpoint /initial-review del ai-service (Python) para activar IR-B3 real (flag INITIAL_REVIEW_AI=real; mock por defecto).
 - Riesgo entorno: worktree reseteado 2× por rama externa ci/auto-deploy-on-main → todo pusheado a origin.
 - Mejor próximo paso: que el hermano rebase #122; luego IR-F1..F3 cablean el FE a estas APIs reales.
+
+### Sesión 007 — épico company-context-real-ai (CC): amarrar "Contexto de empresa" a IA real
+
+- Fecha: 2026-07-11
+- Contexto: el commit del hermano `183fdf8` (company context en /initiatives/new) SÍ está amarrado al backend (companies REST + Prisma + companyId → initial-review → snapshot → Project); lo que NO era real era la IA: (1) generador mock por defecto y ruta "real" rota (AI_PATH sin prefijo + endpoint inexistente en ai-service), (2) extractor de contexto = stub heurístico.
+- Rama `feat/cc-01-ai-initial-review` (CC-01..CC-03 + CC-05):
+    - CC-01 (**passing**): `POST /api/v1/ai/initial-review` real en ai-service — chain LangChain stateless (patrón field_refiner) con salida estructurada plana + prompt §25 + serializador de contexto de empresa (confirmado verbatim / inferido etiquetado / clip 16k). pytest 49 verdes + smoke live con salida LLM real.
+    - CC-02 (**passing**): AI_PATH corregido + `ResilientInitialReviewGenerator` (real→fallback mock con warn estructurado; `real-strict` sin fallback). Backend 422/422.
+    - CC-03 (in_progress): compose + k8s con `INITIAL_REVIEW_AI` (`real` en k8s para el próximo tag). `.env.example` bloqueado por permisos de la sesión — añadir doc del flag a mano. Flag FE `VITE_ENABLE_INITIAL_REVIEW` está MUERTO (434d8f0 hizo el flujo default; featureFlags.ts sin consumidores).
+    - CC-05 (**passing**): e2e `front/e2e/initial-review-company-context.spec.ts` — tier (a) mock 3/3 (la crítica interpola el nombre de la empresa = el contexto llega al generador); tier (b) IA real 3/3 con `INITIAL_REVIEW_AI=real` verificado.
+- Hallazgos operativos: modelo local `deepseek/deepseek-chat` a veces divaga y trunca el JSON (LengthFinishReasonError) → mitigado con `json_schema` + retry en ai-service y fallback en backend; la generación real tarda 14-60s → el nginx local corta a 60s (revisar timeout del ingress en prod). Test heurístico pre-existente roto: `test_extract_context_classifies_public_signals` (CULTURE) — lo toca CC-04.
+- Pendiente: CC-04 (extractor LLM con fallback heurístico) `todo`; encendido en prod = taggear release DESPUÉS de confirmar rollout de ai-service (memoria: rollback total si un servicio falla).
+- Mejor próximo paso: PR de la rama CC; luego CC-04.
+
+### Sesión 008 — CC-04 + benchmark de modelos (leaderboard OpenRouter)
+
+- Fecha: 2026-07-12
+- CC-04 (**passing**): `extract_context` = LLM (chain `company_context_llm.py`, json_schema + retry) → fallback heurístico ante cualquier fallo; `verificationStatus=INFERRED` forzado en ambas rutas; `response.model` reporta la ruta. Fix de paso: umbral de oraciones 40→20 chars (causa del test CULTURE roto). pytest 256 ✅ + smoke live con extracción correcta de 5 dimensiones.
+- Benchmark de modelos (n=3, prompt+schema reales, json_schema estricto, dentro del contenedor):
+  v4-flash 3/3 ($0.0004, 15-17s) · minimax-m3 3/3 · glm-5.2 3/3 (caro) · step-3.7-flash 3/3 ·
+  deepseek-chat 1/3 · **mimo-v2.5 (líder del ranking) 0/3** · **qwen3.6-flash (default prod) 0/3**
+  (el proveedor exige "json" en el prompt → 400; con "json", JSON incompleto).
+- Decisión aplicada: `deepseek/deepseek-v4-flash` como default en `initial_reviewer.py`, `company_context_llm.py` y compose. `field_refiner`/deepagents intactos (menor radio de impacto; qwen les funciona con schemas simples). Prompts refuerzan "JSON válido" + español (una respuesta salió en inglés antes del refuerzo).
+- Verificación final: pytest 256 · backend 48/422 · e2e tier (a) 3/3 · initial-review live 3/3 en español.
+- Mejor próximo paso: mergear PR #133 (épico CC completo) y taggear release tras confirmar rollout del ai-service.

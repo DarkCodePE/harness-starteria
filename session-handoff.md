@@ -1,30 +1,25 @@
-# Session Handoff — épico initial-review (ADR-025)
+# Session Handoff — épico company-context-real-ai (CC)
 
-## Estado: 8/9 slices DONE + verificadas. 1 pendiente = decisión humana.
+## Estado: CC-01, CC-02, CC-04, CC-05 passing · CC-03 in_progress (falta tag de release + doc .env.example)
 
-DONE (PRs #127 ADR, #128 backend+frontend; rama feat/initial-review-backend):
-- IR-ADR ADR-025 · IR-B1 Prisma · IR-B2 REST · IR-B3 IA+guardrails · IR-B4 confirm-route
-  (backend unit 416/416 + e2e real contra Postgres)
-- IR-F1 cards · IR-F2 Overview · IR-F3 FE snapshot-REST cableado a APIs reales
-  (front unit 227/227)
-- Cadena e2e: Start → Result(6 cards) → confirm-route → Project navegable
-  (Steps 1-4 + meta en_step_0) + Step0 prefill → idempotente → Overview.
+Rama `feat/cc-01-ai-initial-review` (commits 1ed0be9..7244357):
+- CC-01 endpoint IA real `/api/v1/ai/initial-review` (pytest 49 ✅, smoke live LLM ✅)
+- CC-02 AI_PATH fix + fallback resiliente a mock (backend 422/422 ✅)
+- CC-05 e2e empresa→review(companyContext)→confirm-route→Project: tier (a) mock 3/3 ✅,
+  tier (b) IA real 3/3 ✅ (1 generación degradó a mock con warn — resiliencia probada)
+- CC-03 compose+k8s listos; **pendientes**: (1) documentar INITIAL_REVIEW_AI en
+  `.env.example` (bloqueado por permisos), (2) tag de release DESPUÉS de confirmar
+  rollout de la imagen ai-service (memoria: CD revierte todo si un servicio falla).
 
-## PENDIENTE — IR-00 (landear #122): requiere TU decisión (probado a nivel de código)
-Bloqueo técnico probado:
-1. #122 backend obsoleto (createProject) → superado por #129 (en main) + milestone #7 (prod).
-2. #122 reestructura routing core (absolutas→relativas) — riesgo.
-3. COLISIÓN: #122 define ruta `/initiatives/new` Y mi FE también → mutuamente excluyentes.
-Mergear #122 = elegir arquitectura de FE + tocar la rama activa del hermano + riesgo prod.
-
-### Decisión (una de dos) y ejecución:
-- OPCIÓN A (recomendada): usar el FE snapshot-REST propio (ya en #128) + CERRAR #122.
-  → Ejecutar: `gh pr merge 128 --merge` (tras review) ; `gh pr close 122`.
-- OPCIÓN B: conservar el FE conversacional de #122.
-  → Ejecutar: reconciliar #122 sobre main (backend=main/#129, FE=#122), resolver la
-    colisión de ruta descartando mi FE (features/initiative-review), verificar, PR.
+## Riesgos conocidos
+- Modelo local deepseek/deepseek-chat trunca JSON a veces → retry + fallback lo cubren;
+  para prod preferir modelo con salida estructurada confiable (OPENROUTER_MODEL).
+- Latencia IA real 14-60s: nginx/ingress con timeout 60s puede cortar al cliente
+  (la review igual se genera). Evaluar timeout del ingress o UX de polling.
+- Test heurístico pre-existente roto (CULTURE) en ai-service — lo absorbe CC-04.
 
 ## Reanudar
-- Mi trabajo: rama `feat/initial-review-backend` (pusheada), PR #128 MERGEABLE.
-- Análisis de coordinación: comentario en PR #122.
-- Backend verificado sobrevive #129 (createProject reusado sin modificar).
+1. Abrir/mergear PR de `feat/cc-01-ai-initial-review` → main.
+2. CC-04: extractor LLM con fallback heurístico (`company_context_extractor.py`,
+   patrón field_refiner; arregla el test CULTURE de paso).
+3. CC-05 tier (b) en CI opcional vía E2E_REAL_AI=1.

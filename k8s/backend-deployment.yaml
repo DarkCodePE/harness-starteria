@@ -42,6 +42,12 @@ spec:
           value: "https://starter-ia.com"
         - name: LOG_LEVEL
           value: "info"
+        # Revisión inicial guiada (CC-02/CC-03): "real" usa el ai-service
+        # (/api/v1/ai/initial-review) con fallback automático al mock si falla
+        # (un fallback aparece como warn "initial-review AI fallback" en logs).
+        # Vacío o ausente = mock determinista. "real-strict" = sin fallback (debug).
+        - name: INITIAL_REVIEW_AI
+          value: "real"
         # Pilot-lead email notification (issue #54). Non-secret config; SMTP
         # credentials + from-address come from the synced Secret above. The team
         # inbox below receives the new-lead notification — edit to the real address.

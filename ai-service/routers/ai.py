@@ -17,6 +17,7 @@ from agents.narrative_builder import NarrativeBuilderAgent
 from agents.orchestrator import OrchestratorAgent
 from agents.field_refiner import refine_field
 from agents.company_context_extractor import extract_context, extract_file
+from agents.initial_reviewer import generate_initial_review
 from agents.pdf_extractor import PdfExtractorAgent, get_run_registry
 from agents.research_assistant import ResearchAssistantAgent
 from agents.solution_design import SolutionDesignAgent
@@ -40,6 +41,7 @@ from schemas.requests import (
     ResearchAssistRequest,
     ContextExtractRequest,
     ContextExtractFileRequest,
+    InitialReviewRequest,
 )
 from schemas.responses import (
     ErrorResponse,
@@ -56,6 +58,7 @@ from schemas.responses import (
     RefineFieldResponse,
     ResearchAssistResponse,
     ContextExtractResponse,
+    InitialReviewResponse,
 )
 from services.context_assembler import ContextAssembler
 from services.cost_tracker import CostLimitExceededError
@@ -539,6 +542,41 @@ async def context_extract_file_endpoint(
         return response
     except Exception as exc:  # noqa: BLE001
         logger.exception("context-extract-file error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),
+        ) from exc
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/initial-review  (ADR-025 / PRD §25 — revisión inicial guiada)
+#
+# Stateless LangChain chain (NOT a graph). El backend aplica sus propios
+# guardrails (§25) sobre la respuesta y degrada al mock determinista ante
+# cualquier fallo, así que aquí un error se expone limpio como 503.
+# ---------------------------------------------------------------------------
+
+@router.post("/initial-review", response_model=InitialReviewResponse)
+async def initial_review_endpoint(
+    body: InitialReviewRequest,
+    x_internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+) -> InitialReviewResponse:
+    _verify_internal_token(x_internal_token)
+    try:
+        result = await run_in_threadpool(
+            generate_initial_review,
+            body.originalInput,
+            body.addedContext,
+            body.companyContext,
+        )
+        return InitialReviewResponse(
+            **result.model_dump(),
+            model=os.getenv("OPENROUTER_MODEL", "qwen/qwen3.6-flash"),
+        )
+    except CostLimitExceededError as exc:
+        _handle_cost_error(exc)
+    except Exception as exc:  # noqa: BLE001 — el backend degrada al mock
+        logger.exception("initial-review error: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),

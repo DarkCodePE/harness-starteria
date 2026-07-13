@@ -1,6 +1,6 @@
 {
   "project": "Starteria (Dashboardstarteria)",
-  "last_updated": "2026-06-23",
+  "last_updated": "2026-07-11",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -306,6 +306,96 @@
         "Unit 4/4: crear→navegar, 6 cards, confirm-route real→navega a overviewUrl, guard de input corto. front 227/227."
       ],
       "notes": "IR-F3 entregado como FE de referencia snapshot-REST (opción A de la decisión de arquitectura), consumiendo el backend verificado. Sin mock, sin tocar #122."
+    },
+    {
+      "id": "CC-01-ai-endpoint-initial-review",
+      "priority": 15,
+      "epic": "company-context-real-ai",
+      "area": "ai-service",
+      "title": "Endpoint real POST /api/v1/ai/initial-review (LLM con contexto de empresa)",
+      "user_visible_behavior": "El ai-service puede generar la crítica inicial con un LLM real (patrón field_refiner), consciente del contexto de empresa seleccionado en /initiatives/new.",
+      "status": "passing",
+      "verification": [
+        "cd ai-service && uv run pytest tests/test_initial_reviewer.py tests/test_routers_ai.py",
+        "curl local POST /api/v1/ai/initial-review con OPENROUTER_API_KEY real → respuesta plana con 6 bloques"
+      ],
+      "evidence": [
+        "pytest hermético: 49 passed (tests/test_initial_reviewer.py 11 + test_routers_ai.py 38) — shape plano, 503, 401 token, formatter con clipping/etiquetado inferido",
+        "smoke live 2026-07-11: POST http://ai-service:8001/api/v1/ai/initial-review con X-Internal-Token → 200 con salida LLM real (OpenRouter) en español, 6 bloques; sin token → 401; ruta registrada (no 404)"
+      ],
+      "notes": "Aditivo, cero riesgo de rollout: backend sigue en mock hasta CC-03. Respuesta plana (sin wrapper data, sin routePreview) porque applyGuardrails lee top-level."
+    },
+    {
+      "id": "CC-02-backend-path-fix-fallback",
+      "priority": 16,
+      "epic": "company-context-real-ai",
+      "area": "initial-review",
+      "title": "Fix AI_PATH + ResilientInitialReviewGenerator (fallback a mock)",
+      "user_visible_behavior": "Con INITIAL_REVIEW_AI=real, la creación de iniciativas usa IA real y degrada a mock (nunca INITIAL_REVIEW_GEN_FAILED) si el ai-service falla.",
+      "status": "passing",
+      "verification": [
+        "cd backend && npm test -- initial-review",
+        "smoke: INITIAL_REVIEW_AI=real con ai-service apagado → POST /initial-reviews devuelve generated (mock)"
+      ],
+      "evidence": [
+        "vitest: 23 tests initial-review verdes (4 nuevos resilient-generator: passthrough, fallback BridgeError con warn estructurado, fallback MALFORMED, doble fallo propaga)",
+        "suite backend completa 48 files / 422 tests verdes"
+      ],
+      "notes": "AI_PATH /initial-review → /api/v1/ai/initial-review. Modo real-strict sin fallback para debug. Warn estructurado greppeable en el fallback."
+    },
+    {
+      "id": "CC-03-env-deploy-plumbing",
+      "priority": 17,
+      "epic": "company-context-real-ai",
+      "area": "infra",
+      "title": "Plumbing INITIAL_REVIEW_AI en .env.example, compose y k8s",
+      "user_visible_behavior": "Prod genera la revisión inicial con IA real (flag encendido vía k8s), con fallback de CC-02 como red de seguridad.",
+      "status": "in_progress",
+      "verification": [
+        "post-deploy: logs backend sin warns de fallback; crear iniciativa en prod y confirmar snapshot no-mock"
+      ],
+      "evidence": [
+        "compose valida (docker compose config); backend local recreado con INITIAL_REVIEW_AI=real y verificado con printenv; k8s/backend-deployment.yaml con INITIAL_REVIEW_AI=\"real\" listo para el próximo tag",
+        "PENDIENTE prod: .env.example no editable en esta sesión (permisos); taggear release DESPUÉS de confirmar rollout de la imagen ai-service con CC-01; verificar post-deploy logs sin warns \"initial-review AI fallback\""
+      ],
+      "notes": "CD tag-triggered: taggear DESPUÉS de confirmar rollout de la imagen ai-service con CC-01. Sin cambios de schema (cero riesgo prisma db push). Decisión pendiente de producto: build-arg VITE_ENABLE_INITIAL_REVIEW en Dockerfile.frontend. NOTA: VITE_ENABLE_INITIAL_REVIEW quedó muerto — 434d8f0 hizo el flujo guiado default incondicional (featureFlags.ts ya no se consume); no se necesita build-arg. Latencia LLM real 14-60s: el proxy nginx local corta a 60s — revisar timeout del ingress de prod. Modelo local deepseek/deepseek-chat divaga a veces (trunca JSON): mitigado con json_schema + retry en ai-service y fallback a mock en backend; para prod preferir un modelo con salida estructurada confiable (p.ej. qwen3.6-flash default)."
+    },
+    {
+      "id": "CC-04-llm-context-extractor",
+      "priority": 18,
+      "epic": "company-context-real-ai",
+      "area": "companies",
+      "title": "Extractor de contexto de empresa con LLM (heurística como fallback)",
+      "user_visible_behavior": "Subir una fuente (PDF/URL) en /companies/:id produce entradas de contexto extraídas por LLM, con la heurística actual como fallback.",
+      "status": "passing",
+      "verification": [
+        "cd ai-service && uv run pytest tests/test_company_context_extractor.py tests/test_routers_ai.py"
+      ],
+      "evidence": [
+        "pytest ai-service completo: 256 passed (4 tests del extractor: fallback heurístico clasifica 4 dimensiones incl. CULTURE, ruta LLM mapea entradas con INFERRED forzado + clamp, injection-safety en markdown)",
+        "fix de paso: umbral de oraciones 40→20 chars — causa del test pre-existente roto test_extract_context_classifies_public_signals (CULTURE con 36 chars se descartaba)",
+        "smoke live 2026-07-12: POST /api/v1/ai/context-extract → model openrouter:deepseek/deepseek-v4-flash, entradas IDENTITY/CULTURE/STRUCTURE/INNOVATION/RESOURCES correctas, todas INFERRED, resumen en español",
+        "benchmark de modelos (n=3, schema real json_schema): deepseek-v4-flash 3/3 ok 15-17s $0.0004/call · minimax-m3 3/3 · glm-5.2 3/3 ($0.013) · step-3.7-flash 3/3 · deepseek-chat 1/3 · mimo-v2.5 0/3 · qwen3.6-flash 0/3 (exige \"json\" en prompt y aun así JSON incompleto) → default cambiado a deepseek-v4-flash en initial_reviewer, company_context_llm y compose"
+      ],
+      "notes": "verificationStatus=INFERRED forzado server-side; test de injection-safety intacto; si el archivo supera 500 líneas, extraer chain a company_context_llm.py."
+    },
+    {
+      "id": "CC-05-e2e-company-context-flow",
+      "priority": 19,
+      "epic": "company-context-real-ai",
+      "area": "e2e",
+      "title": "E2E: empresa → initial-review con companyContext → confirm-route → Project",
+      "user_visible_behavior": "El flujo completo de /initiatives/new con empresa queda cubierto por un e2e determinista (mock) + tier opcional con IA real.",
+      "status": "passing",
+      "verification": [
+        "docker compose up -d --build backend ai-service && cd front && npm run test:e2e -- initial-review-company-context"
+      ],
+      "evidence": [
+        "tier (a) 2026-07-11: 3/3 passed contra stack docker real — empresa creada → review con companyContext → crítica del snapshot interpola nombre de empresa (contexto LLEGÓ al generador) → confirm-route → Project origin=from_initial_review; companyContext opcional OK; companyId inexistente → 404 sin 500",
+        "tier (b) (E2E_REAL_AI con INITIAL_REVIEW_AI=real) pendiente de CC-03",
+        "tier (b) 2026-07-11: 3/3 passed con INITIAL_REVIEW_AI=real verificado (printenv) contra backend directo; 1 de ~3 generaciones degradó a mock por truncamiento del modelo local (warn estructurado presente) y el flujo completó igual — resiliencia CC-02 probada en vivo"
+      ],
+      "notes": "Tier (a) determinista siempre (mock interpola nombre de empresa); tier (b) test.skip(!process.env.E2E_REAL_AI), asserta forma, nunca contenido."
     }
   ]
 }
