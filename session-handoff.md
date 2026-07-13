@@ -1,6 +1,6 @@
 # Session Handoff — épico company-context-real-ai (CC)
 
-## Estado: CC-01, CC-02, CC-05 passing · CC-03 in_progress · CC-04 todo
+## Estado: CC-01, CC-02, CC-04, CC-05 passing · CC-03 in_progress (falta tag de release + doc .env.example)
 
 Rama `feat/cc-01-ai-initial-review` (commits 1ed0be9..7244357):
 - CC-01 endpoint IA real `/api/v1/ai/initial-review` (pytest 49 ✅, smoke live LLM ✅)
