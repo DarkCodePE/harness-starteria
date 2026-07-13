@@ -112,3 +112,10 @@
 - Decisión aplicada: `deepseek/deepseek-v4-flash` como default en `initial_reviewer.py`, `company_context_llm.py` y compose. `field_refiner`/deepagents intactos (menor radio de impacto; qwen les funciona con schemas simples). Prompts refuerzan "JSON válido" + español (una respuesta salió en inglés antes del refuerzo).
 - Verificación final: pytest 256 · backend 48/422 · e2e tier (a) 3/3 · initial-review live 3/3 en español.
 - Mejor próximo paso: mergear PR #133 (épico CC completo) y taggear release tras confirmar rollout del ai-service.
+
+### Sesión 009 — merge + deploy v2.16.0 (épico CC DESPLEGADO)
+
+- Fecha: 2026-07-13
+- PR #133 mergeado (CI verde) → CD de main OK → tag `v2.16.0` → CD del tag OK (run 29265396804): backend/frontend/ai-service "successfully rolled out", `prisma db push` in sync, sin auto-undo. starter-ia.com responde 200.
+- `INITIAL_REVIEW_AI=real` quedó activo en prod vía manifest k8s; el fallback de CC-02 protege la creación de iniciativas.
+- Pendiente de humano: smoke funcional con cuenta real (la waitlist bloquea usuarios de prueba) — crear 1 iniciativa en /initiatives/new y confirmar que la crítica no es el template del mock ("Entiendo que quieres ordenar: …"); si aparece el mock, buscar warns "initial-review AI fallback" en los logs del backend.
