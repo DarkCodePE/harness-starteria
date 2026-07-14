@@ -16,7 +16,7 @@ const companies = [
     country: 'Peru',
     scope: 'PERSONAL',
     status: 'ACTIVE',
-    versions: [{ id: 'v1', versionNumber: 1, contextScore: 74, contextLevel: 'USEFUL' }],
+    versions: [{ id: 'v1', versionNumber: 1, contextScore: 98, contextLevel: 'SOLID' }],
     areas: [{ id: 'area1', name: 'Servicios Offsite' }, { id: 'area2', name: 'Administracion' }],
     sources: [],
   },
@@ -130,18 +130,35 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
 });
 
 describe('InitiativeReviewStartPage (IR-F3)', () => {
+  let co1Score = 54;
+
   beforeEach(() => {
+    co1Score = 54;
     navigate.mockReset();
     client.createReview.mockReset().mockResolvedValue({ id: 'revNew', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT });
     companyService.listCompanies.mockReset().mockResolvedValue(companies);
     companyService.createCompany.mockReset().mockResolvedValue({ ...companies[0], id: 'co-new', name: 'Nueva Empresa', versions: [{ id: 'vn', versionNumber: 1, contextScore: 0, contextLevel: 'INITIAL' }], areas: [] });
     companyService.createArea.mockReset().mockResolvedValue({ id: 'area-new', name: 'Prime' });
-    companyService.getCompanyScore.mockReset().mockResolvedValue({
-      score: 74,
-      level: 'USEFUL',
-      label: 'Contexto util',
-      missing: ['politicas y validaciones internas'],
-      breakdown: { coverage: 45, evidence: 14, freshness: 15 },
+    companyService.getCompanyScore.mockReset().mockImplementation((companyId: string) => {
+      if (companyId === 'co-new') {
+        return Promise.reject(new Error('Contexto aún no evaluado'));
+      }
+      if (companyId === 'co2') {
+        return Promise.resolve({
+          score: 62,
+          level: 'USEFUL',
+          label: 'Contexto útil',
+          missing: [],
+          breakdown: { coverage: 35, evidence: 12, freshness: 15 },
+        });
+      }
+      return Promise.resolve({
+        score: co1Score,
+        level: co1Score >= 60 ? 'USEFUL' : 'BASIC',
+        label: co1Score >= 60 ? 'Contexto útil' : 'Contexto básico',
+        missing: co1Score >= 60 ? [] : ['Cultura y apertura al cambio', 'Estructura y toma de decisiones', 'Políticas y validaciones internas'],
+        breakdown: { coverage: co1Score >= 60 ? 37 : 28, evidence: co1Score >= 60 ? 11 : 8, freshness: 15 },
+      });
     });
   });
 
@@ -153,7 +170,7 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     expect(screen.getByRole('button', { name: /Empresa o contexto/i })).toBeInTheDocument();
   });
 
-  it('crea la revision sin empresa y navega al Result', async () => {
+  it('crea la revisión sin empresa y navega al Result', async () => {
     render(<InitiativeReviewStartPage />);
     fireEvent.change(screen.getByLabelText(/Describe tu iniciativa/i), { target: { value: 'Quiero mejorar el proceso de compras menores para reducir retrabajo operativo.' } });
     fireEvent.click(screen.getByRole('button', { name: /Revisar propuesta/i }));
@@ -175,9 +192,16 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     fireEvent.change(screen.getByPlaceholderText(/Buscar empresas/i), { target: { value: 'unimaq' } });
     fireEvent.click(await screen.findByRole('button', { name: /Unimaq/i }));
     fireEvent.click(screen.getByRole('button', { name: /Servicios Offsite/i }));
-    expect(screen.getByRole('button', { name: /Unimaq - Servicios Offsite - 74% contexto/i })).toBeInTheDocument();
-    expect(await screen.findByText(/Que significa este porcentaje/i)).toBeInTheDocument();
-    expect(screen.getByText(/No es avance del registro/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Unimaq · Servicios Offsite · 54% · Contexto básico/i })).toBeInTheDocument();
+    expect(screen.queryByText(/98%/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/¿Qué significa este porcentaje\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Este porcentaje refleja qué tan completo y confiable es el contexto disponible de la empresa/i)).toBeInTheDocument();
+    expect(screen.getByText(/Con un contexto básico, ya existe una referencia inicial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Por confirmar o profundizar/i)).toBeInTheDocument();
+    expect(screen.getByText(/Políticas y validaciones internas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Señales identificadas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cobertura media, respaldo inicial y actualización alta/i)).toBeInTheDocument();
+    expect(screen.queryByText(/No es avance del registro/i)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/Describe tu iniciativa/i), { target: { value: 'Quiero mejorar el proceso de compras menores para reducir retrabajo operativo.' } });
     fireEvent.click(screen.getByRole('button', { name: /Revisar propuesta/i }));
@@ -195,20 +219,34 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     const dialog = await screen.findByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText(/Nombre de empresa/i), { target: { value: 'Nueva Empresa' } });
     fireEvent.change(within(dialog).getByLabelText(/^Sector$/i), { target: { value: 'Retail' } });
-    fireEvent.change(within(dialog).getByLabelText(/Pais principal/i), { target: { value: 'Peru' } });
+    fireEvent.change(within(dialog).getByLabelText(/País principal/i), { target: { value: 'Peru' } });
     expect(within(dialog).getByLabelText(/Tamaño de empresa/i)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: /Agregar una empresa/i }));
     await waitFor(() => expect(companyService.createCompany).toHaveBeenCalled());
-    expect(await screen.findByRole('button', { name: /Nueva Empresa - 0% contexto/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Nueva Empresa · Contexto aún no evaluado/i })).toBeInTheDocument();
   });
 
   it('permite crear y seleccionar una nueva area', async () => {
+    companyService.createArea.mockImplementation(async () => {
+      co1Score = 64;
+      return { id: 'area-new', name: 'Prime' };
+    });
     render(<InitiativeReviewStartPage />);
     fireEvent.click(screen.getByRole('button', { name: /Empresa o contexto/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Unimaq/i }));
-    fireEvent.change(screen.getByPlaceholderText(/Agregar area/i), { target: { value: 'Prime' } });
+    fireEvent.change(screen.getByPlaceholderText(/Agregar área/i), { target: { value: 'Prime' } });
     fireEvent.click(screen.getByRole('button', { name: /^Agregar$/i }));
     await waitFor(() => expect(companyService.createArea).toHaveBeenCalledWith('co1', { name: 'Prime' }));
-    expect(screen.getByRole('button', { name: /Unimaq - Prime - 74% contexto/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Unimaq · Prime · 64% · Contexto útil/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Por confirmar o profundizar/i)).not.toBeInTheDocument();
+  });
+
+  it('sincroniza el porcentaje al cambiar de empresa', async () => {
+    render(<InitiativeReviewStartPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Empresa o contexto/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Starteria Org/i }));
+    expect(await screen.findByRole('button', { name: /Starteria Org · 62% · Contexto útil/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/62% · Contexto útil/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Por confirmar o profundizar/i)).not.toBeInTheDocument();
   });
 });
