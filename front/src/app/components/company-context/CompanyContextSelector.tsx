@@ -9,8 +9,10 @@ import { cn } from '../ui/utils';
 import {
   Company,
   CompanyArea,
+  ContextScore,
   createArea,
   createCompany,
+  getCompanyScore,
   listCompanies,
 } from '../../services/companyService';
 
@@ -34,7 +36,7 @@ function scoreValue(company: Company): number {
 }
 
 function compactCompanyLabel(company: Company, area?: CompanyArea | null): string {
-  return [company.name, area?.name, `${scoreValue(company)} %`].filter(Boolean).join(' · ');
+  return [company.name, area?.name, `${scoreValue(company)}% contexto`].filter(Boolean).join(' - ');
 }
 
 function scopeLabel(scope: Company['scope']): string {
@@ -49,7 +51,13 @@ function levelLabel(company: Company): string {
     USEFUL: 'Contexto util',
     SOLID: 'Contexto solido',
   };
-  return `${labels[version?.contextLevel ?? 'INITIAL'] ?? 'Contexto inicial'} · ${scoreValue(company)} %`;
+  return `${labels[version?.contextLevel ?? 'INITIAL'] ?? 'Contexto inicial'} - ${scoreValue(company)}%`;
+}
+
+function scoreLabel(score?: ContextScore | null, company?: Company | null): string {
+  if (score) return `${score.label} - ${score.score}%`;
+  if (!company) return 'Contexto inicial - 0%';
+  return levelLabel(company);
 }
 
 function CompanyRow({
@@ -77,7 +85,7 @@ function CompanyRow({
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-slate-900">{company.name}</span>
         <span className="mt-0.5 block text-xs text-slate-500">
-          {scopeLabel(company.scope)} · {levelLabel(company)}
+          {scopeLabel(company.scope)} - {levelLabel(company)}
         </span>
         {recentArea && <span aria-hidden="true" className="mt-0.5 block truncate text-xs text-slate-400">Area reciente: {recentArea}</span>}
       </span>
@@ -105,6 +113,8 @@ export function CompanyContextSelector({
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectedScore, setSelectedScore] = useState<ContextScore | null>(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
   const [areaName, setAreaName] = useState('');
   const [form, setForm] = useState({
     name: '',
@@ -156,6 +166,21 @@ export function CompanyContextSelector({
   const recentIds = new Set(recent.map((company) => company.id));
   const personal = filtered.filter((company) => company.scope === 'PERSONAL' && !recentIds.has(company.id));
   const organizational = filtered.filter((company) => company.scope === 'ORGANIZATION' && !recentIds.has(company.id));
+
+  useEffect(() => {
+    let mounted = true;
+    if (!selected?.id) {
+      setSelectedScore(null);
+      setScoreLoading(false);
+      return () => { mounted = false; };
+    }
+    setScoreLoading(true);
+    getCompanyScore(selected.id)
+      .then((score) => { if (mounted) setSelectedScore(score); })
+      .catch(() => { if (mounted) setSelectedScore(null); })
+      .finally(() => { if (mounted) setScoreLoading(false); });
+    return () => { mounted = false; };
+  }, [selected?.id]);
 
   const selectCompany = (company: Company) => {
     onChange({ companyId: company.id });
@@ -303,7 +328,41 @@ export function CompanyContextSelector({
               {selected && (
                 <section className="mt-3 border-t border-slate-100 px-3 pt-3">
                   <p className="text-sm font-semibold text-slate-900">{selected.name}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{scopeLabel(selected.scope)} · {scoreValue(selected)} %</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{scopeLabel(selected.scope)} - {scoreLabel(selectedScore, selected)}</p>
+                  <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs font-semibold text-slate-900">Que significa este porcentaje</p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Mide que tan completo es el contexto de empresa para adaptar la revision de tu iniciativa. No es avance del registro.
+                    </p>
+                    {scoreLoading && <p className="mt-2 text-xs text-slate-500">Calculando desglose...</p>}
+                    {selectedScore && (
+                      <>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                          <div className="rounded-md bg-white p-2">
+                            <p className="text-[11px] text-slate-500">Cobertura</p>
+                            <p className="text-sm font-semibold text-slate-900">{selectedScore.breakdown.coverage}</p>
+                          </div>
+                          <div className="rounded-md bg-white p-2">
+                            <p className="text-[11px] text-slate-500">Evidencia</p>
+                            <p className="text-sm font-semibold text-slate-900">{selectedScore.breakdown.evidence}</p>
+                          </div>
+                          <div className="rounded-md bg-white p-2">
+                            <p className="text-[11px] text-slate-500">Actualidad</p>
+                            <p className="text-sm font-semibold text-slate-900">{selectedScore.breakdown.freshness}</p>
+                          </div>
+                        </div>
+                        {selectedScore.missing.length > 0 && (
+                          <p className="mt-2 text-xs text-amber-700">
+                            Falta contexto sobre: {selectedScore.missing.slice(0, 3).join(', ')}{selectedScore.missing.length > 3 ? '...' : ''}.
+                          </p>
+                        )}
+                      </>
+                    )}
+                    <Button type="button" variant="outline" size="sm" className="mt-3 w-full" onClick={() => navigate('/companies')}>
+                      <Settings2 size={14} />
+                      Completar contexto
+                    </Button>
+                  </div>
                   <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Area opcional</p>
                   <div className="mt-1 space-y-1">
                     <button
@@ -373,14 +432,17 @@ export function CompanyContextSelector({
             <Input aria-label="Nombre de empresa" placeholder="Nombre" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <Input aria-label="Sector" placeholder="Sector" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })} />
             <Input aria-label="Pais principal" placeholder="Pais principal" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
-            <select
-              aria-label="Tamano de empresa"
-              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              value={form.employeeRange}
-              onChange={(e) => setForm({ ...form, employeeRange: e.target.value })}
-            >
-              {employeeRanges.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              Tamaño de empresa
+              <select
+                aria-label="Tamaño de empresa"
+                className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                value={form.employeeRange}
+                onChange={(e) => setForm({ ...form, employeeRange: e.target.value })}
+              >
+                {employeeRanges.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
             <Input aria-label="Sitio web" placeholder="Sitio web" value={form.websiteUrl} onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })} />
             <Input aria-label="LinkedIn" placeholder="LinkedIn" value={form.linkedinUrl} onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })} />
             <Input aria-label="Area del usuario" className="md:col-span-2" placeholder="Area del usuario" value={form.areaName} onChange={(e) => setForm({ ...form, areaName: e.target.value })} />

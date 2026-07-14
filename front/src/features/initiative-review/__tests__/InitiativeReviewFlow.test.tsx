@@ -37,11 +37,13 @@ const companyService = {
   listCompanies: vi.fn(),
   createCompany: vi.fn(),
   createArea: vi.fn(),
+  getCompanyScore: vi.fn(),
 };
 vi.mock('../../../app/services/companyService', () => ({
   listCompanies: () => companyService.listCompanies(),
   createCompany: (payload: unknown) => companyService.createCompany(payload),
   createArea: (companyId: string, payload: unknown) => companyService.createArea(companyId, payload),
+  getCompanyScore: (companyId: string) => companyService.getCompanyScore(companyId),
 }));
 
 const client = {
@@ -134,6 +136,13 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     companyService.listCompanies.mockReset().mockResolvedValue(companies);
     companyService.createCompany.mockReset().mockResolvedValue({ ...companies[0], id: 'co-new', name: 'Nueva Empresa', versions: [{ id: 'vn', versionNumber: 1, contextScore: 0, contextLevel: 'INITIAL' }], areas: [] });
     companyService.createArea.mockReset().mockResolvedValue({ id: 'area-new', name: 'Prime' });
+    companyService.getCompanyScore.mockReset().mockResolvedValue({
+      score: 74,
+      level: 'USEFUL',
+      label: 'Contexto util',
+      missing: ['politicas y validaciones internas'],
+      breakdown: { coverage: 45, evidence: 14, freshness: 15 },
+    });
   });
 
   it('renderiza un composer unico y elimina el contexto adicional opcional', async () => {
@@ -166,7 +175,9 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     fireEvent.change(screen.getByPlaceholderText(/Buscar empresas/i), { target: { value: 'unimaq' } });
     fireEvent.click(await screen.findByRole('button', { name: /Unimaq/i }));
     fireEvent.click(screen.getByRole('button', { name: /Servicios Offsite/i }));
-    expect(screen.getByRole('button', { name: /Unimaq · Servicios Offsite · 74 %/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unimaq - Servicios Offsite - 74% contexto/i })).toBeInTheDocument();
+    expect(await screen.findByText(/Que significa este porcentaje/i)).toBeInTheDocument();
+    expect(screen.getByText(/No es avance del registro/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/Describe tu iniciativa/i), { target: { value: 'Quiero mejorar el proceso de compras menores para reducir retrabajo operativo.' } });
     fireEvent.click(screen.getByRole('button', { name: /Revisar propuesta/i }));
@@ -185,9 +196,10 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     fireEvent.change(within(dialog).getByLabelText(/Nombre de empresa/i), { target: { value: 'Nueva Empresa' } });
     fireEvent.change(within(dialog).getByLabelText(/^Sector$/i), { target: { value: 'Retail' } });
     fireEvent.change(within(dialog).getByLabelText(/Pais principal/i), { target: { value: 'Peru' } });
+    expect(within(dialog).getByLabelText(/Tamaño de empresa/i)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: /Agregar una empresa/i }));
     await waitFor(() => expect(companyService.createCompany).toHaveBeenCalled());
-    expect(await screen.findByRole('button', { name: /Nueva Empresa · 0 %/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Nueva Empresa - 0% contexto/i })).toBeInTheDocument();
   });
 
   it('permite crear y seleccionar una nueva area', async () => {
@@ -197,6 +209,6 @@ describe('InitiativeReviewStartPage (IR-F3)', () => {
     fireEvent.change(screen.getByPlaceholderText(/Agregar area/i), { target: { value: 'Prime' } });
     fireEvent.click(screen.getByRole('button', { name: /^Agregar$/i }));
     await waitFor(() => expect(companyService.createArea).toHaveBeenCalledWith('co1', { name: 'Prime' }));
-    expect(screen.getByRole('button', { name: /Unimaq · Prime · 74 %/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unimaq - Prime - 74% contexto/i })).toBeInTheDocument();
   });
 });

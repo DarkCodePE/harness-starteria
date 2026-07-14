@@ -50,6 +50,33 @@ export interface ContextScore {
   breakdown: { coverage: number; evidence: number; freshness: number };
 }
 
+export interface CompanyContextEntryInput {
+  dimension: 'IDENTITY' | 'CULTURE' | 'STRUCTURE' | 'POLICIES' | 'INNOVATION' | 'RESOURCES' | 'AREA' | 'OTHER';
+  fieldKey: string;
+  value: unknown;
+  sourceType?: 'USER_INPUT' | 'WEBSITE' | 'LINKEDIN' | 'FILE' | 'PROJECT_NOTE' | 'AGENT_INFERENCE';
+  sourceId?: string;
+  confidence?: number;
+  verificationStatus?: 'UNVERIFIED' | 'USER_CONFIRMED' | 'INFERRED' | 'NEEDS_REVIEW';
+}
+
+export interface CompanyContextDetails {
+  company: Company;
+  contextScore: number;
+  contextLevel: ContextScore['level'];
+  scoreBreakdown: ContextScore['breakdown'];
+  missing: string[];
+  entries: Array<{
+    dimension: string;
+    fieldKey: string;
+    value: unknown;
+    sourceType: string;
+    verificationStatus?: string | null;
+    updatedAt?: string;
+  }>;
+  sources: ContextSource[];
+}
+
 export interface CreateCompanyPayload {
   name: string;
   sector: string;
@@ -78,6 +105,16 @@ export async function createCompany(payload: CreateCompanyPayload): Promise<Comp
 
 export async function getCompanyScore(companyId: string): Promise<ContextScore> {
   const { data } = await api.get<ApiEnvelope<ContextScore>>(`/companies/${companyId}/context/score`);
+  return data.data;
+}
+
+export async function readCompanyContext(companyId: string): Promise<CompanyContextDetails> {
+  const { data } = await api.get<ApiEnvelope<CompanyContextDetails>>(`/companies/${companyId}/context`);
+  return data.data;
+}
+
+export async function updateCompanyContext(companyId: string, entries: CompanyContextEntryInput[]): Promise<CompanyContextDetails> {
+  const { data } = await api.patch<ApiEnvelope<CompanyContextDetails>>(`/companies/${companyId}/context`, { entries });
   return data.data;
 }
 
