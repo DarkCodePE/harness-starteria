@@ -60,26 +60,47 @@ function daysSince(value: Date | string | null | undefined): number {
   return Math.max(0, Math.floor((Date.now() - ts) / 86_400_000));
 }
 
+function coverageConfidence(entry: EntryLike): number {
+  if (entry.verificationStatus === 'USER_CONFIRMED') return 1;
+  if (entry.verificationStatus === 'NEEDS_REVIEW') return 0.25;
+  if (entry.verificationStatus === 'INFERRED') return 0.45;
+  if (entry.sourceType === 'USER_INPUT') return 0.8;
+  if (entry.sourceType === 'AGENT_INFERENCE') return 0.35;
+  return 0.5;
+}
+
+function isConfirmedContextDimension(entry: EntryLike): boolean {
+  return entry.dimension !== 'IDENTITY' && entry.verificationStatus === 'USER_CONFIRMED';
+}
+
+function isInferred(entry: EntryLike): boolean {
+  return entry.verificationStatus === 'INFERRED' || entry.sourceType === 'AGENT_INFERENCE';
+}
+
 export function calculateContextScore(entries: EntryLike[], sources: SourceLike[]): ContextScoreResult {
   let coverage = 0;
   const missing: string[] = [];
   for (const [dimension, weight] of Object.entries(coverageWeights)) {
     const dimensionEntries = entries.filter((entry) => entry.dimension === dimension && hasConcreteValue(entry.valueJson));
     if (dimensionEntries.length > 0) {
-      coverage += weight;
+      const confidence = Math.max(...dimensionEntries.map(coverageConfidence));
+      coverage += weight * confidence;
+      if (confidence < 0.75) {
+        missing.push(requiredLabels[dimension]);
+      }
     } else {
       missing.push(requiredLabels[dimension]);
     }
   }
 
   const processedSources = sources.filter((source) => source.status === 'PROCESSED' || source.status === 'PARTIAL');
-  const confirmed = entries.filter((entry) => entry.verificationStatus === 'USER_CONFIRMED').length;
-  const inferred = entries.filter((entry) => entry.sourceType === 'AGENT_INFERENCE').length;
+  const confirmedContext = entries.filter(isConfirmedContextDimension).length;
+  const inferred = entries.filter(isInferred).length;
   let evidence = 0;
-  evidence += Math.min(10, processedSources.length * 5);
-  evidence += Math.min(8, confirmed * 2);
-  evidence += Math.min(5, entries.filter((entry) => entry.sourceType !== 'AGENT_INFERENCE').length);
-  evidence -= Math.min(4, inferred);
+  evidence += Math.min(8, processedSources.length * 4);
+  evidence += Math.min(10, confirmedContext * 2);
+  evidence += Math.min(4, entries.filter((entry) => !isInferred(entry)).length);
+  evidence -= Math.min(6, inferred);
   evidence = Math.max(0, Math.min(25, evidence));
 
   const newestEntryDays = Math.min(...entries.map((entry) => daysSince(entry.createdAt)), 999);
@@ -103,7 +124,7 @@ export function calculateContextScore(entries: EntryLike[], sources: SourceLike[
     score,
     level,
     label,
-    breakdown: { coverage, evidence, freshness },
+    breakdown: { coverage: Math.round(coverage), evidence, freshness },
     missing,
   };
 }

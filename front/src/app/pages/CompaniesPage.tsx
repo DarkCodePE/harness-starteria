@@ -56,6 +56,63 @@ function levelCopy(score?: ContextScore | null, context?: CompanyContextDetails 
   return 'Sin contexto calculado';
 }
 
+function bandLabel(value: number, high: number, medium: number): string {
+  if (value >= high) return 'Alta';
+  if (value >= medium) return 'Media';
+  return 'Inicial';
+}
+
+function contextInterpretation(
+  score: ContextScore | null,
+  context: CompanyContextDetails | null,
+): { title: string; body: string; next: string } {
+  const value = score?.score ?? context?.contextScore ?? 0;
+  const entries = context?.entries ?? [];
+  const inferred = entries.filter((entry) => entry.verificationStatus === 'INFERRED' || entry.sourceType === 'AGENT_INFERENCE').length;
+  const confirmedContext = entries.filter((entry) => entry.dimension !== 'IDENTITY' && entry.verificationStatus === 'USER_CONFIRMED').length;
+  const missing = score?.missing ?? context?.missing ?? [];
+
+  if (value >= 80 && inferred > confirmedContext) {
+    return {
+      title: `${value}% de confiabilidad contextual estimada`,
+      body: 'Hay informacion valiosa en las fuentes subidas, pero una parte importante parece inferida por IA o por fuentes publicas. Sirve para orientar la revision, no para asumir que la empresa ya esta completamente entendida.',
+      next: missing.length > 0
+        ? `Conviene confirmar o profundizar: ${missing.slice(0, 3).join(', ')}.`
+        : 'Conviene confirmar los supuestos principales con alguien de la empresa antes de usar este contexto para decisiones finas.',
+    };
+  }
+
+  if (value >= 80) {
+    return {
+      title: `${value}% de confiabilidad contextual`,
+      body: 'El contexto tiene buena cobertura y respaldo suficiente para adaptar la revision de iniciativas. Aun asi, el porcentaje no reemplaza la validacion especifica de cada problema u oportunidad.',
+      next: missing.length > 0 ? `Para hacerlo mas preciso, profundiza: ${missing.join(', ')}.` : 'Mantener actualizado cuando cambien politicas, estructura o prioridades.',
+    };
+  }
+
+  if (value >= 60) {
+    return {
+      title: `${value}% de confiabilidad contextual`,
+      body: 'Hay una base util para entender la empresa, pero todavia falta detalle para analizar temas especificos como cultura, toma de decisiones, politicas internas o recursos disponibles.',
+      next: missing.length > 0 ? `Siguiente foco: ${missing.slice(0, 3).join(', ')}.` : 'Confirma las inferencias principales y agrega contexto del area donde se usara la iniciativa.',
+    };
+  }
+
+  if (value >= 30) {
+    return {
+      title: `${value}% de confiabilidad contextual inicial`,
+      body: 'El sistema tiene senales basicas, pero no suficientes para profundizar con seguridad en como funciona la empresa. La revision de iniciativas sera mas general.',
+      next: missing.length > 0 ? `Completa primero: ${missing.slice(0, 3).join(', ')}.` : 'Agrega fuentes o respuestas manuales para que el contexto deje de ser generico.',
+    };
+  }
+
+  return {
+    title: `${value}% de confiabilidad contextual`,
+    body: 'Todavia no hay suficiente informacion para adaptar la revision a la realidad de la empresa.',
+    next: 'Agrega fuentes de contexto o responde los campos clave antes de usarlo como base de analisis.',
+  };
+}
+
 function normalizeEntryValue(value: unknown): string {
   if (typeof value === 'object' && value && 'value' in value) {
     const nested = (value as { value?: unknown }).value;
@@ -80,6 +137,7 @@ function ScorePanel({
 }) {
   const breakdown = score?.breakdown ?? context?.scoreBreakdown;
   const missing = score?.missing ?? context?.missing ?? [];
+  const interpretation = contextInterpretation(score, context);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -91,31 +149,40 @@ function ScorePanel({
           </p>
         </div>
         <p className="max-w-md text-xs text-slate-500">
-          Este porcentaje mide cobertura, evidencia y actualidad del contexto usado para adaptar la revision de iniciativas. No es avance del registro.
+          El porcentaje estima que tan confiable es el contexto para adaptar una revision. No mide avance del registro ni valida la iniciativa.
         </p>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-indigo-100 bg-white p-4">
+        <p className="text-sm font-semibold text-slate-900">{interpretation.title}</p>
+        <p className="mt-2 text-sm text-slate-600">{interpretation.body}</p>
+        <p className="mt-2 text-sm font-medium text-indigo-800">{interpretation.next}</p>
       </div>
 
       {breakdown && (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-md bg-white p-3">
-            <p className="text-xs text-slate-500">Cobertura</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{breakdown.coverage}</p>
+            <p className="text-xs font-semibold text-slate-900">Cobertura tematica</p>
+            <p className="mt-1 text-sm text-slate-600">{bandLabel(breakdown.coverage, 45, 25)}</p>
+            <p className="mt-1 text-xs text-slate-500">Que dimensiones aparecen: cultura, estructura, politicas, innovacion y recursos.</p>
           </div>
           <div className="rounded-md bg-white p-3">
-            <p className="text-xs text-slate-500">Evidencia</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{breakdown.evidence}</p>
+            <p className="text-xs font-semibold text-slate-900">Respaldo del contexto</p>
+            <p className="mt-1 text-sm text-slate-600">{bandLabel(breakdown.evidence, 18, 9)}</p>
+            <p className="mt-1 text-xs text-slate-500">Si viene de fuentes procesadas, archivos o respuestas confirmadas por el usuario.</p>
           </div>
           <div className="rounded-md bg-white p-3">
-            <p className="text-xs text-slate-500">Actualidad</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{breakdown.freshness}</p>
+            <p className="text-xs font-semibold text-slate-900">Actualizacion</p>
+            <p className="mt-1 text-sm text-slate-600">{bandLabel(breakdown.freshness, 12, 7)}</p>
+            <p className="mt-1 text-xs text-slate-500">Que tan reciente es la informacion usada para construir el contexto.</p>
           </div>
         </div>
       )}
 
       <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
         {missing.length > 0
-          ? `Para subir la claridad, falta contexto sobre: ${missing.join(', ')}.`
-          : 'El contexto cubre las dimensiones principales. Mantén las fuentes actualizadas.'}
+          ? `Por confirmar o profundizar: ${missing.join(', ')}.`
+          : 'El contexto cubre las dimensiones principales. Manten las fuentes actualizadas.'}
       </div>
     </section>
   );

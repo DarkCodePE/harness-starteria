@@ -60,6 +60,25 @@ function scoreLabel(score?: ContextScore | null, company?: Company | null): stri
   return levelLabel(company);
 }
 
+function bandLabel(value: number, high: number, medium: number): string {
+  if (value >= high) return 'alta';
+  if (value >= medium) return 'media';
+  return 'inicial';
+}
+
+function compactScoreExplanation(score: ContextScore): string {
+  if (score.score >= 80) {
+    return 'Representa alta confiabilidad contextual, pero si viene de fuentes automaticas todavia conviene confirmar cultura, estructura y reglas internas.';
+  }
+  if (score.score >= 60) {
+    return 'Representa una base util para adaptar la revision, aunque todavia falta profundidad para decisiones especificas.';
+  }
+  if (score.score >= 30) {
+    return 'Representa contexto inicial: sirve como referencia, pero la revision seguira siendo general si no agregas mas detalle.';
+  }
+  return 'Representa contexto insuficiente para adaptar bien la revision a esta empresa.';
+}
+
 function CompanyRow({
   company,
   selected,
@@ -332,28 +351,20 @@ export function CompanyContextSelector({
                   <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
                     <p className="text-xs font-semibold text-slate-900">Que significa este porcentaje</p>
                     <p className="mt-1 text-xs text-slate-600">
-                      Mide que tan completo es el contexto de empresa para adaptar la revision de tu iniciativa. No es avance del registro.
+                      Estima la confiabilidad del contexto para adaptar la revision. No es avance del registro ni valida la iniciativa.
                     </p>
                     {scoreLoading && <p className="mt-2 text-xs text-slate-500">Calculando desglose...</p>}
                     {selectedScore && (
                       <>
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                          <div className="rounded-md bg-white p-2">
-                            <p className="text-[11px] text-slate-500">Cobertura</p>
-                            <p className="text-sm font-semibold text-slate-900">{selectedScore.breakdown.coverage}</p>
-                          </div>
-                          <div className="rounded-md bg-white p-2">
-                            <p className="text-[11px] text-slate-500">Evidencia</p>
-                            <p className="text-sm font-semibold text-slate-900">{selectedScore.breakdown.evidence}</p>
-                          </div>
-                          <div className="rounded-md bg-white p-2">
-                            <p className="text-[11px] text-slate-500">Actualidad</p>
-                            <p className="text-sm font-semibold text-slate-900">{selectedScore.breakdown.freshness}</p>
-                          </div>
-                        </div>
+                        <p className="mt-2 rounded-md bg-white p-2 text-xs text-slate-700">
+                          {compactScoreExplanation(selectedScore)}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Senales: cobertura {bandLabel(selectedScore.breakdown.coverage, 45, 25)}, respaldo {bandLabel(selectedScore.breakdown.evidence, 18, 9)} y actualizacion {bandLabel(selectedScore.breakdown.freshness, 12, 7)}.
+                        </p>
                         {selectedScore.missing.length > 0 && (
                           <p className="mt-2 text-xs text-amber-700">
-                            Falta contexto sobre: {selectedScore.missing.slice(0, 3).join(', ')}{selectedScore.missing.length > 3 ? '...' : ''}.
+                            Por confirmar o profundizar: {selectedScore.missing.slice(0, 3).join(', ')}{selectedScore.missing.length > 3 ? '...' : ''}.
                           </p>
                         )}
                       </>
