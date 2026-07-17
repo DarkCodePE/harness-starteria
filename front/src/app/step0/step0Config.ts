@@ -198,8 +198,24 @@ export function legacyImpactFromObjective(objective: Step0PrimaryObjective): Ste
 }
 
 export function normalizeStep0Data(input: Partial<Step0Data> | undefined, project: Project, userName: string, userEmail: string): Step0Data {
+  const raw = (input ?? {}) as Partial<Step0Data> & {
+    suggestedName?: string;
+    challengeType?: string;
+    contextInitial?: string;
+    initialFocus?: string;
+    expectedImpact?: string;
+    mainRisk?: string;
+    nextRecommendedStep?: string;
+    pendingQuestions?: unknown[];
+  };
+  const frameFromInitialReview =
+    raw.challengeType === 'correction' ? 'correccion'
+      : raw.challengeType === 'growth' ? 'crecimiento'
+        : raw.challengeType === 'exploration' ? 'exploracion'
+          : undefined;
   const mode = input?.mode ?? getStep0Mode(project);
   const initiativeFrame = input?.initiativeFrame
+    ?? frameFromInitialReview
     ?? (input?.origen === 'problema'
       ? 'correccion'
       : input?.origen === 'oportunidad'
@@ -226,15 +242,27 @@ export function normalizeStep0Data(input: Partial<Step0Data> | undefined, projec
                   ? 'otro'
                   : '');
   const evidenceType = input?.evidenceType ?? input?.respaldo ?? '';
-  const initiativeTitle = input?.initiativeTitle ?? project.name;
-  const currentEvidence = input?.currentEvidence ?? '';
+  const initiativeTitle = input?.initiativeTitle ?? raw.suggestedName ?? project.name;
+  const currentEvidence = input?.currentEvidence ?? raw.mainRisk ?? '';
   const supportNeeded = input?.supportNeeded ?? (input?.siMinimo?.join(', ') ?? '');
+  const pendingQuestions = Array.isArray(raw.pendingQuestions)
+    ? raw.pendingQuestions
+        .map(question => typeof question === 'string'
+          ? question
+          : typeof question === 'object' && question !== null
+            ? String((question as { question?: unknown; text?: unknown; title?: unknown }).question
+              ?? (question as { text?: unknown }).text
+              ?? (question as { title?: unknown }).title
+              ?? '')
+            : '')
+        .filter(Boolean)
+    : [];
 
   return {
     nombreParticipante: input?.nombreParticipante ?? userName,
     rolArea: input?.rolArea ?? '',
     origen: input?.origen ?? legacyOriginFrom(initiativeFrame, clarityLevel),
-    quePasaQueQuieres: input?.quePasaQueQuieres ?? '',
+    quePasaQueQuieres: input?.quePasaQueQuieres ?? raw.initialFocus ?? raw.contextInitial ?? '',
     impacta: input?.impacta ?? [],
     parteProceso: input?.parteProceso ?? '',
     impacto3meses: input?.impacto3meses ?? legacyImpactFromObjective(primaryObjective),
@@ -249,13 +277,13 @@ export function normalizeStep0Data(input: Partial<Step0Data> | undefined, projec
     specificChallengePart: input?.specificChallengePart ?? '',
     challengeGoalConnection: input?.challengeGoalConnection ?? '',
     linkedContributionType: input?.linkedContributionType ?? '',
-    impactWho: input?.impactWho ?? (input?.impacta?.join(', ') ?? ''),
+    impactWho: input?.impactWho ?? raw.expectedImpact ?? (input?.impacta?.join(', ') ?? ''),
     visibleMoment: input?.visibleMoment ?? '',
-    whyNowText: input?.whyNowText ?? '',
+    whyNowText: input?.whyNowText ?? raw.contextInitial ?? '',
     ifNotNowConsequence: input?.ifNotNowConsequence ?? '',
     evidenceType,
     currentEvidence,
-    validationSignal: input?.validationSignal ?? '',
+    validationSignal: input?.validationSignal ?? raw.nextRecommendedStep ?? (pendingQuestions[0] ?? ''),
     sponsorInterestReason: input?.sponsorInterestReason ?? '',
     supportNeeded,
     decisionRequested: input?.decisionRequested ?? '',

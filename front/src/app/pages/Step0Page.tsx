@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, ChevronRight, Copy, CreditCard, Download, Loader2, Sparkles, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -26,6 +26,7 @@ import type { Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 import { AutofillField } from '../components/autofill/AutofillField';
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
+import { getById } from '../services/projectService';
 
 type ModuleId = 'start' | 'impact' | 'decision';
 type ModuleState = 'No iniciado' | 'En progreso' | 'Listo' | 'Necesita ajuste';
@@ -369,10 +370,14 @@ function ModuleShell({
 
 export function Step0Page() {
   const { projectId } = useParams();
-  const { projects, updateProject, updateStep0, hydrateProjectStep0FromPrefill, user } = useApp();
+  const { projects, projectsLoading, updateProject, updateStep0, hydrateProjectStep0FromPrefill, user } = useApp();
   const { challenges, strategicFronts } = usePortfolioLead();
   const navigate = useNavigate();
-  const project = projects.find(item => item.id === projectId);
+  const contextProject = projects.find(item => item.id === projectId);
+  const [fetchedProject, setFetchedProject] = useState<typeof contextProject | null>(null);
+  const [projectFetching, setProjectFetching] = useState(false);
+  const [projectFetchError, setProjectFetchError] = useState(false);
+  const project = contextProject ?? fetchedProject;
   const [showIAPanel, setShowIAPanel] = useState(false);
   const [iaLoading, setIaLoading] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
@@ -410,6 +415,31 @@ export function Step0Page() {
   const saveState = useAutosave([form]);
 
   useEffect(() => {
+    let cancelled = false;
+    if (!projectId || contextProject || projectsLoading) return;
+    setProjectFetching(true);
+    setProjectFetchError(false);
+    getById(projectId)
+      .then(loaded => {
+        if (!cancelled) setFetchedProject(loaded as typeof contextProject);
+      })
+      .catch(() => {
+        if (!cancelled) setProjectFetchError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectFetching(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [contextProject, projectId, projectsLoading]);
+
+  useEffect(() => {
+    if (!project) return;
+    setForm(normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? ''));
+  }, [project, user?.email, user?.name]);
+
+  useEffect(() => {
     if (!projectId || !project) return;
     if (!isStep0DataMissingPublicFields(project.step0Data)) return;
     const prefill = getStep0Prefill(projectId);
@@ -428,6 +458,9 @@ export function Step0Page() {
   }, [hydrateProjectStep0FromPrefill, project, projectId, user?.email, user?.name]);
 
   if (!project) {
+    if ((projectsLoading || projectFetching) && !projectFetchError) {
+      return <div className="p-6 text-slate-500">Cargando Step 0...</div>;
+    }
     return <div className="p-6 text-slate-500">Proyecto no encontrado.</div>;
   }
 
@@ -456,7 +489,8 @@ export function Step0Page() {
   const feedbackReceived = Boolean(form.alignmentFeedback?.trim()) || alignmentStatus === 'feedback_received' || alignmentStatus === 'aligned_with_observations';
   const isImportedInitiative = hasImportMetadata(project);
   const publicDraftContext = project.publicDraftContext;
-  const initialReviewMeta = (project.step0Data as unknown as {
+  const rawStep0Data = (project.step0Data ?? {}) as Record<string, any>;
+  const nestedInitialReview = (project.step0Data as unknown as {
     initialReview?: {
       reviewId: string;
       challengeType?: ChallengeType;
@@ -466,15 +500,34 @@ export function Step0Page() {
       artifact?: InitialReviewArtifact;
     };
   } | undefined)?.initialReview;
+  const flatPendingQuestions = Array.isArray(rawStep0Data.pendingQuestions)
+    ? rawStep0Data.pendingQuestions
+        .map((question: unknown) => typeof question === 'string'
+          ? question
+          : typeof question === 'object' && question !== null
+            ? String((question as { question?: unknown; text?: unknown; title?: unknown }).question
+              ?? (question as { text?: unknown }).text
+              ?? (question as { title?: unknown }).title
+              ?? '')
+            : '')
+        .filter(Boolean)
+    : [];
+  const initialReviewMeta = nestedInitialReview ?? (
+    rawStep0Data.source === 'initial_review' || rawStep0Data.initialReviewSnapshotId
+      ? {
+          reviewId: String(rawStep0Data.initialReviewSnapshotId ?? ''),
+          challengeType: rawStep0Data.challengeType as ChallengeType | undefined,
+          risk: typeof rawStep0Data.mainRisk === 'string' ? rawStep0Data.mainRisk : undefined,
+          pendingQuestions: flatPendingQuestions,
+          nextRecommendedStep: typeof rawStep0Data.nextRecommendedStep === 'string' ? rawStep0Data.nextRecommendedStep : undefined,
+        }
+      : undefined
+  );
   const initialReviewArtifact = initialReviewMeta?.artifact ?? null;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
 
-  const analysisText = useMemo(
-    () => ['Propuesta de iniciativa para tu líder', ...executiveSections.map(block => `${block.title}: ${block.value}`)].join('\n'),
-    [executiveSections],
-  );
-
+  const analysisText = ['Propuesta de iniciativa para tu líder', ...executiveSections.map(block => `${block.title}: ${block.value}`)].join('\n');
   const setField = <K extends keyof Step0Data>(key: K, value: Step0Data[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
     if (highlightField === key) setHighlightField(null);
