@@ -450,13 +450,18 @@
       "area": "initial-review",
       "title": "Layout dividido + shell de chat tras flag initiativeReviewChat",
       "user_visible_behavior": "Con el flag on, InitiativeReviewResultPage muestra la iniciativa (cards snapshot) a la izquierda y un AssistantPanel funcional (historial + input) a la DERECHA; drawer en <1024px. Con flag off, la pantalla actual no cambia.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm test — render con flag on/off; componentes AssistantBubble/UserBubble/MinimalProgress extraídos del legacy features/initial-review sin traer mockGenerator ni preguntas hardcodeadas",
         "smoke de referencia (PDF autofill → Step 0) verde con flag off"
       ],
-      "evidence": [],
-      "notes": "ADR-026 decisiones 5-6. Asistente a la derecha por requerimiento explícito (prima sobre el mockup que lo dibuja a la izquierda)."
+      "evidence": [
+        "vitest front InitiativeReviewFlow: 14 passed (3 nuevos IRC-03). flag OFF: no monta assistant-panel y conserva el textarea de contexto (layout actual intacto). flag ON: monta assistant-panel + las 6 cards + CTA de confirmación, oculta el textarea; enviar por el chat llama client.addContext('rev1', texto).",
+        "suite front completa: 238 passed / 38 files — sin regresiones por el flag ni el refactor de la página.",
+        "vite build: ✓ built in 5.84s (la app compila con el split layout).",
+        "componentes extraídos a front/src/features/initiative-review/components/chat/ (ChatBubbles: AssistantBubble/UserBubble/MinimalProgress/TypingIndicator; AssistantPanel shell). Sin mockGenerator ni preguntas hardcodeadas del legacy."
+      ],
+      "notes": "ADR-026 decisiones 5-6. Flag isInitiativeReviewChatEnabled() (env VITE_ENABLE_INITIATIVE_REVIEW_CHAT + localStorage starteria.initiativeReviewChat.enabled), default off. Asistente a la DERECHA (requerimiento explícito). onChatSend reutiliza el addContext real (shell mínimo); el orquestador completo es IRC-04. Nota: el repo no tiene tsconfig de front (usa vite+vitest), no hay typecheck estricto de front — el gate es la suite + build."
     },
     {
       "id": "IRC-04-assistant-orchestrator",

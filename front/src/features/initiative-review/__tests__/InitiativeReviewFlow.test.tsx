@@ -129,6 +129,49 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
   });
 });
 
+describe('InitiativeReviewResultPage — chat split layout (ADR-026, IRC-03)', () => {
+  const FLAG_KEY = 'starteria.initiativeReviewChat.enabled';
+
+  beforeEach(() => {
+    navigate.mockReset();
+    params = { reviewId: 'rev1' };
+    client.getReview.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT });
+    client.addContext.mockReset().mockResolvedValue({ id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null, snapshot: { ...SNAPSHOT, id: 'snap2', version: 2 } });
+    window.localStorage.removeItem(FLAG_KEY);
+  });
+
+  it('flag OFF (default): no monta el asistente y conserva el textarea de contexto', async () => {
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('card-understanding');
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Agregar contexto antes de confirmar/i)).toBeInTheDocument();
+  });
+
+  it('flag ON: monta el asistente a la derecha, conserva las cards y oculta el textarea', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('card-understanding');
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument();
+    // las cards de la iniciativa siguen presentes
+    for (const id of ['card-understanding', 'card-challenge-type', 'card-critique', 'card-questions', 'card-proposal', 'card-route']) {
+      expect(screen.getByTestId(id)).toBeInTheDocument();
+    }
+    // el textarea de contexto se reemplaza por el chat
+    expect(screen.queryByLabelText(/Agregar contexto antes de confirmar/i)).not.toBeInTheDocument();
+    // el CTA de confirmación sigue accesible
+    expect(screen.getByRole('button', { name: /Estoy de acuerdo con esta ruta/i })).toBeInTheDocument();
+  });
+
+  it('flag ON: enviar un mensaje por el chat llama addContext (API real)', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    render(<InitiativeReviewResultPage />);
+    const input = await screen.findByTestId('assistant-input');
+    fireEvent.change(input, { target: { value: 'Validamos on-premise con el CTO.' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalledWith('rev1', 'Validamos on-premise con el CTO.'));
+  });
+});
+
 describe('InitiativeReviewStartPage (IR-F3)', () => {
   let co1Score = 54;
 
