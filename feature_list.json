@@ -529,14 +529,18 @@
       "area": "e2e",
       "title": "E2E conversacional, flag on por defecto y deprecación del legacy",
       "user_visible_behavior": "Todos los usuarios ven la revisión conversacional (flag initiativeReviewChat on por defecto); features/initial-review (mock/localStorage) queda marcada deprecated.",
-      "status": "not_started",
+      "status": "in_progress",
       "verification": [
         "cd front && npm run docker:up && npm run test:e2e — e2e nuevo: responder 1 pregunta por chat → agregar contexto → anuncio de diff + resaltado → confirmar ruta → Overview",
         "smoke de referencia (PDF autofill → Step 0) verde en la misma corrida",
         "issue de remoción del legacy creado (la eliminación física NO es parte de esta feature)"
       ],
-      "evidence": [],
-      "notes": "Puerta de completación del épico initiative-review-chat. Encender el flag solo con toda la suite verde."
+      "evidence": [
+        "HECHO — e2e conversacional: e2e/initial-review-chat.spec.ts VERDE contra el stack real (backend recompilado con IRC-01/02, db push aplicado). Valida: create→GET chatEvents:[]; strategic-answers→changedSections incluye 'questions' + evento answer; add-context→changedSections no vacío + version≥2 + eventos context/diff_announcement; GET rehidrata el historial en orden cronológico con los kinds correctos; confirm-route→Project (review converted_to_initiative). 1 passed (1.2s).",
+        "HECHO — deprecación del legacy: features/initial-review/pages/InitialReviewResultPage marcada @deprecated (páginas no ruteadas, UI muerta). Issue de remoción creado: nmindFa/Dashboardstarteria#136 (ready-for-agent).",
+        "BLOQUEADO — flag on por defecto + smoke de referencia en la misma corrida: TODA la suite e2e está en rojo por una regresión PRE-EXISTENTE (ajena a este épico): la waitlist de auth crea usuarios con isActive=false → login 403 AUTH_WAITLISTED. Verificado corriendo initial-review-api.spec.ts (también falla en login). El e2e de chat solo pasa porque activa el usuario vía psql (execFileSync) como workaround de test. La ADR condiciona el flip del flag a 'toda la suite verde'; ese gate NO se cumple, así que el flag queda OFF por defecto (override por env/localStorage sigue disponible)."
+      ],
+      "notes": "Puerta de completación del épico. e2e conversacional y deprecación: hechos. Flag on por defecto: DIFERIDO hasta resolver la regresión de waitlist que rompe la suite e2e (bug de entorno/auth, no del chat). Bug de la waitlist e2e abierto: nmindFa/Dashboardstarteria#137 (needs-triage). Una vez verde el smoke de referencia con el flag on, flipear isInitiativeReviewChatEnabled() a default true. Ver memoria local-e2e-stack-gotchas (auth rate-limit/waitlist)."
     }
   ]
 }
