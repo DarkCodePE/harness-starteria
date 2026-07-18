@@ -193,8 +193,11 @@ test.describe('PDF auto-fill end-to-end (API-driven setup + UI verification)', (
       const projectCardButton = page.getByRole('button', { name: /E2E Unimaq/i }).first();
       await expect(projectCardButton).toBeVisible({ timeout: 15_000 });
       await projectCardButton.click();
-      // Wait for SPA to land on /projects/:id.
-      await page.waitForURL(/\/projects\/[^/]+$/, { timeout: 15_000 });
+      // Wait for the SPA to land on the project. The card may open the project home
+      // (/projects/:id) OR — when the project already has an active step — jump straight
+      // to it (/projects/:id/step/N via handleContinueProject). Accept both; the Step 0
+      // assertions below still fully verify the outcome.
+      await page.waitForURL(/\/projects\/[^/]+(\/step\/\d+)?$/, { timeout: 15_000 });
 
       // On the project home, click "Empezar Paso 0" / "Comienza aquí" CTA.
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => undefined);

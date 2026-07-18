@@ -5,6 +5,10 @@
 services:
   ai-service:
     ports: !override []
+    # Local/e2e-only: extracción PDF determinista (sin LLM en vivo) para que el smoke de
+    # referencia sea reproducible. Nunca definir en producción.
+    environment:
+      PDF_EXTRACT_STUB: "true"
   # Local/e2e-only: saca del waitlist a los usuarios auto-registrados para que la suite
   # e2e (register → login) obtenga token. Nunca definir esta variable en producción.
   backend:

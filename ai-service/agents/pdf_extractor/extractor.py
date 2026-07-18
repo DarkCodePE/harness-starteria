@@ -30,7 +30,9 @@ from agents.pdf_extractor.parser import PageBlock
 from agents.pdf_extractor.prompts import step_schema, system_prompt
 from schemas.pdf_extraction import (
     ExtractionMetadata,
+    FieldProposal,
     InitiativeExtraction,
+    Provenance,
     Step0Extraction,
     Step1Extraction,
     Step2Extraction,
@@ -197,12 +199,36 @@ def _tolerant_validate(validator: Any, parsed: dict[str, Any], step: str) -> Any
         return validator()
 
 
+def _stub_step(step: str) -> Any:
+    """Deterministic offline extraction para e2e (env PDF_EXTRACT_STUB=true). Devuelve una
+    instancia validada con campos poblados para step0 (así Step 0 muestra chips de autofill)
+    y defaults vacíos para el resto. Sin LLM: elimina la flakiness por latencia/truncación del
+    modelo en vivo. NO se usa en producción (la variable no se define allí)."""
+    if step != "step0":
+        return _STEP_VALIDATORS[step]()
+    prov = [Provenance(page=1, quote="Contenido de prueba del PDF para e2e.", confidence=0.9)]
+
+    def fp(value: str) -> FieldProposal:
+        return FieldProposal(value=value, provenance=prov, confidence=0.9)
+
+    return Step0Extraction(
+        nombreParticipante=fp("Participante de prueba"),
+        rolArea=fp("Operaciones"),
+        quePasaQueQuieres=fp("Reducir el retrabajo en el refinamiento de historias de usuario."),
+        impacto3meses=fp("Menos bugs en producción y decisiones de priorización más claras."),
+    )
+
+
 def _call_step(
     llm: ChatOpenAI, step: str, full_text: str, language: str
 ) -> tuple[Any, int, dict[str, int]]:
+    started = time.monotonic()
+    # e2e determinista: sin LLM, respuesta fija e instantánea (issue de flakiness del smoke).
+    if os.getenv("PDF_EXTRACT_STUB") == "true":
+        return _stub_step(step), int((time.monotonic() - started) * 1000), {"input": 0, "output": 0}
+
     sys_prompt = system_prompt(language)
     user_msg = _build_user_message(step, full_text, step_schema(step))
-    started = time.monotonic()
 
     try:
         response = llm.invoke([

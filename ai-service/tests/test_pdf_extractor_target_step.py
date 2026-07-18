@@ -210,3 +210,20 @@ def test_partial_step_failure_still_completes(monkeypatch: pytest.MonkeyPatch) -
 
     result = extract(_blocks(), language="es", target_step=None)  # no lanza
     assert result.step0 is not None
+
+
+def test_stub_mode_returns_populated_step0_without_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PDF_EXTRACT_STUB=true → extract() completa rápido con proposals reales en step0 (para
+    un e2e determinista, sin depender del LLM en vivo). Sin llamadas de red."""
+    from agents.pdf_extractor.extractor import extract
+
+    monkeypatch.setenv("PDF_EXTRACT_STUB", "true")
+    # _build_llm no debe ser necesario en modo stub, pero lo neutralizamos por si acaso.
+    from agents.pdf_extractor import extractor as ex_mod
+    monkeypatch.setattr(ex_mod, "_build_llm", lambda: object())
+
+    result = extract(_blocks(), language="es", target_step="step_0")
+
+    assert result.step0.nombreParticipante is not None
+    assert result.step0.nombreParticipante.value == "Participante de prueba"
+    assert result.step0.quePasaQueQuieres is not None
