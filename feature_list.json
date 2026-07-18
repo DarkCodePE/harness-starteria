@@ -1,6 +1,6 @@
 {
   "project": "Starteria (Dashboardstarteria)",
-  "last_updated": "2026-07-13",
+  "last_updated": "2026-07-18",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -402,6 +402,111 @@
         "DESPLEGADO a prod 2026-07-13 (v2.16.0, run 29265396804): backend, frontend y ai-service \"successfully rolled out\", prisma db push in sync, starter-ia.com 200. INITIAL_REVIEW_AI=real activo vía k8s manifest."
       ],
       "notes": "Tier (a) determinista siempre (mock interpola nombre de empresa); tier (b) test.skip(!process.env.E2E_REAL_AI), asserta forma, nunca contenido."
+    },
+    {
+      "id": "IRC-01-chat-event-persistence",
+      "priority": 20,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Persistencia de conversación: modelo InitialReviewChatEvent",
+      "user_visible_behavior": "Ninguno directo todavía; el historial del chat queda persistido en backend y rehidratable (campo chatEvents en GET /initial-reviews/:id) para las features siguientes.",
+      "status": "not_started",
+      "verification": [
+        "backend: unit/integración — crear review, persistir eventos (role, kind, payload, snapshotVersion), GET devuelve chatEvents ordenados por createdAt",
+        "prisma db push contra BD con datos existentes NO pide --accept-data-loss (solo @@index, nunca @@unique — regla CD)"
+      ],
+      "evidence": [],
+      "notes": "ADR-026 decisión 3 (backend/docs/adr/ADR-026-conversational-initial-review-chat.md). Migración aditiva; campo nuevo retrocompatible en el envelope, el front actual lo ignora."
+    },
+    {
+      "id": "IRC-02-snapshot-diff-changed-sections",
+      "priority": 21,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Diff de snapshot por sección: changedSections en add-context y strategic-answers",
+      "user_visible_behavior": "Ninguno directo; la API informa qué secciones del snapshot cambiaron entre la versión n-1 y n al regenerar.",
+      "status": "not_started",
+      "verification": [
+        "backend: unit de diffSections(prev, next) — sin cambios → [], cambio en una sección, cambio de tipo de reto, regeneración idéntica",
+        "backend: integración — add-context devuelve changedSections consistentes con el contenido y persiste eventos de chat (user + diff_announcement) en la misma transacción que el snapshot"
+      ],
+      "evidence": [],
+      "notes": "ADR-026 decisión 4. Diff en backend (tiene ambas versiones de forma atómica). Sostiene el criterio PRD 'anuncio correcto ≥95%'. Depende de IRC-01."
+    },
+    {
+      "id": "IRC-03-split-layout-chat-shell",
+      "priority": 22,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Layout dividido + shell de chat tras flag initiativeReviewChat",
+      "user_visible_behavior": "Con el flag on, InitiativeReviewResultPage muestra la iniciativa (cards snapshot) a la izquierda y un AssistantPanel funcional (historial + input) a la DERECHA; drawer en <1024px. Con flag off, la pantalla actual no cambia.",
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test — render con flag on/off; componentes AssistantBubble/UserBubble/MinimalProgress extraídos del legacy features/initial-review sin traer mockGenerator ni preguntas hardcodeadas",
+        "smoke de referencia (PDF autofill → Step 0) verde con flag off"
+      ],
+      "evidence": [],
+      "notes": "ADR-026 decisiones 5-6. Asistente a la derecha por requerimiento explícito (prima sobre el mockup que lo dibuja a la izquierda)."
+    },
+    {
+      "id": "IRC-04-assistant-orchestrator",
+      "priority": 23,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Orquestador del asistente: agenda, preguntas conversacionales, contexto y dudas",
+      "user_visible_behavior": "El asistente abre resumiendo lo entendido + información faltante, hace las strategicQuestions una por una (soporta 'No lo sé aún'), acepta contexto libre (addContext) y responde dudas desde catálogo (assistantFaq.ts). Selector de modo responder/contexto/duda con default contextual. Tras un refresh, la conversación continúa donde quedó.",
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test — reducer de assistantOrchestrator: deriveAgenda, transición por cada modo, rehidratación desde chatEvents",
+        "manual contra API real (sin mocks): responder pregunta actualiza la card 1/3; contexto libre dispara add-context"
+      ],
+      "evidence": [],
+      "notes": "ADR-026 decisiones 1-2: chat determinista v1, cero endpoints nuevos, cero LLM por turno. Turnos mapean a strategic-answers / add-context / confirm-route existentes (ADR-025). Depende de IRC-03."
+    },
+    {
+      "id": "IRC-05-diff-announcement-highlight",
+      "priority": 24,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Anuncio de cambios en chat y resaltado del panel tras regeneración",
+      "user_visible_behavior": "Al aportar información, el asistente anuncia qué secciones cambiaron ('Actualicé: Mirada crítica y Versión mejorada'), el panel izquierdo las resalta (prop highlighted en ReviewCards) con scroll a la primera y muestra la versión del snapshot. Si nada cambió, lo dice explícitamente. Espera con 'Starteria está actualizando tu iniciativa…' y retry en timeout.",
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test — anuncio generado == changedSections recibidas (incluye lista vacía); estado de espera y retry con timeout simulado"
+      ],
+      "evidence": [],
+      "notes": "PRD F5. Depende de IRC-02 (changedSections) y IRC-04 (orquestador)."
+    },
+    {
+      "id": "IRC-06-confirm-and-company-context-bridge",
+      "priority": 25,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Confirmación de ruta por chat, puente a contexto de empresa y telemetría",
+      "user_visible_behavior": "Con la agenda completa (o a pedido), el asistente ofrece confirmar la ruta Step 0-4 → confirmRoute → Overview; el CTA persistente fuera del chat se mantiene. El asistente distingue 'agregar solo a este análisis' vs 'Completar contexto de empresa' (link /companies) y aclara que el contexto del análisis no actualiza el de empresa.",
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test — oferta de confirmación al completar agenda; telemetría emitida: chat_message_sent, chat_context_added, chat_question_answered, snapshot_diff_announced, chat_confirm_route",
+        "manual: confirmar desde el chat aterriza en Overview con iniciativa Draft creada (flujo ADR-025 intacto)"
+      ],
+      "evidence": [],
+      "notes": "PRD F6-F7 y §5. No cambia confirm-route del backend. Depende de IRC-04."
+    },
+    {
+      "id": "IRC-07-e2e-flag-on-deprecate-legacy",
+      "priority": 26,
+      "epic": "initiative-review-chat",
+      "area": "e2e",
+      "title": "E2E conversacional, flag on por defecto y deprecación del legacy",
+      "user_visible_behavior": "Todos los usuarios ven la revisión conversacional (flag initiativeReviewChat on por defecto); features/initial-review (mock/localStorage) queda marcada deprecated.",
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e — e2e nuevo: responder 1 pregunta por chat → agregar contexto → anuncio de diff + resaltado → confirmar ruta → Overview",
+        "smoke de referencia (PDF autofill → Step 0) verde en la misma corrida",
+        "issue de remoción del legacy creado (la eliminación física NO es parte de esta feature)"
+      ],
+      "evidence": [],
+      "notes": "Puerta de completación del épico initiative-review-chat. Encender el flag solo con toda la suite verde."
     }
   ]
 }

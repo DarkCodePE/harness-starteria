@@ -124,3 +124,15 @@
 
 - El usuario creó una iniciativa real en prod: la crítica es IA real y usa el contexto de empresa registrado ("banco pequeño", "EFECTIVA", "11-50 personas"). Épico CC verificado end-to-end en producción.
 - Observación UX (follow-up candidato): el scrub §25 (`FORBIDDEN → '[revisar]'`, ai-generator.ts:44,128) deja frases raras cuando el modelo usa "escalar" ("antes de [revisar] a múltiples fuentes"). Opciones: reforzar el prompt con la lista de palabras prohibidas y/o reemplazar por sinónimo neutro ("ampliar") en vez del placeholder.
+
+### Sesión 010 — PRD + ADR-026 + descomposición del épico initiative-review-chat (2026-07-18)
+
+- Fecha: 2026-07-18
+- Solo planificación, sin código. Pedido del usuario: convertir "Revisemos tu iniciativa antes de empezar" en experiencia conversacional — asistente a la DERECHA que guía a completar la iniciativa, recibe contexto/dudas, y el panel del snapshot se actualiza en vivo anunciando qué cambió.
+- Artefactos creados:
+  - `docs/PRD-asistente-chat-revision-iniciativa.md` (PRD-IRCHAT-001, draft) — F1-F8, métricas con bandas, criterios de aceptación.
+  - `backend/docs/adr/ADR-026-conversational-initial-review-chat.md` (Propuesto, estructura SPARC) — decisiones: chat determinista v1 (turnos mapean a add-context/strategic-answers/confirm-route de ADR-025, sin endpoints nuevos ni LLM por turno; LLM libre = v2), historial en tabla `InitialReviewChatEvent` (solo @@index, regla CD), diff por sección en backend (`changedSections`), reutilizar solo componentes visuales del scaffold legacy `features/initial-review` (mock) y deprecarlo.
+  - `feature_list.json`: épico `initiative-review-chat`, features IRC-01…IRC-07 (prioridades 20-26, not_started). Orden: persistencia eventos → diff backend → layout+shell tras flag `initiativeReviewChat` → orquestador → anuncio/resaltado → confirmación+telemetría → e2e+flag on+deprecación.
+- Hallazgo clave: hay DOS features de revisión en el front — `initiative-review` (real, ADR-025) y `initial-review` (legacy mock con chat ya maquetado). El épico une ambas.
+- Decisión de layout registrada: asistente a la derecha (texto del requerimiento prima sobre el mockup, que lo dibuja a la izquierda).
+- Próxima sesión: tomar IRC-01 (modelo `InitialReviewChatEvent` + chatEvents en GET), una sola feature activa.
