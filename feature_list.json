@@ -410,13 +410,18 @@
       "area": "initial-review",
       "title": "Persistencia de conversación: modelo InitialReviewChatEvent",
       "user_visible_behavior": "Ninguno directo todavía; el historial del chat queda persistido en backend y rehidratable (campo chatEvents en GET /initial-reviews/:id) para las features siguientes.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "backend: unit/integración — crear review, persistir eventos (role, kind, payload, snapshotVersion), GET devuelve chatEvents ordenados por createdAt",
         "prisma db push contra BD con datos existentes NO pide --accept-data-loss (solo @@index, nunca @@unique — regla CD)"
       ],
-      "evidence": [],
-      "notes": "ADR-026 decisión 3 (backend/docs/adr/ADR-026-conversational-initial-review-chat.md). Migración aditiva; campo nuevo retrocompatible en el envelope, el front actual lo ignora."
+      "evidence": [
+        "vitest backend modules/initial-review: 27 passed (4 nuevos IRC-01: rehidratación ordenada con desempate por id, array vacío no-undefined, appendChatEvent persiste role/kind/payload/snapshotVersion, appendChatEvent acepta tx externo). Baseline previo 23.",
+        "prisma db push contra starteria-db (localhost:5433) 2026-07-18: 'Your database is now in sync' en 307ms SIN --accept-data-loss ni prompt. Tabla InitialReviewChatEvent creada con índice InitialReviewChatEvent_reviewId_createdAt_idx y FK ON DELETE CASCADE (verificado con \\d en psql).",
+        "prisma migrate diff --from-empty: DDL puramente aditivo (CREATE TYPE x2, CREATE TABLE, CREATE INDEX, ADD CONSTRAINT FK) — sin ALTER destructivo ni @@unique.",
+        "tsc -p tsconfig.backend.json: 0 errores en initial-review.* (30 errores pre-existentes en billing/pdfs/pilot-leads, ajenos al cambio)."
+      ],
+      "notes": "ADR-026 decisión 3. Modelo en front/prisma/schema.prisma (enums InitialReviewChatRole/InitialReviewChatEventKind + model InitialReviewChatEvent). Service: ChatEventDto + chatEventsFor + appendChatEvent (primitiva reutilizable por IRC-02/04/06, soporta tx). getReview rehidrata. Campo retrocompatible; el front actual lo ignora."
     },
     {
       "id": "IRC-02-snapshot-diff-changed-sections",

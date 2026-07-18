@@ -39,6 +39,11 @@ function makePrisma(overrides: Record<string, any> = {}) {
       aggregate: vi.fn(async () => ({ _max: { version: 1 } })),
       update: vi.fn(async ({ where, data }: any) => ({ id: where.id, version: 1, understandingSummary: 'u', suggestedChallengeType: 'correccion', selectedChallengeType: 'correccion', challengeTypeReason: 'r', informationReadiness: 'low', critique: {}, strategicQuestions: data.strategicQuestions, improvedProposal: {}, routePreview: [] })),
     },
+    // ADR-026 (IRC-01): historial conversacional del asistente.
+    initialReviewChatEvent: {
+      create: vi.fn(async ({ data }: any) => ({ id: 'evt1', snapshotVersion: null, createdAt: new Date('2026-07-18T00:00:00Z'), ...data })),
+      findMany: vi.fn(async () => []),
+    },
     ...overrides,
   } as any;
 }
@@ -109,5 +114,59 @@ describe('InitialReviewService — ownership + versionado', () => {
     await svc.saveStrategicAnswers('rev1', 'u1', { answers: [{ id: 'q1', answer: 'Un área' }] });
     const merged = prisma.initialReviewSnapshot.update.mock.calls[0][0].data.strategicQuestions;
     expect(merged[0]).toMatchObject({ id: 'q1', answer: 'Un área', status: 'answered' });
+  });
+});
+
+describe('InitialReviewService — chat events (ADR-026, IRC-01)', () => {
+  it('getReview: rehidrata chatEvents en orden cronológico (con desempate por id)', async () => {
+    const events = [
+      { id: 'e1', reviewId: 'rev1', role: 'assistant', kind: 'guide', payload: { text: 'Hola' }, snapshotVersion: 1, createdAt: new Date('2026-07-18T00:00:00Z') },
+      { id: 'e2', reviewId: 'rev1', role: 'user', kind: 'answer', payload: { questionId: 'q1', text: 'Un área' }, snapshotVersion: 1, createdAt: new Date('2026-07-18T00:01:00Z') },
+    ];
+    const findMany = vi.fn(async () => events);
+    const prisma = makePrisma({ initialReviewChatEvent: { create: vi.fn(), findMany } });
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+
+    const dto = await svc.getReview('rev1', 'u1', 'participante');
+
+    // se ordena por createdAt asc y luego id asc (determinista ante empates de ms)
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { reviewId: 'rev1' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] }));
+    expect(dto.chatEvents).toHaveLength(2);
+    expect(dto.chatEvents[0]).toMatchObject({ id: 'e1', role: 'assistant', kind: 'guide', snapshotVersion: 1 });
+    // createdAt se serializa a ISO-8601 string
+    expect(dto.chatEvents[0].createdAt).toBe('2026-07-18T00:00:00.000Z');
+    expect(dto.chatEvents[1]).toMatchObject({ id: 'e2', role: 'user', kind: 'answer' });
+  });
+
+  it('getReview: sin eventos, chatEvents es un array vacío (no undefined)', async () => {
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+    const dto = await svc.getReview('rev1', 'u1', 'participante');
+    expect(dto.chatEvents).toEqual([]);
+  });
+
+  it('appendChatEvent: persiste role/kind/payload/snapshotVersion y devuelve el DTO', async () => {
+    const create = vi.fn(async ({ data }: any) => ({ id: 'evtX', snapshotVersion: data.snapshotVersion ?? null, createdAt: new Date('2026-07-18T12:00:00Z'), ...data }));
+    const prisma = makePrisma({ initialReviewChatEvent: { create, findMany: vi.fn(async () => []) } });
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+
+    const dto = await svc.appendChatEvent('rev1', { role: 'user', kind: 'context', payload: { text: 'validamos con el CTO' }, snapshotVersion: 3 });
+
+    expect(create).toHaveBeenCalledWith({ data: { reviewId: 'rev1', role: 'user', kind: 'context', payload: { text: 'validamos con el CTO' }, snapshotVersion: 3 } });
+    expect(dto).toMatchObject({ id: 'evtX', role: 'user', kind: 'context', snapshotVersion: 3, createdAt: '2026-07-18T12:00:00.000Z' });
+  });
+
+  it('appendChatEvent: acepta un tx externo (misma transacción que el snapshot)', async () => {
+    const create = vi.fn(async ({ data }: any) => ({ id: 'evtTx', snapshotVersion: null, createdAt: new Date('2026-07-18T12:00:00Z'), ...data }));
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+    const tx = { initialReviewChatEvent: { create } } as any;
+
+    await svc.appendChatEvent('rev1', { role: 'assistant', kind: 'diff_announcement', payload: { changedSections: ['critique'] } }, tx);
+
+    // se escribió en el tx, no en el prisma base
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(prisma.initialReviewChatEvent.create).not.toHaveBeenCalled();
+    expect(create.mock.calls[0][0].data.snapshotVersion).toBeNull();
   });
 });
