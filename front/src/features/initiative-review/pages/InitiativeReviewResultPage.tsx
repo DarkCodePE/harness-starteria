@@ -172,6 +172,7 @@ export function InitiativeReviewResultPage() {
   const onChatSend = async (text: string) => {
     if (!reviewId || addingContext) return;
     const action = nextAction(effectiveMode, agenda, text);
+    trackInitialReviewEvent('chat_message_sent', { reviewId, mode: effectiveMode }); // IRC-06
 
     // Las dudas se resuelven en cliente (catálogo), sin llamada a la API (ADR-026 dec. 2).
     if (action.type === 'doubt') {
@@ -191,9 +192,11 @@ export function InitiativeReviewResultPage() {
       if (action.type === 'answer') {
         next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, answer: action.answer }]);
         trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId });
+        trackInitialReviewEvent('chat_question_answered', { reviewId, questionId: action.questionId });
       } else if (action.type === 'answer_unknown') {
         next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, unknown: true }]);
         trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId, unknown: true });
+        trackInitialReviewEvent('chat_question_answered', { reviewId, questionId: action.questionId, unknown: true });
       } else {
         next = await addContext(reviewId, action.text);
         trackInitialReviewEvent('initial_review_context_added', {
@@ -202,9 +205,14 @@ export function InitiativeReviewResultPage() {
           snapshotVersion: next.snapshot?.version,
           contextCount: next.addedContext.length,
         });
+        trackInitialReviewEvent('chat_context_added', { reviewId, snapshotVersion: next.snapshot?.version, contextCount: next.addedContext.length });
       }
       setReview(next);
-      setHighlighted(next.changedSections ?? []); // IRC-05: resalta las cards que cambiaron
+      const changed = next.changedSections ?? [];
+      setHighlighted(changed); // IRC-05: resalta las cards que cambiaron
+      if (changed.length > 0) {
+        trackInitialReviewEvent('snapshot_diff_announced', { reviewId, snapshotVersion: next.snapshot?.version, changedCount: changed.length }); // IRC-06
+      }
       setChatMode(null); // vuelve al modo por defecto contextual tras cada turno
     } catch {
       setError('No pudimos procesar tu mensaje. Intenta nuevamente.');
@@ -365,6 +373,22 @@ export function InitiativeReviewResultPage() {
             busy={addingContext}
             placeholder={MODE_PLACEHOLDER[effectiveMode]}
             toolbar={modeToolbar}
+            footer={
+              <button
+                type="button"
+                data-testid="chat-confirm-route"
+                onClick={() => {
+                  trackInitialReviewEvent('chat_confirm_route', { reviewId });
+                  onConfirm();
+                }}
+                disabled={confirming}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${
+                  agenda.ready ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500/80 hover:bg-emerald-600'
+                }`}
+              >
+                {confirming ? 'Creando tu iniciativa...' : agenda.ready ? 'Confirmar ruta y empezar' : 'Confirmar ruta (o sigue completando)'}
+              </button>
+            }
           />
         </div>
       </div>

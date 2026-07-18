@@ -509,13 +509,18 @@
       "area": "initial-review",
       "title": "Confirmación de ruta por chat, puente a contexto de empresa y telemetría",
       "user_visible_behavior": "Con la agenda completa (o a pedido), el asistente ofrece confirmar la ruta Step 0-4 → confirmRoute → Overview; el CTA persistente fuera del chat se mantiene. El asistente distingue 'agregar solo a este análisis' vs 'Completar contexto de empresa' (link /companies) y aclara que el contexto del análisis no actualiza el de empresa.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm test — oferta de confirmación al completar agenda; telemetría emitida: chat_message_sent, chat_context_added, chat_question_answered, snapshot_diff_announced, chat_confirm_route",
         "manual: confirmar desde el chat aterriza en Overview con iniciativa Draft creada (flujo ADR-025 intacto)"
       ],
-      "evidence": [],
-      "notes": "PRD F6-F7 y §5. No cambia confirm-route del backend. Depende de IRC-04."
+      "evidence": [
+        "vitest front InitiativeReviewFlow: 21 passed (2 nuevos IRC-06). Confirmar desde el chat (footer chat-confirm-route) llama client.confirmRoute('rev1') y emite chat_confirm_route (verificado en window.dataLayer). Un turno de contexto emite chat_message_sent + chat_context_added + snapshot_diff_announced.",
+        "vitest front assistantOrchestrator: 17 passed (1 nuevo IRC-06): puente de contexto de empresa (guide-company-context) aparece solo con companyContext.companyId y sin historial.",
+        "confirmRoute del backend intacto (flujo ADR-025); el CTA 'Estoy de acuerdo con esta ruta' del panel izquierdo se mantiene además del footer del chat.",
+        "suite front completa: 262 passed / 39 files. vite build ✓ 5.96s."
+      ],
+      "notes": "PRD F6-F7 y §5. 5 eventos nuevos en InitialReviewEventName (+dims mode/changedCount). AssistantPanel gana slot footer (botón confirmar). Mensaje-guía guide-company-context distingue análisis vs contexto de empresa. No cambia el backend."
     },
     {
       "id": "IRC-07-e2e-flag-on-deprecate-legacy",

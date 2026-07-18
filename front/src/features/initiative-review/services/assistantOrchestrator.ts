@@ -137,6 +137,15 @@ export function guideMessages(review: InitiativeReview, agenda: Agenda): ChatMes
   if (!hasUserTurns) {
     const missingLine = agenda.missing.length ? ` Antes de confirmar la ruta me falta saber: ${agenda.missing.join(', ')}.` : '';
     msgs.push({ id: 'guide-opening', role: 'assistant', content: `Revisé tu propuesta.${missingLine} Puedes responder las preguntas, agregar contexto o preguntarme una duda.` });
+    // F6: distinción contexto-del-análisis vs contexto-de-empresa (solo si hay empresa seleccionada).
+    if (review.companyContext?.companyId) {
+      msgs.push({
+        id: 'guide-company-context',
+        role: 'assistant',
+        content:
+          'Ojo: lo que agregues aquí ajusta solo este análisis. Para actualizar el contexto de tu empresa de forma permanente, usa "Completar contexto de empresa" en el panel.',
+      });
+    }
   }
 
   if (agenda.activeQuestion) {

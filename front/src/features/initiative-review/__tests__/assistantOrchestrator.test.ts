@@ -161,6 +161,16 @@ describe('guideMessages (IRC-04)', () => {
     expect(String(q?.content)).toContain('Pregunta 1 de 2');
   });
 
+  it('puente de contexto de empresa: aparece solo con empresa seleccionada y sin historial (IRC-06)', () => {
+    const withCompany = review({ companyContext: { companyId: 'c1' } });
+    expect(guideMessages(withCompany, deriveAgenda(withCompany)).some((m) => m.id === 'guide-company-context')).toBe(true);
+    // sin empresa no aparece
+    expect(guideMessages(review(), deriveAgenda(review())).some((m) => m.id === 'guide-company-context')).toBe(false);
+    // con historial (ya hubo turnos) tampoco
+    const withHistory = review({ companyContext: { companyId: 'c1' }, chatEvents: [{ id: 'e1', role: 'user', kind: 'context', payload: { text: 'x' }, snapshotVersion: 1, createdAt: '2026-07-18T00:00:00Z' }] });
+    expect(guideMessages(withHistory, deriveAgenda(withHistory)).some((m) => m.id === 'guide-company-context')).toBe(false);
+  });
+
   it('ready → mensaje de confirmar; no-ready sin pregunta → sugiere faltantes', () => {
     const ready = review();
     ready.snapshot!.informationReadiness = 'high';

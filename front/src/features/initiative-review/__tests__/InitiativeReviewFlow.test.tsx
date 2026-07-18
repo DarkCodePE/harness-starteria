@@ -234,6 +234,37 @@ describe('InitiativeReviewResultPage — chat split layout (ADR-026, IRC-03)', (
     }
   });
 
+  it('flag ON (IRC-06): confirmar la ruta desde el chat llama confirmRoute y emite telemetría', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    (window as any).dataLayer = [];
+    client.confirmRoute.mockReset().mockResolvedValue({ initiativeId: 'init1', overviewUrl: '/initiatives/init1/overview' });
+    render(<InitiativeReviewResultPage />);
+    const confirm = await screen.findByTestId('chat-confirm-route');
+    fireEvent.click(confirm);
+    await waitFor(() => expect(client.confirmRoute).toHaveBeenCalledWith('rev1'));
+    const events = ((window as any).dataLayer as Array<{ event: string }>).map((e) => e.event);
+    expect(events).toContain('chat_confirm_route');
+  });
+
+  it('flag ON (IRC-06): un turno de contexto emite chat_message_sent, chat_context_added y snapshot_diff_announced', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    (window as any).dataLayer = [];
+    client.addContext.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null,
+      snapshot: { ...SNAPSHOT, version: 2 }, changedSections: ['critique'],
+    });
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'Tenemos 2 devs.' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalled());
+    const events = ((window as any).dataLayer as Array<{ event: string }>).map((e) => e.event);
+    expect(events).toContain('chat_message_sent');
+    expect(events).toContain('chat_context_added');
+    expect(events).toContain('snapshot_diff_announced');
+  });
+
   it('flag ON: rehidrata el historial persistido (chatEvents) al montar', async () => {
     window.localStorage.setItem(FLAG_KEY, 'true');
     client.getReview.mockResolvedValueOnce({
