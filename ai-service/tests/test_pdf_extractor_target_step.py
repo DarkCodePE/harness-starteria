@@ -224,6 +224,6 @@ def test_stub_mode_returns_populated_step0_without_llm(monkeypatch: pytest.Monke
 
     result = extract(_blocks(), language="es", target_step="step_0")
 
-    assert result.step0.nombreParticipante is not None
-    assert result.step0.nombreParticipante.value == "Participante de prueba"
-    assert result.step0.quePasaQueQuieres is not None
+    assert result.step0.initiativeTitle is not None
+    assert result.step0.initiativeTitle.value == "Refinamiento inteligente de historias de usuario"
+    assert result.step0.primaryObjective is not None

@@ -199,15 +199,19 @@ test.describe('PDF auto-fill end-to-end (API-driven setup + UI verification)', (
       // assertions below still fully verify the outcome.
       await page.waitForURL(/\/projects\/[^/]+(\/step\/\d+)?$/, { timeout: 15_000 });
 
-      // On the project home, click "Empezar Paso 0" / "Comienza aquí" CTA.
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => undefined);
-      const cta = page.getByRole('button', { name: /Empezar Paso 0|Comienza aqu[ií]|Ver Paso 0|Continuar Paso 0/i }).first();
-      if (await cta.count()) {
-        await cta.click();
-      } else {
-        // Defensive fallback: direct nav. With the project now in React state,
-        // this should land on Step 0 without bouncing back to dashboard.
-        await page.goto(`/projects/${projectId}/step/0`);
+      // If the card already jumped straight to a step (handleContinueProject keeps the
+      // project in React state), we're there — do NOT hard-reload, since a fresh goto to a
+      // deep step link bounces back to the dashboard (project not yet in state). Only when
+      // we landed on the project home do we click the "Empezar Paso 0" CTA.
+      const onStep = /\/projects\/[^/]+\/step\/\d+$/.test(new URL(page.url()).pathname);
+      if (!onStep) {
+        const cta = page.getByRole('button', { name: /Empezar Paso 0|Comienza aqu[ií]|Ver Paso 0|Continuar (Paso|Step) 0/i }).first();
+        if (await cta.count()) {
+          await cta.click();
+        } else {
+          await page.goto(`/projects/${projectId}/step/0`);
+        }
       }
 
       await expect(page.locator('text=/Punto de partida/i').first()).toBeVisible({ timeout: 20_000 });

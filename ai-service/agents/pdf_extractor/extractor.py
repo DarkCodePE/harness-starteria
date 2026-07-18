@@ -211,11 +211,14 @@ def _stub_step(step: str) -> Any:
     def fp(value: str) -> FieldProposal:
         return FieldProposal(value=value, provenance=prov, confidence=0.9)
 
+    # Poblar los campos que la UI de Step 0 envuelve con <AutofillField> (módulo 'start':
+    # initiativeTitle/initiativeFrame/primaryObjective) para que los chips 'Propuesto por IA'
+    # se rendericen. initiativeTitle es texto libre → chip garantizado.
     return Step0Extraction(
-        nombreParticipante=fp("Participante de prueba"),
-        rolArea=fp("Operaciones"),
-        quePasaQueQuieres=fp("Reducir el retrabajo en el refinamiento de historias de usuario."),
-        impacto3meses=fp("Menos bugs en producción y decisiones de priorización más claras."),
+        initiativeTitle=fp("Refinamiento inteligente de historias de usuario"),
+        initiativeFrame=fp("correccion"),
+        primaryObjective=fp("Reducir el retrabajo y los bugs en producción"),
+        whyNowText=fp("El retrabajo en refinamiento está costando velocidad al equipo."),
     )
 
 
