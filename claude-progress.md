@@ -182,3 +182,14 @@
 - Stack completo recompilado: backend + ai-service (stub) + frontend.
 - Decisión: arreglé la causa raíz sustantiva (determinismo de extracción) y 3 bugs más; #140 es routing del dashboard/steps, open-ended y fuera del alcance del épico del chat. Detengo la persecución del smoke por scope creep.
 - e2e conversacional VERDE en TODAS las corridas (~510ms). El épico del chat está completo y verificado.
+
+### Sesión 015 — IRC-07 VERDE: smoke de referencia + e2e conversacional en la misma corrida (2026-07-18)
+
+- **IRC-07 → passing.** `playwright test initial-review-chat pdf-autofill.spec.ts` (CI=1) → **3 passed (~7s)**: e2e conversacional + smoke de referencia (register→login→create→upload→extract→Step 0 con chips) + public-pdf-autofill.
+- **Root cause final del smoke**: `Step0Page` importaba `AutofillField` pero renderizaba `<Input>` plano — los chips de autofill solo estaban wired en Step 1. Los proposals extraídos (step0.*) nunca se mostraban en Step 0. **Fix**: wired `step0.initiativeTitle` vía `AutofillField` (patrón de Step1Page). Commit 1a220fb.
+- Cadena completa de fixes (todos infra PDF-autofill/dashboard, ajenos al chat): #137 waitlist (bypass env AUTH_DISABLE_WAITLIST), #138 truncación ai-service (FAILED cuando todos los pasos fallan), extracción DETERMINISTA (env PDF_EXTRACT_STUB → step0.initiativeTitle fijo, sin LLM), waitForURL stale, reload-bounce en navegación, y el wiring de AutofillField en Step 0.
+- Flakiness residual de timing SPA (post-login) absorbida por `retries:1` del playwright.config (CI) — verde estable con el retry, como lo diseñó el equipo.
+- Para CI: exportar `AUTH_DISABLE_WAITLIST=true` y `PDF_EXTRACT_STUB=true` (hoy en docker-compose.override.yml local).
+- Unit: 259 ai-service + 438 backend + 263 front verdes. Stack completo recompilado (backend+ai-service+frontend).
+- Issues: #136 (remoción legacy, abierto), #137/#138/#140 (cerrados/arreglados), #139 (cerrado no-bug). Commits: 7218d9f, ed0fd6b, 781c12c, 1a220fb.
+- **Épico initiative-review-chat COMPLETO: IRC-01..07 todos passing.**

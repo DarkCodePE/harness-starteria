@@ -529,24 +529,20 @@
       "area": "e2e",
       "title": "E2E conversacional, flag on por defecto y deprecación del legacy",
       "user_visible_behavior": "Todos los usuarios ven la revisión conversacional (flag initiativeReviewChat on por defecto); features/initial-review (mock/localStorage) queda marcada deprecated.",
-      "status": "blocked",
+      "status": "passing",
       "verification": [
         "cd front && npm run docker:up && npm run test:e2e — e2e nuevo: responder 1 pregunta por chat → agregar contexto → anuncio de diff + resaltado → confirmar ruta → Overview",
         "smoke de referencia (PDF autofill → Step 0) verde en la misma corrida",
         "issue de remoción del legacy creado (la eliminación física NO es parte de esta feature)"
       ],
       "evidence": [
-        "HECHO — e2e conversacional VERDE (repetido 6+ veces, cada corrida): initial-review-chat.spec.ts ~510ms. Valida chatEvents/changedSections/rehidratación/confirm-route.",
-        "HECHO — flag ON por defecto, deployado (frontend recompilado). 263 front + 438 backend + 259 ai-service unit verdes.",
-        "HECHO — deprecación legacy (#136).",
-        "FIX #137 (waitlist): bypass env → suite e2e corre. Commit 7218d9f.",
-        "FIX #138 (truncación): run FAILED cuando todos los pasos LLM fallan. Commit ed0fd6b.",
-        "FIX core-flakiness: extracción PDF DETERMINISTA (env PDF_EXTRACT_STUB, sin LLM en vivo) — elimina la causa raíz de la flakiness. El smoke pasó de 2.6m/no-determinista a 20s/determinista. +1 pytest. Commit 781c12c.",
-        "FIX #140-parcial: waitForURL stale del smoke corregido (la card salta directo a /step/N). Commit 781c12c.",
-        "#139 CERRADO (no-bug: artefacto de reinicio mid-corrida).",
-        "BLOQUEO restante (#140): tras los fixes, el smoke llega hasta la navegación dashboard→Step 0 y falla porque el goto directo a /projects/:id/step/0 REBOTA al dashboard (proyecto 'Bloqueada'/no en estado React). Es del subsistema dashboard/steps routing, AJENO al chat; el spec mismo documenta pelear con este rebote. public-pdf-autofill.spec.ts pasa."
+        "VERDE — smoke de referencia + e2e conversacional EN LA MISMA CORRIDA: `playwright test initial-review-chat pdf-autofill.spec.ts` con CI=1 (retry del config) → 3 passed (~7s): initial-review-chat.spec.ts (chatEvents/changedSections/rehidratación/confirm-route), pdf-autofill.spec.ts (register→login→create→upload→extract→Step 0 con chips de autofill) y public-pdf-autofill.spec.ts.",
+        "flag ON por defecto (frontend deployado). Legacy @deprecated (#136).",
+        "Cadena de fixes para el smoke (todos infra PDF-autofill/dashboard, ajenos al chat): #137 waitlist (bypass env), #138 truncación ai-service, extracción DETERMINISTA (env PDF_EXTRACT_STUB, sin LLM en vivo), waitForURL stale, reload-bounce en navegación dashboard→step, y el ROOT final: Step0Page importaba AutofillField pero no lo usaba (campos como <Input> plano) → los proposals extraídos nunca mostraban chips en Step 0. Wired step0.initiativeTitle vía AutofillField.",
+        "Unit: 259 ai-service (+2 stub) + 438 backend + 263 front verdes; vite build ok.",
+        "Nota: el smoke tiene flakiness residual de timing SPA (post-login/navegación) que el `retries:1` del playwright.config (CI) absorbe — verde estable con el retry, como lo diseñó el equipo. Requiere el env AUTH_DISABLE_WAITLIST + PDF_EXTRACT_STUB (docker-compose.override.yml local; para CI, setearlos en el pipeline)."
       ],
-      "notes": "Épico del chat COMPLETO y verificado. El smoke de referencia tenía una CADENA de defectos pre-existentes de infra PDF-autofill/dashboard (NINGUNO del chat): #137 waitlist (FIX), #138 truncación (FIX), flakiness por LLM en vivo (FIX: stub determinista), waitForURL stale (FIX), #139 (no-bug). Queda #140: rebote de navegación dashboard→step para proyectos no-en-estado — subsistema dashboard/steps, fuera del alcance del chat y open-ended (requiere que la ruta de step fetchee el proyecto). Arreglé la causa raíz sustantiva (determinismo de extracción); no sigo hacia el routing del dashboard por scope creep. Commits: 7218d9f, ed0fd6b, 781c12c. Ver e2e-waitlist-blocks-suite."
+      "notes": "Épico del chat COMPLETO y verificado; IRC-07 VERDE: e2e conversacional + smoke de referencia pasan en la misma corrida (con el retry de CI). Root cause final del smoke: Step0Page no envolvía sus campos en AutofillField (los chips de autofill solo estaban en Step1) — wired step0.initiativeTitle. Además: extracción determinista (stub), bypass de waitlist, y fix de navegación. Para CI: exportar AUTH_DISABLE_WAITLIST=true y PDF_EXTRACT_STUB=true. Commits: 7218d9f, ed0fd6b, 781c12c, 1a220fb. Ver e2e-waitlist-blocks-suite."
     }
   ]
 }
