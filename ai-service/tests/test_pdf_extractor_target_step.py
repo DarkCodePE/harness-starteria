@@ -170,3 +170,43 @@ def test_target_step_empty_or_unknown_falls_back_to_full_sweep(
     extract(_blocks(), language="es", target_step="step_99")
     assert calls2["count"] == 5
     assert calls2["steps"] == ["step0", "step1", "step2", "step3", "step4"]
+
+
+def test_all_steps_llm_failure_raises_runtimeerror(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Issue #138: si TODOS los pasos intentados fallan en la llamada LLM (p.ej. truncación
+    por length-limit), extract() debe lanzar RuntimeError para que el run se marque 'failed'
+    en vez de 'completed' con 0 propuestas."""
+    from agents.pdf_extractor import extractor as ex_mod
+    from agents.pdf_extractor.extractor import StepExtractionError, extract
+
+    def failing_call_step(llm, step, full_text, language):
+        raise StepExtractionError(step, RuntimeError("length limit reached"))
+
+    monkeypatch.setattr(ex_mod, "_call_step", failing_call_step)
+    monkeypatch.setattr(ex_mod, "_build_llm", lambda: object())
+
+    # target_step: un solo paso, que falla → todos los intentados fallaron.
+    with pytest.raises(RuntimeError):
+        extract(_blocks(), language="es", target_step="step_0")
+
+    # full sweep: los 5 pasos fallan → también RuntimeError.
+    with pytest.raises(RuntimeError):
+        extract(_blocks(), language="es", target_step=None)
+
+
+def test_partial_step_failure_still_completes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tolerancia del sweep multi-paso: si algún paso tiene éxito, extract() NO falla aunque
+    otros pasos fallen en la llamada LLM (issue #138 — solo all-failed marca el run fallido)."""
+    from agents.pdf_extractor import extractor as ex_mod
+    from agents.pdf_extractor.extractor import StepExtractionError, extract
+
+    def mixed_call_step(llm, step, full_text, language):
+        if step == "step0":
+            return ex_mod._STEP_VALIDATORS[step](), 7, {"input": 0, "output": 0}
+        raise StepExtractionError(step, RuntimeError("length limit reached"))
+
+    monkeypatch.setattr(ex_mod, "_call_step", mixed_call_step)
+    monkeypatch.setattr(ex_mod, "_build_llm", lambda: object())
+
+    result = extract(_blocks(), language="es", target_step=None)  # no lanza
+    assert result.step0 is not None

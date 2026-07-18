@@ -75,6 +75,17 @@ class CostCapExceeded(Exception):
         self.completed = completed
 
 
+class StepExtractionError(RuntimeError):
+    """Raised by ``_call_step`` when the LLM call for a step hard-fails (timeout, network,
+    or a length-limit truncation that cannot be parsed). Distinguishes a real failure from
+    a legitimately-empty extraction so the caller can mark the run failed (issue #138)."""
+
+    def __init__(self, step: str, cause: Exception) -> None:
+        super().__init__(f"LLM extraction failed for {step}: {cause}")
+        self.step = step
+        self.cause = cause
+
+
 # ---------- Helpers ----------
 
 
@@ -199,8 +210,12 @@ def _call_step(
             {"role": "user", "content": user_msg},
         ])
     except Exception as exc:  # noqa: BLE001
+        # Un fallo DURO de la llamada LLM (timeout, red, o truncación por length-limit que
+        # impide parsear la respuesta) NO es una extracción vacía legítima: es un fallo del
+        # paso. Se propaga como StepExtractionError; `extract()` decide si tolerarlo (sweep
+        # multi-paso parcial) o marcar el run como fallido (issue #138).
         logger.error("LLM call failed for %s: %s", step, exc)
-        return _STEP_VALIDATORS[step](), int((time.monotonic() - started) * 1000), {}
+        raise StepExtractionError(step, exc) from exc
 
     raw = response.content if isinstance(response.content, str) else str(response.content)
     parsed = _extract_json(raw)
@@ -286,6 +301,8 @@ def extract(
             target_step,
         )
 
+    attempted_steps = 0
+    failed_steps = 0
     for step in ("step0", "step1", "step2", "step3", "step4"):
         if normalized_target is not None and step != normalized_target:
             # Skipped by target_step filter: keep the shape of InitiativeExtraction
@@ -306,12 +323,30 @@ def extract(
                     extracted[remaining] = _STEP_VALIDATORS[remaining]()
             raise CostCapExceeded(cost_so_far, cost_cap_usd, completed)
 
-        value, ms, tokens = _call_step(llm, step, full_text, language)
+        attempted_steps += 1
+        try:
+            value, ms, tokens = _call_step(llm, step, full_text, language)
+        except StepExtractionError:
+            # Tolerar el fallo de UN paso (el sweep multi-paso conserva lo demás), pero
+            # contarlo: si TODOS los pasos intentados fallan, el run es un fallo (issue #138).
+            failed_steps += 1
+            extracted[step] = _STEP_VALIDATORS[step]()
+            per_step_ms[step] = 0
+            per_step_tokens[step] = {}
+            continue
         extracted[step] = value
         per_step_ms[step] = ms
         per_step_tokens[step] = tokens
         cost_so_far += _compute_cost(str(model_name), tokens.get("input", 0), tokens.get("output", 0))
         completed.append(step)
+
+    # Todos los pasos intentados fallaron en la llamada LLM → no hay extracción útil; el run
+    # NO debe reportarse como 'completed' con 0 propuestas (issue #138). agent._run lo captura
+    # y marca 'failed', que el smoke de referencia tolera (wiring confirmado).
+    if attempted_steps > 0 and failed_steps == attempted_steps:
+        raise RuntimeError(
+            f"All {attempted_steps} extraction step(s) failed at the LLM call; marking run failed"
+        )
 
     finished_at = datetime.utcnow().isoformat()
     duration_ms = int((time.monotonic() - started) * 1000)
