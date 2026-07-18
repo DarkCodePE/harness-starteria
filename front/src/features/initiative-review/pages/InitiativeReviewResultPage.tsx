@@ -20,7 +20,9 @@ import {
   QuestionsCard,
   ImprovedProposalCard,
   RoutePreviewCard,
+  sectionAnchorId,
 } from '../components/ReviewCards';
+import type { SnapshotSectionId } from '../services/initiativeReviewClient';
 import { AssistantPanel, type ChatMessage } from '../components/chat/AssistantPanel';
 import {
   composeConversation,
@@ -44,6 +46,16 @@ export function InitiativeReviewResultPage() {
   // IRC-04: modo del chat (null = por defecto contextual) y dudas transitorias (no persistidas).
   const [chatMode, setChatMode] = useState<AssistantMode | null>(null);
   const [transientDoubts, setTransientDoubts] = useState<ChatMessage[]>([]);
+  // IRC-05: secciones resaltadas tras la última regeneración (changedSections del backend).
+  const [highlighted, setHighlighted] = useState<SnapshotSectionId[]>([]);
+
+  // IRC-05: al resaltar, desplaza el panel a la primera sección cambiada. Debe declararse
+  // con el resto de hooks (antes de cualquier early return) para no violar reglas de hooks.
+  useEffect(() => {
+    if (highlighted.length === 0) return;
+    const el = typeof document !== 'undefined' ? document.getElementById(sectionAnchorId(highlighted[0])) : null;
+    el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }, [highlighted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,9 +204,15 @@ export function InitiativeReviewResultPage() {
         });
       }
       setReview(next);
+      setHighlighted(next.changedSections ?? []); // IRC-05: resalta las cards que cambiaron
       setChatMode(null); // vuelve al modo por defecto contextual tras cada turno
     } catch {
       setError('No pudimos procesar tu mensaje. Intenta nuevamente.');
+      // IRC-05: el fallo también se muestra en el chat, con invitación a reintentar.
+      setTransientDoubts((prev) => [
+        ...prev,
+        { id: `err-${prev.length}`, role: 'assistant', content: 'No pude actualizar tu iniciativa (puede ser una demora del servicio). Vuelve a enviar tu mensaje e intento de nuevo.' },
+      ]);
     } finally {
       setAddingContext(false);
     }
@@ -237,12 +255,12 @@ export function InitiativeReviewResultPage() {
   const snapshotColumn = (
     <>
       <div className="grid gap-4">
-        <UnderstandingSummaryCard snapshot={snapshot} />
-        <ChallengeTypeCard snapshot={snapshot} />
-        <CritiqueCard snapshot={snapshot} />
-        <QuestionsCard snapshot={snapshot} answeringQuestionId={answeringQuestionId} onAnswer={onAnswerQuestion} />
-        <ImprovedProposalCard snapshot={snapshot} />
-        <RoutePreviewCard snapshot={snapshot} />
+        <UnderstandingSummaryCard snapshot={snapshot} highlighted={highlighted.includes('understanding')} />
+        <ChallengeTypeCard snapshot={snapshot} highlighted={highlighted.includes('challengeType')} />
+        <CritiqueCard snapshot={snapshot} highlighted={highlighted.includes('critique')} />
+        <QuestionsCard snapshot={snapshot} answeringQuestionId={answeringQuestionId} onAnswer={onAnswerQuestion} highlighted={highlighted.includes('questions')} />
+        <ImprovedProposalCard snapshot={snapshot} highlighted={highlighted.includes('improvedProposal')} />
+        <RoutePreviewCard snapshot={snapshot} highlighted={highlighted.includes('routePreview')} />
       </div>
 
       {review.companyContext?.companyId && (
@@ -312,7 +330,16 @@ export function InitiativeReviewResultPage() {
     </>
   );
 
-  const heading = <h1 className="text-2xl font-semibold text-slate-900">Revisemos tu iniciativa antes de empezar</h1>;
+  const heading = (
+    <div className="flex flex-wrap items-center gap-3">
+      <h1 className="text-2xl font-semibold text-slate-900">Revisemos tu iniciativa antes de empezar</h1>
+      {chatEnabled && snapshot && (
+        <span data-testid="snapshot-version" className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+          Versión {snapshot.version}
+        </span>
+      )}
+    </div>
+  );
 
   // Flag OFF: layout de una columna (comportamiento actual, sin cambios).
   if (!chatEnabled) {

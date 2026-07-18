@@ -490,12 +490,17 @@
       "area": "initial-review",
       "title": "Anuncio de cambios en chat y resaltado del panel tras regeneración",
       "user_visible_behavior": "Al aportar información, el asistente anuncia qué secciones cambiaron ('Actualicé: Mirada crítica y Versión mejorada'), el panel izquierdo las resalta (prop highlighted en ReviewCards) con scroll a la primera y muestra la versión del snapshot. Si nada cambió, lo dice explícitamente. Espera con 'Starteria está actualizando tu iniciativa…' y retry en timeout.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm test — anuncio generado == changedSections recibidas (incluye lista vacía); estado de espera y retry con timeout simulado"
       ],
-      "evidence": [],
-      "notes": "PRD F5. Depende de IRC-02 (changedSections) y IRC-04 (orquestador)."
+      "evidence": [
+        "vitest front InitiativeReviewFlow: 19 passed (2 nuevos IRC-05). Tras addContext con changedSections=['critique','improvedProposal'], solo esas cards tienen data-highlighted='true' (understanding/route no); snapshot-version muestra 'Versión 3'. changedSections=[] → ninguna card resaltada.",
+        "anuncio: announceDiff (probado en assistantOrchestrator: vacío→'se mantiene igual', una→etiqueta, varias→'X y Y') se renderiza desde el evento diff_announcement rehidratado (IRC-04 test de rehidratación muestra 'actualicé: Mirada crítica').",
+        "espera: AssistantPanel muestra TypingIndicator ('Starteria está actualizando tu iniciativa') con busy=addingContext e input bloqueado; en error, bubble de reintento en el chat + input re-habilitado.",
+        "suite front completa: 259 passed / 39 files. vite build ✓ 5.70s."
+      ],
+      "notes": "PRD F5. Card gana sectionId + ancla (sectionAnchorId) + data-highlighted + badge 'Actualizado'. Página: estado highlighted desde next.changedSections, useEffect (arriba, antes de early returns) hace scrollIntoView a la 1ª sección. Depende de IRC-02 (changedSections) y IRC-04 (orquestador/announceDiff)."
     },
     {
       "id": "IRC-06-confirm-and-company-context-bridge",

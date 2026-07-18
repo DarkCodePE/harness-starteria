@@ -196,6 +196,44 @@ describe('InitiativeReviewResultPage — chat split layout (ADR-026, IRC-03)', (
     expect(client.saveStrategicAnswers).not.toHaveBeenCalled();
   });
 
+  it('flag ON (IRC-05): tras agregar contexto, resalta solo las secciones cambiadas y muestra la versión', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    client.addContext.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null,
+      snapshot: { ...SNAPSHOT, version: 3 }, changedSections: ['critique', 'improvedProposal'],
+    });
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'Validamos on-premise.' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+
+    await waitFor(() => expect(screen.getByTestId('card-critique')).toHaveAttribute('data-highlighted', 'true'));
+    expect(screen.getByTestId('card-proposal')).toHaveAttribute('data-highlighted', 'true');
+    // secciones NO cambiadas no se resaltan
+    expect(screen.getByTestId('card-understanding')).not.toHaveAttribute('data-highlighted');
+    expect(screen.getByTestId('card-route')).not.toHaveAttribute('data-highlighted');
+    // la versión del snapshot se muestra
+    expect(screen.getByTestId('snapshot-version')).toHaveTextContent('Versión 3');
+  });
+
+  it('flag ON (IRC-05): changedSections vacío no resalta ninguna card', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    client.addContext.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null,
+      snapshot: { ...SNAPSHOT, version: 2 }, changedSections: [],
+    });
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'algo que no cambia nada' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalled());
+    for (const id of ['card-understanding', 'card-critique', 'card-proposal', 'card-route']) {
+      expect(screen.getByTestId(id)).not.toHaveAttribute('data-highlighted');
+    }
+  });
+
   it('flag ON: rehidrata el historial persistido (chatEvents) al montar', async () => {
     window.localStorage.setItem(FLAG_KEY, 'true');
     client.getReview.mockResolvedValueOnce({
