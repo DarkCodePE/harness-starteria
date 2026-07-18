@@ -136,3 +136,17 @@
 - Hallazgo clave: hay DOS features de revisión en el front — `initiative-review` (real, ADR-025) y `initial-review` (legacy mock con chat ya maquetado). El épico une ambas.
 - Decisión de layout registrada: asistente a la derecha (texto del requerimiento prima sobre el mockup, que lo dibuja a la izquierda).
 - Próxima sesión: tomar IRC-01 (modelo `InitialReviewChatEvent` + chatEvents en GET), una sola feature activa.
+
+### Sesión 011 — Implementación del épico initiative-review-chat IRC-01…07 (2026-07-18)
+
+- Fecha: 2026-07-18. Objetivo (/goal): implementar las 7 tareas del chat del asistente en "Revisemos tu iniciativa".
+- IRC-01 (**passing**): modelo Prisma `InitialReviewChatEvent` (enums role/kind, solo @@index — regla CD), `chatEvents` en GET, primitiva `appendChatEvent` (tx-aware). `db push` aplicado a starteria-db SIN --accept-data-loss. 27 tests backend.
+- IRC-02 (**passing**): `snapshot-diff.ts` puro (diffSections por card) + `changedSections` en add-context/strategic-answers; escrituras (snapshot+review+eventos) en `prisma.$transaction`; IA fuera del tx. 38 tests backend.
+- IRC-03 (**passing**): split layout tras flag `isInitiativeReviewChatEnabled()` (default off); asistente a la DERECHA; componentes de chat extraídos del legacy. 238 tests front.
+- IRC-04 (**passing**): `assistantOrchestrator.ts` puro (deriveAgenda, nextAction por modo, mapEventsToMessages, guideMessages, composeConversation) + `assistantFaq.ts`; selector de modo answer/context/doubt; rehidratación desde chatEvents. 257 tests front.
+- IRC-05 (**passing**): resaltado de cards cambiadas (data-highlighted + badge), scroll a la 1ª, badge de versión, retry en chat; announceDiff. 259 tests front.
+- IRC-06 (**passing**): confirmar ruta desde el chat (footer), puente contexto-análisis vs contexto-empresa (guide-company-context), 5 eventos de telemetría chat_*. 262 tests front.
+- IRC-07 (**in_progress**): e2e `initial-review-chat.spec.ts` VERDE contra stack real (backend recompilado); legacy `features/initial-review` marcado @deprecated (páginas no ruteadas) + issue de remoción #136. **BLOQUEADO** el flag-on-por-defecto + smoke de referencia: TODA la suite e2e está roja por regresión PRE-EXISTENTE de waitlist de auth (isActive=false → login 403). Bug abierto #137. Flag queda OFF (override disponible) hasta suite e2e verde, per la ADR.
+- Commits: 007b75a, 0d718c3, 6ec3958, 1c9bad9, 42c96dc, 806f197, c304760. Artefactos previos (PRD/ADR-026/descomposición) en 16ebc18.
+- Gotcha reforzado: rtk rompe npx (prisma/vite/tsc/playwright) → usar binarios directos ./node_modules/.bin/*. El front NO tiene tsconfig propio (usa vite+vitest); backend usa tsconfig.backend.json (30 errores TS pre-existentes ajenos, en billing/pdfs/pilot-leads).
+- Próximo: resolver #137 (bypass de waitlist en e2e) → correr suite e2e completa con flag on → flipear el default y cerrar IRC-07; luego #136 (remoción física del legacy).
