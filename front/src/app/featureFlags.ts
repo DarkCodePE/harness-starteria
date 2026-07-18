@@ -14,6 +14,25 @@ export function isInitialReviewEnabled(): boolean {
   return envEnabled || storageValue === 'true';
 }
 
+/**
+ * ADR-026 (IRC-07): revisión inicial conversacional (asistente a la derecha).
+ * ON por defecto. Se puede DESACTIVAR con VITE_ENABLE_INITIATIVE_REVIEW_CHAT=false o el
+ * override de localStorage (valor 'false'). Cualquier otro valor deja el chat activo.
+ */
+export function isInitiativeReviewChatEnabled(): boolean {
+  if (import.meta.env.VITE_ENABLE_INITIATIVE_REVIEW_CHAT === 'false') return false;
+
+  if (typeof window !== 'undefined') {
+    try {
+      if (window.localStorage.getItem('starteria.initiativeReviewChat.enabled') === 'false') return false;
+    } catch {
+      /* localStorage inaccesible → se mantiene el default on */
+    }
+  }
+
+  return true;
+}
+
 export function getInitialReviewFlagDebug() {
   const envValue = import.meta.env.VITE_ENABLE_INITIAL_REVIEW;
   let storageValue: string | null = null;

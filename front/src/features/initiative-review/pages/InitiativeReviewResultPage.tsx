@@ -20,7 +20,18 @@ import {
   QuestionsCard,
   ImprovedProposalCard,
   RoutePreviewCard,
+  sectionAnchorId,
 } from '../components/ReviewCards';
+import type { SnapshotSectionId } from '../services/initiativeReviewClient';
+import { AssistantPanel, type ChatMessage } from '../components/chat/AssistantPanel';
+import {
+  composeConversation,
+  deriveAgenda,
+  defaultMode,
+  nextAction,
+  type AssistantMode,
+} from '../services/assistantOrchestrator';
+import { isInitiativeReviewChatEnabled } from '../../../app/featureFlags';
 
 export function InitiativeReviewResultPage() {
   const { reviewId } = useParams();
@@ -32,6 +43,19 @@ export function InitiativeReviewResultPage() {
   const [contextText, setContextText] = useState('');
   const [addingContext, setAddingContext] = useState(false);
   const [answeringQuestionId, setAnsweringQuestionId] = useState<string | null>(null);
+  // IRC-04: modo del chat (null = por defecto contextual) y dudas transitorias (no persistidas).
+  const [chatMode, setChatMode] = useState<AssistantMode | null>(null);
+  const [transientDoubts, setTransientDoubts] = useState<ChatMessage[]>([]);
+  // IRC-05: secciones resaltadas tras la última regeneración (changedSections del backend).
+  const [highlighted, setHighlighted] = useState<SnapshotSectionId[]>([]);
+
+  // IRC-05: al resaltar, desplaza el panel a la primera sección cambiada. Debe declararse
+  // con el resto de hooks (antes de cualquier early return) para no violar reglas de hooks.
+  useEffect(() => {
+    if (highlighted.length === 0) return;
+    const el = typeof document !== 'undefined' ? document.getElementById(sectionAnchorId(highlighted[0])) : null;
+    el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }, [highlighted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,18 +162,113 @@ export function InitiativeReviewResultPage() {
   if (!review?.snapshot) return <div role="alert" className="p-8 text-red-600">La revisión aún no está lista.</div>;
 
   const snapshot = review.snapshot;
+  const chatEnabled = isInitiativeReviewChatEnabled();
 
-  return (
-    <div className="mx-auto max-w-2xl p-6 md:p-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Revisemos tu iniciativa antes de empezar</h1>
+  // IRC-04: orquestador determinista. La agenda y los mensajes se derivan del review; cada
+  // turno del usuario se traduce a add-context / strategic-answers según el modo.
+  const agenda = deriveAgenda(review);
+  const effectiveMode: AssistantMode = chatMode ?? defaultMode(agenda);
 
-      <div className="mt-6 grid gap-4">
-        <UnderstandingSummaryCard snapshot={snapshot} />
-        <ChallengeTypeCard snapshot={snapshot} />
-        <CritiqueCard snapshot={snapshot} />
-        <QuestionsCard snapshot={snapshot} answeringQuestionId={answeringQuestionId} onAnswer={onAnswerQuestion} />
-        <ImprovedProposalCard snapshot={snapshot} />
-        <RoutePreviewCard snapshot={snapshot} />
+  const onChatSend = async (text: string) => {
+    if (!reviewId || addingContext) return;
+    const action = nextAction(effectiveMode, agenda, text);
+    trackInitialReviewEvent('chat_message_sent', { reviewId, mode: effectiveMode }); // IRC-06
+
+    // Las dudas se resuelven en cliente (catálogo), sin llamada a la API (ADR-026 dec. 2).
+    if (action.type === 'doubt') {
+      const stamp = `${transientDoubts.length}`;
+      setTransientDoubts((prev) => [
+        ...prev,
+        { id: `doubt-u-${stamp}`, role: 'user', content: action.question },
+        { id: `doubt-a-${stamp}`, role: 'assistant', content: action.answer },
+      ]);
+      return;
+    }
+
+    setAddingContext(true);
+    setError(null);
+    try {
+      let next;
+      if (action.type === 'answer') {
+        next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, answer: action.answer }]);
+        trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId });
+        trackInitialReviewEvent('chat_question_answered', { reviewId, questionId: action.questionId });
+      } else if (action.type === 'answer_unknown') {
+        next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, unknown: true }]);
+        trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId, unknown: true });
+        trackInitialReviewEvent('chat_question_answered', { reviewId, questionId: action.questionId, unknown: true });
+      } else {
+        next = await addContext(reviewId, action.text);
+        trackInitialReviewEvent('initial_review_context_added', {
+          reviewId,
+          snapshotId: next.snapshot?.id,
+          snapshotVersion: next.snapshot?.version,
+          contextCount: next.addedContext.length,
+        });
+        trackInitialReviewEvent('chat_context_added', { reviewId, snapshotVersion: next.snapshot?.version, contextCount: next.addedContext.length });
+      }
+      setReview(next);
+      const changed = next.changedSections ?? [];
+      setHighlighted(changed); // IRC-05: resalta las cards que cambiaron
+      if (changed.length > 0) {
+        trackInitialReviewEvent('snapshot_diff_announced', { reviewId, snapshotVersion: next.snapshot?.version, changedCount: changed.length }); // IRC-06
+      }
+      setChatMode(null); // vuelve al modo por defecto contextual tras cada turno
+    } catch {
+      setError('No pudimos procesar tu mensaje. Intenta nuevamente.');
+      // IRC-05: el fallo también se muestra en el chat, con invitación a reintentar.
+      setTransientDoubts((prev) => [
+        ...prev,
+        { id: `err-${prev.length}`, role: 'assistant', content: 'No pude actualizar tu iniciativa (puede ser una demora del servicio). Vuelve a enviar tu mensaje e intento de nuevo.' },
+      ]);
+    } finally {
+      setAddingContext(false);
+    }
+  };
+
+  const chatMessages: ChatMessage[] = composeConversation(review, transientDoubts);
+
+  const MODE_LABEL: Record<AssistantMode, string> = { answer: 'Responder', context: 'Agregar contexto', doubt: 'Tengo una duda' };
+  const MODE_PLACEHOLDER: Record<AssistantMode, string> = {
+    answer: 'Escribe tu respuesta (o "no lo sé aún")…',
+    context: 'Cuéntame qué falta: restricciones, recursos, alcance…',
+    doubt: 'Pregúntame sobre el análisis o la ruta…',
+  };
+  const modeToolbar = (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Modo de mensaje">
+      {(['answer', 'context', 'doubt'] as AssistantMode[]).map((m) => {
+        const disabledMode = m === 'answer' && !agenda.activeQuestion;
+        const active = effectiveMode === m;
+        return (
+          <button
+            key={m}
+            type="button"
+            data-testid={`chat-mode-${m}`}
+            disabled={disabledMode}
+            aria-pressed={active}
+            onClick={() => setChatMode(m)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              active ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'
+            } disabled:cursor-not-allowed disabled:opacity-40`}
+          >
+            {MODE_LABEL[m]}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // Contenido de la columna de la iniciativa (izquierda). La sección de "Agregar contexto"
+  // por textarea se oculta cuando el chat está activo: el asistente cumple esa función.
+  const snapshotColumn = (
+    <>
+      <div className="grid gap-4">
+        <UnderstandingSummaryCard snapshot={snapshot} highlighted={highlighted.includes('understanding')} />
+        <ChallengeTypeCard snapshot={snapshot} highlighted={highlighted.includes('challengeType')} />
+        <CritiqueCard snapshot={snapshot} highlighted={highlighted.includes('critique')} />
+        <QuestionsCard snapshot={snapshot} answeringQuestionId={answeringQuestionId} onAnswer={onAnswerQuestion} highlighted={highlighted.includes('questions')} />
+        <ImprovedProposalCard snapshot={snapshot} highlighted={highlighted.includes('improvedProposal')} />
+        <RoutePreviewCard snapshot={snapshot} highlighted={highlighted.includes('routePreview')} />
       </div>
 
       {review.companyContext?.companyId && (
@@ -181,28 +300,30 @@ export function InitiativeReviewResultPage() {
         </section>
       )}
 
-      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agregar contexto antes de confirmar</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Si falta información clave, agrega restricciones, recursos, alcance o señales esperadas. Starteria regenerará el snapshot y mantendrá historial.
-        </p>
-        <textarea
-          aria-label="Agregar contexto antes de confirmar"
-          value={contextText}
-          onChange={(e) => setContextText(e.target.value)}
-          rows={3}
-          placeholder="Ejemplo: solo tenemos dos semanas, el equipo disponible es de operaciones y legal debe aprobar cambios."
-          className="mt-3 w-full rounded-lg border border-slate-300 p-3 text-sm"
-        />
-        <button
-          type="button"
-          onClick={onAddContext}
-          disabled={!contextText.trim() || addingContext}
-          className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {addingContext ? 'Actualizando revisión...' : 'Actualizar revisión'}
-        </button>
-      </section>
+      {!chatEnabled && (
+        <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agregar contexto antes de confirmar</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Si falta información clave, agrega restricciones, recursos, alcance o señales esperadas. Starteria regenerará el snapshot y mantendrá historial.
+          </p>
+          <textarea
+            aria-label="Agregar contexto antes de confirmar"
+            value={contextText}
+            onChange={(e) => setContextText(e.target.value)}
+            rows={3}
+            placeholder="Ejemplo: solo tenemos dos semanas, el equipo disponible es de operaciones y legal debe aprobar cambios."
+            className="mt-3 w-full rounded-lg border border-slate-300 p-3 text-sm"
+          />
+          <button
+            type="button"
+            onClick={onAddContext}
+            disabled={!contextText.trim() || addingContext}
+            className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {addingContext ? 'Actualizando revisión...' : 'Actualizar revisión'}
+          </button>
+        </section>
+      )}
 
       {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
 
@@ -214,6 +335,63 @@ export function InitiativeReviewResultPage() {
       >
         {confirming ? 'Creando tu iniciativa...' : 'Estoy de acuerdo con esta ruta'}
       </button>
+    </>
+  );
+
+  const heading = (
+    <div className="flex flex-wrap items-center gap-3">
+      <h1 className="text-2xl font-semibold text-slate-900">Revisemos tu iniciativa antes de empezar</h1>
+      {chatEnabled && snapshot && (
+        <span data-testid="snapshot-version" className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+          Versión {snapshot.version}
+        </span>
+      )}
+    </div>
+  );
+
+  // Flag OFF: layout de una columna (comportamiento actual, sin cambios).
+  if (!chatEnabled) {
+    return (
+      <div className="mx-auto max-w-2xl p-6 md:p-8">
+        {heading}
+        <div className="mt-6">{snapshotColumn}</div>
+      </div>
+    );
+  }
+
+  // Flag ON (ADR-026): iniciativa a la izquierda, asistente a la derecha. En <1024px la
+  // columna del asistente se apila debajo (bottom-sheet) con altura propia.
+  return (
+    <div className="mx-auto max-w-6xl p-6 md:p-8">
+      {heading}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
+        <div className="min-w-0">{snapshotColumn}</div>
+        <div className="h-[70vh] lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+          <AssistantPanel
+            messages={chatMessages}
+            onSend={onChatSend}
+            busy={addingContext}
+            placeholder={MODE_PLACEHOLDER[effectiveMode]}
+            toolbar={modeToolbar}
+            footer={
+              <button
+                type="button"
+                data-testid="chat-confirm-route"
+                onClick={() => {
+                  trackInitialReviewEvent('chat_confirm_route', { reviewId });
+                  onConfirm();
+                }}
+                disabled={confirming}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${
+                  agenda.ready ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500/80 hover:bg-emerald-600'
+                }`}
+              >
+                {confirming ? 'Creando tu iniciativa...' : agenda.ready ? 'Confirmar ruta y empezar' : 'Confirmar ruta (o sigue completando)'}
+              </button>
+            }
+          />
+        </div>
+      </div>
     </div>
   );
 }

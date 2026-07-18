@@ -410,17 +410,17 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  projects           Project[]
-  teamMemberships    TeamMember[]
+  projects                 Project[]
+  teamMemberships          TeamMember[]
   challengeTeamMemberships ChallengeTeamMember[] // ADR-023: reto-scoped team membership
-  mentorSessions     MentorSession[]
-  evidence           Evidence[]
-  refreshTokens      RefreshToken[]
-  auditLogs          AuditLog[]
-  helpRequests       HelpRequest[]       @relation("HelpRequester")
-  mentorHelpRequests HelpRequest[]       @relation("HelpMentor")
-  sponsorCheckpoints SponsorCheckpoint[] @relation("SponsorCheckpoints")
-  initialReviews     InitialReview[] // ADR-025: revisiones iniciales del usuario
+  mentorSessions           MentorSession[]
+  evidence                 Evidence[]
+  refreshTokens            RefreshToken[]
+  auditLogs                AuditLog[]
+  helpRequests             HelpRequest[]         @relation("HelpRequester")
+  mentorHelpRequests       HelpRequest[]         @relation("HelpMentor")
+  sponsorCheckpoints       SponsorCheckpoint[]   @relation("SponsorCheckpoints")
+  initialReviews           InitialReview[] // ADR-025: revisiones iniciales del usuario
 
   @@index([email])
   @@index([role])
@@ -430,30 +430,30 @@ model User {
 }
 
 model Project {
-  id                 String        @id @default(cuid())
-  name               String
-  description        String?
-  status             ProjectStatus @default(DRAFT)
-  currentStep        Int           @default(0)
-  step0Status        Step0Status   @default(NOT_STARTED)
-  step0Data          Json?
+  id                      String            @id @default(cuid())
+  name                    String
+  description             String?
+  status                  ProjectStatus     @default(DRAFT)
+  currentStep             Int               @default(0)
+  step0Status             Step0Status       @default(NOT_STARTED)
+  step0Data               Json?
   // Set when this project was created by redeeming a pilot code (ADR-018).
   // Plain index (NOT @unique): adding a unique constraint trips `prisma db push`'s
   // data-loss guard and aborts the deploy. Idempotency is enforced in the claim
   // service instead (claim.createdProjectId + a findFirst guard before creating).
-  pilotLeadId        String?
-  mentorCredits      Int           @default(3)
-  riskLevel          RiskLevel?
-  isArchived         Boolean       @default(false)
-  lastPosition       Json?
-  sponsorTouchpoints Json?
-  sponsorComments    Json?
+  pilotLeadId             String?
+  mentorCredits           Int               @default(3)
+  riskLevel               RiskLevel?
+  isArchived              Boolean           @default(false)
+  lastPosition            Json?
+  sponsorTouchpoints      Json?
+  sponsorComments         Json?
   // ADR-025: procedencia de la iniciativa + snapshot de la revisión inicial que la
   // originó (nullable → additivo, seguro para `prisma db push`).
   origin                  InitiativeOrigin? @default(from_scratch)
   initialReviewSnapshotId String?
-  createdAt          DateTime      @default(now())
-  lastModified       DateTime      @updatedAt
+  createdAt               DateTime          @default(now())
+  lastModified            DateTime          @updatedAt
 
   ownerId  String
   owner    User    @relation(fields: [ownerId], references: [id])
@@ -468,8 +468,8 @@ model Project {
   sponsorCheckpoints    SponsorCheckpoint[]
   portfolioMeta         InitiativePortfolioMeta[]
   initiativePdfs        InitiativePdf[]
-  initialReviewSnapshot InitialReviewSnapshot?   @relation("ProjectFromSnapshot", fields: [initialReviewSnapshotId], references: [id])
-  routeConfirmation     RouteConfirmation?       @relation("ProjectRouteConfirmation")
+  initialReviewSnapshot InitialReviewSnapshot?      @relation("ProjectFromSnapshot", fields: [initialReviewSnapshotId], references: [id])
+  routeConfirmation     RouteConfirmation?          @relation("ProjectRouteConfirmation")
   contextSources        ContextSource[]
   contextSnapshots      InitiativeContextSnapshot[]
   contextNotes          InitiativeContextNote[]
@@ -582,19 +582,19 @@ model Evidence {
 }
 
 model TeamMember {
-  id        String           @id @default(cuid())
-  projectId String
-  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
-  role      TeamRole         @default(VIEWER)
-  status    TeamMemberStatus @default(PENDING)
-  invitedAt DateTime         @default(now())
-  joinedAt  DateTime?
+  id                     String           @id @default(cuid())
+  projectId              String
+  project                Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId                 String
+  user                   User             @relation(fields: [userId], references: [id])
+  role                   TeamRole         @default(VIEWER)
+  status                 TeamMemberStatus @default(PENDING)
+  invitedAt              DateTime         @default(now())
+  joinedAt               DateTime?
   // ADR-023: marks rows materialized from the reto's ChallengeTeamMember at
   // create-iniciativa time (inheritance). Manual additions stay false (override).
   // Additive Boolean with default → safe for `prisma db push` (ADR-018).
-  inheritedFromChallenge Boolean @default(false)
+  inheritedFromChallenge Boolean          @default(false)
 
   modulePermissions String[] // Module IDs the colaborador can edit
 
@@ -1025,12 +1025,12 @@ model Company {
   updatedAt        DateTime      @updatedAt
   deletedAt        DateTime?
 
-  memberships CompanyMembership[]
-  versions    CompanyContextVersion[]
-  entries     CompanyContextEntry[]
-  areas       CompanyArea[]
-  sources     ContextSource[]
-  snapshots   InitiativeContextSnapshot[]
+  memberships   CompanyMembership[]
+  versions      CompanyContextVersion[]
+  entries       CompanyContextEntry[]
+  areas         CompanyArea[]
+  sources       ContextSource[]
+  snapshots     InitiativeContextSnapshot[]
   contributions CompanyContribution[]
 
   @@index([ownerUserId])
@@ -1059,20 +1059,20 @@ model CompanyMembership {
 }
 
 model CompanyContextVersion {
-  id                String                      @id @default(cuid())
-  companyId         String
-  company           Company                     @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  versionNumber     Int
-  status            CompanyContextVersionStatus @default(DRAFT)
-  contextScore      Int                         @default(0)
-  contextLevel      CompanyContextLevel         @default(INITIAL)
-  snapshotJson      Json
+  id                 String                      @id @default(cuid())
+  companyId          String
+  company            Company                     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  versionNumber      Int
+  status             CompanyContextVersionStatus @default(DRAFT)
+  contextScore       Int                         @default(0)
+  contextLevel       CompanyContextLevel         @default(INITIAL)
+  snapshotJson       Json
   scoreBreakdownJson Json?
-  missingJson       Json?
-  createdByUserId   String
-  publishedByUserId String?
-  createdAt         DateTime                    @default(now())
-  publishedAt       DateTime?
+  missingJson        Json?
+  createdByUserId    String
+  publishedByUserId  String?
+  createdAt          DateTime                    @default(now())
+  publishedAt        DateTime?
 
   entries   CompanyContextEntry[]
   snapshots InitiativeContextSnapshot[]
@@ -1095,7 +1095,7 @@ model CompanyContextEntry {
   sourceId           String?
   source             ContextSource?            @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   confidence         Float?
-  verificationStatus ContextVerificationStatus  @default(UNVERIFIED)
+  verificationStatus ContextVerificationStatus @default(UNVERIFIED)
   createdByUserId    String
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
@@ -1479,55 +1479,92 @@ enum InformationReadinessStatus {
   high
 }
 
+// ADR-026: emisor de un evento de la conversación de revisión inicial.
+enum InitialReviewChatRole {
+  assistant
+  user
+  system
+}
+
+// ADR-026: tipo de turno. Agregar valores es no-destructivo para `prisma db push`
+// (la restricción de CD es sobre @@unique en tablas existentes, no sobre enums).
+// v2 podrá sumar 'llm_reply' sin migración destructiva.
+enum InitialReviewChatEventKind {
+  guide // mensaje del asistente que dirige la agenda
+  answer // respuesta del usuario a una pregunta estratégica
+  context // contexto libre aportado por el usuario
+  doubt // duda del usuario resuelta por catálogo (v1) / LLM (v2)
+  diff_announcement // asistente anuncia qué secciones del snapshot cambiaron
+  confirm // el usuario confirma la ruta desde el chat
+}
+
 model InitialReview {
-  id            String              @id @default(cuid())
-  ownerId       String
+  id                      String              @id @default(cuid())
+  ownerId                 String
   // Restrict (default, como Project.owner): borrar un User NO debe cascadear y
   // destruir el rastro de una revisión ya convertida (audit trail, AC-S0-005).
   // El abandono usa status=abandoned (RB-IR-020), no un DELETE físico.
-  owner         User                @relation(fields: [ownerId], references: [id])
-  status        InitialReviewStatus @default(draft)
-  originalInput String
-  addedContext  Json? // string[]
-  sourceFileIds Json? // string[]
+  owner                   User                @relation(fields: [ownerId], references: [id])
+  status                  InitialReviewStatus @default(draft)
+  originalInput           String
+  addedContext            Json? // string[]
+  sourceFileIds           Json? // string[]
   companyContextSelection Json?
   // Scalar FK suelto (patrón ADR-022) para no acoplar bounded contexts; indexado
   // para "revisiones de este reto".
-  challengeId   String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  challengeId             String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 
   snapshots    InitialReviewSnapshot[]
   confirmation RouteConfirmation? // idempotente: a lo sumo una confirmación por revisión
+  chatEvents   InitialReviewChatEvent[] // ADR-026: historial conversacional del asistente
 
   @@index([ownerId])
   @@index([status])
   @@index([challengeId])
 }
 
+// ADR-026 (IRC-01): historial event-sourced de la conversación del asistente sobre una
+// revisión. Los mensajes del asistente son reconstruibles a partir del estado, pero se
+// persisten para continuidad exacta multi-dispositivo y auditabilidad. Solo @@index
+// (NUNCA @@unique en el flujo de CD `prisma db push` sin --accept-data-loss).
+model InitialReviewChatEvent {
+  id              String                     @id @default(cuid())
+  reviewId        String
+  review          InitialReview              @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  role            InitialReviewChatRole
+  kind            InitialReviewChatEventKind
+  payload         Json // { text?, questionId?, changedSections?, ... } — forma según kind
+  snapshotVersion Int? // versión del snapshot vigente cuando se emitió el evento
+  createdAt       DateTime                   @default(now())
+
+  @@index([reviewId, createdAt])
+}
+
 model InitialReviewSnapshot {
-  id                     String        @id @default(cuid())
-  reviewId               String
-  review                 InitialReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  version                Int           @default(1)
-  originalInput          String
+  id                      String                      @id @default(cuid())
+  reviewId                String
+  review                  InitialReview               @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  version                 Int                         @default(1)
+  originalInput           String
   // Contexto/fuentes CONGELADOS en el snapshot (PRD §18): releer una versión debe
   // reflejar el contexto que la produjo, aunque el InitialReview padre cambie.
-  addedContext           Json? // string[]
-  sourceFileIds          Json? // string[]
+  addedContext            Json? // string[]
+  sourceFileIds           Json? // string[]
   companyContextSelection Json?
-  understandingSummary   String
-  understandingConfirmed Boolean       @default(false)
-  suggestedChallengeType ChallengeType
-  selectedChallengeType  ChallengeType
-  challengeTypeReason    String // se genera junto al tipo → requerido
-  informationReadiness   InformationReadinessStatus?
-  critique               Json // ExpertCritique { solid, weak, risky, recommendedAdjustment, mainRisk }
-  strategicQuestions     Json // StrategicQuestion[]
-  improvedProposal       Json // ImprovedProposal { suggestedName, improvedDescription, initialFocus, expectedImpact, nextRecommendedStep }
-  routePreview           Json // StepRoutePreviewItem[]
-  createdBy              String
-  createdAt              DateTime      @default(now())
+  understandingSummary    String
+  understandingConfirmed  Boolean                     @default(false)
+  suggestedChallengeType  ChallengeType
+  selectedChallengeType   ChallengeType
+  challengeTypeReason     String // se genera junto al tipo → requerido
+  informationReadiness    InformationReadinessStatus?
+  critique                Json // ExpertCritique { solid, weak, risky, recommendedAdjustment, mainRisk }
+  strategicQuestions      Json // StrategicQuestion[]
+  improvedProposal        Json // ImprovedProposal { suggestedName, improvedDescription, initialFocus, expectedImpact, nextRecommendedStep }
+  routePreview            Json // StepRoutePreviewItem[]
+  createdBy               String
+  createdAt               DateTime                    @default(now())
 
   routeConfirmations RouteConfirmation[]
   projects           Project[]           @relation("ProjectFromSnapshot")

@@ -8,7 +8,13 @@ export type InitialReviewEventName =
   | 'route_confirm_failed'
   | 'initiative_created_from_route'
   | 'initiative_overview_opened'
-  | 'step0_started_from_overview';
+  | 'step0_started_from_overview'
+  // ADR-026 (IRC-06): telemetría del chat del asistente (PRD §5).
+  | 'chat_message_sent'
+  | 'chat_context_added'
+  | 'chat_question_answered'
+  | 'snapshot_diff_announced'
+  | 'chat_confirm_route';
 
 export interface InitialReviewEventDimensions {
   reviewId?: string;
@@ -20,6 +26,8 @@ export interface InitialReviewEventDimensions {
   contextCount?: number;
   source?: string;
   reason?: string;
+  mode?: string; // ADR-026: modo del turno de chat (answer/context/doubt)
+  changedCount?: number; // ADR-026: nº de secciones anunciadas como cambiadas
 }
 
 export function trackInitialReviewEvent(

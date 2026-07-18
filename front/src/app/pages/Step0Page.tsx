@@ -816,7 +816,17 @@ export function Step0Page() {
               <ModuleShell moduleId="start" active={activeModule === 'start'} form={form} projectName={project.name} onOpen={() => scrollToModule('start')}>
                 <div className="space-y-5">
                   <Field id="step0-initiativeTitle" label="¿Cómo se llama tu iniciativa?" helper="Usa un nombre simple. Podrás ajustarlo después." highlight={highlightField === 'initiativeTitle'}>
-                    <Input value={form.initiativeTitle ?? project.name} onChange={event => setField('initiativeTitle', event.target.value)} />
+                    <AutofillField
+                      fieldPath="step0.initiativeTitle"
+                      initiativeId={projectId}
+                      value={form.initiativeTitle ?? project.name}
+                      onChange={(v) => setField('initiativeTitle', String(v ?? ''))}
+                      label="¿Cómo se llama tu iniciativa?"
+                    >
+                      {({ value, onChange, readOnly }) => (
+                        <Input value={String(value ?? '')} onChange={event => onChange(event.target.value)} readOnly={readOnly} />
+                      )}
+                    </AutofillField>
                   </Field>
                   <Field id="step0-initiativeFrame" label="¿Cómo quieres enmarcar esta iniciativa hoy?" highlight={highlightField === 'initiativeFrame'}>
                     <ChoiceGroup value={form.initiativeFrame ?? ''} options={FRAME_OPTIONS} onChange={value => setField('initiativeFrame', value)} />

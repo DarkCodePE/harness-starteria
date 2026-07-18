@@ -56,3 +56,4 @@ langsmith-skills/
 # TASK-006: local PDF storage (TODO(ADR-007): replaced by S3 in a future TASK)
 backend/storage/
 storage/
+docker-compose.override.yml

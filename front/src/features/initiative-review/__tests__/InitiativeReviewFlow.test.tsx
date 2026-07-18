@@ -84,6 +84,9 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
   beforeEach(() => {
     navigate.mockReset();
     params = { reviewId: 'rev1' };
+    // Estos tests validan el layout legacy (una columna). El chat es ON por defecto (IRC-07),
+    // así que se fuerza OFF explícitamente.
+    window.localStorage.setItem('starteria.initiativeReviewChat.enabled', 'false');
     client.getReview.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT });
     client.addContext.mockReset().mockResolvedValue({ id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null, snapshot: { ...SNAPSHOT, id: 'snap2', version: 2 } });
     client.saveStrategicAnswers.mockReset().mockResolvedValue({
@@ -126,6 +129,165 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
     fireEvent.click(cta);
     await waitFor(() => expect(client.confirmRoute).toHaveBeenCalledWith('rev1'));
     expect(navigate).toHaveBeenCalledWith('/initiatives/proj1/overview');
+  });
+});
+
+describe('InitiativeReviewResultPage — chat split layout (ADR-026, IRC-03)', () => {
+  const FLAG_KEY = 'starteria.initiativeReviewChat.enabled';
+
+  beforeEach(() => {
+    navigate.mockReset();
+    params = { reviewId: 'rev1' };
+    client.getReview.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT });
+    client.addContext.mockReset().mockResolvedValue({ id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null, snapshot: { ...SNAPSHOT, id: 'snap2', version: 2 }, changedSections: ['critique'] });
+    client.saveStrategicAnswers.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT, changedSections: ['questions'] });
+    window.localStorage.removeItem(FLAG_KEY);
+  });
+
+  it('default (sin override, IRC-07): monta el asistente y oculta el textarea legacy', async () => {
+    render(<InitiativeReviewResultPage />); // sin tocar el flag → ON por defecto
+    await screen.findByTestId('card-understanding');
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Agregar contexto antes de confirmar/i)).not.toBeInTheDocument();
+  });
+
+  it('flag forzado a false: no monta el asistente y conserva el textarea de contexto', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'false');
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('card-understanding');
+    expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Agregar contexto antes de confirmar/i)).toBeInTheDocument();
+  });
+
+  it('flag ON: monta el asistente a la derecha, conserva las cards y oculta el textarea', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('card-understanding');
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument();
+    // las cards de la iniciativa siguen presentes
+    for (const id of ['card-understanding', 'card-challenge-type', 'card-critique', 'card-questions', 'card-proposal', 'card-route']) {
+      expect(screen.getByTestId(id)).toBeInTheDocument();
+    }
+    // el textarea de contexto se reemplaza por el chat
+    expect(screen.queryByLabelText(/Agregar contexto antes de confirmar/i)).not.toBeInTheDocument();
+    // el CTA de confirmación sigue accesible
+    expect(screen.getByRole('button', { name: /Estoy de acuerdo con esta ruta/i })).toBeInTheDocument();
+  });
+
+  it('flag ON: con pregunta activa, el modo por defecto responde → saveStrategicAnswers', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    render(<InitiativeReviewResultPage />);
+    const input = await screen.findByTestId('assistant-input');
+    fireEvent.change(input, { target: { value: 'Empezar por un área piloto' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.saveStrategicAnswers).toHaveBeenCalledWith('rev1', [{ id: 'q1', answer: 'Empezar por un área piloto' }]));
+    expect(client.addContext).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: cambiar a modo "Agregar contexto" → addContext', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'Tenemos 2 devs por 6 semanas.' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalledWith('rev1', 'Tenemos 2 devs por 6 semanas.'));
+    expect(client.saveStrategicAnswers).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: modo "duda" responde en cliente sin llamar a la API', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-doubt'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: '¿qué significa corrección?' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(screen.getByText(/arreglar algo que hoy no funciona bien/i)).toBeInTheDocument());
+    expect(client.addContext).not.toHaveBeenCalled();
+    expect(client.saveStrategicAnswers).not.toHaveBeenCalled();
+  });
+
+  it('flag ON (IRC-05): tras agregar contexto, resalta solo las secciones cambiadas y muestra la versión', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    client.addContext.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null,
+      snapshot: { ...SNAPSHOT, version: 3 }, changedSections: ['critique', 'improvedProposal'],
+    });
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'Validamos on-premise.' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+
+    await waitFor(() => expect(screen.getByTestId('card-critique')).toHaveAttribute('data-highlighted', 'true'));
+    expect(screen.getByTestId('card-proposal')).toHaveAttribute('data-highlighted', 'true');
+    // secciones NO cambiadas no se resaltan
+    expect(screen.getByTestId('card-understanding')).not.toHaveAttribute('data-highlighted');
+    expect(screen.getByTestId('card-route')).not.toHaveAttribute('data-highlighted');
+    // la versión del snapshot se muestra
+    expect(screen.getByTestId('snapshot-version')).toHaveTextContent('Versión 3');
+  });
+
+  it('flag ON (IRC-05): changedSections vacío no resalta ninguna card', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    client.addContext.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null,
+      snapshot: { ...SNAPSHOT, version: 2 }, changedSections: [],
+    });
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'algo que no cambia nada' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalled());
+    for (const id of ['card-understanding', 'card-critique', 'card-proposal', 'card-route']) {
+      expect(screen.getByTestId(id)).not.toHaveAttribute('data-highlighted');
+    }
+  });
+
+  it('flag ON (IRC-06): confirmar la ruta desde el chat llama confirmRoute y emite telemetría', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    (window as any).dataLayer = [];
+    client.confirmRoute.mockReset().mockResolvedValue({ initiativeId: 'init1', overviewUrl: '/initiatives/init1/overview' });
+    render(<InitiativeReviewResultPage />);
+    const confirm = await screen.findByTestId('chat-confirm-route');
+    fireEvent.click(confirm);
+    await waitFor(() => expect(client.confirmRoute).toHaveBeenCalledWith('rev1'));
+    const events = ((window as any).dataLayer as Array<{ event: string }>).map((e) => e.event);
+    expect(events).toContain('chat_confirm_route');
+  });
+
+  it('flag ON (IRC-06): un turno de contexto emite chat_message_sent, chat_context_added y snapshot_diff_announced', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    (window as any).dataLayer = [];
+    client.addContext.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null,
+      snapshot: { ...SNAPSHOT, version: 2 }, changedSections: ['critique'],
+    });
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    fireEvent.click(screen.getByTestId('chat-mode-context'));
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'Tenemos 2 devs.' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalled());
+    const events = ((window as any).dataLayer as Array<{ event: string }>).map((e) => e.event);
+    expect(events).toContain('chat_message_sent');
+    expect(events).toContain('chat_context_added');
+    expect(events).toContain('snapshot_diff_announced');
+  });
+
+  it('flag ON: rehidrata el historial persistido (chatEvents) al montar', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'true');
+    client.getReview.mockResolvedValueOnce({
+      id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['LLM on-premise'], challengeId: null, snapshot: { ...SNAPSHOT, version: 2 },
+      chatEvents: [
+        { id: 'e1', role: 'user', kind: 'context', payload: { text: 'LLM on-premise' }, snapshotVersion: 2, createdAt: '2026-07-18T00:00:00Z' },
+        { id: 'e2', role: 'assistant', kind: 'diff_announcement', payload: { changedSections: ['critique'] }, snapshotVersion: 2, createdAt: '2026-07-18T00:00:01Z' },
+      ],
+    });
+    render(<InitiativeReviewResultPage />);
+    expect(await screen.findByText('LLM on-premise')).toBeInTheDocument();
+    expect(screen.getByText(/actualicé: Mirada crítica/i)).toBeInTheDocument();
   });
 });
 

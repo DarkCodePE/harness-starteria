@@ -1,3 +1,9 @@
+/**
+ * @deprecated ADR-026 (IRC-07). Scaffold conversacional legacy sobre mockGenerator +
+ * localStorage; NO está ruteado. Superado por `features/initiative-review` (chat real
+ * API-backed sobre ADR-025 + eventos de chat de ADR-026). Programado para remoción física
+ * en una tarea posterior (ver issue de deprecación). No agregar features aquí.
+ */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
