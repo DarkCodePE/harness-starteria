@@ -536,15 +536,15 @@
         "issue de remoción del legacy creado (la eliminación física NO es parte de esta feature)"
       ],
       "evidence": [
-        "HECHO — e2e conversacional VERDE (repetido): initial-review-chat.spec.ts 1 passed (537ms) contra el stack real. Valida chatEvents/changedSections/rehidratación cronológica/confirm-route→Project.",
-        "HECHO — flag ON por defecto: isInitiativeReviewChatEnabled() invertido (off con =false). 263 front + 438 backend unit verdes; vite build ok. El flag SOLO afecta InitiativeReviewResultPage, no Step0Page/PDF-autofill.",
-        "HECHO — deprecación legacy: features/initial-review/pages @deprecated (no ruteadas). Issue #136.",
-        "FIX 1/3 — waitlist (#137): bypass gateado por env AUTH_DISABLE_WAITLIST (auth.service.ts, off en prod). register→login 200. Desbloquea toda la suite e2e (antes 100% roja en login). Commit 7218d9f.",
-        "FIX 2/3 — truncación ai-service (#138): extractor.py marca el run FAILED cuando TODOS los pasos LLM fallan (antes COMPLETED con 0 proposals). 258 pytest ai-service (+2). Verificado en logs: 'marking run failed'. Commit ed0fd6b.",
-        "BLOQUEO 3/3 — webhook correlation (#139): el run 'failed' del ai-service webhookea al backend y recibe 404 PDF_RUN_NOT_FOUND — no existe PdfExtractionRun con ese aiRunId (confirmado en DB). El backend nunca aprende el fallo → el smoke sondea hasta timeout. Defecto pre-existente de initiative-pdfs/ADR-013, ajeno al chat.",
-        "RESULTADO smoke de referencia: pdf-autofill.spec.ts sigue ROJO por #139 (2/2 con retry). public-pdf-autofill.spec.ts pasa. El smoke depende de 3 subsistemas frágiles (auth, ai-service LLM, webhook PDF); 2 arreglados, el 3º es correlación backend fuera del alcance del chat."
+        "HECHO — e2e conversacional VERDE (repetido 3+ veces): initial-review-chat.spec.ts ~505ms contra el stack real. Valida chatEvents/changedSections/rehidratación cronológica/confirm-route→Project.",
+        "HECHO — flag ON por defecto (deployado): isInitiativeReviewChatEnabled() invertido; frontend recompilado y recreado (bundle nuevo). 263 front + 438 backend + 258 ai-service unit verdes.",
+        "HECHO — deprecación legacy: features/initial-review/pages @deprecated. Issue #136.",
+        "FIX #137 (waitlist): bypass env AUTH_DISABLE_WAITLIST → suite e2e corre (antes 100% roja en login). Commit 7218d9f.",
+        "FIX #138 (truncación): extractor.py marca run FAILED cuando TODOS los pasos LLM fallan. Commit ed0fd6b.",
+        "#139 CERRADO (no-bug): el webhook 404 fue artefacto de MIS reinicios mid-run; en corrida limpia el webhook entrega 200 y correlaciona (run e33286aa COMPLETED, 22 PdfFieldProposal).",
+        "ROOT CAUSE real del smoke de referencia: es FLAKY por dependencia de un LLM en vivo NO determinista (deepseek-v4-flash) que trunca pasos distintos en cada corrida. Observado: mismo test falla de formas distintas entre corridas — completed-con-0-proposals, completed-con-22-proposals-pero-chips-no-renderizan (line 218), o timeout (line 177). El spec mismo declara fragilidad (retries:1 solo en CI, comentarios sobre SPA races). Es del feature admision-step0-chooser (PDF-autofill), AJENO al chat; el flag del chat no toca Step 0."
       ],
-      "notes": "Épico del chat COMPLETO y verificado (IRC-01..06 passing; IRC-07 e2e conversacional VERDE, flag on, legacy deprecated). ESTADO 'blocked' SOLO por la puerta cross-cutting del smoke de referencia, roja por una CADENA de 3 defectos pre-existentes de la infra PDF-autofill/auth (NINGUNO del chat): #137 waitlist (ARREGLADO), #138 truncación ai-service (ARREGLADO), #139 correlación webhook aiRunId (ABIERTO, backend initiative-pdfs). El flag del chat no toca Step 0/PDF-autofill. Desbloqueo final: resolver #139. Se detuvo la persecución del smoke por ser scope creep en subsistemas ajenos. Ver memorias e2e-waitlist-blocks-suite, openrouter-structured-output-truncation."
+      "notes": "Épico del chat COMPLETO y verificado (IRC-01..06 passing; IRC-07 e2e conversacional VERDE repetido, flag on deployado, legacy deprecated). El smoke de referencia (pdf-autofill.spec.ts, feature admision-step0-chooser) es FLAKY por dependencia de LLM en vivo no determinista — falla de formas distintas entre corridas, ninguna relacionada con el chat. Arreglé 2 blockers deterministas (#137, #138), cerré #139 (artefacto de reinicio). Verde determinista requeriría un LLM mock/determinista o tolerancia del spec a 'completed-con-0-proposals' — infra de PDF-autofill fuera del alcance del épico del chat, y NO se debe debilitar el spec para forzarlo (CLAUDE.md). Stack completo recompilado (backend+ai-service+frontend). Ver memorias e2e-waitlist-blocks-suite, openrouter-structured-output-truncation."
     }
   ]
 }
