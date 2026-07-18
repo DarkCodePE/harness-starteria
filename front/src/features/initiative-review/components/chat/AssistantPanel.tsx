@@ -21,9 +21,11 @@ export interface AssistantPanelProps {
   busy?: boolean; // el snapshot se está regenerando → TypingIndicator + input bloqueado
   disabled?: boolean; // la conversación terminó (p.ej. ruta confirmada)
   placeholder?: string;
+  toolbar?: React.ReactNode; // selector de modo (IRC-04), renderizado sobre el input
+  footer?: React.ReactNode; // acciones bajo el input (p.ej. confirmar ruta — IRC-06)
 }
 
-export function AssistantPanel({ messages, onSend, busy, disabled, placeholder }: AssistantPanelProps) {
+export function AssistantPanel({ messages, onSend, busy, disabled, placeholder, toolbar, footer }: AssistantPanelProps) {
   const [text, setText] = useState('');
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,6 +67,7 @@ export function AssistantPanel({ messages, onSend, busy, disabled, placeholder }
       </div>
 
       <div className="border-t border-slate-200 p-3">
+        {toolbar && <div className="mb-2">{toolbar}</div>}
         <div className="flex items-end gap-2">
           <textarea
             data-testid="assistant-input"
@@ -92,6 +95,7 @@ export function AssistantPanel({ messages, onSend, busy, disabled, placeholder }
             <Send size={16} />
           </button>
         </div>
+        {footer && <div className="mt-2">{footer}</div>}
       </div>
     </aside>
   );

@@ -27,6 +27,32 @@ export interface ReviewSnapshot {
   routePreview: Array<{ step: number; name: string; whatWillHappen: string; expectedOutput: string; status: string }>;
 }
 
+// ADR-026: cards del snapshot que el diff del backend puede marcar como cambiadas.
+export type SnapshotSectionId =
+  | 'understanding'
+  | 'challengeType'
+  | 'critique'
+  | 'questions'
+  | 'improvedProposal'
+  | 'routePreview';
+
+// ADR-026 (IRC-01): un turno persistido de la conversación del asistente.
+export interface ChatEvent {
+  id: string;
+  role: 'assistant' | 'user' | 'system';
+  kind: 'guide' | 'answer' | 'context' | 'doubt' | 'diff_announcement' | 'confirm';
+  payload: {
+    text?: string;
+    questionId?: string;
+    answer?: string | null;
+    unknown?: boolean;
+    changedSections?: SnapshotSectionId[];
+    [k: string]: unknown;
+  };
+  snapshotVersion: number | null;
+  createdAt: string;
+}
+
 export interface InitiativeReview {
   id: string;
   status: string;
@@ -35,6 +61,8 @@ export interface InitiativeReview {
   challengeId: string | null;
   companyContext?: { companyId: string; areaId?: string } | null;
   snapshot: ReviewSnapshot | null;
+  chatEvents?: ChatEvent[]; // ADR-026 (IRC-01): historial rehidratado en GET
+  changedSections?: SnapshotSectionId[]; // ADR-026 (IRC-02): devuelto por add-context/strategic-answers
 }
 
 export interface ConfirmRouteResult {

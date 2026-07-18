@@ -22,6 +22,13 @@ import {
   RoutePreviewCard,
 } from '../components/ReviewCards';
 import { AssistantPanel, type ChatMessage } from '../components/chat/AssistantPanel';
+import {
+  composeConversation,
+  deriveAgenda,
+  defaultMode,
+  nextAction,
+  type AssistantMode,
+} from '../services/assistantOrchestrator';
 import { isInitiativeReviewChatEnabled } from '../../../app/featureFlags';
 
 export function InitiativeReviewResultPage() {
@@ -34,6 +41,9 @@ export function InitiativeReviewResultPage() {
   const [contextText, setContextText] = useState('');
   const [addingContext, setAddingContext] = useState(false);
   const [answeringQuestionId, setAnsweringQuestionId] = useState<string | null>(null);
+  // IRC-04: modo del chat (null = por defecto contextual) y dudas transitorias (no persistidas).
+  const [chatMode, setChatMode] = useState<AssistantMode | null>(null);
+  const [transientDoubts, setTransientDoubts] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,38 +152,85 @@ export function InitiativeReviewResultPage() {
   const snapshot = review.snapshot;
   const chatEnabled = isInitiativeReviewChatEnabled();
 
-  // IRC-03: envío desde el chat. Reutiliza el flujo real de addContext (sin mocks). El
-  // orquestador completo (agenda, modos, dudas) llega en IRC-04.
+  // IRC-04: orquestador determinista. La agenda y los mensajes se derivan del review; cada
+  // turno del usuario se traduce a add-context / strategic-answers según el modo.
+  const agenda = deriveAgenda(review);
+  const effectiveMode: AssistantMode = chatMode ?? defaultMode(agenda);
+
   const onChatSend = async (text: string) => {
     if (!reviewId || addingContext) return;
+    const action = nextAction(effectiveMode, agenda, text);
+
+    // Las dudas se resuelven en cliente (catálogo), sin llamada a la API (ADR-026 dec. 2).
+    if (action.type === 'doubt') {
+      const stamp = `${transientDoubts.length}`;
+      setTransientDoubts((prev) => [
+        ...prev,
+        { id: `doubt-u-${stamp}`, role: 'user', content: action.question },
+        { id: `doubt-a-${stamp}`, role: 'assistant', content: action.answer },
+      ]);
+      return;
+    }
+
     setAddingContext(true);
     setError(null);
     try {
-      const next = await addContext(reviewId, text);
+      let next;
+      if (action.type === 'answer') {
+        next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, answer: action.answer }]);
+        trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId });
+      } else if (action.type === 'answer_unknown') {
+        next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, unknown: true }]);
+        trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId, unknown: true });
+      } else {
+        next = await addContext(reviewId, action.text);
+        trackInitialReviewEvent('initial_review_context_added', {
+          reviewId,
+          snapshotId: next.snapshot?.id,
+          snapshotVersion: next.snapshot?.version,
+          contextCount: next.addedContext.length,
+        });
+      }
       setReview(next);
-      trackInitialReviewEvent('initial_review_context_added', {
-        reviewId,
-        snapshotId: next.snapshot?.id,
-        snapshotVersion: next.snapshot?.version,
-        contextCount: next.addedContext.length,
-      });
+      setChatMode(null); // vuelve al modo por defecto contextual tras cada turno
     } catch {
-      setError('No pudimos agregar ese contexto. Intenta nuevamente.');
+      setError('No pudimos procesar tu mensaje. Intenta nuevamente.');
     } finally {
       setAddingContext(false);
     }
   };
 
-  // IRC-03: bienvenida estática. IRC-04 la hará dinámica (agenda + preguntas + historial
-  // rehidratado desde review.chatEvents).
-  const chatMessages: ChatMessage[] = [
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content:
-        'Revisé tu propuesta. Cuéntame lo que falte —restricciones, recursos, alcance o señales esperadas— y actualizaré tu iniciativa. También puedes responder las preguntas estratégicas del panel.',
-    },
-  ];
+  const chatMessages: ChatMessage[] = composeConversation(review, transientDoubts);
+
+  const MODE_LABEL: Record<AssistantMode, string> = { answer: 'Responder', context: 'Agregar contexto', doubt: 'Tengo una duda' };
+  const MODE_PLACEHOLDER: Record<AssistantMode, string> = {
+    answer: 'Escribe tu respuesta (o "no lo sé aún")…',
+    context: 'Cuéntame qué falta: restricciones, recursos, alcance…',
+    doubt: 'Pregúntame sobre el análisis o la ruta…',
+  };
+  const modeToolbar = (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Modo de mensaje">
+      {(['answer', 'context', 'doubt'] as AssistantMode[]).map((m) => {
+        const disabledMode = m === 'answer' && !agenda.activeQuestion;
+        const active = effectiveMode === m;
+        return (
+          <button
+            key={m}
+            type="button"
+            data-testid={`chat-mode-${m}`}
+            disabled={disabledMode}
+            aria-pressed={active}
+            onClick={() => setChatMode(m)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              active ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'
+            } disabled:cursor-not-allowed disabled:opacity-40`}
+          >
+            {MODE_LABEL[m]}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   // Contenido de la columna de la iniciativa (izquierda). La sección de "Agregar contexto"
   // por textarea se oculta cuando el chat está activo: el asistente cumple esa función.
@@ -275,7 +332,13 @@ export function InitiativeReviewResultPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
         <div className="min-w-0">{snapshotColumn}</div>
         <div className="h-[70vh] lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
-          <AssistantPanel messages={chatMessages} onSend={onChatSend} busy={addingContext} />
+          <AssistantPanel
+            messages={chatMessages}
+            onSend={onChatSend}
+            busy={addingContext}
+            placeholder={MODE_PLACEHOLDER[effectiveMode]}
+            toolbar={modeToolbar}
+          />
         </div>
       </div>
     </div>
