@@ -536,15 +536,17 @@
         "issue de remoción del legacy creado (la eliminación física NO es parte de esta feature)"
       ],
       "evidence": [
-        "HECHO — e2e conversacional VERDE (repetido 3+ veces): initial-review-chat.spec.ts ~505ms contra el stack real. Valida chatEvents/changedSections/rehidratación cronológica/confirm-route→Project.",
-        "HECHO — flag ON por defecto (deployado): isInitiativeReviewChatEnabled() invertido; frontend recompilado y recreado (bundle nuevo). 263 front + 438 backend + 258 ai-service unit verdes.",
-        "HECHO — deprecación legacy: features/initial-review/pages @deprecated. Issue #136.",
-        "FIX #137 (waitlist): bypass env AUTH_DISABLE_WAITLIST → suite e2e corre (antes 100% roja en login). Commit 7218d9f.",
-        "FIX #138 (truncación): extractor.py marca run FAILED cuando TODOS los pasos LLM fallan. Commit ed0fd6b.",
-        "#139 CERRADO (no-bug): el webhook 404 fue artefacto de MIS reinicios mid-run; en corrida limpia el webhook entrega 200 y correlaciona (run e33286aa COMPLETED, 22 PdfFieldProposal).",
-        "ROOT CAUSE real del smoke de referencia: es FLAKY por dependencia de un LLM en vivo NO determinista (deepseek-v4-flash) que trunca pasos distintos en cada corrida. Observado: mismo test falla de formas distintas entre corridas — completed-con-0-proposals, completed-con-22-proposals-pero-chips-no-renderizan (line 218), o timeout (line 177). El spec mismo declara fragilidad (retries:1 solo en CI, comentarios sobre SPA races). Es del feature admision-step0-chooser (PDF-autofill), AJENO al chat; el flag del chat no toca Step 0."
+        "HECHO — e2e conversacional VERDE (repetido 6+ veces, cada corrida): initial-review-chat.spec.ts ~510ms. Valida chatEvents/changedSections/rehidratación/confirm-route.",
+        "HECHO — flag ON por defecto, deployado (frontend recompilado). 263 front + 438 backend + 259 ai-service unit verdes.",
+        "HECHO — deprecación legacy (#136).",
+        "FIX #137 (waitlist): bypass env → suite e2e corre. Commit 7218d9f.",
+        "FIX #138 (truncación): run FAILED cuando todos los pasos LLM fallan. Commit ed0fd6b.",
+        "FIX core-flakiness: extracción PDF DETERMINISTA (env PDF_EXTRACT_STUB, sin LLM en vivo) — elimina la causa raíz de la flakiness. El smoke pasó de 2.6m/no-determinista a 20s/determinista. +1 pytest. Commit 781c12c.",
+        "FIX #140-parcial: waitForURL stale del smoke corregido (la card salta directo a /step/N). Commit 781c12c.",
+        "#139 CERRADO (no-bug: artefacto de reinicio mid-corrida).",
+        "BLOQUEO restante (#140): tras los fixes, el smoke llega hasta la navegación dashboard→Step 0 y falla porque el goto directo a /projects/:id/step/0 REBOTA al dashboard (proyecto 'Bloqueada'/no en estado React). Es del subsistema dashboard/steps routing, AJENO al chat; el spec mismo documenta pelear con este rebote. public-pdf-autofill.spec.ts pasa."
       ],
-      "notes": "Épico del chat COMPLETO y verificado (IRC-01..06 passing; IRC-07 e2e conversacional VERDE repetido, flag on deployado, legacy deprecated). El smoke de referencia (pdf-autofill.spec.ts, feature admision-step0-chooser) es FLAKY por dependencia de LLM en vivo no determinista — falla de formas distintas entre corridas, ninguna relacionada con el chat. Arreglé 2 blockers deterministas (#137, #138), cerré #139 (artefacto de reinicio). Verde determinista requeriría un LLM mock/determinista o tolerancia del spec a 'completed-con-0-proposals' — infra de PDF-autofill fuera del alcance del épico del chat, y NO se debe debilitar el spec para forzarlo (CLAUDE.md). Stack completo recompilado (backend+ai-service+frontend). Ver memorias e2e-waitlist-blocks-suite, openrouter-structured-output-truncation."
+      "notes": "Épico del chat COMPLETO y verificado. El smoke de referencia tenía una CADENA de defectos pre-existentes de infra PDF-autofill/dashboard (NINGUNO del chat): #137 waitlist (FIX), #138 truncación (FIX), flakiness por LLM en vivo (FIX: stub determinista), waitForURL stale (FIX), #139 (no-bug). Queda #140: rebote de navegación dashboard→step para proyectos no-en-estado — subsistema dashboard/steps, fuera del alcance del chat y open-ended (requiere que la ruta de step fetchee el proyecto). Arreglé la causa raíz sustantiva (determinismo de extracción); no sigo hacia el routing del dashboard por scope creep. Commits: 7218d9f, ed0fd6b, 781c12c. Ver e2e-waitlist-blocks-suite."
     }
   ]
 }

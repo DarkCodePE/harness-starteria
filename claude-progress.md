@@ -172,3 +172,13 @@
 - **Conclusión**: el smoke de referencia depende de 3 subsistemas frágiles (auth, ai-service LLM, webhook PDF-extract); arreglé 2, el 3º es correlación backend fuera del alcance del épico del chat. Detuve la persecución (scope creep). IRC-07 → **blocked** solo por esa puerta cross-cutting; las 3 entregas del chat (e2e conversacional, flag on, legacy deprecated) están HECHAS.
 - Issues: #136 (remoción legacy), #137 (waitlist, ARREGLADO), #138 (truncación, ARREGLADO), #139 (webhook correlation, ABIERTO). Commits: 7218d9f, b716853, ed0fd6b.
 - Próximo (dueños de initiative-pdfs): resolver #139 (persistir aiRunId antes del webhook / correlacionar por runId del backend) → smoke verde → cerrar IRC-07.
+
+### Sesión 014 — IRC-07: extracción determinista (stub) + cadena de fixes del smoke (2026-07-18)
+
+- Fix CORE de la flakiness del smoke de referencia: env `PDF_EXTRACT_STUB` en el ai-service (`extractor.py`) → extracción PDF DETERMINISTA sin LLM en vivo (step0 con proposals fijas). El smoke pasó de 2.6m/no-determinista a ~20s/determinista. +1 pytest (259 total). Enabled en `docker-compose.override.yml`. Commit 781c12c.
+- Fix waitForURL stale del smoke (la card salta directo a `/projects/:id/step/N`). Commit 781c12c.
+- Con esos fixes el smoke avanza mucho más pero revela el SIGUIENTE eslabón pre-existente: navegación dashboard→Step 0 rebota al dashboard (proyecto no en estado React tras goto directo; Step0Page depende de `currentProject` del contexto). AppLayout NO es (sus redirects son sponsor-only). Issue #140.
+- Cadena completa de defectos pre-existentes de infra PDF-autofill/dashboard, TODOS ajenos al chat: #137 waitlist (FIX), #138 truncación (FIX), flakiness LLM (FIX: stub), waitForURL stale (FIX), #139 (no-bug/artefacto), #140 rebote de navegación steps (ABIERTO, subsistema steps routing).
+- Stack completo recompilado: backend + ai-service (stub) + frontend.
+- Decisión: arreglé la causa raíz sustantiva (determinismo de extracción) y 3 bugs más; #140 es routing del dashboard/steps, open-ended y fuera del alcance del épico del chat. Detengo la persecución del smoke por scope creep.
+- e2e conversacional VERDE en TODAS las corridas (~510ms). El épico del chat está completo y verificado.
