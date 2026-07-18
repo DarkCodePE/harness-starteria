@@ -430,13 +430,18 @@
       "area": "initial-review",
       "title": "Diff de snapshot por sección: changedSections en add-context y strategic-answers",
       "user_visible_behavior": "Ninguno directo; la API informa qué secciones del snapshot cambiaron entre la versión n-1 y n al regenerar.",
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "backend: unit de diffSections(prev, next) — sin cambios → [], cambio en una sección, cambio de tipo de reto, regeneración idéntica",
         "backend: integración — add-context devuelve changedSections consistentes con el contenido y persiste eventos de chat (user + diff_announcement) en la misma transacción que el snapshot"
       ],
-      "evidence": [],
-      "notes": "ADR-026 decisión 4. Diff en backend (tiene ambas versiones de forma atómica). Sostiene el criterio PRD 'anuncio correcto ≥95%'. Depende de IRC-01."
+      "evidence": [
+        "vitest backend modules/initial-review: 38 passed (11 nuevos IRC-02). snapshot-diff.test.ts (8): idénticos→[], prev null→todas, cambio único por sección, readiness null≡undefined, critique deep con claves reordenadas, orden canónico multi-sección, determinismo.",
+        "integración (3): addContext usa $transaction 1x, devuelve changedSections no vacío (incluye understanding+critique) y emite exactamente 2 eventos (user/context + assistant/diff_announcement con payload.changedSections === dto.changedSections, snapshotVersion=2). saveStrategicAnswers devuelve ['questions'], emite 1 evento answer, NO diff_announcement; 'no lo sé'→unknown:true.",
+        "tsc -p tsconfig.backend.json: 0 errores en initial-review.*/snapshot-diff.",
+        "23 tests previos siguen verdes: el refactor a $transaction es transparente."
+      ],
+      "notes": "ADR-026 decisión 4. snapshot-diff.ts puro (stableStringify por claves ordenadas). Escrituras (snapshot create/update + review update + eventos) envueltas en prisma.$transaction interactivo; la generación IA queda fuera del tx. persistSnapshot acepta un client tx opcional. Sostiene el criterio PRD 'anuncio correcto ≥95%'."
     },
     {
       "id": "IRC-03-split-layout-chat-shell",

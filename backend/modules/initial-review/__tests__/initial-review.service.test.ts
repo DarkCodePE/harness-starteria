@@ -27,7 +27,7 @@ function fakeGenerator(gen: GeneratedReview | Error = FIXED_GEN): InitialReviewG
 }
 
 function makePrisma(overrides: Record<string, any> = {}) {
-  return {
+  const client: any = {
     initialReview: {
       create: vi.fn(async ({ data }: any) => ({ id: 'rev1', addedContext: null, sourceFileIds: null, challengeId: null, ...data })),
       update: vi.fn(async ({ where, data }: any) => ({ id: where.id, ownerId: 'u1', originalInput: 'x', addedContext: data.addedContext ?? [], sourceFileIds: null, challengeId: null, status: data.status ?? 'generated' })),
@@ -45,7 +45,11 @@ function makePrisma(overrides: Record<string, any> = {}) {
       findMany: vi.fn(async () => []),
     },
     ...overrides,
-  } as any;
+  };
+  // ADR-026 (IRC-02): $transaction interactivo — ejecuta el callback con el propio mock,
+  // de modo que las escrituras dentro del tx impactan los mismos spies.
+  client.$transaction = vi.fn(async (cb: any) => cb(client));
+  return client as any;
 }
 
 describe('InitialReviewService — createReview (IR-B2)', () => {
@@ -168,5 +172,50 @@ describe('InitialReviewService — chat events (ADR-026, IRC-01)', () => {
     expect(create).toHaveBeenCalledTimes(1);
     expect(prisma.initialReviewChatEvent.create).not.toHaveBeenCalled();
     expect(create.mock.calls[0][0].data.snapshotVersion).toBeNull();
+  });
+});
+
+describe('InitialReviewService — changedSections + eventos en mutaciones (ADR-026, IRC-02)', () => {
+  it('addContext: usa $transaction, devuelve changedSections y emite user/context + assistant/diff_announcement', async () => {
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+
+    const dto = await svc.addContext('rev1', 'u1', 'Validamos con el CTO: LLM on-premise.');
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+
+    expect(Array.isArray(dto.changedSections)).toBe(true);
+    expect(dto.changedSections!.length).toBeGreaterThan(0);
+    expect(dto.changedSections).toContain('understanding');
+    expect(dto.changedSections).toContain('critique');
+
+    const calls = prisma.initialReviewChatEvent.create.mock.calls.map((c: any) => c[0].data);
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toMatchObject({ reviewId: 'rev1', role: 'user', kind: 'context', payload: { text: 'Validamos con el CTO: LLM on-premise.' }, snapshotVersion: 2 });
+    expect(calls[1]).toMatchObject({ reviewId: 'rev1', role: 'assistant', kind: 'diff_announcement', snapshotVersion: 2 });
+    expect(calls[1].payload.changedSections).toEqual(dto.changedSections);
+  });
+
+  it('saveStrategicAnswers: devuelve changedSections=["questions"], emite un evento answer y NO diff_announcement', async () => {
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+
+    const dto = await svc.saveStrategicAnswers('rev1', 'u1', { answers: [{ id: 'q1', answer: 'Un área' }] });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(dto.changedSections).toEqual(['questions']);
+
+    const calls = prisma.initialReviewChatEvent.create.mock.calls.map((c: any) => c[0].data);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ role: 'user', kind: 'answer', payload: { questionId: 'q1', answer: 'Un área', unknown: false } });
+    expect(calls.some((c: any) => c.kind === 'diff_announcement')).toBe(false);
+  });
+
+  it('saveStrategicAnswers: respuesta "no lo sé" persiste unknown:true', async () => {
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+    await svc.saveStrategicAnswers('rev1', 'u1', { answers: [{ id: 'q1', unknown: true }] });
+    const data = prisma.initialReviewChatEvent.create.mock.calls[0][0].data;
+    expect(data.payload).toMatchObject({ questionId: 'q1', unknown: true, answer: null });
   });
 });

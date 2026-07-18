@@ -17,6 +17,7 @@ import type {
   InitialReviewChatRole,
   InitialReviewChatEventKind,
 } from '@prisma/client';
+import { diffSections, type SnapshotSectionId } from './snapshot-diff';
 import { AppError } from '../../shared/errors/AppError';
 import { calculateContextScore } from '../companies/context-score';
 import {
@@ -40,6 +41,7 @@ export interface InitialReviewDto {
   companyContext: unknown | null;
   snapshot: SnapshotDto | null;
   chatEvents: ChatEventDto[]; // ADR-026 (IRC-01): historial conversacional del asistente
+  changedSections?: SnapshotSectionId[]; // ADR-026 (IRC-02): secciones que cambiaron en esta mutación
 }
 
 /** ADR-026 (IRC-01): un turno persistido de la conversación del asistente. */
@@ -123,13 +125,25 @@ export class InitialReviewService {
     if (review.status === 'converted_to_initiative') {
       throw AppError.conflict('La revisión ya fue convertida en iniciativa.', 'INITIAL_REVIEW_ALREADY_CONVERTED');
     }
+    const prevSnapshot = await this.latestSnapshot(id); // versión previa para el diff (ADR-026 IRC-02)
     const merged = [...this.asStringArray(review.addedContext), context];
     const nextVersion = await this.nextVersion(id);
     const companyContext = await this.buildCompanyContextForGeneration(userId, (review as any).companyContextSelection);
+    // La generación (IA externa) ocurre FUERA de la transacción; solo las escrituras son atómicas.
     const gen = await this.generator.generate({ originalInput: review.originalInput, addedContext: merged, companyContext });
-    const snapshot = await this.persistSnapshot(review, nextVersion, merged, this.asStringArray(review.sourceFileIds), gen, userId, companyContext ?? (review as any).companyContextSelection);
-    const updated = await this.prisma.initialReview.update({ where: { id }, data: { addedContext: merged, status: 'updated' } });
-    return this.toDto(updated, snapshot);
+
+    const { updated, snapshot, changedSections } = await this.prisma.$transaction(async (tx) => {
+      const snapshot = await this.persistSnapshot(review, nextVersion, merged, this.asStringArray(review.sourceFileIds), gen, userId, companyContext ?? (review as any).companyContextSelection, tx);
+      const updated = await tx.initialReview.update({ where: { id }, data: { addedContext: merged, status: 'updated' } });
+      const changedSections = diffSections(prevSnapshot ? this.toSnapshotDto(prevSnapshot) : null, this.toSnapshotDto(snapshot));
+      // Evento del usuario (contexto) + anuncio del asistente (qué cambió), en la misma transacción.
+      await this.appendChatEvent(id, { role: 'user', kind: 'context', payload: { text: context }, snapshotVersion: nextVersion }, tx);
+      await this.appendChatEvent(id, { role: 'assistant', kind: 'diff_announcement', payload: { changedSections }, snapshotVersion: nextVersion }, tx);
+      return { updated, snapshot, changedSections };
+    });
+
+    const chatEvents = await this.chatEventsFor(id);
+    return { ...this.toDto(updated, snapshot, chatEvents), changedSections };
   }
 
   /** POST /initial-reviews/:id/strategic-answers — guarda respuestas en el snapshot vigente. */
@@ -138,6 +152,7 @@ export class InitialReviewService {
     const snapshot = await this.latestSnapshot(id);
     if (!snapshot) throw AppError.notFound('Snapshot', 'SNAPSHOT_NOT_FOUND');
 
+    const prevDto = this.toSnapshotDto(snapshot); // para el diff (ADR-026 IRC-02)
     const questions = (snapshot.strategicQuestions as unknown as StrategicQuestion[]) ?? [];
     const merged = questions.map((q) => {
       const a = input.answers.find((x) => x.id === q.id);
@@ -145,11 +160,27 @@ export class InitialReviewService {
       if (a.unknown) return { ...q, answer: undefined, status: 'unknown' as const };
       return { ...q, answer: a.answer, status: (a.answer ? 'answered' : q.status) as StrategicQuestion['status'] };
     });
-    const updatedSnapshot = await this.prisma.initialReviewSnapshot.update({
-      where: { id: snapshot.id },
-      data: { strategicQuestions: merged as unknown as object },
+
+    const { updatedSnapshot, changedSections } = await this.prisma.$transaction(async (tx) => {
+      const updatedSnapshot = await tx.initialReviewSnapshot.update({
+        where: { id: snapshot.id },
+        data: { strategicQuestions: merged as unknown as object },
+      });
+      const changedSections = diffSections(prevDto, this.toSnapshotDto(updatedSnapshot));
+      // Un evento 'answer' por respuesta aportada. Responder NO regenera el snapshot, así que
+      // no se emite diff_announcement (el usuario ya sabe qué respondió; IRC-04 decide el copy).
+      for (const a of input.answers) {
+        await this.appendChatEvent(
+          id,
+          { role: 'user', kind: 'answer', payload: { questionId: a.id, answer: a.answer ?? null, unknown: Boolean(a.unknown) }, snapshotVersion: snapshot.version },
+          tx,
+        );
+      }
+      return { updatedSnapshot, changedSections };
     });
-    return this.toDto(review, updatedSnapshot);
+
+    const chatEvents = await this.chatEventsFor(id);
+    return { ...this.toDto(review, updatedSnapshot, chatEvents), changedSections };
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -162,9 +193,10 @@ export class InitialReviewService {
     gen: GeneratedReview,
     createdBy: string,
     companyContext?: unknown,
+    client: { initialReviewSnapshot: PrismaClient['initialReviewSnapshot'] } = this.prisma,
   ): Promise<InitialReviewSnapshot> {
     const dbType = toDbChallengeType(gen.suggestedChallengeType);
-    return this.prisma.initialReviewSnapshot.create({
+    return client.initialReviewSnapshot.create({
       data: {
         reviewId: review.id,
         version,
