@@ -15,23 +15,22 @@ export function isInitialReviewEnabled(): boolean {
 }
 
 /**
- * ADR-026 (IRC-03): revisión inicial conversacional (asistente a la derecha).
- * Off por defecto; se enciende con VITE_ENABLE_INITIATIVE_REVIEW_CHAT=true o el override
- * de localStorage. Se activará por defecto en IRC-07 cuando la suite e2e esté verde.
+ * ADR-026 (IRC-07): revisión inicial conversacional (asistente a la derecha).
+ * ON por defecto. Se puede DESACTIVAR con VITE_ENABLE_INITIATIVE_REVIEW_CHAT=false o el
+ * override de localStorage (valor 'false'). Cualquier otro valor deja el chat activo.
  */
 export function isInitiativeReviewChatEnabled(): boolean {
-  const envEnabled = import.meta.env.VITE_ENABLE_INITIATIVE_REVIEW_CHAT === 'true';
-  let storageValue: string | null = null;
+  if (import.meta.env.VITE_ENABLE_INITIATIVE_REVIEW_CHAT === 'false') return false;
 
   if (typeof window !== 'undefined') {
     try {
-      storageValue = window.localStorage.getItem('starteria.initiativeReviewChat.enabled');
+      if (window.localStorage.getItem('starteria.initiativeReviewChat.enabled') === 'false') return false;
     } catch {
-      storageValue = null;
+      /* localStorage inaccesible → se mantiene el default on */
     }
   }
 
-  return envEnabled || storageValue === 'true';
+  return true;
 }
 
 export function getInitialReviewFlagDebug() {

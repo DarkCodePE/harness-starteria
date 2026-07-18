@@ -84,6 +84,9 @@ describe('InitiativeReviewResultPage (IR-F1/F3)', () => {
   beforeEach(() => {
     navigate.mockReset();
     params = { reviewId: 'rev1' };
+    // Estos tests validan el layout legacy (una columna). El chat es ON por defecto (IRC-07),
+    // así que se fuerza OFF explícitamente.
+    window.localStorage.setItem('starteria.initiativeReviewChat.enabled', 'false');
     client.getReview.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT });
     client.addContext.mockReset().mockResolvedValue({ id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null, snapshot: { ...SNAPSHOT, id: 'snap2', version: 2 } });
     client.saveStrategicAnswers.mockReset().mockResolvedValue({
@@ -141,7 +144,15 @@ describe('InitiativeReviewResultPage — chat split layout (ADR-026, IRC-03)', (
     window.localStorage.removeItem(FLAG_KEY);
   });
 
-  it('flag OFF (default): no monta el asistente y conserva el textarea de contexto', async () => {
+  it('default (sin override, IRC-07): monta el asistente y oculta el textarea legacy', async () => {
+    render(<InitiativeReviewResultPage />); // sin tocar el flag → ON por defecto
+    await screen.findByTestId('card-understanding');
+    expect(screen.getByTestId('assistant-panel')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Agregar contexto antes de confirmar/i)).not.toBeInTheDocument();
+  });
+
+  it('flag forzado a false: no monta el asistente y conserva el textarea de contexto', async () => {
+    window.localStorage.setItem(FLAG_KEY, 'false');
     render(<InitiativeReviewResultPage />);
     await screen.findByTestId('card-understanding');
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument();

@@ -168,6 +168,12 @@ export class AuthService {
     const passwordHash = await hashPassword(data.password);
     const initials = computeInitials(data.name);
 
+    // Waitlist bypass, SOLO para entornos de test/e2e vía env (opt-in explícito). El stack
+    // e2e corre con NODE_ENV=production (imagen 'production'), así que NO se puede gatear por
+    // NODE_ENV: la seguridad es que AUTH_DISABLE_WAITLIST simplemente no se define en el
+    // entorno productivo real. Permite que la suite e2e (register → login) obtenga token.
+    const waitlistDisabled = process.env.AUTH_DISABLE_WAITLIST === 'true';
+
     const user = await this.prisma.user.create({
       data: {
         name: data.name,
@@ -175,11 +181,15 @@ export class AuthService {
         passwordHash,
         role: data.role,
         initials,
-        isActive: false,
+        isActive: waitlistDisabled,
       },
     });
 
-    logger.info({ userId: user.id }, 'User registered on waitlist');
+    if (waitlistDisabled) {
+      logger.warn({ userId: user.id }, 'AUTH_DISABLE_WAITLIST activo: usuario registrado ACTIVO (solo test/e2e)');
+    } else {
+      logger.info({ userId: user.id }, 'User registered on waitlist');
+    }
 
     return {
       user: {

@@ -11,22 +11,16 @@
  * de eventos, nunca contenido del LLM.
  */
 import { test, expect, request as pwRequest, APIRequestContext } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost';
 const GEN_TIMEOUT = process.env.E2E_REAL_AI ? 90_000 : 15_000;
-// Los registros nuevos quedan en waitlist (isActive=false). Para un e2e determinista
-// activamos el usuario directo en la BD (misma que usa el backend). Override con E2E_DB_URL.
-const DB_URL = process.env.E2E_DB_URL || 'postgresql://postgres:postgres@localhost:5433/starteria_db';
 
 function extractToken(body: any): string {
   return body?.data?.tokens?.accessToken ?? body?.data?.accessToken ?? body?.tokens?.accessToken ?? body?.accessToken ?? '';
 }
 
-function activateUser(email: string): void {
-  execFileSync('psql', [DB_URL, '-c', `UPDATE "User" SET "isActive" = true WHERE email = '${email.toLowerCase()}';`], { stdio: 'pipe' });
-}
-
+// El backend de e2e corre con AUTH_DISABLE_WAITLIST=true (docker-compose.override.yml), así
+// que register → login obtiene token igual que el resto de specs. Sin workarounds por-spec.
 async function registerAndLogin(api: APIRequestContext, tag: string): Promise<string> {
   const stamp = Date.now() + Math.floor(Math.random() * 100000);
   const email = `e2e-irc-${tag}-${stamp}@starteria.test`;
@@ -36,7 +30,6 @@ async function registerAndLogin(api: APIRequestContext, tag: string): Promise<st
     failOnStatusCode: false,
   });
   expect([200, 201, 409], `register: ${reg.status()}`).toContain(reg.status());
-  activateUser(email); // saca al usuario de la waitlist antes del login
   const res = await api.post('/api/v1/auth/login', { data: { email, password }, failOnStatusCode: false });
   expect(res.status(), `login: ${await res.text()}`).toBe(200);
   const token = extractToken(await res.json());
