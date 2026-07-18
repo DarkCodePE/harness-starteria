@@ -150,3 +150,14 @@
 - Commits: 007b75a, 0d718c3, 6ec3958, 1c9bad9, 42c96dc, 806f197, c304760. Artefactos previos (PRD/ADR-026/descomposición) en 16ebc18.
 - Gotcha reforzado: rtk rompe npx (prisma/vite/tsc/playwright) → usar binarios directos ./node_modules/.bin/*. El front NO tiene tsconfig propio (usa vite+vitest); backend usa tsconfig.backend.json (30 errores TS pre-existentes ajenos, en billing/pdfs/pilot-leads).
 - Próximo: resolver #137 (bypass de waitlist en e2e) → correr suite e2e completa con flag on → flipear el default y cerrar IRC-07; luego #136 (remoción física del legacy).
+
+### Sesión 012 — IRC-07 desbloqueo de auth + flag on + root-cause del smoke (2026-07-18)
+
+- Continuación de sesión 011 tras feedback del stop-hook (IRC-07 no satisfecho).
+- **Desbloqueo real de la suite e2e** (reemplaza el workaround psql per-spec): bypass de waitlist gateado por env `AUTH_DISABLE_WAITLIST` en `auth.service.ts` (off en prod; set en `docker-compose.override.yml` local). register→login ahora 200. 438 tests backend verdes. Bug del waitlist: #137.
+- **Flag ON por defecto**: `isInitiativeReviewChatEnabled()` invertido (se desactiva con `=false`/localStorage 'false'). Tests de la página actualizados (default-on vs forzado-false). 263 tests front verdes; build ok. El flag solo afecta `InitiativeReviewResultPage`, NO Step0Page/PDF-autofill.
+- **e2e conversacional VERDE** contra stack real (backend recompilado): `initial-review-chat.spec.ts` 1 passed (505ms). Valida chatEvents/changedSections/rehidratación/confirm.
+- **Smoke de referencia (pdf-autofill)**: con el bypass ahora corre END-TO-END (antes 100% rojo en login). Falla CONSISTENTE (2/2 con CI retry) en la aserción final de UI de Step 0. **Root cause**: el ai-service trunca la extracción LLM (length-limit, reasoning_tokens=4000) → run `COMPLETED` con **0 proposals** → Step 0 sin chips. Defecto PRE-EXISTENTE del ai-service/OpenRouter (issue #138), ajeno al chat y no tocado por el flag. `public-pdf-autofill.spec.ts` pasa.
+- IRC-07 → **blocked**: las 3 entregas del chat (e2e conversacional, flag on, legacy deprecated) están HECHAS y verificadas; el estado 'blocked' es SOLO por la puerta cross-cutting del smoke de referencia, bloqueada por #138 (defecto externo). Desbloqueo: resolver #138.
+- Commits: 7218d9f (flag on + bypass). Issues: #136 (remoción legacy), #137 (waitlist e2e), #138 (truncación PDF-extract).
+- Conclusión: el épico del chat (objetivo del usuario) está entregado y verificado end-to-end. El único ítem abierto es un bug pre-existente del ai-service (PDF autofill), fuera del alcance del chat.
