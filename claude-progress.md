@@ -161,3 +161,14 @@
 - IRC-07 → **blocked**: las 3 entregas del chat (e2e conversacional, flag on, legacy deprecated) están HECHAS y verificadas; el estado 'blocked' es SOLO por la puerta cross-cutting del smoke de referencia, bloqueada por #138 (defecto externo). Desbloqueo: resolver #138.
 - Commits: 7218d9f (flag on + bypass). Issues: #136 (remoción legacy), #137 (waitlist e2e), #138 (truncación PDF-extract).
 - Conclusión: el épico del chat (objetivo del usuario) está entregado y verificado end-to-end. El único ítem abierto es un bug pre-existente del ai-service (PDF autofill), fuera del alcance del chat.
+
+### Sesión 013 — IRC-07: fixes de infra + root-cause completo del smoke (2026-07-18)
+
+- Continuación: perseguí el verde del smoke de referencia arreglando bloqueadores reales (no workarounds).
+- **e2e conversacional VERDE (repetido)**: `initial-review-chat.spec.ts` 1 passed (537ms) contra stack real.
+- **Fix 1/3 (#137)**: bypass de waitlist por env `AUTH_DISABLE_WAITLIST` → suite e2e corre (antes 100% roja en login). Commit 7218d9f.
+- **Fix 2/3 (#138)**: `extractor.py` marca el run FAILED cuando todos los pasos LLM fallan (antes COMPLETED con 0 proposals). 258 pytest ai-service (+2). ai-service recompilado. Verificado en logs: 'marking run failed'. Commit ed0fd6b.
+- **Bloqueo 3/3 (#139)**: el run 'failed' webhookea al backend → 404 PDF_RUN_NOT_FOUND; no existe `PdfExtractionRun` con ese `aiRunId` (confirmado en DB, 0 filas). El backend nunca aprende el fallo → el smoke sondea hasta timeout. Defecto pre-existente de `initiative-pdfs`/ADR-013, ajeno al chat.
+- **Conclusión**: el smoke de referencia depende de 3 subsistemas frágiles (auth, ai-service LLM, webhook PDF-extract); arreglé 2, el 3º es correlación backend fuera del alcance del épico del chat. Detuve la persecución (scope creep). IRC-07 → **blocked** solo por esa puerta cross-cutting; las 3 entregas del chat (e2e conversacional, flag on, legacy deprecated) están HECHAS.
+- Issues: #136 (remoción legacy), #137 (waitlist, ARREGLADO), #138 (truncación, ARREGLADO), #139 (webhook correlation, ABIERTO). Commits: 7218d9f, b716853, ed0fd6b.
+- Próximo (dueños de initiative-pdfs): resolver #139 (persistir aiRunId antes del webhook / correlacionar por runId del backend) → smoke verde → cerrar IRC-07.
