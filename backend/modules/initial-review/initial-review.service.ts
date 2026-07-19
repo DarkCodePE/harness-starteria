@@ -119,31 +119,79 @@ export class InitialReviewService {
     return this.toSnapshotDto(snapshot);
   }
 
-  /** POST /initial-reviews/:id/add-context — agrega contexto y regenera (nueva versión). */
-  async addContext(id: string, userId: string, context: string): Promise<InitialReviewDto> {
+  /**
+   * POST /initial-reviews/:id/add-context — agrega contexto y regenera (nueva versión).
+   * ADR-026 v2: si `focusSection` está presente, se hace un SPLICE determinista — solo esa
+   * sección toma el contenido regenerado y el resto se conserva verbatim del snapshot previo,
+   * de modo que `diffSections` reporta exactamente `[focusSection]` sin importar drift del modelo.
+   */
+  async addContext(id: string, userId: string, context: string, focusSection?: SnapshotSectionId): Promise<InitialReviewDto> {
     const review = await this.requireOwned(id, userId);
     if (review.status === 'converted_to_initiative') {
       throw AppError.conflict('La revisión ya fue convertida en iniciativa.', 'INITIAL_REVIEW_ALREADY_CONVERTED');
     }
-    const prevSnapshot = await this.latestSnapshot(id); // versión previa para el diff (ADR-026 IRC-02)
+    const prevSnapshot = await this.latestSnapshot(id); // versión previa para el diff / splice (ADR-026 IRC-02)
     const merged = [...this.asStringArray(review.addedContext), context];
     const nextVersion = await this.nextVersion(id);
     const companyContext = await this.buildCompanyContextForGeneration(userId, (review as any).companyContextSelection);
     // La generación (IA externa) ocurre FUERA de la transacción; solo las escrituras son atómicas.
-    const gen = await this.generator.generate({ originalInput: review.originalInput, addedContext: merged, companyContext });
+    const genFull = await this.generator.generate({ originalInput: review.originalInput, addedContext: merged, companyContext, focusSection });
+    // Splice: al enfocar una sección, se conserva todo lo demás verbatim del snapshot previo.
+    const gen = focusSection && prevSnapshot ? this.spliceForFocus(prevSnapshot, genFull, focusSection) : genFull;
 
     const { updated, snapshot, changedSections } = await this.prisma.$transaction(async (tx) => {
       const snapshot = await this.persistSnapshot(review, nextVersion, merged, this.asStringArray(review.sourceFileIds), gen, userId, companyContext ?? (review as any).companyContextSelection, tx);
       const updated = await tx.initialReview.update({ where: { id }, data: { addedContext: merged, status: 'updated' } });
       const changedSections = diffSections(prevSnapshot ? this.toSnapshotDto(prevSnapshot) : null, this.toSnapshotDto(snapshot));
       // Evento del usuario (contexto) + anuncio del asistente (qué cambió), en la misma transacción.
-      await this.appendChatEvent(id, { role: 'user', kind: 'context', payload: { text: context }, snapshotVersion: nextVersion }, tx);
+      await this.appendChatEvent(id, { role: 'user', kind: 'context', payload: { text: context, ...(focusSection ? { focusSection } : {}) }, snapshotVersion: nextVersion }, tx);
       await this.appendChatEvent(id, { role: 'assistant', kind: 'diff_announcement', payload: { changedSections }, snapshotVersion: nextVersion }, tx);
       return { updated, snapshot, changedSections };
     });
 
     const chatEvents = await this.chatEventsFor(id);
     return { ...this.toDto(updated, snapshot, chatEvents), changedSections };
+  }
+
+  /** ADR-026 v2: GeneratedReview a partir de un snapshot previo (para el splice de focusSection). */
+  private snapshotToGen(s: InitialReviewSnapshot): GeneratedReview {
+    return {
+      understandingSummary: s.understandingSummary,
+      suggestedChallengeType: toCanonicalChallengeType(s.suggestedChallengeType),
+      challengeTypeReason: s.challengeTypeReason,
+      informationReadiness: (s.informationReadiness ?? undefined) as GeneratedReview['informationReadiness'],
+      critique: s.critique as unknown as GeneratedReview['critique'],
+      strategicQuestions: s.strategicQuestions as unknown as GeneratedReview['strategicQuestions'],
+      improvedProposal: s.improvedProposal as unknown as GeneratedReview['improvedProposal'],
+      routePreview: s.routePreview as unknown as GeneratedReview['routePreview'],
+    };
+  }
+
+  /**
+   * Devuelve un GeneratedReview que es el snapshot previo con SOLO la sección enfocada
+   * reemplazada por el contenido recién generado. Garantiza que el diff sea `[focus]`.
+   * `questions` y `routePreview` no son refinables (se ignoran → se conserva el previo).
+   */
+  private spliceForFocus(prev: InitialReviewSnapshot, gen: GeneratedReview, focus: SnapshotSectionId): GeneratedReview {
+    const out: GeneratedReview = this.snapshotToGen(prev);
+    switch (focus) {
+      case 'understanding':
+        out.understandingSummary = gen.understandingSummary;
+        break;
+      case 'challengeType':
+        out.suggestedChallengeType = gen.suggestedChallengeType;
+        out.challengeTypeReason = gen.challengeTypeReason;
+        out.informationReadiness = gen.informationReadiness;
+        break;
+      case 'critique':
+        out.critique = gen.critique;
+        break;
+      case 'improvedProposal':
+        out.improvedProposal = gen.improvedProposal;
+        break;
+      // 'questions' y 'routePreview': no refinables → se conserva el snapshot previo.
+    }
+    return out;
   }
 
   /** POST /initial-reviews/:id/strategic-answers — guarda respuestas en el snapshot vigente. */

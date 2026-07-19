@@ -90,8 +90,25 @@ export async function getReview(id: string): Promise<InitiativeReview> {
   return data.data;
 }
 
-export async function addContext(id: string, context: string): Promise<InitiativeReview> {
-  const { data } = await api.post<ApiEnvelope<InitiativeReview>>(`/initial-reviews/${id}/add-context`, { context });
+// ADR-026 v2: focusSection refina SOLO esa sección (el backend hace el splice determinista).
+export async function addContext(id: string, context: string, focusSection?: SnapshotSectionId): Promise<InitiativeReview> {
+  const { data } = await api.post<ApiEnvelope<InitiativeReview>>(`/initial-reviews/${id}/add-context`, {
+    context,
+    ...(focusSection ? { focusSection } : {}),
+  });
+  return data.data;
+}
+
+// ADR-026 v2: sube un documento (PDF/docx/txt) como contexto; el backend extrae el texto y
+// regenera toda la iniciativa. Envío raw (no base64-JSON) para no chocar con el límite de body.
+export async function addDocument(id: string, file: File): Promise<InitiativeReview> {
+  const bytes = await file.arrayBuffer();
+  const { data } = await api.post<ApiEnvelope<InitiativeReview>>(`/initial-reviews/${id}/add-document`, bytes, {
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      'X-File-Name': encodeURIComponent(file.name),
+    },
+  });
   return data.data;
 }
 

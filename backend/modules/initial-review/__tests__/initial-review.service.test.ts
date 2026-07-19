@@ -219,3 +219,32 @@ describe('InitialReviewService — changedSections + eventos en mutaciones (ADR-
     expect(data.payload).toMatchObject({ questionId: 'q1', unknown: true, answer: null });
   });
 });
+
+describe('InitialReviewService — focusSection splice (ADR-026 v2)', () => {
+  it('addContext con focusSection=critique: solo critique toma el nuevo gen; el resto verbatim del prev; diff=[critique]', async () => {
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+
+    const dto = await svc.addContext('rev1', 'u1', 'refina la mirada crítica', 'critique');
+
+    const created = prisma.initialReviewSnapshot.create.mock.calls[0][0].data;
+    // La sección enfocada toma el contenido regenerado (FIXED_GEN.critique).
+    expect(created.critique).toMatchObject({ solid: 's', weak: 'w' });
+    // Las demás secciones se conservan verbatim del snapshot previo (understanding 'u', no 'Entiendo tu propuesta.').
+    expect(created.understandingSummary).toBe('u');
+    expect(created.challengeTypeReason).toBe('r');
+    // El diff reporta exactamente la sección enfocada.
+    expect(dto.changedSections).toEqual(['critique']);
+    // El evento de contexto registra el focusSection.
+    const ctxEvent = prisma.initialReviewChatEvent.create.mock.calls.map((c: any) => c[0].data).find((d: any) => d.kind === 'context');
+    expect(ctxEvent.payload.focusSection).toBe('critique');
+  });
+
+  it('addContext SIN focusSection: regeneración completa (understanding cambia); comportamiento previo intacto', async () => {
+    const prisma = makePrisma();
+    const svc = new InitialReviewService(prisma, fakeGenerator());
+    await svc.addContext('rev1', 'u1', 'contexto general');
+    const created = prisma.initialReviewSnapshot.create.mock.calls[0][0].data;
+    expect(created.understandingSummary).toBe('Entiendo tu propuesta.'); // del gen, no del prev
+  });
+});

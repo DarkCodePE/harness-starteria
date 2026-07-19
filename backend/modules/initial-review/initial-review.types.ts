@@ -7,6 +7,7 @@
  * traduce en la frontera del servicio (hallazgo adversarial #5).
  */
 import type { ChallengeType } from '@prisma/client';
+import type { SnapshotSectionId } from './snapshot-diff';
 
 export type CanonicalChallengeType = 'correction' | 'growth' | 'exploration';
 export type InformationReadiness = 'very_low' | 'low' | 'medium' | 'high';
@@ -78,6 +79,9 @@ export interface GenerateInput {
   originalInput: string;
   addedContext?: string[];
   companyContext?: unknown;
+  /** ADR-026 v2: pide al modelo revisar SOLO esta sección (el resto se conserva verbatim
+   * por el splice del service). Ausente = regeneración completa. */
+  focusSection?: SnapshotSectionId;
 }
 
 /**

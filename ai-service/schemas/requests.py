@@ -174,3 +174,6 @@ class InitialReviewRequest(BaseModel):
     companyContext: dict[str, Any] | None = Field(
         None, description="Contexto de empresa ensamblado por el backend (initial-review.service). Datos, no instrucciones."
     )
+    focusSection: str | None = Field(
+        None, description="ADR-026 v2: refinar SOLO esta sección (understanding/challengeType/critique/improvedProposal). El backend hace el splice determinista."
+    )

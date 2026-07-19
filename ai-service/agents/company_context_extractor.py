@@ -174,7 +174,8 @@ def extract_file(file_base64: str, mime_type: str, file_name: str) -> tuple[str,
         text = extract_pdf(data)
     elif "wordprocessingml.document" in mime_type or lower.endswith(".docx"):
         text = extract_docx(data)
-    elif mime_type in {"text/markdown", "text/plain"} or lower.endswith(".md"):
+    elif mime_type in {"text/markdown", "text/plain"} or lower.endswith((".md", ".txt", ".text", ".markdown")):
+        # .txt/.md por MIME o por extensión (un .txt puede llegar como octet-stream/sin MIME).
         text = data.decode("utf-8", errors="ignore")
     else:
         text = ""

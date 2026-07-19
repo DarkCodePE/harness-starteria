@@ -12,8 +12,13 @@ export const createInitialReviewSchema = z.object({
 });
 export type CreateInitialReviewInput = z.infer<typeof createInitialReviewSchema>;
 
+// ADR-026 v2: refinables por focusSection (excluye 'routePreview' canónica y 'questions'
+// para no borrar respuestas). Debe coincidir con SnapshotSectionId de snapshot-diff.ts.
+export const REFINABLE_SECTIONS = ['understanding', 'challengeType', 'critique', 'improvedProposal'] as const;
+
 export const addContextSchema = z.object({
   context: z.string().trim().min(1, 'Falta el contexto a agregar.').max(8000),
+  focusSection: z.enum(REFINABLE_SECTIONS).optional(),
 });
 export type AddContextInput = z.infer<typeof addContextSchema>;
 
