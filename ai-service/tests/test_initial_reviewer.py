@@ -54,7 +54,7 @@ def _canned_output() -> InitialReviewOutput:
 
 @pytest.mark.unit
 def test_initial_review_returns_flat_structured_shape(client: TestClient, monkeypatch) -> None:
-    def fake_generate(original_input, added_context=None, company_context=None):
+    def fake_generate(original_input, added_context=None, company_context=None, focus_section=None):
         assert original_input == "Necesito ordenar mis proyectos"
         assert company_context and company_context["company"]["name"] == "Acme"
         return _canned_output()
@@ -156,3 +156,18 @@ def test_format_company_context_clips_oversized_input() -> None:
 @pytest.mark.parametrize("junk", [None, {}, {"company": None}, {"confirmedInformation": "not-a-list"}, {"missing": 42}])
 def test_format_company_context_never_crashes_on_junk(junk) -> None:
     assert isinstance(format_company_context(junk), str)
+
+
+@pytest.mark.unit
+def test_initial_review_forwards_focus_section(client: TestClient, monkeypatch) -> None:
+    """ADR-026 v2: el endpoint reenvía focusSection a generate_initial_review."""
+    seen = {}
+
+    def fake_generate(original_input, added_context=None, company_context=None, focus_section=None):
+        seen["focus"] = focus_section
+        return _canned_output()
+
+    monkeypatch.setattr("routers.ai.generate_initial_review", fake_generate)
+    resp = client.post("/api/v1/ai/initial-review", json={"originalInput": "Necesito ordenar mis proyectos", "focusSection": "critique"})
+    assert resp.status_code == 200
+    assert seen["focus"] == "critique"

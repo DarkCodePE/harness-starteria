@@ -10,17 +10,29 @@ const CHALLENGE_LABEL: Record<CanonicalChallengeType, { label: string; hint: str
 /** Ancla estable de una card para scroll/resaltado (ADR-026 IRC-05). */
 export const sectionAnchorId = (id: SnapshotSectionId) => `review-section-${id}`;
 
+/** Props de una card refinable (ADR-026 v2): además del snapshot, el botón "Refinar" y el foco. */
+type RefinableCardProps = {
+  snapshot: ReviewSnapshot;
+  highlighted?: boolean;
+  onRefine?: (id: SnapshotSectionId) => void;
+  isFocused?: boolean;
+};
+
 function Card({
   title,
   testid,
   sectionId,
   highlighted,
+  onRefine,
+  isFocused,
   children,
 }: {
   title: string;
   testid: string;
   sectionId: SnapshotSectionId;
   highlighted?: boolean;
+  onRefine?: (id: SnapshotSectionId) => void;
+  isFocused?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -29,33 +41,53 @@ function Card({
       id={sectionAnchorId(sectionId)}
       data-section={sectionId}
       data-highlighted={highlighted ? 'true' : undefined}
+      data-focused={isFocused ? 'true' : undefined}
       className={`scroll-mt-6 rounded-xl border bg-white p-5 transition-shadow ${
-        highlighted ? 'border-indigo-300 shadow-[0_0_0_3px_rgba(99,102,241,0.25)]' : 'border-slate-200'
+        isFocused
+          ? 'border-indigo-500 shadow-[0_0_0_3px_rgba(99,102,241,0.45)]'
+          : highlighted
+          ? 'border-indigo-300 shadow-[0_0_0_3px_rgba(99,102,241,0.25)]'
+          : 'border-slate-200'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
-        {highlighted && (
-          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">Actualizado</span>
-        )}
+        <div className="flex items-center gap-2">
+          {highlighted && (
+            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700">Actualizado</span>
+          )}
+          {onRefine && (
+            <button
+              type="button"
+              data-testid={`refine-${sectionId}`}
+              onClick={() => onRefine(sectionId)}
+              aria-pressed={isFocused}
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+                isFocused ? 'bg-indigo-600 text-white' : 'text-indigo-600 ring-1 ring-indigo-200 hover:bg-indigo-50'
+              }`}
+            >
+              {isFocused ? 'Refinando…' : 'Refinar'}
+            </button>
+          )}
+        </div>
       </div>
       <div className="mt-2 text-sm text-slate-700">{children}</div>
     </section>
   );
 }
 
-export function UnderstandingSummaryCard({ snapshot, highlighted }: { snapshot: ReviewSnapshot; highlighted?: boolean }) {
+export function UnderstandingSummaryCard({ snapshot, highlighted, onRefine, isFocused }: RefinableCardProps) {
   return (
-    <Card title="Lo que Starteria entendió" testid="card-understanding" sectionId="understanding" highlighted={highlighted}>
+    <Card title="Lo que Starteria entendió" testid="card-understanding" sectionId="understanding" highlighted={highlighted} onRefine={onRefine} isFocused={isFocused}>
       <p>{snapshot.understandingSummary}</p>
     </Card>
   );
 }
 
-export function ChallengeTypeCard({ snapshot, highlighted }: { snapshot: ReviewSnapshot; highlighted?: boolean }) {
+export function ChallengeTypeCard({ snapshot, highlighted, onRefine, isFocused }: RefinableCardProps) {
   const t = CHALLENGE_LABEL[snapshot.suggestedChallengeType] ?? { label: snapshot.suggestedChallengeType, hint: '' };
   return (
-    <Card title="Tipo de reto sugerido" testid="card-challenge-type" sectionId="challengeType" highlighted={highlighted}>
+    <Card title="Tipo de reto sugerido" testid="card-challenge-type" sectionId="challengeType" highlighted={highlighted} onRefine={onRefine} isFocused={isFocused}>
       <p className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">{t.label}</span>
         <span className="text-slate-500">{t.hint}</span>
@@ -65,7 +97,7 @@ export function ChallengeTypeCard({ snapshot, highlighted }: { snapshot: ReviewS
   );
 }
 
-export function CritiqueCard({ snapshot, highlighted }: { snapshot: ReviewSnapshot; highlighted?: boolean }) {
+export function CritiqueCard({ snapshot, highlighted, onRefine, isFocused }: RefinableCardProps) {
   const c = snapshot.critique;
   const rows: Array<[string, string | undefined]> = [
     ['Lo sólido', c.solid],
@@ -74,7 +106,7 @@ export function CritiqueCard({ snapshot, highlighted }: { snapshot: ReviewSnapsh
     ['Conviene ajustar', c.recommendedAdjustment],
   ];
   return (
-    <Card title="Mirada crítica" testid="card-critique" sectionId="critique" highlighted={highlighted}>
+    <Card title="Mirada crítica" testid="card-critique" sectionId="critique" highlighted={highlighted} onRefine={onRefine} isFocused={isFocused}>
       <dl className="grid gap-2">
         {rows.filter(([, v]) => v).map(([k, v]) => (
           <div key={k}>
@@ -138,10 +170,10 @@ export function QuestionsCard({
   );
 }
 
-export function ImprovedProposalCard({ snapshot, highlighted }: { snapshot: ReviewSnapshot; highlighted?: boolean }) {
+export function ImprovedProposalCard({ snapshot, highlighted, onRefine, isFocused }: RefinableCardProps) {
   const p = snapshot.improvedProposal;
   return (
-    <Card title="Versión mejorada de tu iniciativa" testid="card-proposal" sectionId="improvedProposal" highlighted={highlighted}>
+    <Card title="Versión mejorada de tu iniciativa" testid="card-proposal" sectionId="improvedProposal" highlighted={highlighted} onRefine={onRefine} isFocused={isFocused}>
       <p className="font-medium text-slate-900">{p.suggestedName}</p>
       {p.improvedDescription && <p className="mt-1">{p.improvedDescription}</p>}
       {p.expectedImpact && <p className="mt-1 text-slate-600"><span className="font-medium">Impacto esperado:</span> {p.expectedImpact}</p>}

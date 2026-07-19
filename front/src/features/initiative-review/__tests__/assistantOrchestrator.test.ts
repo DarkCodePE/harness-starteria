@@ -182,3 +182,28 @@ describe('guideMessages (IRC-04)', () => {
     expect(guideMessages(gaps, deriveAgenda(gaps)).some((m) => m.id === 'guide-gaps')).toBe(true);
   });
 });
+
+describe('nextAction refine + refiningLabel (ADR-026 v2)', () => {
+  it('modo refine con sección enfocada → acción refine_section', async () => {
+    const { nextAction } = await import('../services/assistantOrchestrator');
+    const a = deriveAgenda(review());
+    expect(nextAction('refine', a, 'hazla más concreta', 'critique')).toEqual({ type: 'refine_section', sectionId: 'critique', text: 'hazla más concreta' });
+  });
+
+  it('modo refine SIN sección enfocada → cae a context', async () => {
+    const { nextAction } = await import('../services/assistantOrchestrator');
+    const a = deriveAgenda(review());
+    expect(nextAction('refine', a, 'algo', null)).toEqual({ type: 'context', text: 'algo' });
+  });
+
+  it('nextAction es back-compat sin el 4º argumento', async () => {
+    const { nextAction } = await import('../services/assistantOrchestrator');
+    const a = deriveAgenda(review());
+    expect(nextAction('context', a, 'x')).toEqual({ type: 'context', text: 'x' });
+  });
+
+  it('refiningLabel usa la etiqueta de la sección', async () => {
+    const { refiningLabel } = await import('../services/assistantOrchestrator');
+    expect(refiningLabel('improvedProposal')).toContain('Versión mejorada');
+  });
+})

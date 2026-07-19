@@ -50,13 +50,15 @@ const client = {
   getReview: vi.fn(),
   createReview: vi.fn(),
   addContext: vi.fn(),
+  addDocument: vi.fn(),
   saveStrategicAnswers: vi.fn(),
   confirmRoute: vi.fn(),
 };
 vi.mock('../services/initiativeReviewClient', () => ({
   getReview: (id: string) => client.getReview(id),
   createReview: (t: string, ctx?: string[], companyContext?: { companyId: string; areaId?: string } | null) => client.createReview(t, ctx, companyContext),
-  addContext: (id: string, context: string) => client.addContext(id, context),
+  addContext: (id: string, context: string, focusSection?: string) => (focusSection ? client.addContext(id, context, focusSection) : client.addContext(id, context)),
+  addDocument: (id: string, file: File) => client.addDocument(id, file),
   saveStrategicAnswers: (id: string, answers: Array<{ id: string; answer?: string; unknown?: boolean }>) => client.saveStrategicAnswers(id, answers),
   confirmRoute: (id: string) => client.confirmRoute(id),
 }));
@@ -141,7 +143,49 @@ describe('InitiativeReviewResultPage — chat split layout (ADR-026, IRC-03)', (
     client.getReview.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT });
     client.addContext.mockReset().mockResolvedValue({ id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['ctx'], challengeId: null, snapshot: { ...SNAPSHOT, id: 'snap2', version: 2 }, changedSections: ['critique'] });
     client.saveStrategicAnswers.mockReset().mockResolvedValue({ id: 'rev1', status: 'generated', originalInput: 'x', addedContext: [], challengeId: null, snapshot: SNAPSHOT, changedSections: ['questions'] });
+    client.addDocument.mockReset().mockResolvedValue({ id: 'rev1', status: 'updated', originalInput: 'x', addedContext: ['doc'], challengeId: null, snapshot: { ...SNAPSHOT, version: 2 }, changedSections: ['understanding', 'critique'] });
     window.localStorage.removeItem(FLAG_KEY);
+  });
+
+  it('v2: el chat va a la IZQUIERDA (aparece antes que las cards en el DOM)', async () => {
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    const nodes = Array.from(document.querySelectorAll('[data-testid="assistant-panel"], [data-testid="card-understanding"]'));
+    expect(nodes[0].getAttribute('data-testid')).toBe('assistant-panel'); // chat primero en el DOM = izquierda / arriba en móvil
+  });
+
+  it('v2: clic en "Refinar" enfoca la sección y un turno llama addContext con focusSection', async () => {
+    render(<InitiativeReviewResultPage />);
+    fireEvent.click(await screen.findByTestId('refine-critique'));
+    // El chip "Refinando: Mirada crítica" aparece y el modo refine queda activo.
+    expect(screen.getByTestId('refine-cancel')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('assistant-input'), { target: { value: 'hazla más concreta' } });
+    fireEvent.click(screen.getByTestId('assistant-send'));
+    await waitFor(() => expect(client.addContext).toHaveBeenCalledWith('rev1', 'hazla más concreta', 'critique'));
+  });
+
+  it('v2: "Refinar" no aparece en la card de ruta (no refinable)', async () => {
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('card-route');
+    expect(screen.queryByTestId('refine-routePreview')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('refine-questions')).not.toBeInTheDocument();
+  });
+
+  it('v2: subir un documento llama addDocument y re-resalta las secciones cambiadas', async () => {
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    const file = new File(['contenido de reglas'], 'reglas.txt', { type: 'text/plain' });
+    fireEvent.change(screen.getByTestId('doc-input'), { target: { files: [file] } });
+    await waitFor(() => expect(client.addDocument).toHaveBeenCalledWith('rev1', file));
+    await waitFor(() => expect(screen.getByTestId('card-critique')).toHaveAttribute('data-highlighted', 'true'));
+  });
+
+  it('v2: un documento no soportado no llama addDocument (validación cliente)', async () => {
+    render(<InitiativeReviewResultPage />);
+    await screen.findByTestId('assistant-panel');
+    const bad = new File(['x'], 'foto.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('doc-input'), { target: { files: [bad] } });
+    expect(client.addDocument).not.toHaveBeenCalled();
   });
 
   it('default (sin override, IRC-07): monta el asistente y oculta el textarea legacy', async () => {

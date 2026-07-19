@@ -568,6 +568,7 @@ async def initial_review_endpoint(
             body.originalInput,
             body.addedContext,
             body.companyContext,
+            body.focusSection,
         )
         return InitialReviewResponse(
             **result.model_dump(),

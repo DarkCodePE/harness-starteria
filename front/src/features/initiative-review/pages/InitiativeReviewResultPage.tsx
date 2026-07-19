@@ -7,11 +7,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   addContext,
+  addDocument,
   confirmRoute,
   getReview,
   saveStrategicAnswers,
   type InitiativeReview,
 } from '../services/initiativeReviewClient';
+import { ReviewDocumentDropzone } from '../components/ReviewDocumentDropzone';
 import { trackInitialReviewEvent } from '../services/initialReviewTelemetry';
 import {
   UnderstandingSummaryCard,
@@ -29,6 +31,7 @@ import {
   deriveAgenda,
   defaultMode,
   nextAction,
+  SECTION_LABEL as SECTION_LABEL_UI,
   type AssistantMode,
 } from '../services/assistantOrchestrator';
 import { isInitiativeReviewChatEnabled } from '../../../app/featureFlags';
@@ -48,6 +51,8 @@ export function InitiativeReviewResultPage() {
   const [transientDoubts, setTransientDoubts] = useState<ChatMessage[]>([]);
   // IRC-05: secciones resaltadas tras la última regeneración (changedSections del backend).
   const [highlighted, setHighlighted] = useState<SnapshotSectionId[]>([]);
+  // v2: sección enfocada para refinar (estado direccionable del "harness"). null = sin foco.
+  const [focusedSection, setFocusedSection] = useState<SnapshotSectionId | null>(null);
 
   // IRC-05: al resaltar, desplaza el panel a la primera sección cambiada. Debe declararse
   // con el resto de hooks (antes de cualquier early return) para no violar reglas de hooks.
@@ -169,9 +174,22 @@ export function InitiativeReviewResultPage() {
   const agenda = deriveAgenda(review);
   const effectiveMode: AssistantMode = chatMode ?? defaultMode(agenda);
 
+  // v2: seleccionar/deseleccionar una sección para refinarla desde el chat. Estado direccionable.
+  const onRefineSection = (id: SnapshotSectionId) => {
+    if (focusedSection === id) {
+      setFocusedSection(null);
+      setChatMode(null);
+      return;
+    }
+    setFocusedSection(id);
+    setChatMode('refine');
+    const el = typeof document !== 'undefined' ? document.getElementById(sectionAnchorId(id)) : null;
+    el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  };
+
   const onChatSend = async (text: string) => {
     if (!reviewId || addingContext) return;
-    const action = nextAction(effectiveMode, agenda, text);
+    const action = nextAction(effectiveMode, agenda, text, focusedSection);
     trackInitialReviewEvent('chat_message_sent', { reviewId, mode: effectiveMode }); // IRC-06
 
     // Las dudas se resuelven en cliente (catálogo), sin llamada a la API (ADR-026 dec. 2).
@@ -197,6 +215,10 @@ export function InitiativeReviewResultPage() {
         next = await saveStrategicAnswers(reviewId, [{ id: action.questionId, unknown: true }]);
         trackInitialReviewEvent('initial_review_question_answered', { reviewId, questionId: action.questionId, unknown: true });
         trackInitialReviewEvent('chat_question_answered', { reviewId, questionId: action.questionId, unknown: true });
+      } else if (action.type === 'refine_section') {
+        // v2: refina SOLO la sección enfocada (el backend hace el splice determinista).
+        next = await addContext(reviewId, action.text, action.sectionId);
+        trackInitialReviewEvent('chat_context_added', { reviewId, snapshotVersion: next.snapshot?.version, contextCount: next.addedContext.length, mode: 'refine' });
       } else {
         next = await addContext(reviewId, action.text);
         trackInitialReviewEvent('initial_review_context_added', {
@@ -214,6 +236,7 @@ export function InitiativeReviewResultPage() {
         trackInitialReviewEvent('snapshot_diff_announced', { reviewId, snapshotVersion: next.snapshot?.version, changedCount: changed.length }); // IRC-06
       }
       setChatMode(null); // vuelve al modo por defecto contextual tras cada turno
+      setFocusedSection(null); // v2: limpia el foco tras un turno exitoso
     } catch {
       setError('No pudimos procesar tu mensaje. Intenta nuevamente.');
       // IRC-05: el fallo también se muestra en el chat, con invitación a reintentar.
@@ -226,17 +249,52 @@ export function InitiativeReviewResultPage() {
     }
   };
 
+  // v2: subir un documento como contexto → el backend extrae el texto y regenera la iniciativa.
+  const onDocumentUpload = async (file: File) => {
+    if (!reviewId || addingContext) return;
+    setAddingContext(true);
+    setError(null);
+    trackInitialReviewEvent('chat_message_sent', { reviewId, mode: 'document' });
+    try {
+      const next = await addDocument(reviewId, file);
+      setReview(next);
+      const changed = next.changedSections ?? [];
+      setHighlighted(changed);
+      trackInitialReviewEvent('chat_context_added', { reviewId, snapshotVersion: next.snapshot?.version, contextCount: next.addedContext.length, mode: 'document' });
+      if (changed.length > 0) {
+        trackInitialReviewEvent('snapshot_diff_announced', { reviewId, snapshotVersion: next.snapshot?.version, changedCount: changed.length });
+      }
+    } catch {
+      setError('No pudimos procesar ese documento. Revisa el formato/tamaño e intenta de nuevo.');
+      setTransientDoubts((prev) => [
+        ...prev,
+        { id: `docerr-${prev.length}`, role: 'assistant', content: 'No pude leer ese documento. Acepto PDF, Word (.docx) o texto (.txt/.md) de hasta 10 MB.' },
+      ]);
+    } finally {
+      setAddingContext(false);
+    }
+  };
+
   const chatMessages: ChatMessage[] = composeConversation(review, transientDoubts);
 
-  const MODE_LABEL: Record<AssistantMode, string> = { answer: 'Responder', context: 'Agregar contexto', doubt: 'Tengo una duda' };
+  const MODE_LABEL: Record<AssistantMode, string> = { answer: 'Responder', context: 'Agregar contexto', doubt: 'Tengo una duda', refine: 'Refinar sección' };
   const MODE_PLACEHOLDER: Record<AssistantMode, string> = {
     answer: 'Escribe tu respuesta (o "no lo sé aún")…',
     context: 'Cuéntame qué falta: restricciones, recursos, alcance…',
     doubt: 'Pregúntame sobre el análisis o la ruta…',
+    refine: focusedSection ? `¿Cómo mejoro «${SECTION_LABEL_UI[focusedSection]}»?` : 'Elige una sección con "Refinar"…',
   };
+  // El modo 'refine' solo aparece cuando hay una sección enfocada (estado del harness).
+  const availableModes: AssistantMode[] = focusedSection ? ['refine', 'answer', 'context', 'doubt'] : ['answer', 'context', 'doubt'];
   const modeToolbar = (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Modo de mensaje">
-      {(['answer', 'context', 'doubt'] as AssistantMode[]).map((m) => {
+    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Modo de mensaje">
+      {focusedSection && (
+        <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">
+          Refinando: {SECTION_LABEL_UI[focusedSection]}
+          <button type="button" data-testid="refine-cancel" onClick={() => { setFocusedSection(null); setChatMode(null); }} aria-label="Cancelar refinamiento" className="ml-0.5 text-indigo-500 hover:text-indigo-800">✕</button>
+        </span>
+      )}
+      {availableModes.map((m) => {
         const disabledMode = m === 'answer' && !agenda.activeQuestion;
         const active = effectiveMode === m;
         return (
@@ -263,11 +321,11 @@ export function InitiativeReviewResultPage() {
   const snapshotColumn = (
     <>
       <div className="grid gap-4">
-        <UnderstandingSummaryCard snapshot={snapshot} highlighted={highlighted.includes('understanding')} />
-        <ChallengeTypeCard snapshot={snapshot} highlighted={highlighted.includes('challengeType')} />
-        <CritiqueCard snapshot={snapshot} highlighted={highlighted.includes('critique')} />
+        <UnderstandingSummaryCard snapshot={snapshot} highlighted={highlighted.includes('understanding')} onRefine={onRefineSection} isFocused={focusedSection === 'understanding'} />
+        <ChallengeTypeCard snapshot={snapshot} highlighted={highlighted.includes('challengeType')} onRefine={onRefineSection} isFocused={focusedSection === 'challengeType'} />
+        <CritiqueCard snapshot={snapshot} highlighted={highlighted.includes('critique')} onRefine={onRefineSection} isFocused={focusedSection === 'critique'} />
         <QuestionsCard snapshot={snapshot} answeringQuestionId={answeringQuestionId} onAnswer={onAnswerQuestion} highlighted={highlighted.includes('questions')} />
-        <ImprovedProposalCard snapshot={snapshot} highlighted={highlighted.includes('improvedProposal')} />
+        <ImprovedProposalCard snapshot={snapshot} highlighted={highlighted.includes('improvedProposal')} onRefine={onRefineSection} isFocused={focusedSection === 'improvedProposal'} />
         <RoutePreviewCard snapshot={snapshot} highlighted={highlighted.includes('routePreview')} />
       </div>
 
@@ -359,13 +417,12 @@ export function InitiativeReviewResultPage() {
     );
   }
 
-  // Flag ON (ADR-026): iniciativa a la izquierda, asistente a la derecha. En <1024px la
-  // columna del asistente se apila debajo (bottom-sheet) con altura propia.
+  // Flag ON (ADR-026): asistente a la IZQUIERDA, iniciativa a la derecha. En <1024px el
+  // chat se apila arriba y la iniciativa debajo (orden del DOM = orden del stack).
   return (
     <div className="mx-auto max-w-6xl p-6 md:p-8">
       {heading}
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
-        <div className="min-w-0">{snapshotColumn}</div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(340px,400px)_minmax(0,1fr)]">
         <div className="h-[70vh] lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
           <AssistantPanel
             messages={chatMessages}
@@ -374,23 +431,27 @@ export function InitiativeReviewResultPage() {
             placeholder={MODE_PLACEHOLDER[effectiveMode]}
             toolbar={modeToolbar}
             footer={
-              <button
-                type="button"
-                data-testid="chat-confirm-route"
-                onClick={() => {
-                  trackInitialReviewEvent('chat_confirm_route', { reviewId });
-                  onConfirm();
-                }}
-                disabled={confirming}
-                className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${
-                  agenda.ready ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500/80 hover:bg-emerald-600'
-                }`}
-              >
-                {confirming ? 'Creando tu iniciativa...' : agenda.ready ? 'Confirmar ruta y empezar' : 'Confirmar ruta (o sigue completando)'}
-              </button>
+              <div className="grid gap-2">
+                <ReviewDocumentDropzone onUpload={onDocumentUpload} busy={addingContext} />
+                <button
+                  type="button"
+                  data-testid="chat-confirm-route"
+                  onClick={() => {
+                    trackInitialReviewEvent('chat_confirm_route', { reviewId });
+                    onConfirm();
+                  }}
+                  disabled={confirming}
+                  className={`w-full rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${
+                    agenda.ready ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500/80 hover:bg-emerald-600'
+                  }`}
+                >
+                  {confirming ? 'Creando tu iniciativa...' : agenda.ready ? 'Confirmar ruta y empezar' : 'Confirmar ruta (o sigue completando)'}
+                </button>
+              </div>
             }
           />
         </div>
+        <div className="min-w-0">{snapshotColumn}</div>
       </div>
     </div>
   );

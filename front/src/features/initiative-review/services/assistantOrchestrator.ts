@@ -10,7 +10,7 @@ import type { InitiativeReview, ChatEvent, SnapshotSectionId } from './initiativ
 import type { ChatMessage } from '../components/chat/AssistantPanel';
 import { answerDoubt, FAQ_FALLBACK } from './assistantFaq';
 
-export type AssistantMode = 'answer' | 'context' | 'doubt';
+export type AssistantMode = 'answer' | 'context' | 'doubt' | 'refine';
 
 export interface StrategicQ {
   id: string;
@@ -34,7 +34,7 @@ export interface Agenda {
 /** Faltantes canónicos del PRD cuando el readiness no es alto. */
 const PRD_MISSING = ['aprobaciones internas', 'recursos disponibles', 'criterios de escalamiento'];
 
-const SECTION_LABEL: Record<SnapshotSectionId, string> = {
+export const SECTION_LABEL: Record<SnapshotSectionId, string> = {
   understanding: 'Lo que Starteria entendió',
   challengeType: 'Tipo de reto',
   critique: 'Mirada crítica',
@@ -80,13 +80,23 @@ export type OrchestratorAction =
   | { type: 'answer'; questionId: string; answer: string }
   | { type: 'answer_unknown'; questionId: string }
   | { type: 'context'; text: string }
+  | { type: 'refine_section'; sectionId: SnapshotSectionId; text: string }
   | { type: 'doubt'; question: string; answer: string };
 
 /**
  * Transición pura de un turno del usuario. Dado el modo, la agenda y el texto, decide qué
  * acción ejecutar. No produce efectos: la página traduce la acción a una llamada del client.
+ * `focusedSection` (ADR-026 v2) activa el refinamiento de esa sección cuando el modo es 'refine'.
  */
-export function nextAction(mode: AssistantMode, agenda: Agenda, text: string): OrchestratorAction {
+export function nextAction(
+  mode: AssistantMode,
+  agenda: Agenda,
+  text: string,
+  focusedSection?: SnapshotSectionId | null,
+): OrchestratorAction {
+  if (mode === 'refine' && focusedSection) {
+    return { type: 'refine_section', sectionId: focusedSection, text };
+  }
   if (mode === 'doubt') {
     return { type: 'doubt', question: text, answer: answerDoubt(text) ?? FAQ_FALLBACK };
   }
@@ -96,8 +106,13 @@ export function nextAction(mode: AssistantMode, agenda: Agenda, text: string): O
     }
     return { type: 'answer', questionId: agenda.activeQuestion.id, answer: text };
   }
-  // 'context', o 'answer' sin pregunta activa → se trata como contexto.
+  // 'context', 'refine' sin sección, o 'answer' sin pregunta activa → se trata como contexto.
   return { type: 'context', text };
+}
+
+/** Etiqueta "Refinando: <sección>" para el banner del asistente (ADR-026 v2). */
+export function refiningLabel(sectionId: SnapshotSectionId): string {
+  return `Refinando: ${SECTION_LABEL[sectionId]}`;
 }
 
 /** Frase de anuncio de cambios (reutilizada por IRC-05 para el resaltado del panel). */
