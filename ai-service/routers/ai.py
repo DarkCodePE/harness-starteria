@@ -42,7 +42,9 @@ from schemas.requests import (
     ContextExtractRequest,
     ContextExtractFileRequest,
     InitialReviewRequest,
+    DiagnoseRequest,
 )
+from harness.trace import HarnessDecision
 from schemas.responses import (
     ErrorResponse,
     ExperimentAnalyzeResponse,
@@ -578,6 +580,47 @@ async def initial_review_endpoint(
         _handle_cost_error(exc)
     except Exception as exc:  # noqa: BLE001 — el backend degrada al mock
         logger.exception("initial-review error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),
+        ) from exc
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/diagnose  (ADR-027 — methodology harness, diagnostic-only)
+# ---------------------------------------------------------------------------
+
+@router.post("/diagnose", response_model=HarnessDecision)
+async def diagnose_endpoint(
+    body: DiagnoseRequest,
+    x_internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+) -> HarnessDecision:
+    """Run the methodology diagnostic pipeline and return the routing/confirmation decision
+    + audit trace, WITHOUT invoking a Step 0–4 agent. Powers the A/B eval and the frontend
+    confirm-loop cheaply."""
+    _verify_internal_token(x_internal_token)
+    from harness.harness import get_harness
+
+    harness = get_harness()
+    request_ref = {
+        "payload": {
+            "originalInput": body.originalInput,
+            "projectId": body.projectId,
+        },
+        "companyContext": body.companyContext,
+        "addedContext": body.addedContext,
+    }
+    try:
+        return await run_in_threadpool(
+            harness.diagnose,
+            request_ref,
+            raw_input=body.originalInput,
+            project_id=body.projectId or "unknown",
+        )
+    except CostLimitExceededError as exc:
+        _handle_cost_error(exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("diagnose error: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=ErrorResponse(error=str(exc), code="SERVICE_UNAVAILABLE").model_dump(),

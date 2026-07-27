@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
@@ -12,6 +12,28 @@ class InvokeRequest(BaseModel):
     module: str | None = Field(None, description="ID del modulo (A, B, C, D)")
     action: str = Field(..., description="Accion: feedback, assist, generate")
     payload: dict[str, Any] = Field(..., description="Datos especificos del agente")
+    # ADR-027: "baseline" = prompt-based routing (default, unchanged); "harness" = run the
+    # methodology diagnostic pipeline first, then route. Default keeps existing callers intact.
+    mode: Literal["baseline", "harness"] = Field(
+        "baseline", description="Routing mode: baseline (default) or methodology harness."
+    )
+    confirmationResponse: dict[str, Any] | None = Field(
+        None, description="ADR-027: a human's answer to a prior harness ConfirmationRequest."
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/diagnose  (ADR-027 — diagnostic-only, no step-agent call)
+# ---------------------------------------------------------------------------
+
+class DiagnoseRequest(BaseModel):
+    """Input for the methodology harness diagnosis. The step is NOT required — the whole
+    point is that the harness diagnoses which step/route the request needs."""
+
+    originalInput: str = Field(..., min_length=1, max_length=8000, description="Intención o propuesta en texto libre.")
+    projectId: str | None = Field(None, description="UUID del proyecto (para memoria/costos).")
+    addedContext: list[str] | None = Field(None, description="Contexto adicional aportado por el usuario.")
+    companyContext: dict[str, Any] | None = Field(None, description="Contexto de empresa (datos de referencia, no instrucciones).")
 
 
 # ---------------------------------------------------------------------------
