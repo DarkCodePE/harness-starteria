@@ -15,6 +15,13 @@ START_CMD="npm run dev:all"
 echo "==> Working directory: $PWD"
 echo "==> App directory:     $APP_DIR"
 
+# Primitiva del harness de desarrollo: feature_list.json declara sus propias rules
+# (single_active_feature, passing_requires_evidence, scope_declared). Leer el archivo
+# no es verificarlo — esto lo verifica, y aborta antes de gastar un npm install si el
+# alcance está roto.
+echo "==> Validando feature_list.json contra sus rules"
+python3 "$ROOT_DIR/scripts/check-feature-list.py" "$ROOT_DIR/feature_list.json"
+
 echo "==> Syncing dependencies (front/)"
 ( cd "$APP_DIR" && $INSTALL_CMD )
 

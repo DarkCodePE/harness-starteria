@@ -193,3 +193,17 @@
 - Unit: 259 ai-service + 438 backend + 263 front verdes. Stack completo recompilado (backend+ai-service+frontend).
 - Issues: #136 (remoción legacy, abierto), #137/#138/#140 (cerrados/arreglados), #139 (cerrado no-bug). Commits: 7218d9f, ed0fd6b, 781c12c, 1a220fb.
 - **Épico initiative-review-chat COMPLETO: IRC-01..07 todos passing.**
+
+### Sesión 016 — ADR-027 registrado + el harness de desarrollo se vuelve ejecutable (2026-07-26)
+
+- **Contexto**: el trabajo de ADR-027 (harness metodológico del ai-service) estaba completo en disco pero **no registrado** en este tracker. Las menciones previas a "harness" en este archivo eran del harness OPERACIONAL del repo (`docs/templates/`), otra capa. Registrado ahora como épico `methodology-agent-harness (ADR-027)`: `MAH-01-harness-core` (passing), `MAH-02-orchestrator-wiring` (passing), `MAH-03-ab-eval` (in_progress, feature activa).
+- **Verificación ADR-027**: 41 tests del harness + suite ai-service completa **301 passed / 1 skipped**. La integración golpea `POST /ai/diagnose` real vía TestClient con la etapa LLM monkeypatcheada. Commit 342f92b.
+- **Gap medido de MAH-03** (no resuelto, registrado): con LLM real la clasificación multidimensional colapsa — `classification_accuracy` 1.0 con stub determinista, **0.0** con deepseek-v4-flash, 0.5 con minimax; `confidence_calibration` 0.0 en ambas corridas live. `routing_precision` sí mejora (0.6667 vs 0.0 del baseline). El caso `orden-compra` sobre-confirma en LAS DOS corridas live. Es el eje del que depende el diseño (modular `depth`/`route` en vez de saltar steps).
+- **Defecto encontrado en el harness de DESARROLLO** (el de este repo): `evaluator-rubric.md` puntuaba "Disciplina de alcance" pero ningún campo de `feature_list.json` declaraba la frontera — categoría infalsificable. Y `single_active_feature: true` estaba declarado en el header del propio archivo con **4 features `in_progress`**: una regla que nadie chequeaba.
+- **Fix**: `scope_out` + `deferred_to` en el schema; `scripts/check-feature-list.py` como primitiva, cableado en `./init.sh` ANTES de instalar nada, que **aborta** si se viola alguna regla. Reglas: `single_active_feature`, `passing_requires_evidence`, `scope_declared`, `blocked_requires_reason`, ids/prioridades únicas, status dentro del legend, `deferred_to` apunta a algo real.
+- **WIP = 1 formalizado**. `blocked` se redefine para cubrir el aparcado por límite de WIP (no solo impedimento externo) y exige `status_note` con qué la desbloquea. Las 3 features de #117/#104/#91 (mergeadas sin evidencia ejecutable) pasan de `in_progress` a `blocked` con acción concreta de desbloqueo. Se descartó un estado `awaiting_evidence` dedicado: añadía vocabulario sin añadir presión.
+- **Anti-estacionamiento**: el check imprime las aparcadas en CADA `./init.sh`, pase o no. `blocked` no puede ser más cómodo de lo que era `in_progress`.
+- `scope_out` se exige en `not_started`/`in_progress`, no en `blocked`: una aparcada se re-acota al despertarla, y el check lo fuerza en el momento de la promoción (verificado contra un archivo roto a propósito).
+- Propagado a `docs/templates/` (feature_list + init.sh) para que el próximo proyecto herede la primitiva; el template pasa su propio check. Rúbrica v2 y `CLAUDE.md` actualizados.
+- Estado final: **26 passing, 3 blocked, 1 in_progress** (`MAH-03-ab-eval`). Check verde en repo y template.
+- **Próximo**: atacar el gap de `MAH-03` — la clasificación multidimensional con LLM real. No tocar el orquestador baseline: es el brazo de control del A/B.

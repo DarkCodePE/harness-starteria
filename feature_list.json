@@ -1,15 +1,27 @@
 {
   "project": "Starteria (Dashboardstarteria)",
-  "last_updated": "2026-07-18",
+  "last_updated": "2026-07-26",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
-    "do_not_skip_verification": true
+    "do_not_skip_verification": true,
+    "scope_declared": true,
+    "blocked_requires_reason": true
+  },
+  "wip_limit": "1. Solo una feature puede estar in_progress. Para empezar otra hay que aparcar la actual en blocked con status_note. El check imprime las aparcadas en cada ./init.sh, pasen o no las reglas.",
+  "rules_enforced_by": "scripts/check-feature-list.py — lo corre ./init.sh antes de instalar nada y aborta si alguna regla se viola. Leer el archivo no es verificarlo.",
+  "field_contract": {
+    "user_visible_behavior": "Qué ve el usuario cuando la feature existe. Declara el ALCANCE INCLUIDO.",
+    "scope_out": "Qué queda explícitamente FUERA de esta feature. Obligatorio en not_started e in_progress. A una feature aparcada en blocked NO se le exige: se re-acota al despertarla. Sin este campo la categoría 'Disciplina de alcance' de evaluator-rubric.md es infalsificable.",
+    "status_note": "Obligatorio en blocked: por qué está aparcada y QUÉ la desbloquea, concreto y accionable.",
+    "deferred_to": "Dónde vive lo excluido: ids de otras features o issues (#N). Debe apuntar a algo real.",
+    "verification": "Comandos/pasos a ejecutar. Se declaran ANTES de trabajar.",
+    "evidence": "Salida real de haber ejecutado `verification`. Vacío hasta que se ejecute. Un PR mergeado NO cuenta."
   },
   "status_legend": {
     "not_started": "Work has not begun.",
-    "in_progress": "The feature is the current active task.",
-    "blocked": "Work cannot continue until a documented blocker is resolved.",
+    "in_progress": "The single active task. WIP limit is 1 — starting another means parking this one first.",
+    "blocked": "Parked: NOT done and NOT being worked. Covers both an external blocker and work parked to respect the WIP limit — including work that landed but whose executable verification was never captured (a merged PR is not evidence). Requires status_note saying what unparks it.",
     "passing": "Required verification has passed and evidence is recorded."
   },
   "reference_smoke_path": {
@@ -87,7 +99,8 @@
       "area": "steps",
       "title": "Step 1–4 arrancan vacíos para proyectos nuevos + hidratación de Step 1",
       "user_visible_behavior": "Al crear un proyecto nuevo, los Steps 1–4 no muestran datos de otro proyecto; Step 1 se hidrata desde lo persistido.",
-      "status": "in_progress",
+      "status": "blocked",
+      "status_note": "Aparcada por límite de WIP (no es la tarea activa). Desbloquea: escribir el test de regresión dedicado (Step 1–4 arrancan vacíos en proyecto nuevo + hidratación de Step 1), correr `cd front && npm test` y pegar la salida en evidence. El PR #117 mergeado NO es evidencia.",
       "verification": [
         "Crear un proyecto nuevo y abrir Step 1–4.",
         "Verificar que ningún campo aparece pre-rellenado con datos de otro proyecto.",
@@ -122,7 +135,8 @@
       "area": "portfolio-lead",
       "title": "Persistir mutaciones del provider portfolio-lead al backend",
       "user_visible_behavior": "Activación, squad y exec-outputs editados en /portfolio sobreviven a recargas y reinicios.",
-      "status": "in_progress",
+      "status": "blocked",
+      "status_note": "Aparcada por límite de WIP (no es la tarea activa). Desbloquea: test unit/e2e que edite activación/squad/exec-outputs en /portfolio, recargue y afirme persistencia; correrlo y pegar la salida en evidence. El PR #104 mergeado NO es evidencia.",
       "verification": [
         "Editar activación/squad/exec-outputs en /portfolio.",
         "Recargar y verificar persistencia.",
@@ -139,7 +153,8 @@
       "area": "projects",
       "title": "Validar nombre 3–200 al crear iniciativa para evitar 422",
       "user_visible_behavior": "El usuario recibe validación inline al nombrar un proyecto en vez de un error 422 del backend.",
-      "status": "in_progress",
+      "status": "blocked",
+      "status_note": "Aparcada por límite de WIP (no es la tarea activa). Desbloquea: test que cubra nombre <3 y >200 con validación inline y nombre válido sin 422 en /projects/new; correrlo y pegar la salida en evidence. El PR #91 mergeado NO es evidencia.",
       "verification": [
         "Abrir /projects/new.",
         "Probar nombres <3 y >200 caracteres y verificar validación inline.",
@@ -543,6 +558,88 @@
         "Nota: el smoke tiene flakiness residual de timing SPA (post-login/navegación) que el `retries:1` del playwright.config (CI) absorbe — verde estable con el retry, como lo diseñó el equipo. Requiere el env AUTH_DISABLE_WAITLIST + PDF_EXTRACT_STUB (docker-compose.override.yml local; para CI, setearlos en el pipeline)."
       ],
       "notes": "Épico del chat COMPLETO y verificado; IRC-07 VERDE: e2e conversacional + smoke de referencia pasan en la misma corrida (con el retry de CI). Root cause final del smoke: Step0Page no envolvía sus campos en AutofillField (los chips de autofill solo estaban en Step1) — wired step0.initiativeTitle. Además: extracción determinista (stub), bypass de waitlist, y fix de navegación. Para CI: exportar AUTH_DISABLE_WAITLIST=true y PDF_EXTRACT_STUB=true. Commits: 7218d9f, ed0fd6b, 781c12c, 1a220fb. Ver e2e-waitlist-blocks-suite."
+    },
+    {
+      "id": "MAH-01-harness-core",
+      "priority": 27,
+      "epic": "methodology-agent-harness (ADR-027)",
+      "area": "ai-service",
+      "title": "Núcleo del harness metodológico: contratos, máquina de estados, gates y estatus epistémico",
+      "user_visible_behavior": "Ninguno directo todavía (capa interna). Habilita que el servicio clasifique explícitamente qué trabajo necesita una petición (route/depth/challenge_type/step) en vez de rutear por prompt.",
+      "scope_out": [
+        "Cualquier consumo del harness desde el orquestador o la API — vive en MAH-02",
+        "Medir cómo se comporta el contrato con un LLM real — vive en MAH-03",
+        "Tocar el pipeline deepagents existente: esta feature solo AÑADE módulos"
+      ],
+      "deferred_to": ["MAH-02-orchestrator-wiring", "MAH-03-ab-eval"],
+      "status": "passing",
+      "verification": [
+        "cd ai-service && .venv/bin/python -m pytest tests/test_harness_*.py -q",
+        "cd ai-service && .venv/bin/python -m pytest -q (suite completa, sin regresiones)"
+      ],
+      "evidence": [
+        "41 passed en 1.35s — test_harness_config (4), test_harness_driver (4), test_harness_epistemic (6), test_harness_eval_runner (6), test_harness_gates (7), test_harness_integration (6), test_harness_stages (3), test_harness_state_machine (5).",
+        "Suite completa ai-service: 301 passed, 1 skipped en 2.12s (sin regresiones por el harness).",
+        "Contrato en ai-service/harness/contracts.py: Route (6 valores, incl. reconstruct_existing), Depth (light|standard|systemic), ChallengeType, Uncertainty, Horizon, Confidence, RouteProfile.",
+        "Módulos: contracts, state_machine, gates, epistemic, driver, harness, llm, prompts, trace, config_loader, config_models + stages/ y config/."
+      ],
+      "notes": "ADR-027 (backend/docs/adr/ADR-027-methodology-agent-harness.md). Los steps NO se saltan: se modula depth. La corrida determinista da 1.0 en las 6 métricas; el comportamiento con LLM real se mide en MAH-03."
+    },
+    {
+      "id": "MAH-02-orchestrator-wiring",
+      "priority": 28,
+      "epic": "methodology-agent-harness (ADR-027)",
+      "area": "ai-service",
+      "title": "Cableado del harness al orquestador (mode=\"harness\") + endpoint POST /ai/diagnose",
+      "user_visible_behavior": "Con mode=\"harness\", una petición ambigua devuelve una confirmación en vez de invocar un agente Step 0–4; con diagnóstico suficiente, rutea al agente elegido por el harness.",
+      "scope_out": [
+        "Consumo de /ai/diagnose desde cualquier cliente frontend — SIN ticket todavía",
+        "E2E con LLM en vivo: la evidencia de esta feature es hermética por diseño (etapa LLM monkeypatcheada)",
+        "Cambiar el default: mode=\"baseline\" sigue siendo el comportamiento por defecto y no se toca",
+        "La calidad del diagnóstico que devuelve el endpoint — eso lo mide MAH-03, no esta feature"
+      ],
+      "deferred_to": ["MAH-03-ab-eval"],
+      "status": "passing",
+      "verification": [
+        "cd ai-service && .venv/bin/python -m pytest tests/test_harness_integration.py -q (endpoint real vía TestClient, etapa LLM monkeypatcheada: hermético, sin red)",
+        "cd ai-service && .venv/bin/python -m pytest -q (suite completa)"
+      ],
+      "evidence": [
+        "6 passed en test_harness_integration.py — POST /api/v1/ai/diagnose responde 200 con kind=route|confirm|escalate y traza de auditoría.",
+        "routers/ai.py +43: endpoint /diagnose (diagnóstico puro, NO invoca agente Step 0–4; protegido por X-Internal-Token, run_in_threadpool).",
+        "agents/orchestrator.py +86: invoke() bifurca por mode; mode=\"baseline\" (default) deja el pipeline deepagents INTACTO; invoke_harnessed() diagnostica y solo invoca el agente Step si kind==route (en confirm/escalate se ahorra el costo del agente).",
+        "schemas/requests.py +24: DiagnoseRequest + campo mode en InvokeRequest.",
+        "Presupuesto respetado: _cost_tracker.check_project_daily_budget + check_request_cost antes de diagnosticar."
+      ],
+      "notes": "Backward-compatible por diseño: sin mode=\"harness\" el comportamiento actual no cambia. Falta: ningún cliente frontend consume /ai/diagnose todavía, y no hay e2e con LLM en vivo (la evidencia integración es hermética)."
+    },
+    {
+      "id": "MAH-03-ab-eval",
+      "priority": 29,
+      "epic": "methodology-agent-harness (ADR-027)",
+      "area": "ai-service",
+      "title": "Suite A/B de evaluación (harness vs baseline) sobre casos golden de la taxonomía §21",
+      "user_visible_behavior": "Ninguno directo. Es el instrumento que mide si el harness mejora el ruteo respecto al orquestador crudo.",
+      "scope_out": [
+        "Arreglar el orquestador baseline: es el BRAZO DE CONTROL del A/B, se deja tal cual",
+        "Ampliar el dataset más allá de los 12 casos golden de la taxonomía §21",
+        "Correr el scorecard en CI: hoy es manual y así se queda en esta feature",
+        "Cambiar el default a mode=\"harness\" en producción — decisión posterior a tener los números"
+      ],
+      "status": "in_progress",
+      "status_note": "Determinista en verde; degrada con LLM real — la clasificación multidimensional no sobrevive.",
+      "verification": [
+        "Correr el runner A/B en modo determinista (stub) sobre los 12 casos golden.",
+        "Correr el runner A/B en modo live contra el modelo configurado.",
+        "PENDIENTE: alcanzar classification_accuracy y confidence_calibration aceptables en live (hoy 0.0)."
+      ],
+      "evidence": [
+        "Determinista n=12 (scorecard.md): harness 1.0 en routing_precision, gate_compliance, classification_accuracy y confidence_calibration; next_action_quality 10.0 vs baseline 5.9. Baseline routing 0.1667.",
+        "Live n=6 con deepseek-v4-flash (scorecard.live.md): routing 0.6667 (baseline 0.0), gate 0.6667, next_action 8.6667 vs 5.2333 — pero classification_accuracy 0.0 y confidence_calibration 0.0.",
+        "Live n=6 con minimax (scorecard.minimax.md): routing 0.6667, classification_accuracy 0.5, confidence_calibration 0.0.",
+        "Casos que fallan en live: orden-compra (falla en LAS DOS corridas live: espera route:research-assistant, devuelve confirm → sobre-confirmación), piloto-reconstruct (falla solo en deepseek) y solucion-disfrazada (falla solo en minimax: devuelve escalate)."
+      ],
+      "notes": "GAP PRINCIPAL DEL ÉPICO: el eje en el que se apoya el diseño (modular depth/route en vez de saltar steps) es justo el que colapsa con LLM real — classification_accuracy 0.0 live vs 1.0 con stub. La sobre-confirmación de orden-compra es probablemente síntoma del mismo problema (diagnóstico vacío o de baja confianza → el gate pide confirmar). Dataset: ai-service/harness/eval/dataset.py (12 casos, taxonomía §21). Ver methodology-agent-harness."
     }
   ]
 }
