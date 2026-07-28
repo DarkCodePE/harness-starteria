@@ -218,17 +218,91 @@ class OrchestratorAgent:
         self._orchestrator = get_orchestrator()
 
     async def invoke(self, request: InvokeRequest) -> InvokeResponse:
-        """Process an InvokeRequest through the deepagents orchestration pipeline.
+        """Process an InvokeRequest.
 
-        Args:
-            request: Validated InvokeRequest from the router.
-
-        Returns:
-            InvokeResponse with data, agent, model, tokensUsed, latencyMs.
+        mode="baseline" (default) → the existing prompt-based deepagents routing, unchanged.
+        mode="harness" (ADR-027) → run the methodology diagnostic pipeline first, then route.
 
         Raises:
             CostLimitExceededError: If cost ceilings are exceeded.
         """
+        if getattr(request, "mode", "baseline") == "harness":
+            return await self.invoke_harnessed(request)
+        return await self._run_deepagent(request)
+
+    async def invoke_harnessed(self, request: InvokeRequest) -> InvokeResponse:
+        """ADR-027 path: diagnose the request, then route (or ask for confirmation).
+
+        On a ``route`` decision the chosen Step agent is invoked via the existing deepagents
+        pipeline with the harness-selected agentHint. On ``confirm``/``escalate`` NO step agent
+        is invoked (cost saved) — the confirmation/escalation + trace are returned directly.
+        """
+        # Lazy import keeps package import cheap and avoids a hard dep at module load.
+        from harness.harness import get_harness
+
+        start = time.monotonic()
+        project_id: str = request.payload.get("projectId", "unknown")  # type: ignore[union-attr]
+        _cost_tracker.check_project_daily_budget(project_id)
+        _cost_tracker.check_request_cost(agent_id=request.agentHint or "methodology-harness")
+
+        harness = get_harness()
+        request_ref = {
+            "step": request.step,
+            "module": request.module,
+            "action": request.action,
+            "agentHint": request.agentHint,
+            "payload": request.payload,
+            "companyContext": request.payload.get("companyContext"),
+            "addedContext": request.payload.get("addedContext"),
+            "confirmationResponse": request.confirmationResponse,
+        }
+        raw_input = str(
+            request.payload.get("originalInput")
+            or request.payload.get("descripcion")
+            or request.payload.get("description")
+            or ""
+        )
+        decision = harness.diagnose(request_ref, raw_input=raw_input, project_id=project_id)
+
+        diagnosis_payload = {
+            "kind": decision.kind,
+            "route_profile": decision.route_profile.model_dump() if decision.route_profile else None,
+            "method_pack_id": decision.method_pack_id,
+            "gate": decision.gate.model_dump(),
+            "confirmation": decision.confirmation.model_dump() if decision.confirmation else None,
+            "trace": decision.trace.model_dump(mode="json"),
+        }
+
+        if decision.kind == "route":
+            routed = request.model_copy(
+                update={
+                    "mode": "baseline",
+                    "agentHint": decision.target_agent,
+                    "step": decision.route_profile.step if decision.route_profile else request.step,
+                }
+            )
+            resp = await self._run_deepagent(routed)
+            data = dict(resp.data) if isinstance(resp.data, dict) else {"response": resp.data}
+            data["_diagnosis"] = diagnosis_payload
+            return InvokeResponse(
+                data=data,
+                agent=f"harness→{decision.target_agent}",
+                model=resp.model,
+                tokensUsed=resp.tokensUsed,
+                latencyMs=int((time.monotonic() - start) * 1000),
+            )
+
+        # confirm / escalate → return without invoking a step agent.
+        return InvokeResponse(
+            data=diagnosis_payload,
+            agent="methodology-harness",
+            model=harness._model_id(),  # noqa: SLF001 — model id for audit surface
+            tokensUsed=0,
+            latencyMs=int((time.monotonic() - start) * 1000),
+        )
+
+    async def _run_deepagent(self, request: InvokeRequest) -> InvokeResponse:
+        """The baseline prompt-based deepagents orchestration (unchanged behavior)."""
         start = time.monotonic()
         project_id: str = request.payload.get("projectId", "unknown")  # type: ignore[union-attr]
 

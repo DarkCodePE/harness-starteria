@@ -15,6 +15,8 @@ dependencies = [
     "pydantic-settings>=2.3",
     "httpx>=0.27",
     "python-dotenv>=1.0",
+    # ADR-027: methodology harness config is loaded from harness/config/methodology.yaml.
+    "pyyaml>=6.0",
     # TASK-008 (pdf_extractor): PDF parsing dependencies.
     "pypdf>=4.0",
     "pdfplumber>=0.11",
@@ -50,7 +52,7 @@ markers = [
 [tool.coverage.run]
 # `middleware/` does not exist yet; remove it from source to avoid skewing the metric.
 # When it is created, add it back to this list.
-source = ["agents", "routers", "services", "schemas", "tools", "prompts"]
+source = ["agents", "routers", "services", "schemas", "tools", "prompts", "harness"]
 omit = ["tests/*", ".venv/*"]
 
 [tool.coverage.report]

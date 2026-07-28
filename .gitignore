@@ -57,3 +57,21 @@ langsmith-skills/
 backend/storage/
 storage/
 docker-compose.override.yml
+
+# Clones de terceros que viven dentro del worktree (cada uno con su propio .git y
+# su remoto; nada de esto es código de este repo). Sin ignorar aparecían como
+# untracked y sumaban ~1.6 GB que un `git add -A` habría metido como gitlinks rotos.
+/OpenWA/
+/impeccable/
+/codebase-memory-mcp/
+/taste-skill/
+/nano-banana-pro-prompts-recommend-skill/
+
+# Capturas y grabaciones sueltas de trabajo (ver `image copy.png` y `k8s/image.png`).
+/image.png
+/image copy *.png
+/project/prompts/v1/*.png
+Screencast*.webm
+
+# Config local de herramientas de agente.
+/.serena/

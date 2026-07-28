@@ -226,7 +226,13 @@ está bloqueada.
 
 ### Reglas
 
-- Una característica activa a la vez.
+- **WIP = 1.** Una sola feature `in_progress`. `./init.sh` lo verifica y **aborta** si hay más
+  (`scripts/check-feature-list.py`). Para empezar otra, aparca la actual en `blocked` con `status_note`
+  diciendo qué la desbloquea. Si una feature aterrizó pero nunca capturaste su verificación, va a `blocked`,
+  no a `in_progress`: un PR mergeado no es evidencia. El check lista las aparcadas en cada corrida.
+- Antes de empezar una feature, declara su `scope_out` (qué queda FUERA) y `deferred_to` (dónde vive lo
+  excluido). Sin `scope_out` la feature no arranca: el check aborta. Es el campo contra el que
+  `evaluator-rubric.md` puntúa "Disciplina de alcance".
 - No afirmes completación sin evidencia ejecutable.
 - No reescribas la lista de características para ocultar trabajo inacabado.
 - No elimines ni debilites tests solo para hacer que la tarea parezca completa.
