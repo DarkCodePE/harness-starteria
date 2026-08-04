@@ -174,6 +174,7 @@ const INITIATIVE_META_EDITABLE = [
   'mentor', 'sponsorTouchpoint', 'mainAlert', 'nextActionRecommended', 'attackedArea',
   'hypothesisCovered', 'mainMetric', 'signalSummary', 'mainBlocker', 'executiveSummary',
   'experimentSummary', 'aiCommentSummary', 'mentorCommentSummary', 'decisionRecommendationReason',
+  'progressSignal', 'challengeContribution',
 ] as const;
 const INITIATIVE_META_BOOL = [
   'requiresSponsor', 'readyForDecision', 'requiresExternalCapability', 'partialSignal', 'resolvedCorePart',
@@ -234,5 +235,8 @@ export function adaptInitiative(raw: Raw): Initiative {
     mentorCommentSummary: raw.mentorCommentSummary ?? '',
     decisionRecommendationReason: raw.decisionRecommendationReason ?? '',
     stepsTimeline: Array.isArray(raw.stepsTimeline) ? raw.stepsTimeline : [],
+    progressSignal: raw.progressSignal ?? project.step0Data?.adaptiveCore?.progressSignal ?? undefined,
+    challengeContribution: raw.challengeContribution ?? project.step0Data?.adaptiveCore?.challengeContribution ?? undefined,
+    adaptationEvents: Array.isArray(raw.adaptationEvents) ? raw.adaptationEvents : [],
   };
 }

@@ -348,10 +348,13 @@ export class PortfolioService {
   }
 
   async getInitiativeMeta(projectId: string) {
-    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { adaptiveProgressSignal: true },
+    });
     if (!project) throw AppError.notFound('Proyecto', 'PROJECT_NOT_FOUND', { hint: 'Verifica el ID o vuelve al listado.' });
 
-    return this.prisma.initiativePortfolioMeta.findFirst({
+    const meta = await this.prisma.initiativePortfolioMeta.findFirst({
       where: { projectId },
       include: {
         challenge: {
@@ -367,6 +370,15 @@ export class PortfolioService {
         },
       },
     });
+    const adaptiveCore = (project.step0Data as any)?.adaptiveCore;
+    const progressSignal = project.adaptiveProgressSignal?.signalJson ?? adaptiveCore?.progressSignal;
+    return meta
+      ? {
+          ...meta,
+          progressSignal,
+          challengeContribution: adaptiveCore?.challengeContribution,
+        }
+      : meta;
   }
 
   async upsertInitiativeMeta(

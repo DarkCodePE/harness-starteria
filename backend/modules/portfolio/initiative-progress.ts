@@ -38,6 +38,13 @@ export function deriveInitiativePortfolioStatus(
   return 'en_step_4';
 }
 
+function deriveAdaptivePortfolioStatus(signalJson: unknown): ProgressionStatus | null {
+  if (!signalJson || typeof signalJson !== 'object') return null;
+  const step = Number((signalJson as { step?: unknown }).step);
+  if (!Number.isInteger(step) || step < 0 || step > 4) return null;
+  return `en_step_${step}` as ProgressionStatus;
+}
+
 /**
  * Issue #113 (ADR-023) — derive the team cache for the dashboard from the iniciativa's
  * resolved TeamMember roster (inherited members + manual overrides). Best-effort: on any
@@ -105,11 +112,14 @@ export async function syncInitiativeProgress(
       select: {
         step0Status: true,
         steps: { select: { number: true, status: true } },
+        adaptiveProgressSignal: { select: { signalJson: true } },
       },
     });
     if (!project) return;
 
-    const derived = deriveInitiativePortfolioStatus(
+    const derived = deriveAdaptivePortfolioStatus(
+      (project as { adaptiveProgressSignal?: { signalJson: unknown } }).adaptiveProgressSignal?.signalJson,
+    ) ?? deriveInitiativePortfolioStatus(
       project.step0Status as unknown as string,
       project.steps as unknown as { number: number; status: string }[],
     );

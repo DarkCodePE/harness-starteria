@@ -25,8 +25,9 @@ import { Step1ResearchModuleV2 } from '../components/step1-research-v2/Step1Rese
 import { buildInitialResearchV2State, buildResearchFrontSuggestions, buildResearchObjective } from '../components/step1-research-v2/researchObjectiveBuilder';
 import { ResearchModuleAContext, Step1ResearchModuleV2State } from '../components/step1-research-v2/step1ResearchV2.types';
 import { Step1CaptureLegacyRestrictions, Step1CaptureLegacySynthesis, Step1CaptureLegacyValidation, Step1ModuleId } from '../components/step1-architecture/step1Architecture.types';
+import { confirmAdaptiveCheckpoint, confirmStep1Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
-type ModuleId = Step1ModuleId;
+type ModuleId = Step1ModuleId | 'D' | 'S';
 
 interface ModuleASISData {
   casoReal: string;
@@ -235,6 +236,8 @@ export function Step1Page() {
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [fichaCopyMsg, setFichaCopyMsg] = useState(false);
   const [showMentorOptions, setShowMentorOptions] = useState(false);
+  const [adaptiveStep1Saving, setAdaptiveStep1Saving] = useState(false);
+  const [adaptiveStep1Error, setAdaptiveStep1Error] = useState<string | null>(null);
 
   const [iaLoadingB, setIaLoadingB] = useState(false);
   const [expandedTemaId, setExpandedTemaId] = useState<string | null>(null);
@@ -775,6 +778,84 @@ export function Step1Page() {
     }
   };
 
+  const confirmAdaptiveStep1 = async () => {
+    if (!projectId) return;
+    setAdaptiveStep1Saving(true);
+    setAdaptiveStep1Error(null);
+    try {
+      const baseKey = `step1-adaptive-${projectId}`;
+      const mainHypothesis = bData.researchV2.objective.draft || sintesisData.resumen || lecturaConsolidada;
+      await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${baseKey}-cp11`,
+        checkpointKey: 'CP-1.1',
+        responses: {
+          mainHypothesis,
+          criticalAssumption: asisData.causaInmediata || 'Supuesto critico pendiente de profundizar.',
+          learningQuestion: bData.researchV2.fronts[0]?.learningGoal || 'Que evidencia confirma el foco priorizado?',
+          riskOfBeingWrong: asisData.consecuencia || 'Avanzar con un foco poco sustentado.',
+          dependentDecision: sintesisData.pivotCheck || 'Definir apuesta de Step 2.',
+        },
+      });
+      await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${baseKey}-cp12`,
+        checkpointKey: 'CP-1.2',
+        responses: {
+          methods: bData.researchV2.fronts.map(front => front.sourceMode).filter(Boolean),
+          sourcesAndActors: bData.researchV2.fronts.flatMap(front => front.sources.filter(source => front.selectedSourceIds.includes(source.id)).map(source => source.label)),
+          responsibleAndDates: cData.dependenciaDueno || actoresProceso || 'Owner de iniciativa',
+          expectedEvidenceAndSufficiency: bData.researchV2.fronts.map(front => front.learningGoal).filter(Boolean).join('\n') || 'Evidencia suficiente para decidir foco.',
+        },
+      });
+      const evidenceItems = [
+        ...evidenciasA.map(item => ({
+          id: item.id,
+          type: item.tipo || 'observacion',
+          summary: item.desc || item.fuente,
+          classification: 'weak_signal',
+          sourceRefs: [item.fuente || item.id],
+        })),
+        ...captureSynthesisData.evidences.map((item: any, index: number) => ({
+          id: String(item.id ?? `capture-${index + 1}`),
+          type: String(item.type ?? item.tipo ?? 'document'),
+          summary: String(item.summary ?? item.name ?? item.nombre ?? item.finding ?? 'Evidencia capturada'),
+          classification: String(item.classification ?? 'supports'),
+          sourceRefs: Array.isArray(item.sourceRefs) ? item.sourceRefs : [String(item.sourceRef ?? item.id ?? `capture-${index + 1}`)],
+        })),
+      ].filter(item => item.summary.trim().length > 0);
+      await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${baseKey}-cp13`,
+        checkpointKey: 'CP-1.3',
+        responses: {
+          evidenceItems: evidenceItems.length > 0 ? evidenceItems : [{ id: 'step1-ui-summary', summary: lecturaConsolidada, classification: 'context', sourceRefs: ['step1-ui'] }],
+          evidenceClassifications: evidenceItems.map(item => item.classification),
+          sourceRefs: evidenceItems.flatMap(item => item.sourceRefs),
+        },
+      });
+      const core = await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${baseKey}-cp14`,
+        checkpointKey: 'CP-1.4',
+        responses: {
+          synthesis: captureSynthesisData.finalSummary || sintesisData.resumen || lecturaConsolidada,
+          updatedFocusAndHypothesis: dData.nuevaVersionReto || mainHypothesis,
+          continuityDecision: sintesisData.pivotCheck || 'avanzar_con_observaciones',
+        },
+      });
+      const draft = (core.stepOutputs ?? []).find((output: any) => output.step === 1 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
+      if (draft?.output) {
+        await confirmStep1Output(projectId, {
+          idempotencyKey: `${baseKey}-confirm-${draft.id ?? 'draft'}`,
+          brief: draft.output,
+          confirmed: true,
+        });
+      }
+      await getAdaptiveCore(projectId);
+    } catch (err: any) {
+      setAdaptiveStep1Error(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el Step 1 adaptativo.');
+    } finally {
+      setAdaptiveStep1Saving(false);
+    }
+  };
+
   const registerMentorOutcome = (result: 'Aprobado' | 'Iterar') => {
     if (!step?.mentorSession) return;
 
@@ -789,6 +870,9 @@ export function Step1Page() {
       },
       result === 'Aprobado' ? 'Aprobado' : 'Ajustado',
     );
+    if (result === 'Aprobado') {
+      void confirmAdaptiveStep1();
+    }
     setShowSendModal(false);
     setShowSessionModal(false);
   };
@@ -2957,6 +3041,17 @@ export function Step1Page() {
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                   <p className="text-xs text-emerald-800" style={{ fontWeight: 700 }}>Step 1 aprobado por mentor</p>
                   <p className="text-sm text-emerald-700 mt-1">La IA y el mentor ya validaron el cierre del Step 1. El siguiente step queda habilitado para continuar.</p>
+                </div>
+              )}
+
+              {(adaptiveStep1Saving || adaptiveStep1Error) && (
+                <div className={`rounded-xl border p-4 ${adaptiveStep1Error ? 'border-red-200 bg-red-50' : 'border-indigo-200 bg-indigo-50'}`}>
+                  <p className={`text-xs ${adaptiveStep1Error ? 'text-red-800' : 'text-indigo-800'}`} style={{ fontWeight: 700 }}>
+                    {adaptiveStep1Error ? 'Persistencia adaptativa pendiente' : 'Confirmando Step 1 adaptativo'}
+                  </p>
+                  <p className={`mt-1 text-sm ${adaptiveStep1Error ? 'text-red-700' : 'text-indigo-700'}`}>
+                    {adaptiveStep1Error ?? 'Guardando output confirmado, configurando Step 2 y actualizando la senal de Portfolio Lead.'}
+                  </p>
                 </div>
               )}
             </div>

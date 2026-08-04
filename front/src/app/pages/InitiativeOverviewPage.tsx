@@ -13,6 +13,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { getById } from '../services/projectService';
 import { trackInitialReviewEvent } from '../../features/initiative-review/services/initialReviewTelemetry';
+import { ensureAdaptiveCoreForProject, getActiveStepConfiguration } from '../../features/adaptive-core/domain/adaptiveCore';
+import { getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 const ROUTE_STEPS = [
   { n: 0, name: 'Ordenar contexto' },
@@ -32,6 +34,7 @@ export function InitiativeOverviewPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState<any | null>(null);
+  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInitialReview, setShowInitialReview] = useState(false);
@@ -44,9 +47,10 @@ export function InitiativeOverviewPage() {
         const p = await getById(projectId);
         if (!cancelled) {
           setProject(p);
+          const snapshotId = typeof p?.initialReviewSnapshotId === 'string' ? p.initialReviewSnapshotId : undefined;
           trackInitialReviewEvent('initiative_overview_opened', {
             initiativeId: projectId,
-            snapshotId: p?.initialReviewSnapshotId,
+            snapshotId,
           });
         }
       } catch {
@@ -60,6 +64,21 @@ export function InitiativeOverviewPage() {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!projectId || !project) return;
+    getAdaptiveCore(projectId)
+      .then(core => {
+        if (!cancelled) setServerAdaptiveCore(core);
+      })
+      .catch(() => {
+        if (!cancelled) setServerAdaptiveCore(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, project]);
+
   if (loading) {
     return <div role="status" className="p-8 text-slate-500">Cargando tu iniciativa…</div>;
   }
@@ -70,6 +89,9 @@ export function InitiativeOverviewPage() {
   const prefill = (project.step0Data ?? {}) as Record<string, any>;
   const pending = Array.isArray(prefill.pendingQuestions) ? prefill.pendingQuestions : [];
   const challengeType = typeof prefill.challengeType === 'string' ? prefill.challengeType : undefined;
+  const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
+  const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
+  const progressSignal = adaptiveCore.progressSignal;
 
   return (
     <div className="mx-auto max-w-3xl p-6 md:p-8">
@@ -112,6 +134,43 @@ export function InitiativeOverviewPage() {
         <p className="mt-2 text-xs text-slate-400">
           Cada step se desbloqueará cuando completes el paso anterior con los mínimos necesarios.
         </p>
+      </section>
+
+      <section aria-label="Configuracion adaptativa" className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuracion adaptativa</p>
+        <h2 className="mt-2 text-lg font-semibold text-slate-900">{activeConfiguration.visibleName}</h2>
+        <p className="mt-2 text-sm text-slate-600">{activeConfiguration.objective}</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-500">Ruta</p>
+            <p className="mt-1 text-sm font-medium text-slate-900">{adaptiveCore.masterContext.routeType.replaceAll('_', ' ')}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-500">Profundidad</p>
+            <p className="mt-1 text-sm font-medium text-slate-900">{adaptiveCore.masterContext.depthLevel}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-500">Output esperado</p>
+            <p className="mt-1 text-sm font-medium text-slate-900">{activeConfiguration.expectedOutput}</p>
+          </div>
+        </div>
+        <ol className="mt-4 grid gap-2">
+          {activeConfiguration.checkpoints.map(checkpoint => (
+            <li key={checkpoint.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-900">{checkpoint.code} - {checkpoint.title}</p>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">{checkpoint.status}</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">{checkpoint.purpose}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Senal ejecutiva inicial</p>
+          <p className="mt-2 text-sm text-amber-900">
+            {progressSignal.checkpointCode}: {progressSignal.checkpointTitle}. Siguiente accion: {progressSignal.nextAction}
+          </p>
+        </div>
       </section>
 
       <section aria-label="Resumen de revisión inicial" className="mt-6 grid gap-3">

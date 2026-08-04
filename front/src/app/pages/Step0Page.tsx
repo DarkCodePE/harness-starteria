@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, ChevronRight, Copy, CreditCard, Download, Loader2, Sparkles, X } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { enrichProject, useApp } from '../context/AppContext';
 import { MentorVirtualPanel } from '../components/MentorVirtualPanel';
 import { MentorSupportModal } from '../components/MentorSupportModal';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
@@ -22,8 +22,10 @@ import {
   normalizeStep0Data,
   syncLegacyFields,
 } from '../step0/step0Config';
-import type { Step0Data } from '../context/AppContext';
+import type { Project, Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
+import { ensureAdaptiveCoreForProject, getActiveStepConfiguration, materializeQuestionsForCheckpoint } from '../../features/adaptive-core/domain/adaptiveCore';
+import { confirmAdaptiveCheckpoint, confirmStep0Brief, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 import { AutofillField } from '../components/autofill/AutofillField';
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
 import { getById } from '../services/projectService';
@@ -374,7 +376,7 @@ export function Step0Page() {
   const { challenges, strategicFronts } = usePortfolioLead();
   const navigate = useNavigate();
   const contextProject = projects.find(item => item.id === projectId);
-  const [fetchedProject, setFetchedProject] = useState<typeof contextProject | null>(null);
+  const [fetchedProject, setFetchedProject] = useState<Project | null>(null);
   const [projectFetching, setProjectFetching] = useState(false);
   const [projectFetchError, setProjectFetchError] = useState(false);
   const project = contextProject ?? fetchedProject;
@@ -392,6 +394,9 @@ export function Step0Page() {
   const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
   const [publicDraftCardDismissed, setPublicDraftCardDismissed] = useState(false);
   const [showInitialReviewOnePager, setShowInitialReviewOnePager] = useState(false);
+  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<ReturnType<typeof ensureAdaptiveCoreForProject> | null>(null);
+  const [checkpointSaving, setCheckpointSaving] = useState(false);
+  const [checkpointError, setCheckpointError] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<ModuleId>('start');
   const [optionalOpen, setOptionalOpen] = useState<Record<ModuleId, boolean>>({ start: false, impact: false, decision: false });
   const [highlightField, setHighlightField] = useState<keyof Step0Data | null>(null);
@@ -412,7 +417,7 @@ export function Step0Page() {
     lastModified: '',
   };
   const [form, setForm] = useState<Step0Data>(() => normalizeStep0Data(project?.step0Data, projectForInit, user?.name ?? '', user?.email ?? ''));
-  const saveState = useAutosave([form]);
+  const saveState = useAutosave({ data: form, saveFn: async () => undefined, enabled: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -421,7 +426,7 @@ export function Step0Page() {
     setProjectFetchError(false);
     getById(projectId)
       .then(loaded => {
-        if (!cancelled) setFetchedProject(loaded as typeof contextProject);
+        if (!cancelled) setFetchedProject(enrichProject(loaded, user));
       })
       .catch(() => {
         if (!cancelled) setProjectFetchError(true);
@@ -432,12 +437,27 @@ export function Step0Page() {
     return () => {
       cancelled = true;
     };
-  }, [contextProject, projectId, projectsLoading]);
+  }, [contextProject, projectId, projectsLoading, user]);
 
   useEffect(() => {
     if (!project) return;
     setForm(normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? ''));
   }, [project, user?.email, user?.name]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!project?.id) return;
+    getAdaptiveCore(project.id)
+      .then(core => {
+        if (!cancelled) setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+      })
+      .catch(() => {
+        if (!cancelled) setServerAdaptiveCore(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.id]);
 
   useEffect(() => {
     if (!projectId || !project) return;
@@ -524,6 +544,20 @@ export function Step0Page() {
       : undefined
   );
   const initialReviewArtifact = initialReviewMeta?.artifact ?? null;
+  const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
+  const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
+  const activeCheckpointFromServer = adaptiveCore.activeCheckpoint;
+  const activeCheckpoint = activeCheckpointFromServer
+    ? {
+        code: activeCheckpointFromServer.checkpointKey,
+        title: String((activeCheckpointFromServer as any).title ?? activeCheckpointFromServer.checkpointKey),
+        purpose: 'Completa este checkpoint y confirmalo para materializar el siguiente.',
+        outputKey: String((activeCheckpointFromServer as any).outputKey ?? activeCheckpointFromServer.checkpointKey),
+        status: activeCheckpointFromServer.status,
+      }
+    : activeConfiguration.checkpoints.find(checkpoint => checkpoint.status === 'ready' || checkpoint.status === 'in_progress') ?? activeConfiguration.checkpoints[0];
+  const activeCheckpointQuestions = activeCheckpointFromServer?.questions ?? materializeQuestionsForCheckpoint(adaptiveCore, activeCheckpoint.code);
+  const draftStep0Brief = (adaptiveCore.stepOutputs ?? []).find((output: any) => output.step === 0 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
 
@@ -554,7 +588,7 @@ export function Step0Page() {
   };
 
   const persistStep0 = async (overrides: Partial<Step0Data> = {}) => {
-    const nextForm = { ...form, ...overrides };
+    const nextForm = { ...form, adaptiveCore, ...overrides };
     const syncedBase = syncLegacyFields({ ...nextForm, mode });
     const synced = initialReviewMeta
       ? ({ ...syncedBase, initialReview: initialReviewMeta } as Step0Data)
@@ -619,6 +653,58 @@ export function Step0Page() {
     void goToStep1();
   };
 
+  const buildCheckpointResponses = () => ({
+    objective: form.quePasaQueQuieres || form.initiativeTitle || project.name,
+    challengeType: initialReviewMeta?.challengeType ?? form.initiativeFrame,
+    scope: form.specificChallengePart || form.visibleMoment || form.impactWho,
+    owner_and_actor_required: form.quienEscuchar || form.alignmentPerson || form.leaderFeedbackPerson,
+    company_constraints: form.currentEvidence || form.validationSignal,
+    priorityHypothesis: form.validationSignal || form.decisionRequested || form.quePasaQueQuieres,
+    decisionCriteria: form.decisionRequested || form.supportNeeded || 'Definir decision de continuidad hacia Step 1.',
+    availableEvidence: form.currentEvidence,
+    currentEvidence: form.currentEvidence,
+    adoption: form.sponsorInterestReason,
+    outcome: form.impactWho,
+    missingInformation: activeCheckpointQuestions.filter(question => question.allowsUnknown).map(question => question.prompt).join('\n'),
+  });
+
+  const confirmActiveCheckpoint = async () => {
+    if (!projectId) return;
+    setCheckpointSaving(true);
+    setCheckpointError(null);
+    try {
+      const core = await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `step0-${projectId}-${activeCheckpoint.code}-${Date.now()}`,
+        checkpointKey: activeCheckpoint.code,
+        responses: buildCheckpointResponses(),
+      });
+      setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+    } catch (err: any) {
+      setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el checkpoint.');
+    } finally {
+      setCheckpointSaving(false);
+    }
+  };
+
+  const confirmBriefAndGoToStep1 = async () => {
+    if (!projectId || !draftStep0Brief?.output) return;
+    setCheckpointSaving(true);
+    setCheckpointError(null);
+    try {
+      const core = await confirmStep0Brief(projectId, {
+        idempotencyKey: `step0-brief-${projectId}-${draftStep0Brief.id ?? 'draft'}`,
+        brief: draftStep0Brief.output,
+        confirmed: true,
+      });
+      setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+      navigate(`/projects/${projectId}/step/1`);
+    } catch (err: any) {
+      setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el Brief.');
+    } finally {
+      setCheckpointSaving(false);
+    }
+  };
+
   const handlePrimaryAction = async () => {
     if (analysisState === 'done') {
       setShowProposalOnePager(true);
@@ -672,7 +758,7 @@ export function Step0Page() {
                 <button onClick={() => setShowMentorModal(true)} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">
                   <Calendar size={14} /> Pedir ayuda a un mentor
                 </button>
-                <AutosaveIndicator state={saveState} />
+                <AutosaveIndicator state={saveState.state} />
               </div>
             </div>
 
@@ -794,6 +880,79 @@ export function Step0Page() {
             </div>
           </div>
         )}
+
+        <div className="border-b border-slate-200 bg-white px-5 py-4">
+          <div className="mx-auto max-w-[1480px] rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs text-slate-500" style={{ fontWeight: 800 }}>CHECKPOINT ACTIVO</p>
+                <h2 className="mt-1 text-base text-slate-950" style={{ fontWeight: 800 }}>{activeCheckpoint.code} - {activeCheckpoint.title}</h2>
+                <p className="mt-1 max-w-3xl text-sm text-slate-600">{activeCheckpoint.purpose}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Output</p>
+                <p className="mt-1 text-sm text-slate-900" style={{ fontWeight: 700 }}>{activeCheckpoint.outputKey}</p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Ruta</p>
+                <p className="mt-1 text-sm text-slate-900">{adaptiveCore.masterContext.routeType.replaceAll('_', ' ')}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Profundidad</p>
+                <p className="mt-1 text-sm text-slate-900">{adaptiveCore.masterContext.depthLevel}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>Preguntas materializadas</p>
+                <p className="mt-1 text-sm text-slate-900">{activeCheckpointQuestions.length} para este checkpoint</p>
+              </div>
+            </div>
+            {activeCheckpointQuestions.length > 0 && (
+              <div className="mt-4 grid gap-2">
+                {activeCheckpointQuestions.slice(0, 3).map(question => (
+                  <div key={question.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                    <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{question.prompt}</p>
+                    <p className="mt-1 text-xs text-slate-500">{question.reason} Fuente: {question.source}.</p>
+                    {question.contextDerived && (
+                      <p className="mt-1 text-xs text-amber-700">Deriva del contexto y debe confirmarse antes de tratarse como restriccion.</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {checkpointError && <p className="mt-3 text-sm text-rose-600">{checkpointError}</p>}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={confirmActiveCheckpoint}
+                disabled={checkpointSaving || activeCheckpoint.status === 'completed'}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                style={{ fontWeight: 700 }}
+              >
+                {checkpointSaving ? 'Confirmando...' : 'Confirmar checkpoint'}
+              </button>
+              {draftStep0Brief?.output && (
+                <button
+                  type="button"
+                  onClick={confirmBriefAndGoToStep1}
+                  disabled={checkpointSaving}
+                  className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ fontWeight: 700 }}
+                >
+                  Confirmar Brief y configurar Step 1
+                </button>
+              )}
+            </div>
+            {draftStep0Brief?.output && (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-3">
+                <p className="text-xs text-emerald-700" style={{ fontWeight: 800 }}>BRIEF STEP 0 EN REVISION</p>
+                <p className="mt-2 text-sm text-slate-700">Hipotesis: {String((draftStep0Brief.output as any).priorityHypothesis ?? 'Pendiente')}</p>
+                <p className="mt-1 text-sm text-slate-700">Criterio de decision: {String((draftStep0Brief.output as any).decisionCriteria ?? 'Pendiente')}</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="mx-auto grid max-w-[1480px] items-start gap-6 px-5 py-6 min-[1280px]:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
@@ -1167,7 +1326,7 @@ export function Step0Page() {
           )}
           <div className="ml-auto hidden items-center gap-3 sm:flex">
             {project.mentorCredits !== undefined && <div className="flex items-center gap-1.5 text-xs text-slate-400"><CreditCard size={12} /><span>{project.mentorCredits} créditos disponibles</span></div>}
-            <AutosaveIndicator state={saveState} />
+            <AutosaveIndicator state={saveState.state} />
           </div>
         </div>
       </div>

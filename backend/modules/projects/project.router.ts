@@ -4,11 +4,15 @@ import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { validate } from '../../shared/middleware/validate';
 import { createProjectSchema, updateProjectSchema, updateStep0Schema, updateSponsorDataSchema } from './project.schemas';
+import { AdaptiveCoreController } from '../adaptive-core/adaptive-core.controller';
+import { AdaptiveCoreService } from '../adaptive-core/adaptive-core.service';
+import { checkpointResponseSchema, confirmBriefSchema, criticalChangeSchema } from '../adaptive-core/adaptive-core.schemas';
 
 import { authenticate } from '../auth/auth.middleware';
 import { requireEntitlement } from '../billing/entitlement.middleware';
 const service = new ProjectService(prisma);
 const controller = new ProjectController(service);
+const adaptiveCoreController = new AdaptiveCoreController(new AdaptiveCoreService(prisma));
 
 export const projectRouter = Router();
 
@@ -31,5 +35,13 @@ projectRouter.patch('/:id', validate(updateProjectSchema), controller.update);
 projectRouter.delete('/:id', controller.archive);
 projectRouter.get('/:id/step0', controller.getStep0);
 projectRouter.patch('/:id/step0', validate(updateStep0Schema), controller.updateStep0);
+projectRouter.get('/:id/adaptive-core', adaptiveCoreController.get);
+projectRouter.post('/:id/adaptive-core/checkpoints/confirm', validate(checkpointResponseSchema), adaptiveCoreController.confirmCheckpoint);
+projectRouter.post('/:id/adaptive-core/critical-change', validate(criticalChangeSchema), adaptiveCoreController.registerCriticalChange);
+projectRouter.post('/:id/adaptive-core/step0/brief/confirm', validate(confirmBriefSchema), adaptiveCoreController.confirmStep0Brief);
+projectRouter.post('/:id/adaptive-core/step1/output/confirm', validate(confirmBriefSchema), adaptiveCoreController.confirmStep1Output);
+projectRouter.post('/:id/adaptive-core/step2/output/confirm', validate(confirmBriefSchema), adaptiveCoreController.confirmStep2Output);
+projectRouter.post('/:id/adaptive-core/step3/output/confirm', validate(confirmBriefSchema), adaptiveCoreController.confirmStep3Output);
+projectRouter.post('/:id/adaptive-core/step4/output/confirm', validate(confirmBriefSchema), adaptiveCoreController.confirmStep4Output);
 projectRouter.patch('/:id/position', controller.updatePosition);
 projectRouter.patch('/:id/sponsor-data', validate(updateSponsorDataSchema), controller.updateSponsorData);
