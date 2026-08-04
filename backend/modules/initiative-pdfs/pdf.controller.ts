@@ -6,6 +6,8 @@ import { PdfService } from './pdf.service';
 import { ALLOWED_PDF_MIME, MAX_PDF_BYTES } from './pdf.schemas';
 import { toWireProposal } from './wire-proposal';
 
+type PdfUploadRequest = Request<Record<string, string>, ApiResponse, Buffer> & Pick<AuthenticatedRequest, 'user'>;
+
 /**
  * Controllers stay thin: shape request -> service call -> envelope.
  * All validation is delegated to `validate(schema)` middleware or to the
@@ -14,7 +16,7 @@ import { toWireProposal } from './wire-proposal';
 export class PdfController {
   constructor(private readonly service: PdfService) {}
 
-  upload = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
+  upload = async (req: PdfUploadRequest, res: Response<ApiResponse>, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) throw AppError.unauthorized();
 

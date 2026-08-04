@@ -27,7 +27,7 @@ import { prisma } from '../../../shared/db/prisma';
 import { seedPlans } from '../seed-plans';
 import { PLAN_CATALOG } from '../plans';
 
-const mockPlan = prisma.plan as {
+const mockPlan = prisma.plan as unknown as {
   upsert: ReturnType<typeof vi.fn>;
   findUnique: ReturnType<typeof vi.fn>;
   findFirst: ReturnType<typeof vi.fn>;

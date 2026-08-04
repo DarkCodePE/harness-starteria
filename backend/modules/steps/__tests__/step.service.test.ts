@@ -57,7 +57,7 @@ describe('StepService — TASK-010 Steps 2/3/4 persistence', () => {
       { id: 's4', projectId, number: 4, stepData: null },
     ]);
     // The service expects a PrismaClient; we cast our minimal fake.
-    service = new StepService(fakePrisma.fake as unknown as Parameters<typeof StepService.prototype['constructor']>[0]);
+    service = new StepService(fakePrisma.fake as unknown as ConstructorParameters<typeof StepService>[0]);
   });
 
   it('round-trips Step 2 envelope (hmw + testCard payload)', async () => {

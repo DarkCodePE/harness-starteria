@@ -23,6 +23,7 @@
  * No loops over large sets — well under the <50ms target.
  */
 import { prisma } from '../../shared/db/prisma';
+import { SubscriptionStatus } from '@prisma/client';
 import { config } from '../../config';
 import type {
   Feature,
@@ -33,7 +34,7 @@ import type {
 import { FEATURE_KIND, periodKeyFor } from './types';
 import { FREE_LIMITS, FREE_PLAN_CODE } from './plans';
 
-const ACTIVE_STATUSES = ['ACTIVE', 'TRIALING'] as const;
+const ACTIVE_STATUSES = [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING] as const;
 
 /**
  * A Subscription row with its Plan included. We keep the shape loose
@@ -60,7 +61,7 @@ export async function resolveActiveSubscription(
 ): Promise<ActiveSubscription | null> {
   // 1. User-owned subscription (highest precedence).
   const userSub = await prisma.subscription.findFirst({
-    where: { userId, status: { in: ACTIVE_STATUSES as unknown as string[] } },
+    where: { userId, status: { in: [...ACTIVE_STATUSES] } },
     include: { plan: true },
   });
   if (userSub) return userSub as unknown as ActiveSubscription;
@@ -73,7 +74,7 @@ export async function resolveActiveSubscription(
     const orgSub = await prisma.subscription.findFirst({
       where: {
         organizationId: membership.organizationId,
-        status: { in: ACTIVE_STATUSES as unknown as string[] },
+        status: { in: [...ACTIVE_STATUSES] },
       },
       include: { plan: true },
     });

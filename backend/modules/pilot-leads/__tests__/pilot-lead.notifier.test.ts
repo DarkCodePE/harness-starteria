@@ -13,7 +13,7 @@ import {
   createApplicantConfirmationNotifier,
   combinePilotLeadNotifiers,
 } from '../pilot-lead.notifier';
-import type { Mailer } from '../../../shared/mail/mailer';
+import type { Mailer, MailMessage } from '../../../shared/mail/mailer';
 import type { PilotLeadNotice } from '../pilot-lead.service';
 
 const LEAD: PilotLeadNotice = {
@@ -26,13 +26,16 @@ const LEAD: PilotLeadNotice = {
   organization: 'Efectiva',
 };
 
-function fakeMailer(enabled: boolean, send = vi.fn(async () => true)): Mailer {
+type SendFn = (message: MailMessage) => Promise<boolean>;
+type SendMock = ReturnType<typeof vi.fn<SendFn>>;
+
+function fakeMailer(enabled: boolean, send: SendMock = vi.fn<SendFn>(async () => true)): Mailer {
   return { get enabled() { return enabled; }, send } as Mailer;
 }
 
 describe('createEmailPilotLeadNotifier', () => {
   it('emails the configured recipients with the lead contact in the body', async () => {
-    const send = vi.fn(async () => true);
+    const send = vi.fn<SendFn>(async () => true);
     const notify = createEmailPilotLeadNotifier({ to: ['team@efectiva.com.pe'], mailer: fakeMailer(true, send) });
 
     await notify(LEAD);
@@ -48,7 +51,7 @@ describe('createEmailPilotLeadNotifier', () => {
   });
 
   it('does not send when the mailer is disabled', async () => {
-    const send = vi.fn(async () => true);
+    const send = vi.fn<SendFn>(async () => true);
     const notify = createEmailPilotLeadNotifier({ to: ['team@efectiva.com.pe'], mailer: fakeMailer(false, send) });
 
     await notify(LEAD);
@@ -57,7 +60,7 @@ describe('createEmailPilotLeadNotifier', () => {
   });
 
   it('does not send when no recipients are configured', async () => {
-    const send = vi.fn(async () => true);
+    const send = vi.fn<SendFn>(async () => true);
     const notify = createEmailPilotLeadNotifier({ to: [], mailer: fakeMailer(true, send) });
 
     await notify(LEAD);
@@ -66,7 +69,7 @@ describe('createEmailPilotLeadNotifier', () => {
   });
 
   it('rethrows a transport error (the service guard swallows it)', async () => {
-    const send = vi.fn(async () => { throw new Error('SMTP down'); });
+    const send = vi.fn<SendFn>(async () => { throw new Error('SMTP down'); });
     const notify = createEmailPilotLeadNotifier({ to: ['team@efectiva.com.pe'], mailer: fakeMailer(true, send) });
 
     await expect(notify(LEAD)).rejects.toThrow('SMTP down');
@@ -75,7 +78,7 @@ describe('createEmailPilotLeadNotifier', () => {
 
 describe('createApplicantConfirmationNotifier', () => {
   it('emails the applicant a confirmation with their pilot code', async () => {
-    const send = vi.fn(async () => true);
+    const send = vi.fn<SendFn>(async () => true);
     const notify = createApplicantConfirmationNotifier({ mailer: fakeMailer(true, send) });
 
     await notify(LEAD);
@@ -97,7 +100,7 @@ describe('createApplicantConfirmationNotifier', () => {
   });
 
   it('does not send when the mailer is disabled', async () => {
-    const send = vi.fn(async () => true);
+    const send = vi.fn<SendFn>(async () => true);
     const notify = createApplicantConfirmationNotifier({ mailer: fakeMailer(false, send) });
 
     await notify(LEAD);
@@ -118,7 +121,7 @@ describe('combinePilotLeadNotifiers', () => {
   });
 
   it('sends both team and applicant emails on a healthy mailer', async () => {
-    const send = vi.fn(async () => true);
+    const send = vi.fn<SendFn>(async () => true);
     const mailer = fakeMailer(true, send);
     const notify = combinePilotLeadNotifiers(
       createEmailPilotLeadNotifier({ to: ['team@efectiva.com.pe'], mailer }),
