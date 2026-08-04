@@ -7,6 +7,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { RouteConfirmationService } from '../route-confirmation.service';
 
+vi.mock('../../adaptive-core/adaptive-core.service', () => ({
+  AdaptiveCoreService: vi.fn().mockImplementation(() => ({
+    ensureInitialized: vi.fn(async () => ({})),
+  })),
+}));
+
 const SNAPSHOT = {
   id: 'snap1',
   version: 1,
@@ -58,6 +64,8 @@ describe('RouteConfirmationService.confirmRoute (IR-B4)', () => {
     expect(projUpdate.initialReviewSnapshotId).toBe('snap1');
     expect(projUpdate.step0Data.suggestedName).toBe('Mi iniciativa');
     expect(projUpdate.step0Data.challengeType).toBe('correction'); // canónico
+    expect(projUpdate.step0Data.adaptiveCore.schemaVersion).toBe('PRD-03-v0.4');
+    expect(projUpdate.step0Data.adaptiveCore.progressSignal.checkpointCode).toBe('CP-0.1');
     expect(prisma.routeConfirmation.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ createdProjectId: 'proj1', status: 'initiative_created' }) }));
     expect(prisma.initialReview.update).toHaveBeenCalledWith(expect.objectContaining({ data: { status: 'converted_to_initiative' } }));
   });

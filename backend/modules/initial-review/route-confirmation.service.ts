@@ -14,6 +14,8 @@ import { AppError } from '../../shared/errors/AppError';
 import { ProjectService } from '../projects/project.service';
 import type { ImprovedProposal, StrategicQuestion, InformationReadiness } from './initial-review.types';
 import { toCanonicalChallengeType } from './initial-review.types';
+import { buildAdaptiveCorePrefill } from './adaptive-core';
+import { AdaptiveCoreService } from '../adaptive-core/adaptive-core.service';
 
 export interface ConfirmRouteResult {
   routeConfirmationId: string;
@@ -74,17 +76,19 @@ export class RouteConfirmationService {
     await this.prisma.$transaction([
       this.prisma.project.update({
         where: { id: project.id },
-        data: { origin: 'from_initial_review', initialReviewSnapshotId: snapshot.id, step0Data: this.buildStep0Prefill(snapshot) as object },
+        data: { origin: 'from_initial_review', initialReviewSnapshotId: snapshot.id, step0Data: this.buildStep0Prefill(snapshot, review.challengeId) as object },
       }),
       this.prisma.routeConfirmation.update({ where: { id: confirmation.id }, data: { createdProjectId: project.id, status: 'initiative_created' } }),
       this.prisma.initialReview.update({ where: { id: reviewId }, data: { status: 'converted_to_initiative' } }),
     ]);
 
+    await new AdaptiveCoreService(this.prisma).ensureInitialized(project.id, userId, 'participante');
+
     return this.result(confirmation.id, project.id);
   }
 
   /** Step0PrefillFromInitialReview (PRD §13) serializado en Project.step0Data. */
-  private buildStep0Prefill(snapshot: any) {
+  private buildStep0Prefill(snapshot: any, challengeId?: string | null) {
     const proposal = (snapshot.improvedProposal ?? {}) as ImprovedProposal;
     const questions = (snapshot.strategicQuestions ?? []) as StrategicQuestion[];
     const critique = (snapshot.critique ?? {}) as { mainRisk?: string };
@@ -101,6 +105,17 @@ export class RouteConfirmationService {
       informationReadiness: (snapshot.informationReadiness ?? null) as InformationReadiness | null,
       pendingQuestions: pending,
       nextRecommendedStep: proposal.nextRecommendedStep ?? '',
+      adaptiveCore: buildAdaptiveCorePrefill({
+        snapshotId: snapshot.id,
+        selectedChallengeType: snapshot.selectedChallengeType,
+        proposal,
+        understandingSummary: snapshot.understandingSummary,
+        mainRisk: critique.mainRisk,
+        informationReadiness: (snapshot.informationReadiness ?? null) as InformationReadiness | null,
+        pendingQuestions: pending,
+        companyContext: (snapshot as any).companyContextSelection,
+        challengeId,
+      }),
     };
   }
 
