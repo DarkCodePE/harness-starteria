@@ -33,7 +33,8 @@ import { ApprovalGateBanner } from '../components/autofill/ApprovalGateBanner';
 import { isPdfAutofillEnabled } from '../services/featureFlags';
 import * as stepService from '../services/stepService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
-import { confirmStep4Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
+import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
+import { confirmAdaptiveCheckpoint, confirmStep4Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 type ModuleId = 'overview' | 'A' | 'B' | 'C';
 type Audiencia =
@@ -1155,6 +1156,27 @@ ${meetingOwner} / ${meetingRole}
     }
   };
 
+  const confirmAdaptiveStep4Checkpoint = async (responses: Record<string, unknown>) => {
+    if (!projectId || !adaptiveActiveCheckpoint || adaptiveActiveCheckpoint.step !== 4) return;
+    setAdaptiveConfirming(true);
+    setAdaptiveOutputError('');
+    try {
+      const nextCore = await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${projectId}-${adaptiveActiveCheckpoint.checkpointKey}-${Date.now()}-ui-confirm`,
+        checkpointKey: adaptiveActiveCheckpoint.checkpointKey,
+        responses,
+      });
+      setAdaptiveCore(nextCore);
+      toast.success('Checkpoint adaptativo confirmado.');
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? 'No pudimos confirmar el checkpoint adaptativo.';
+      setAdaptiveOutputError(message);
+      toast.error(message);
+    } finally {
+      setAdaptiveConfirming(false);
+    }
+  };
+
   const mobileTabs = (
     <div className="flex gap-1 mb-5 md:hidden overflow-x-auto pb-1">
       {modules.map((module) => (
@@ -1259,7 +1281,39 @@ ${meetingOwner} / ${meetingRole}
             </div>
           )}
 
-          <div className="mb-5 border border-slate-200 rounded-2xl bg-white overflow-hidden">
+          {adaptiveCore && (
+            <AdaptiveCheckpointWorkspace
+              core={adaptiveCore}
+              step={4}
+              checkpoint={adaptiveActiveCheckpoint}
+              questions={adaptiveActiveCheckpoint?.step === 4 ? adaptiveActiveCheckpoint.questions ?? [] : []}
+              outputPreview={adaptiveStep4Output}
+              outputConfirmed={adaptiveAlreadyConfirmed}
+              saving={adaptiveCoreLoading || adaptiveConfirming}
+              error={adaptiveCoreError || adaptiveOutputError || null}
+              onConfirmCheckpoint={adaptiveActiveCheckpoint?.step === 4 ? confirmAdaptiveStep4Checkpoint : undefined}
+              onConfirmOutput={adaptiveStep4Draft ? confirmAdaptiveStep4Output : undefined}
+              onRefresh={() => {
+                if (!projectId) return;
+                setAdaptiveCoreLoading(true);
+                getAdaptiveCore(projectId)
+                  .then((core) => {
+                    setAdaptiveCore(core);
+                    setAdaptiveCoreError('');
+                  })
+                  .catch(() => setAdaptiveCoreError('No pudimos recargar el cierre adaptativo.'))
+                  .finally(() => setAdaptiveCoreLoading(false));
+              }}
+            />
+          )}
+
+          {!adaptiveCore && (adaptiveCoreLoading || adaptiveCoreError) && (
+            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              {adaptiveCoreLoading ? 'Cargando Adaptive Core...' : adaptiveCoreError}
+            </div>
+          )}
+
+          <div className="hidden">
             <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">

@@ -24,6 +24,7 @@ import {
 } from '../step0/step0Config';
 import type { Project, Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
+import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
 import { ensureAdaptiveCoreForProject, getActiveStepConfiguration, materializeQuestionsForCheckpoint } from '../../features/adaptive-core/domain/adaptiveCore';
 import { confirmAdaptiveCheckpoint, confirmStep0Brief, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 import { AutofillField } from '../components/autofill/AutofillField';
@@ -547,13 +548,17 @@ export function Step0Page() {
   const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
   const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
   const activeCheckpointFromServer = adaptiveCore.activeCheckpoint;
+  const configuredServerCheckpoint = activeCheckpointFromServer
+    ? activeConfiguration.checkpoints.find(checkpoint => checkpoint.code === activeCheckpointFromServer.checkpointKey)
+    : null;
   const activeCheckpoint = activeCheckpointFromServer
     ? {
+        ...(configuredServerCheckpoint ?? activeConfiguration.checkpoints[0]),
+        id: activeCheckpointFromServer.id,
+        step: activeCheckpointFromServer.step,
         code: activeCheckpointFromServer.checkpointKey,
-        title: String((activeCheckpointFromServer as any).title ?? activeCheckpointFromServer.checkpointKey),
-        purpose: 'Completa este checkpoint y confirmalo para materializar el siguiente.',
-        outputKey: String((activeCheckpointFromServer as any).outputKey ?? activeCheckpointFromServer.checkpointKey),
         status: activeCheckpointFromServer.status,
+        questions: activeCheckpointFromServer.questions,
       }
     : activeConfiguration.checkpoints.find(checkpoint => checkpoint.status === 'ready' || checkpoint.status === 'in_progress') ?? activeConfiguration.checkpoints[0];
   const activeCheckpointQuestions = activeCheckpointFromServer?.questions ?? materializeQuestionsForCheckpoint(adaptiveCore, activeCheckpoint.code);
@@ -668,7 +673,7 @@ export function Step0Page() {
     missingInformation: activeCheckpointQuestions.filter(question => question.allowsUnknown).map(question => question.prompt).join('\n'),
   });
 
-  const confirmActiveCheckpoint = async () => {
+  const confirmActiveCheckpoint = async (workspaceResponses?: Record<string, unknown>) => {
     if (!projectId) return;
     setCheckpointSaving(true);
     setCheckpointError(null);
@@ -676,7 +681,7 @@ export function Step0Page() {
       const core = await confirmAdaptiveCheckpoint(projectId, {
         idempotencyKey: `step0-${projectId}-${activeCheckpoint.code}-${Date.now()}`,
         checkpointKey: activeCheckpoint.code,
-        responses: buildCheckpointResponses(),
+        responses: { ...buildCheckpointResponses(), ...(workspaceResponses ?? {}) },
       });
       setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
     } catch (err: any) {
@@ -881,7 +886,30 @@ export function Step0Page() {
           </div>
         )}
 
-        <div className="border-b border-slate-200 bg-white px-5 py-4">
+        <div className="border-b border-slate-200 bg-white px-5 py-5">
+          <div className="mx-auto max-w-[1480px]">
+            <AdaptiveCheckpointWorkspace
+              core={adaptiveCore}
+              step={0}
+              checkpoint={activeCheckpointFromServer ?? activeCheckpoint}
+              questions={activeCheckpointQuestions}
+              initialResponses={buildCheckpointResponses()}
+              outputPreview={draftStep0Brief?.output ?? null}
+              saving={checkpointSaving}
+              error={checkpointError}
+              onConfirmCheckpoint={confirmActiveCheckpoint}
+              onConfirmOutput={draftStep0Brief?.output ? confirmBriefAndGoToStep1 : undefined}
+              onRefresh={() => {
+                if (!projectId) return;
+                getAdaptiveCore(projectId)
+                  .then(core => setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>))
+                  .catch((err: any) => setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos recargar el checkpoint.'));
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="hidden">
           <div className="mx-auto max-w-[1480px] rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -925,7 +953,7 @@ export function Step0Page() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={confirmActiveCheckpoint}
+                onClick={() => void confirmActiveCheckpoint()}
                 disabled={checkpointSaving || activeCheckpoint.status === 'completed'}
                 className="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                 style={{ fontWeight: 700 }}
