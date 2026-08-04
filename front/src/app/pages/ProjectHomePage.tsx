@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft, Lock, CheckCircle2, ChevronRight, Users, AlertTriangle, User,
@@ -23,6 +23,9 @@ import { buildInheritedChallengeContext, getStep0Mode, getSummaryBlocks, normali
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
 import { getInitialReview } from '../../features/initial-review/services/initialReviewStorage';
 import { buildInitialReviewArtifact } from '../../features/initial-review/services/initialReviewMappers';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
+import { buildAdaptiveJourney, getCurrentAdaptiveJourneyStep, resolveAdaptiveCoreForProject } from '../../features/adaptive-core/domain/adaptiveJourney';
+import { getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 const STEP_DESCRIPTIONS = [
   'Entiende el problema con claridad: documenta el proceso actual, mide el impacto y conoce a los actores involucrados.',
@@ -611,6 +614,23 @@ export function ProjectHomePage() {
   const [initialReviewArtifactOpen, setInitialReviewArtifactOpen] = useState(false);
   const [initialReviewArtifactTab, setInitialReviewArtifactTab] = useState<InitialReviewArtifactTab>('onePager');
   const [artifactDownloadReady, setArtifactDownloadReady] = useState(false);
+  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreLoadFailed, setAdaptiveCoreLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setServerAdaptiveCore(null);
+    setAdaptiveCoreLoadFailed(false);
+    if (!projectId) return () => { cancelled = true; };
+    getAdaptiveCore(projectId)
+      .then((core) => {
+        if (!cancelled) setServerAdaptiveCore(core);
+      })
+      .catch(() => {
+        if (!cancelled) setAdaptiveCoreLoadFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   const project = projects.find(p => p.id === projectId);
   if (!project) return (
@@ -904,13 +924,31 @@ export function ProjectHomePage() {
     ...step0SummaryBlocks.slice(0, 6).map(block => `${block.label}: ${block.value}`),
     step0ContactHint ? `Contacto clave sugerido: ${step0ContactHint}` : null,
   ].filter(Boolean).join('\n');
-  const currentJourneyStep = !step0Complete ? 0 : Math.min(Math.max(project.currentStep ?? 1, 1), 4);
+  const adaptiveCore = resolveAdaptiveCoreForProject(project, serverAdaptiveCore);
+  const adaptiveJourney = buildAdaptiveJourney(project, adaptiveCore, (stepNumber) => {
+    if (isSponsorViewer) return false;
+    return stepNumber === 0 || canAccessStep(stepNumber);
+  });
+  const currentAdaptiveJourneyStep = getCurrentAdaptiveJourneyStep(adaptiveJourney);
+  const currentJourneyStep = currentAdaptiveJourneyStep.step;
   const selectedStepNumber = stepPreview.selectedStepId ? Number(stepPreview.selectedStepId) : currentJourneyStep;
   const getStepOverviewState = (stepNumber: number) => {
-    const config = PROJECT_STEPS_OVERVIEW.find(item => item.step === stepNumber) ?? PROJECT_STEPS_OVERVIEW[0];
+    const adaptiveStep = adaptiveJourney.find(item => item.step === stepNumber) ?? adaptiveJourney[0];
+    const legacyConfig = PROJECT_STEPS_OVERVIEW.find(item => item.step === stepNumber) ?? PROJECT_STEPS_OVERVIEW[0];
+    const config = {
+      ...legacyConfig,
+      title: adaptiveStep.title,
+      shortTitle: adaptiveStep.shortTitle,
+      shortDescription: adaptiveStep.description,
+      whatItSolves: adaptiveStep.objective,
+      output: adaptiveStep.expectedOutput,
+      requirements: adaptiveStep.nextAction,
+      ctaStart: stepNumber === 0 ? 'Empezar Step 0 adaptativo' : `Continuar Step ${stepNumber}`,
+      ctaContinue: stepNumber === 0 ? 'Continuar Step 0 adaptativo' : `Continuar Step ${stepNumber}`,
+    };
     const appStep = project.steps.find(item => item.number === stepNumber);
-    let status: ProjectStepOverviewStatus = 'locked';
-    let lockReason = stepNumber === 0 ? '' : BLOCK_REASONS[String(stepNumber)] ?? 'Se desbloquea al completar el paso anterior.';
+    let status: ProjectStepOverviewStatus = adaptiveStep.status as ProjectStepOverviewStatus;
+    let lockReason = stepNumber === 0 ? '' : adaptiveStep.nextAction || (BLOCK_REASONS[String(stepNumber)] ?? 'Se desbloquea al completar el paso anterior.');
 
     if (stepNumber === 0) {
       status = step0Complete ? 'completed' : 'current';
@@ -924,31 +962,38 @@ export function ProjectHomePage() {
     } else if (canAccessStep(stepNumber)) {
       status = currentJourneyStep === stepNumber || appStep?.status === 'En progreso' ? 'current' : 'available';
     }
+    status = adaptiveStep.status as ProjectStepOverviewStatus;
+    lockReason = stepNumber === 0 ? '' : adaptiveStep.nextAction || lockReason;
 
     const completedModules = stepNumber === 0
       ? step0Complete
         ? ['Base inicial completada', ...(step0SummaryChips.length ? step0SummaryChips : ['Contexto inicial ordenado'])]
         : []
-      : appStep?.modules.filter(module => module.status === 'Completado' || module.status === 'Aprobado').map(module => module.name) ?? [];
+      : adaptiveStep.status === 'completed'
+        ? [`${adaptiveStep.expectedOutput} confirmado`]
+        : appStep?.modules.filter(module => module.status === 'Completado' || module.status === 'Aprobado').map(module => module.name) ?? [];
     const pendingModules = stepNumber === 0
       ? step0Complete
         ? step0Data.leaderFeedbackStatus && step0Data.leaderFeedbackStatus !== 'pending'
           ? []
           : ['Feedback del líder pendiente o por actualizar']
         : ['Completar base, impacto y decisión inicial']
-      : appStep?.modules.filter(module => module.status !== 'Completado' && module.status !== 'Aprobado').map(module => module.name) ?? [];
+      : adaptiveStep.checkpointSummary.length
+        ? adaptiveStep.checkpointSummary
+        : appStep?.modules.filter(module => module.status !== 'Completado' && module.status !== 'Aprobado').map(module => module.name) ?? [];
 
     return {
       config,
       appStep,
+      adaptiveStep,
       status,
       lockReason,
       completionBullets: completedModules,
       pendingBullets: pendingModules,
-      canNavigate: stepNumber === 0 ? !isSponsorViewer : canAccessStep(stepNumber) && !isSponsorViewer,
+      canNavigate: adaptiveStep.canNavigate,
     };
   };
-  const journeySteps = PROJECT_STEPS_OVERVIEW.map(item => getStepOverviewState(item.step));
+  const journeySteps = adaptiveJourney.map(item => getStepOverviewState(item.step));
   const selectedStepOverview = getStepOverviewState(selectedStepNumber);
   const selectedStepStyle = STEP_STATUS_COPY[selectedStepOverview.status];
   const selectedStepIsComplete = selectedStepOverview.status === 'completed';
@@ -998,7 +1043,25 @@ export function ProjectHomePage() {
       return acc;
     }, {}),
   });
-  const selectedPersonalizedStep = personalizedStepRoute.find(item => item.step === selectedStepNumber) ?? personalizedStepRoute[0];
+  const selectedPersonalizedStep = {
+    ...(personalizedStepRoute.find(item => item.step === selectedStepNumber) ?? personalizedStepRoute[0]),
+    title: selectedStepOverview.adaptiveStep.title,
+    shortDescription: selectedStepOverview.adaptiveStep.description,
+    previewTitle: `Step ${selectedStepNumber}: ${selectedStepOverview.adaptiveStep.title}`,
+    previewSubtitle: selectedStepOverview.adaptiveStep.nextAction,
+    workItems: selectedStepOverview.adaptiveStep.checkpointSummary.length
+      ? selectedStepOverview.adaptiveStep.checkpointSummary
+      : [selectedStepOverview.adaptiveStep.objective],
+    whyItMatters: selectedStepOverview.adaptiveStep.objective,
+    expectedOutputs: [selectedStepOverview.adaptiveStep.expectedOutput],
+    requirementsToAdvance: [
+      selectedStepOverview.adaptiveStep.activeCheckpointCode
+        ? `${selectedStepOverview.adaptiveStep.activeCheckpointCode}: ${selectedStepOverview.adaptiveStep.activeCheckpointTitle ?? 'checkpoint activo'}`
+        : selectedStepOverview.adaptiveStep.nextAction,
+      `${selectedStepOverview.adaptiveStep.questionsCount} preguntas materializadas para esta ruta`,
+    ],
+    ctaLabel: selectedStepOverview.config.ctaContinue,
+  };
   const selectedStepCta = selectedStepOverview.status === 'completed'
     ? `Editar Paso ${selectedStepNumber}`
     : selectedStepOverview.appStep?.status === 'En progreso' || project.step0Status === 'En progreso'
@@ -1422,18 +1485,27 @@ export function ProjectHomePage() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>Recorrido del proyecto</h2>
-            <p className="mt-1 text-sm text-slate-500">{getJourneySubtitle(currentJourneyStep)}</p>
+            <p className="mt-1 text-sm text-slate-500">{currentAdaptiveJourneyStep.nextAction || getJourneySubtitle(currentJourneyStep)}</p>
           </div>
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 700 }}>
-            Paso actual: {currentJourneyStep}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 700 }}>
+              Ruta {currentAdaptiveJourneyStep.routeType.replaceAll('_', ' ')}
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 700 }}>
+              Step activo: {currentJourneyStep}
+            </span>
+          </div>
         </div>
+        {adaptiveCoreLoadFailed && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            Mostrando configuracion adaptativa local mientras el backend sincroniza este proyecto.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
-          {journeySteps.map(({ config, status, canNavigate }) => {
+          {journeySteps.map(({ config, status, canNavigate, adaptiveStep }) => {
             const style = STEP_STATUS_COPY[status];
             const selected = selectedStepNumber === config.step;
-            const personalizedStep = personalizedStepRoute.find(item => item.step === config.step) ?? personalizedStepRoute[0];
             return (
               <div
                 key={config.step}
@@ -1450,8 +1522,11 @@ export function ProjectHomePage() {
                     {status === 'current' && config.step === 0 ? 'Comienza aquí' : style.label}
                   </span>
                 </div>
-                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{personalizedStep.title}</p>
-                <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{personalizedStep.shortDescription}</p>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{adaptiveStep.title}</p>
+                <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{adaptiveStep.nextAction}</p>
+                <p className="mt-2 text-[11px] text-slate-400">
+                  {adaptiveStep.routeType.replaceAll('_', ' ')} · {adaptiveStep.depthLevel} · {adaptiveStep.questionsCount} preguntas
+                </p>
                 <div className="mt-4 flex flex-wrap gap-2" onClick={event => event.stopPropagation()}>
                   {canNavigate && (status === 'current' || status === 'available') && (
                     <button
@@ -1460,7 +1535,7 @@ export function ProjectHomePage() {
                       className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] text-white hover:bg-indigo-700"
                       style={{ fontWeight: 800 }}
                     >
-                      {personalizedStep.ctaLabel}
+                      {adaptiveStep.step === 0 ? 'Abrir Step 0 adaptativo' : `Abrir Step ${adaptiveStep.step}`}
                     </button>
                   )}
                   {canNavigate && status === 'completed' && (
@@ -2014,7 +2089,8 @@ export function ProjectHomePage() {
         {/* ── PASOS 1–4 ── */}
         {project.steps.map(step => {
           const accessible = canAccessStep(step.number);
-          const isActive = step.status !== 'Aprobado' && step.status !== 'No iniciado' && step.status !== 'Bloqueado';
+          const adaptiveDetail = adaptiveJourney.find(item => item.step === step.number);
+          const isActive = adaptiveDetail?.status === 'current' || (step.status !== 'Aprobado' && step.status !== 'No iniciado' && step.status !== 'Bloqueado');
           const hasPendingSession = step.mentorSession?.status === 'Pendiente agendar';
 
           return (
@@ -2051,27 +2127,42 @@ export function ProjectHomePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h3 className="text-sm text-slate-900" style={{ fontWeight: 600 }}>
-                        Paso {step.number}: {step.name}
+                        Step {step.number}: {adaptiveDetail?.title ?? step.name}
                       </h3>
                       <StatusChip status={step.status} size="sm" />
+                      {adaptiveDetail && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700" style={{ fontWeight: 600 }}>
+                          {adaptiveDetail.activeCheckpointCode ?? adaptiveDetail.routeType.replaceAll('_', ' ')}
+                        </span>
+                      )}
                       {hasPendingSession && (
                         <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full" style={{ fontWeight: 500 }}>
                           <Clock size={10} /> Sesión pendiente
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 mb-3">{STEP_DESCRIPTIONS[step.number - 1]}</p>
+                    <p className="text-xs text-slate-500 mb-3">{adaptiveDetail?.nextAction ?? STEP_DESCRIPTIONS[step.number - 1]}</p>
 
                     {/* Blocked message */}
                     {!accessible && (
                       <div className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 rounded-xl px-3 py-2.5 mb-3">
                         <Lock size={11} className="text-slate-400 shrink-0 mt-0.5" />
-                        <span>{BLOCK_REASONS[step.number.toString()]}</span>
+                        <span>{adaptiveDetail?.nextAction ?? BLOCK_REASONS[step.number.toString()]}</span>
+                      </div>
+                    )}
+
+                    {accessible && adaptiveDetail && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {adaptiveDetail.checkpointSummary.map(item => (
+                          <span key={item} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-50 text-slate-600">
+                            {item}
+                          </span>
+                        ))}
                       </div>
                     )}
 
                     {/* Module pills */}
-                    {accessible && (
+                    {accessible && !adaptiveDetail && (
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {step.modules.map(mod => (
                           <span
@@ -2094,8 +2185,8 @@ export function ProjectHomePage() {
                     )}
 
                     {/* Progress */}
-                    {accessible && step.progress > 0 && (
-                      <ProgressBar value={step.progress} size="sm" />
+                    {accessible && ((adaptiveDetail?.progress ?? step.progress) > 0) && (
+                      <ProgressBar value={adaptiveDetail?.progress ?? step.progress} size="sm" />
                     )}
 
                     {/* Mentor actions (accessible steps) */}

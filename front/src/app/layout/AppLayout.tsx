@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
 import * as portfolioService from '../services/portfolioService';
 import type { InitiativeMeta } from '../services/portfolioService';
+import { buildAdaptiveJourney, resolveAdaptiveCoreForProject } from '../../features/adaptive-core/domain/adaptiveJourney';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Participante',
@@ -95,6 +96,18 @@ export function AppLayout() {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
   const canOpenProjectSteps = user?.role !== 'sponsor';
+  const sidebarJourney = currentProject
+    ? buildAdaptiveJourney(
+      currentProject,
+      resolveAdaptiveCoreForProject(currentProject),
+      (stepNumber) => {
+        if (!canOpenProjectSteps) return false;
+        if (stepNumber === 0) return true;
+        const previousStep = currentProject.steps.find(step => step.number === stepNumber - 1);
+        return previousStep?.status === 'Aprobado';
+      },
+    )
+    : [];
 
   const ownerLinks = [
     { icon: LayoutDashboard, label: 'Mis iniciativas', path: '/dashboard' },
@@ -193,17 +206,18 @@ export function AppLayout() {
                 'bg-slate-200'
               } ${!canOpenProjectSteps ? 'cursor-not-allowed opacity-60' : ''}`}
             />
-            {currentProject.steps.map(s => (
+            {sidebarJourney.filter(item => item.step > 0).map(s => (
               <button
-                key={s.number}
+                key={s.step}
                 onClick={() => {
                   if (!canOpenProjectSteps) return;
-                  navigate(`/projects/${currentProject.id}/step/${s.number}`);
+                  navigate(`/projects/${currentProject.id}/step/${s.step}`);
                 }}
-                title={`Paso ${s.number}: ${s.name}`}
+                title={`Step ${s.step}: ${s.title} - ${s.nextAction}`}
                 disabled={!canOpenProjectSteps}
                 className={`flex-1 h-1.5 rounded-full transition-colors ${
-                  s.status === 'Aprobado' ? 'bg-emerald-500' :
+                  s.status === 'completed' ? 'bg-emerald-500' :
+                  s.status === 'current' || s.status === 'review_pending' ? 'bg-indigo-500' :
                   s.status === 'En progreso' || s.status === 'Enviado' || s.status === 'Feedback IA' || s.status === 'Ajustado' || s.status === 'Sesión experto pendiente' ? 'bg-indigo-500' :
                   'bg-slate-200'
                 } ${!canOpenProjectSteps ? 'cursor-not-allowed opacity-60' : ''}`}
