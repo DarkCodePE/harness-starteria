@@ -1,8 +1,8 @@
 /**
- * initiative-progress.test.ts — issue #95.
+ * initiative-progress.test.ts - issue #95.
  *
  * Pins the derivation that keeps InitiativePortfolioMeta.status in sync with real step
- * progress, and the best-effort sync's guardrails: it only touches LINKED initiatives
+ * progress, and the best-effort sync's guardrails: it only touches linked initiatives
  * that are still in the auto-progression phase, and it never throws.
  */
 import { describe, it, expect, vi } from 'vitest';
@@ -89,7 +89,28 @@ describe('syncInitiativeProgress', () => {
     });
   });
 
-  it('never throws — a DB failure is swallowed (sync is best-effort)', async () => {
+  it('prefers adaptive progress signal over legacy Step rows', async () => {
+    const prisma = makePrisma({
+      initiativePortfolioMeta: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'm1' }]),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      project: {
+        findUnique: vi.fn().mockResolvedValue({
+          step0Status: 'COMPLETED',
+          steps: [{ number: 1, status: 'IN_PROGRESS' }],
+          adaptiveProgressSignal: { signalJson: { step: 3, checkpointCode: 'CP-3.1' } },
+        }),
+      },
+    });
+    await syncInitiativeProgress(prisma, 'p1');
+    expect(prisma.initiativePortfolioMeta.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['m1'] } },
+      data: { status: 'en_step_3', currentStep: '3' },
+    });
+  });
+
+  it('never throws - a DB failure is swallowed (sync is best-effort)', async () => {
     const prisma = makePrisma({
       initiativePortfolioMeta: {
         findMany: vi.fn().mockRejectedValue(new Error('db down')),

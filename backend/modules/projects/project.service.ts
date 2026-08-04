@@ -48,6 +48,17 @@ const DEFAULT_STEPS = [
   },
 ];
 
+function toPrismaStep0Status(status: Step0Status | string | undefined) {
+  if (!status) return undefined;
+  if (status === 'NOT_STARTED' || status === 'IN_PROGRESS' || status === 'COMPLETED') {
+    return status;
+  }
+  if (status === 'No iniciado') return 'NOT_STARTED';
+  if (status === 'En progreso') return 'IN_PROGRESS';
+  if (status === 'Completado') return 'COMPLETED';
+  return status;
+}
+
 export class ProjectService {
   constructor(private prisma: PrismaClient) {}
 
@@ -452,7 +463,7 @@ export class ProjectService {
       where: { id: projectId },
       data: {
         step0Data: data as any,
-        step0Status: status as any,
+        step0Status: toPrismaStep0Status(status) as any,
         lastModified: new Date().toISOString(),
       },
       include: this.projectInclude,
