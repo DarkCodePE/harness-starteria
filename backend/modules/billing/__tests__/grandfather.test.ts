@@ -26,17 +26,17 @@ vi.mock('../../../shared/db/prisma', () => ({
 import { prisma } from '../../../shared/db/prisma';
 import { grandfatherExistingUsers } from '../grandfather';
 
-const mockPlan = prisma.plan as {
+const mockPlan = prisma.plan as unknown as {
   upsert: ReturnType<typeof vi.fn>;
   findUnique: ReturnType<typeof vi.fn>;
   findFirst: ReturnType<typeof vi.fn>;
 };
-const mockUser = prisma.user as { findMany: ReturnType<typeof vi.fn> };
-const mockSubscription = prisma.subscription as {
+const mockUser = prisma.user as unknown as { findMany: ReturnType<typeof vi.fn> };
+const mockSubscription = prisma.subscription as unknown as {
   findFirst: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
 };
-const mockProject = prisma.project as {
+const mockProject = prisma.project as unknown as {
   count: ReturnType<typeof vi.fn>;
   findMany: ReturnType<typeof vi.fn>;
 };
