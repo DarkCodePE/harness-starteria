@@ -3,7 +3,7 @@ import type { StrategicFrontCardModel, StrategicFrontStatus } from '../../domain
 import { StrategicFrontCoverageBadge } from './StrategicFrontCoverageBadge';
 import { StrategicFrontNextAction } from './StrategicFrontNextAction';
 
-const STATUS_TONE_CLASSES: Record<StrategicFrontStatus, string> = {
+const STATUS_TONE_CLASSES: Partial<Record<StrategicFrontStatus, string>> = {
   draft: 'border-indigo-200 bg-indigo-50 text-indigo-700',
   active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   tracking: 'border-sky-200 bg-sky-50 text-sky-700',
@@ -30,7 +30,7 @@ export function StrategicFrontCard({
             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
               Prioridad {card.priority}
             </span>
-            <span className={`rounded-full border px-3 py-1 text-xs ${STATUS_TONE_CLASSES[card.status]}`}>
+            <span className={`rounded-full border px-3 py-1 text-xs ${STATUS_TONE_CLASSES[card.status] ?? 'border-slate-200 bg-slate-100 text-slate-700'}`}>
               {card.statusLabel}
             </span>
             <StrategicFrontCoverageBadge coverageStatus={card.coverageStatus} coverageLabel={card.coverageLabel} />

@@ -137,7 +137,7 @@ export function CreateProjectPage() {
       ],
       linkedChallenge ? { challengeLink: { challengeId: linkedChallenge.id, createdFrom: 'challenge' } } : undefined,
     );
-    if (!result.success) {
+    if (result.success === false) {
       setCreateError(result.error);
       setSaving(false);
       return;

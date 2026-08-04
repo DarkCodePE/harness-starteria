@@ -9,7 +9,7 @@ import type {
 import { executiveOutputStatusLabel, initiativeStatusLabel, portfolioDecisionLabel } from '../../portfolio/portfolioLeadCopy';
 
 export function initiativeExecutiveStatusLabel(status: InitiativePortfolioStatus) {
-  const labels: Record<InitiativePortfolioStatus, string> = {
+  const labels: Partial<Record<InitiativePortfolioStatus, string>> = {
     en_step_0: 'En progreso',
     en_step_1: 'En progreso',
     en_step_2: 'En progreso',
@@ -20,11 +20,11 @@ export function initiativeExecutiveStatusLabel(status: InitiativePortfolioStatus
     lista_para_decision: 'Lista para decision',
     cerrada: 'Cerrada',
   };
-  return labels[status];
+  return labels[status] ?? initiativeStatusLabel(status);
 }
 
 export function InitiativeStatusBadge({ status }: { status: InitiativePortfolioStatus }) {
-  const classes: Record<InitiativePortfolioStatus, string> = {
+  const classes: Partial<Record<InitiativePortfolioStatus, string>> = {
     en_step_0: 'border-sky-200 bg-sky-50 text-sky-700',
     en_step_1: 'border-sky-200 bg-sky-50 text-sky-700',
     en_step_2: 'border-sky-200 bg-sky-50 text-sky-700',
@@ -37,7 +37,7 @@ export function InitiativeStatusBadge({ status }: { status: InitiativePortfolioS
   };
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-xs ${classes[status]}`}>
+    <span className={`rounded-full border px-3 py-1 text-xs ${classes[status] ?? 'border-slate-200 bg-slate-50 text-slate-700'}`}>
       {initiativeExecutiveStatusLabel(status)}
     </span>
   );

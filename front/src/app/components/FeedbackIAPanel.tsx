@@ -113,9 +113,11 @@ export function FeedbackIAPanel({ feedback, onIterate }: FeedbackIAPanelProps) {
             </button>
           )}
 
-          <p className="text-xs text-slate-400">
-            Revisado el {new Date(feedback.timestamp).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </p>
+          {feedback.timestamp && (
+            <p className="text-xs text-slate-400">
+              Revisado el {new Date(feedback.timestamp).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+          )}
         </div>
       )}
     </div>

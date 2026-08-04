@@ -356,7 +356,7 @@ export function InitialReviewResultPage() {
       const latestReview = getInitialReview(review.id) ?? review;
       const draft = buildProjectDraftFromInitialReview(latestReview, projectShell, user?.name ?? '', user?.email ?? '');
       const result = await createProject(draft.name, draft.description);
-      if (!result.success) {
+      if (result.success === false) {
         setError(result.error);
         setSaving(false);
         return;

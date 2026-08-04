@@ -4,7 +4,7 @@ import { ChallengeActivationBadge } from './ChallengeActivationBadge';
 import { ChallengeCoverageBadge } from './ChallengeCoverageBadge';
 import { ChallengeNextAction } from './ChallengeNextAction';
 
-const STATUS_TONE_CLASSES: Record<ChallengeCardModel['status'], string> = {
+const STATUS_TONE_CLASSES: Partial<Record<ChallengeCardModel['status'], string>> = {
   draft: 'border-slate-200 bg-slate-100 text-slate-700',
   listo_para_activar: 'border-indigo-200 bg-indigo-50 text-indigo-700',
   activo_interno: 'border-amber-200 bg-amber-50 text-amber-700',
@@ -31,7 +31,7 @@ export function ChallengeCard({
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <button className="max-w-3xl text-left" onClick={() => onSelect(card.id)}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full border px-3 py-1 text-xs ${STATUS_TONE_CLASSES[card.status]}`}>
+            <span className={`rounded-full border px-3 py-1 text-xs ${STATUS_TONE_CLASSES[card.status] ?? 'border-slate-200 bg-slate-100 text-slate-700'}`}>
               {card.statusLabel}
             </span>
             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">

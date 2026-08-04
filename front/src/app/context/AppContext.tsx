@@ -207,7 +207,7 @@ export interface FeedbackIA {
   actions: string[];
   questions: string[];
   contradictions?: string[];
-  timestamp: string;
+  timestamp?: string;
 }
 
 export interface MentorSession {

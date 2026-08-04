@@ -48,13 +48,13 @@ export function PortfolioLeadSectionPage() {
     name: front.sponsor,
     role: 'Sponsor de frente',
     frontName: front.name,
-    status: challenges
+    status: (challenges
       .filter(challenge => challenge.strategicFrontId === front.id)
       .every(challenge => challenge.sponsorStatus === 'confirmado')
       ? 'confirmado'
       : challenges.some(challenge => challenge.strategicFrontId === front.id && challenge.sponsorStatus === 'notificado')
         ? 'notificado'
-        : 'definido',
+        : 'definido') as StakeholderStatus,
     milestones: challenges.filter(challenge => challenge.strategicFrontId === front.id).length > 0
       ? ['Activacion de retos', 'Decisiones del frente']
       : ['Definicion estrategica del frente'],

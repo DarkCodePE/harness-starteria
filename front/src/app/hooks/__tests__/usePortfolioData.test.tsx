@@ -92,7 +92,7 @@ describe('adaptInitiative — pure mapping with defaults', () => {
       stepsTimeline: [
         { step: 'Step 0', state: 'completed', note: 'ok' },
       ],
-    } as Parameters<typeof adaptInitiative>[0]);
+    } as unknown as Parameters<typeof adaptInitiative>[0]);
 
     expect(result.name).toBe('Custom name');
     expect(result.strategicFrontId).toBe('f9');

@@ -7,7 +7,7 @@ import type { PublicEditorQuestionStatus } from './PublicQuestionCard';
  * STATUS_COPY in `PublicProposalEditor.tsx` so the trigger and options render
  * the same colors and copy as the previous vertical list.
  */
-const STATUS_COPY: Record<PublicEditorQuestionStatus, { label: string; className: string }> = {
+const STATUS_COPY: Partial<Record<PublicEditorQuestionStatus, { label: string; className: string }>> = {
   complete: { label: 'Completo', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
   missing: { label: 'Falta completar', className: 'border-amber-200 bg-amber-50 text-amber-700' },
   needs_improvement: { label: 'Necesita precision', className: 'border-sky-200 bg-sky-50 text-sky-700' },
@@ -121,7 +121,7 @@ export function PublicFieldDropdown<TId extends string>({
     }
   };
 
-  const triggerStatus = STATUS_COPY[activeItem.status];
+  const triggerStatus = STATUS_COPY[activeItem.status] ?? STATUS_COPY.review!;
 
   return (
     <div ref={containerRef} className="relative">
@@ -160,7 +160,7 @@ export function PublicFieldDropdown<TId extends string>({
           {items.map((item, index) => {
             const isActive = item.id === activeId;
             const isHighlight = index === highlightIndex;
-            const statusCopy = STATUS_COPY[item.status];
+            const statusCopy = STATUS_COPY[item.status] ?? STATUS_COPY.review!;
             return (
               <li
                 key={item.id}

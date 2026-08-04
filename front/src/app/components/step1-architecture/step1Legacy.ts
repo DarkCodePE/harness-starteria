@@ -94,7 +94,7 @@ export const normalizeCaptureSynthesisState = ({
     (legacyValidation?.fuentes || []).map(source => [source.rolNombre.trim().toLowerCase(), source]),
   );
 
-  const captures = researchCaptures.map(capture => {
+  const captures: Step1CaptureRecord[] = researchCaptures.map(capture => {
     const legacySource = legacyCaptureByLabel.get(capture.sourceLabel.trim().toLowerCase());
     return {
       ...capture,
@@ -108,6 +108,8 @@ export const normalizeCaptureSynthesisState = ({
     const sourceLabel = source.rolNombre.trim();
     if (!sourceLabel) return;
     if (captures.some(capture => capture.sourceLabel.trim().toLowerCase() === sourceLabel.toLowerCase())) return;
+
+    const status: 'pendiente' | 'completo' = source.queConfirmar || source.porQue ? 'completo' : 'pendiente';
 
     captures.push({
       id: `capture-legacy-${source.id}`,
@@ -124,7 +126,7 @@ export const normalizeCaptureSynthesisState = ({
       finding: source.porQue || '',
       surprises: '',
       needsFollowUp: false,
-      status: source.queConfirmar || source.porQue ? 'completo' : 'pendiente',
+      status,
     });
   });
 

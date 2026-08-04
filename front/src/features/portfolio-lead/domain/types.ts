@@ -694,7 +694,7 @@ export interface PortfolioFrontOverviewCard {
   name: string;
   objective?: string;
   statusLabel?: string;
-  executiveState: 'En definición' | 'En curso' | 'Requiere atención' | 'Bloqueado' | 'Listo para decisión' | 'Cerrado';
+  executiveState: string;
   executiveTone: 'emerald' | 'amber' | 'rose' | 'violet' | 'slate';
   coverageLabel?: string;
   mainKpi: string;
@@ -932,7 +932,7 @@ export interface StrategicFrontCardModel {
   statusLabel: string;
   lastUpdatedAt?: string;
   notes?: string;
-  coverageStatus: 'sin_cobertura' | 'cobertura_parcial' | 'cobertura_suficiente' | 'necesita_reformulacion';
+  coverageStatus: ChallengeCoverageStatus;
   coverageLabel: string;
   challengesCount: number;
   initiativesCount: number;
