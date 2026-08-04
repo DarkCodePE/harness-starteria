@@ -8,6 +8,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 import { activationLabel, challengeStatusLabel, challengeTypeLabel } from '../portfolio/portfolioLeadCopy';
 import { DashboardPdfDropzone } from '../components/DashboardPdfDropzone';
+import { buildAdaptiveJourney, getAdaptiveJourneyProgress, getCurrentAdaptiveJourneyStep, resolveAdaptiveCoreForProject } from '../../features/adaptive-core/domain/adaptiveJourney';
 
 const CREATE_INITIATIVE_PATH = '/initiatives/new';
 const IMPORT_INITIATIVE_PATH = '/projects/new?mode=import';
@@ -291,7 +292,8 @@ export function DashboardPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleProjects.map(project => {
-            const currentStep = project.steps.find(step => step.number === project.currentStep);
+            const adaptiveJourney = getDashboardAdaptiveJourney(project);
+            const currentStep = getCurrentAdaptiveJourneyStep(adaptiveJourney);
             const hasBlock = project.steps.some(step => step.status === 'Bloqueado' && step.number === project.currentStep);
             const pendingSession = project.steps.some(step => step.status === 'Sesión experto pendiente');
             const sponsorMilestone = isSponsor ? getSponsorMilestone(project) : null;
@@ -322,7 +324,7 @@ export function DashboardPage() {
                 </div>
 
                 <div className="flex gap-1 mb-3">
-                  {project.steps.map(step => (
+                  {adaptiveJourney.filter(step => step.step > 0).map(step => (
                     <div key={step.number} className="flex-1" title={`Step ${step.number}: ${step.name} — ${step.status}`}>
                       <div className={`h-1.5 rounded-full ${
                         step.status === 'Aprobado'
@@ -414,7 +416,24 @@ function isFromPublicDraft(project: Project) {
   return project.origin === 'from_public_draft' || !!project.publicDraftContext;
 }
 
+function getDashboardAdaptiveJourney(project: Project) {
+  return buildAdaptiveJourney(project, resolveAdaptiveCoreForProject(project), (stepNumber) => {
+    if (stepNumber === 0) return true;
+    const previousStep = project.steps.find(step => step.number === stepNumber - 1);
+    return previousStep?.status === 'Aprobado';
+  });
+}
+
 function getCurrentWorkStep(project: Project) {
+  const adaptiveCurrent = getCurrentAdaptiveJourneyStep(getDashboardAdaptiveJourney(project));
+  if (adaptiveCurrent) {
+    return {
+      number: adaptiveCurrent.step,
+      label: `Step ${adaptiveCurrent.step}: ${adaptiveCurrent.title}`,
+      progress: adaptiveCurrent.progress,
+      status: adaptiveCurrent.status,
+    };
+  }
   if (project.currentStep === 0 || project.step0Status !== 'Completado') {
     return {
       number: 0,
@@ -446,12 +465,14 @@ function getNextParticipantAction(project: Project) {
   if (current.number === 0) {
     return project.step0Status === 'No iniciado' ? 'Completar contexto inicial' : 'Continuar Step 0';
   }
-  if (current.status === 'Feedback IA') return 'Revisar feedback';
+  if (current.status === 'review_pending' || current.status === 'Feedback IA') return 'Revisar feedback';
   if (current.status === 'Enviado' || current.status === 'Sesión experto pendiente') return 'Revisar estado de validación';
   return `Continuar Step ${current.number}`;
 }
 
 function getProjectProgress(project: Project) {
+  const adaptiveProgress = getAdaptiveJourneyProgress(getDashboardAdaptiveJourney(project));
+  if (adaptiveProgress > 0) return adaptiveProgress;
   const step0Progress = project.step0Status === 'Completado' ? 100 : project.step0Status === 'En progreso' ? 35 : 0;
   const stepProgress = project.steps.reduce((sum, step) => sum + (step.progress ?? 0), 0);
   return Math.round((step0Progress + stepProgress) / (project.steps.length + 1));
