@@ -98,7 +98,7 @@ export function getFrontCoverageStatus(
   front: StrategicFront,
   challenges: Challenge[],
   initiatives: Initiative[],
-) {
+): ChallengeCoverageStatus {
   const relatedChallenges = getChallengesByFrontId(challenges, front.id);
   const relatedInitiatives = getInitiativesByFrontId(initiatives, front.id);
 

@@ -32,6 +32,7 @@ import type {
   ChallengeStatus,
   ChallengeType,
   CreateChallengeInput,
+  PortfolioLeadState,
   StakeholderStatus,
   StrategicFront,
 } from '../../features/portfolio-lead';
@@ -223,6 +224,7 @@ export function PortfolioLeadChallengesPage() {
     initiatives,
     initiativeOverlaps,
     portfolioDecisions,
+    executiveOutputs,
     createChallenge,
     updateChallenge,
     updateChallengeStakeholderStatus,
@@ -235,8 +237,9 @@ export function PortfolioLeadChallengesPage() {
       initiatives,
       initiativeOverlaps,
       portfolioDecisions,
+      executiveOutputs,
     }),
-    [challenges, initiativeOverlaps, initiatives, portfolioDecisions, strategicFronts],
+    [challenges, executiveOutputs, initiativeOverlaps, initiatives, portfolioDecisions, strategicFronts],
   );
 
   const challengeCards = useMemo(() => getChallengeCards(domainState), [domainState]);
@@ -1998,6 +2001,35 @@ function matchesTab(tab: TabKey, card: ReturnType<typeof getChallengeCards>[numb
     default:
       return true;
   }
+}
+
+function InsightLine({
+  label,
+  items,
+  tone,
+}: {
+  label: string;
+  items: string[];
+  tone: 'emerald' | 'amber' | 'slate';
+}) {
+  const toneStyles = {
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+    amber: 'border-amber-200 bg-amber-50 text-amber-900',
+    slate: 'border-slate-200 bg-slate-50 text-slate-900',
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 ${toneStyles[tone]}`}>
+      <p className="text-xs" style={{ fontWeight: 700 }}>{label}</p>
+      <ul className="mt-2 space-y-1.5">
+        {items.map(item => (
+          <li key={item} className="text-sm">
+            - {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function buildRecommendationCards(

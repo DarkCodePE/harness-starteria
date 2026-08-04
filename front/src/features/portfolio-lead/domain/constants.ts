@@ -9,6 +9,7 @@ import type {
   StatusVisualConfig,
   StepContentStatus,
   StepValidationStatus,
+  StrategicFrontStatusCanonical,
   StrategicFrontStatus,
   ImportSessionStatus,
 } from './types';

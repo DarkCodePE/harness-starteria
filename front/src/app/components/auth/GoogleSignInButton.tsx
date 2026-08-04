@@ -70,7 +70,6 @@ export function GoogleSignInButton({
         width={width}
         shape="rectangular"
         logo_alignment="center"
-        locale="es"
       />
     </div>
   );

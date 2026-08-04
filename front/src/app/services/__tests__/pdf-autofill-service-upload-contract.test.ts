@@ -23,7 +23,7 @@ vi.mock('../api', () => {
   };
 });
 
-import { api } from '../api';
+import api from '../api';
 
 const apiPost = api.post as unknown as ReturnType<typeof vi.fn>;
 
@@ -32,7 +32,8 @@ const apiPost = api.post as unknown as ReturnType<typeof vi.fn>;
  * File-like that exposes the same API uploadPdf uses (`name`, `type`, `size`, `arrayBuffer`).
  */
 function makeFile(bytes: Uint8Array, name: string): File {
-  const file = new File([bytes], name, { type: 'application/pdf' });
+  const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const file = new File([body], name, { type: 'application/pdf' });
   if (typeof file.arrayBuffer !== 'function') {
     Object.defineProperty(file, 'arrayBuffer', {
       value: () =>

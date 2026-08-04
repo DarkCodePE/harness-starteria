@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import App from "./app/App.tsx";
+import App from "./app/App";
 import "./styles/index.css";
 
 // Google Identity Services client id is baked at build time via VITE_GOOGLE_CLIENT_ID

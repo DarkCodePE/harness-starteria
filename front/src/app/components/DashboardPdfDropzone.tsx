@@ -66,7 +66,7 @@ export function DashboardPdfDropzone() {
     setPhase('creating');
     setProgressPct(5);
     const result = await createProject(initiativeName);
-    if (!result.success) {
+    if (result.success === false) {
       setError(result.error ?? 'No pudimos crear la iniciativa.');
       setPhase('failed');
       return;

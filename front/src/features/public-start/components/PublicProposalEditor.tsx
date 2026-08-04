@@ -117,6 +117,8 @@ const STATUS_COPY: Record<PublicEditorQuestionStatus, { label: string; className
   review: { label: 'Revisar', className: 'border-sky-200 bg-sky-50 text-sky-700', icon: 'circle' },
   missing: { label: 'Falta aclarar', className: 'border-amber-200 bg-amber-50 text-amber-700', icon: 'circle' },
   confirmed: { label: 'Confirmado', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: 'check' },
+  complete: { label: 'Completo', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', icon: 'check' },
+  needs_improvement: { label: 'Necesita precision', className: 'border-sky-200 bg-sky-50 text-sky-700', icon: 'circle' },
   ai_refined: { label: 'Mejorado con IA', className: 'border-violet-200 bg-violet-50 text-violet-700', icon: 'check' },
   suggestion_available: { label: 'Sugerencia disponible', className: 'border-violet-200 bg-violet-50 text-violet-700', icon: 'edit' },
 };

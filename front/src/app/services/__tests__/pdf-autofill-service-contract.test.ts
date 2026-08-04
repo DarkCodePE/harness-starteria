@@ -121,7 +121,7 @@ describe('contract: pdfAutofillService.listProposals ↔ backend response ↔ gr
     for (const row of result) {
       for (const key of REQUIRED_DTO_KEYS) {
         expect(row).toHaveProperty(key);
-        expect((row as Record<string, unknown>)[key]).not.toBeUndefined();
+        expect((row as unknown as Record<string, unknown>)[key]).not.toBeUndefined();
       }
       // Provenance is the most likely place to lose typing — assert its core fields.
       expect(row.provenance).toMatchObject({

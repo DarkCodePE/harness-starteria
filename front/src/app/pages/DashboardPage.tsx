@@ -436,7 +436,7 @@ function getCurrentWorkStep(project: Project) {
 function getParticipantStatus(project: Project) {
   if (project.steps.some(step => step.status === 'Bloqueado')) return 'Bloqueada';
   if (project.steps.some(step => ['Enviado', 'Feedback IA', 'Sesión experto pendiente'].includes(step.status))) return 'En revisión';
-  if (project.step0Status !== 'Completado' || project.status === 'Borrador') return 'Borrador';
+  if (project.step0Status !== 'Completado' || project.status === 'Draft') return 'Borrador';
   return 'En progreso';
 }
 

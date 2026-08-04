@@ -93,7 +93,7 @@ const PRIORITY_OPTIONS: Array<{ value: StrategicFrontPriority; label: string }> 
   { value: 'Critica', label: 'Crítica' },
 ];
 
-const STATUS_META: Record<StrategicFrontStatus, { label: string; tone: string }> = {
+const STATUS_META: Partial<Record<StrategicFrontStatus, { label: string; tone: string }>> = {
   draft: { label: 'Borrador', tone: 'border-slate-200 bg-slate-100 text-slate-700' },
   active: { label: 'Activo', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
   tracking: { label: 'En seguimiento', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
@@ -1841,14 +1841,14 @@ function compareDateDesc(left: string, right: string) {
 }
 
 function getStatusWeight(status: StrategicFrontStatus) {
-  const order: Record<StrategicFrontStatus, number> = {
+  const order: Partial<Record<StrategicFrontStatus, number>> = {
     active: 0,
     tracking: 1,
     draft: 2,
     paused: 3,
     closed: 4,
   };
-  return order[status];
+  return order[status] ?? 2;
 }
 
 function normalizeText(value: string) {

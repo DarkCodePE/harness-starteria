@@ -2047,8 +2047,6 @@ export function Step1Page() {
               onChange={updateResearchV2}
               onOpenIA={openIAPanel}
               onOpenMentor={() => setShowMentorModal(true)}
-              onSuggestObjective={sugerirObjetivoIA}
-              onSuggestFronts={sugerirTemasIA}
               onGoToModuleA={() => setActiveModule('A')}
               onNext={() => moduloBListo() && setActiveModule('C')}
             />

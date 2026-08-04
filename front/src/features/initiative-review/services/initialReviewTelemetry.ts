@@ -24,6 +24,7 @@ export interface InitialReviewEventDimensions {
   questionId?: string;
   unknown?: boolean;
   contextCount?: number;
+  hasCompanyContext?: boolean;
   source?: string;
   reason?: string;
   mode?: string; // ADR-026: modo del turno de chat (answer/context/doubt)
