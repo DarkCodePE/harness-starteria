@@ -9,6 +9,7 @@ import {
   updatePublicDraft,
 } from '../../features/public-start/services/publicDraftStorage';
 import { saveStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 
 export type { AuthError } from '../services/api';
 
@@ -147,6 +148,7 @@ export interface Step0Data {
   leaderFeedbackEvidenceNote?: string;
   leaderFeedbackTopic?: string;
   leaderFeedbackClosedPending?: boolean;
+  adaptiveCore?: AdaptiveInitiativeCore;
 }
 
 export interface ProjectChallengeLink {
@@ -389,7 +391,7 @@ function writeSessionJson(key: string, value: unknown) {
   window.sessionStorage.setItem(key, JSON.stringify(value));
 }
 
-function enrichProject(raw: any, currentUser: User | null): Project {
+export function enrichProject(raw: any, currentUser: User | null): Project {
   const normalizeStep0Status = (status: unknown): Step0Status => {
     if (status === 'NOT_STARTED' || status === 'not_started' || status === 'No iniciado') return 'No iniciado';
     if (status === 'IN_PROGRESS' || status === 'in_progress' || status === 'En progreso') return 'En progreso';
@@ -501,7 +503,13 @@ const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
 
 function mapBackendUser(raw: AuthUser): User {
   const rawAny = raw as AuthUser & { cohortCode?: string | null };
-  const role = raw.email.toLowerCase() === 'portfolio@starteria.io'
+  const portfolioLeadEmails = new Set([
+    (import.meta.env.VITE_PORTFOLIO_LEAD_EMAIL || 'portfolio@starteria.io').toLowerCase(),
+  ]);
+  if (import.meta.env.MODE !== 'production') {
+    portfolioLeadEmails.add('pilot.portfolio@starteria.test');
+  }
+  const role = portfolioLeadEmails.has(raw.email.toLowerCase())
     ? 'portfolio_lead'
     : BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner';
 

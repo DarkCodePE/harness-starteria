@@ -1,6 +1,7 @@
 import type { Project, Step0Data } from '../../../app/context/AppContext';
 import { normalizeStep0Data, syncLegacyFields } from '../../../app/step0/step0Config';
 import type { ChallengeType, InitialReview, InitialReviewArtifact, InitialReviewArtifactMessage } from '../domain/types';
+import { buildAdaptiveCoreFromReview } from '../../adaptive-core/domain/adaptiveCore';
 
 const FRAME_BY_TYPE: Record<ChallengeType, Step0Data['initiativeFrame']> = {
   correction: 'correccion',
@@ -127,6 +128,7 @@ export function buildProjectDraftFromInitialReview(
     .map(question => `${question.question}${question.answer ? `: ${question.answer}` : ''}`);
   const risk = review.output.critique.mainRisk || review.output.critique.risky;
   const artifact = buildInitialReviewArtifact(review);
+  const adaptiveCore = buildAdaptiveCoreFromReview(review);
 
   const rawStep0 = {
     initiativeTitle: review.output.improvedProposal.suggestedName,
@@ -151,6 +153,7 @@ export function buildProjectDraftFromInitialReview(
       nextRecommendedStep: review.output.improvedProposal.nextRecommendedStep,
       artifact,
     },
+    adaptiveCore,
   } as Partial<Step0Data> & {
     initialReview: {
       reviewId: string;

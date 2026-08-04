@@ -323,6 +323,7 @@ export function normalizeStep0Data(input: Partial<Step0Data> | undefined, projec
     leaderFeedbackEvidenceNote: input?.leaderFeedbackEvidenceNote ?? input?.alignmentEvidenceNote ?? '',
     leaderFeedbackTopic: input?.leaderFeedbackTopic ?? '',
     leaderFeedbackClosedPending: input?.leaderFeedbackClosedPending ?? false,
+    adaptiveCore: input?.adaptiveCore,
   };
 }
 

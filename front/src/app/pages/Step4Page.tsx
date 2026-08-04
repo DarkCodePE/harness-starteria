@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -33,6 +33,7 @@ import { ApprovalGateBanner } from '../components/autofill/ApprovalGateBanner';
 import { isPdfAutofillEnabled } from '../services/featureFlags';
 import * as stepService from '../services/stepService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
+import { confirmStep4Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 type ModuleId = 'overview' | 'A' | 'B' | 'C';
 type Audiencia =
@@ -146,6 +147,12 @@ const MEETING_OUTCOMES: MeetingOutcome[] = [
   'Escalar a sponsor o comite',
   'Cerrar con aprendizajes',
 ];
+
+const DECISION_VALUES: Exclude<DecisionValue, null>[] = ['Go', 'Iterar', 'Pivote', 'No-Go'];
+
+function isOneOf<T extends string>(values: readonly T[], value: unknown): value is T {
+  return typeof value === 'string' && (values as readonly string[]).includes(value);
+}
 
 const PRESENTATION_SECTIONS: Array<{
   key: PresentationKey;
@@ -304,6 +311,40 @@ function inferStatus(done: boolean, partial: boolean): string {
   if (done) return 'Completado';
   if (partial) return 'En progreso';
   return 'Pendiente';
+}
+
+function formatAdaptiveJson(value: unknown): string {
+  try {
+    return JSON.stringify(value ?? {}, null, 2);
+  } catch {
+    return '{}';
+  }
+}
+
+function latestStepOutput(core: any, step: number, status?: string) {
+  const outputs = Array.isArray(core?.stepOutputs) ? core.stepOutputs : [];
+  return outputs
+    .filter((item: any) => Number(item.step ?? item.stepNumber) === step)
+    .filter((item: any) => !status || item.status === status)
+    .sort((a: any, b: any) => Number(b.version ?? 0) - Number(a.version ?? 0))[0] ?? null;
+}
+
+function buildStep4ReviewSummary(output: any) {
+  const brief = output?.audienceBrief ?? {};
+  const transfer = output?.transferOrClosure ?? {};
+  const coverage = output?.challengeCoverage ?? {};
+  const artifacts = output?.decisionPackage?.artifacts;
+  return [
+    { label: 'Output', value: output?.outputKey ?? 'Pendiente' },
+    { label: 'Audiencia', value: brief.primaryAudience ?? 'Pendiente' },
+    { label: 'Decision solicitada', value: brief.requestedDecision ?? transfer.finalDecision ?? 'Pendiente' },
+    { label: 'Recomendacion', value: output?.recommendation ?? 'Pendiente' },
+    { label: 'Estado final', value: output?.finalState ?? 'Pendiente' },
+    { label: 'Owner futuro', value: transfer.receiverOwner || transfer.owner || 'Pendiente' },
+    { label: 'Handoff', value: transfer.status ?? 'Pendiente' },
+    { label: 'Cobertura reto', value: coverage.status ?? 'Sin cobertura' },
+    { label: 'Artefactos', value: Array.isArray(artifacts) ? `${artifacts.length}` : '0' },
+  ];
 }
 
 function SectionCard({
@@ -510,6 +551,12 @@ export function Step4Page() {
   const [pitchVideoName, setPitchVideoName] = useState('');
   const [pitchVideoLink, setPitchVideoLink] = useState('');
   const [pitchAnalysisReady, setPitchAnalysisReady] = useState(false);
+  const [adaptiveCore, setAdaptiveCore] = useState<any | null>(null);
+  const [adaptiveCoreLoading, setAdaptiveCoreLoading] = useState(false);
+  const [adaptiveCoreError, setAdaptiveCoreError] = useState('');
+  const [adaptiveOutputJson, setAdaptiveOutputJson] = useState('');
+  const [adaptiveOutputError, setAdaptiveOutputError] = useState('');
+  const [adaptiveConfirming, setAdaptiveConfirming] = useState(false);
 
   // ── TASK-010: hydrate Step 4 state from backend on mount ─────────────────────
   // Falls back silently to existing defaults when nothing is persisted, so the
@@ -524,11 +571,10 @@ export function Step4Page() {
         const formData = (stored as { formData?: Record<string, unknown> }).formData;
         if (!formData) return;
         if (typeof formData.audience === 'string') setAudience(formData.audience as Audiencia);
-        if (typeof formData.meetingGoal === 'string') setMeetingGoal(formData.meetingGoal);
-        if (typeof formData.decision === 'string') setDecision(formData.decision);
+        if (isOneOf(MEETING_GOALS, formData.meetingGoal)) setMeetingGoal(formData.meetingGoal);
+        if (isOneOf(DECISION_VALUES, formData.decision)) setDecision(formData.decision);
         if (typeof formData.closureType === 'string') setClosureType(formData.closureType as typeof closureType);
-        if (formData.meetingOutcome && typeof formData.meetingOutcome === 'object')
-          setMeetingOutcome(formData.meetingOutcome as typeof meetingOutcome);
+        if (isOneOf(MEETING_OUTCOMES, formData.meetingOutcome)) setMeetingOutcome(formData.meetingOutcome);
         if (formData.presentation && typeof formData.presentation === 'object')
           setPresentation(formData.presentation as typeof presentation);
         if (Array.isArray(formData.evidences)) setEvidences(formData.evidences as typeof evidences);
@@ -558,6 +604,41 @@ export function Step4Page() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    setAdaptiveCoreLoading(true);
+    setAdaptiveCoreError('');
+    getAdaptiveCore(projectId)
+      .then((core) => {
+        if (!cancelled) setAdaptiveCore(core);
+      })
+      .catch(() => {
+        if (!cancelled) setAdaptiveCoreError('No pudimos cargar el cierre adaptativo desde backend.');
+      })
+      .finally(() => {
+        if (!cancelled) setAdaptiveCoreLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  const adaptiveStep4Draft = useMemo(() => latestStepOutput(adaptiveCore, 4, 'draft'), [adaptiveCore]);
+  const adaptiveStep4Confirmed = useMemo(() => latestStepOutput(adaptiveCore, 4, 'confirmed'), [adaptiveCore]);
+  const adaptiveStep3Confirmed = useMemo(() => latestStepOutput(adaptiveCore, 3, 'confirmed'), [adaptiveCore]);
+  const adaptiveActiveCheckpoint = adaptiveCore?.activeCheckpoint ?? null;
+  const adaptiveStep4Output = adaptiveStep4Draft?.output ?? adaptiveStep4Confirmed?.output ?? null;
+  const adaptiveSummary = useMemo(() => buildStep4ReviewSummary(adaptiveStep4Output), [adaptiveStep4Output]);
+  const adaptiveReadyForReview = Boolean(adaptiveStep4Draft?.output);
+  const adaptiveAlreadyConfirmed = Boolean(adaptiveStep4Confirmed);
+  const adaptiveStep4Available = Boolean(adaptiveCore && (adaptiveActiveCheckpoint?.step === 4 || adaptiveStep4Draft || adaptiveStep4Confirmed));
+
+  useEffect(() => {
+    if (adaptiveStep4Output) {
+      setAdaptiveOutputJson(formatAdaptiveJson(adaptiveStep4Output));
+      setAdaptiveOutputError('');
+    }
+  }, [adaptiveStep4Draft?.id, adaptiveStep4Confirmed?.id]);
 
   // ── Autosave (TASK-010) ─────────────────────────────────────────────────────
   const step4FormData = {
@@ -1036,6 +1117,44 @@ ${meetingOwner} / ${meetingRole}
     toast.success('Se abrio tu cliente de correo. Si no existe backend, este es el envio honesto disponible.');
   };
 
+  const confirmAdaptiveStep4Output = async () => {
+    if (!projectId || !adaptiveStep4Draft) {
+      toast.error('Primero completa CP-4.1 a CP-4.5 para generar un output de Step 4.');
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(adaptiveOutputJson);
+    } catch {
+      setAdaptiveOutputError('El output editado debe ser JSON valido.');
+      return;
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      setAdaptiveOutputError('El output confirmado debe ser un objeto JSON.');
+      return;
+    }
+
+    setAdaptiveConfirming(true);
+    setAdaptiveOutputError('');
+    try {
+      const nextCore = await confirmStep4Output(projectId, {
+        idempotencyKey: `${projectId}-step4-output-v${adaptiveStep4Draft.version ?? 'latest'}-ui-confirm`,
+        brief: parsed as Record<string, unknown>,
+        confirmed: true,
+      });
+      setAdaptiveCore(nextCore);
+      setStepFinalized(true);
+      setExecutiveDecisionReady(true);
+      toast.success('Output adaptativo de Step 4 confirmado.');
+    } catch (error: any) {
+      const message = error?.response?.data?.message ?? 'No pudimos confirmar el output de Step 4.';
+      setAdaptiveOutputError(message);
+      toast.error(message);
+    } finally {
+      setAdaptiveConfirming(false);
+    }
+  };
+
   const mobileTabs = (
     <div className="flex gap-1 mb-5 md:hidden overflow-x-auto pb-1">
       {modules.map((module) => (
@@ -1139,6 +1258,132 @@ ${meetingOwner} / ${meetingRole}
               <ApprovalGateBanner initiativeId={projectId} />
             </div>
           )}
+
+          <div className="mb-5 border border-slate-200 rounded-2xl bg-white overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>
+                    Cierre adaptativo backend
+                  </p>
+                  <StatusChip
+                    status={
+                      adaptiveAlreadyConfirmed
+                        ? 'Confirmado'
+                        : adaptiveReadyForReview
+                          ? 'Listo para revisar'
+                          : adaptiveActiveCheckpoint?.checkpointKey ?? 'Pendiente'
+                    }
+                    size="sm"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Fuente autoritativa para CP-4.1 a CP-4.5, output final, Portfolio Lead y cobertura del reto.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (!projectId) return;
+                  setAdaptiveCoreLoading(true);
+                  getAdaptiveCore(projectId)
+                    .then((core) => {
+                      setAdaptiveCore(core);
+                      setAdaptiveCoreError('');
+                    })
+                    .catch(() => setAdaptiveCoreError('No pudimos recargar el cierre adaptativo.'))
+                    .finally(() => setAdaptiveCoreLoading(false));
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 hover:bg-slate-100 transition-colors"
+                style={{ fontWeight: 600 }}
+              >
+                <Sparkles size={13} /> Recargar backend
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {adaptiveCoreLoading ? (
+                <p className="text-sm text-slate-500">Cargando Adaptive Core...</p>
+              ) : adaptiveCoreError ? (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+                  <span>{adaptiveCoreError}</span>
+                </div>
+              ) : null}
+
+              {adaptiveStep4Available ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500" style={{ fontWeight: 600 }}>Checkpoint</p>
+                      <p className="mt-1 text-sm text-slate-800">
+                        {adaptiveActiveCheckpoint?.checkpointKey ?? (adaptiveAlreadyConfirmed ? 'closed' : 'Sin checkpoint activo')}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500" style={{ fontWeight: 600 }}>Step 3 confirmado</p>
+                      <p className="mt-1 text-sm text-slate-800">{adaptiveStep3Confirmed ? 'Si' : 'Pendiente'}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500" style={{ fontWeight: 600 }}>Estado final</p>
+                      <p className="mt-1 text-sm text-slate-800">
+                        {adaptiveStep4Output?.finalState ?? adaptiveCore?.progressSignal?.finalState ?? 'Pendiente'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {adaptiveStep4Output ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="lg:col-span-1 space-y-2">
+                        {adaptiveSummary.map((item) => (
+                          <div key={item.label} className="rounded-xl border border-slate-200 p-3">
+                            <p className="text-xs text-slate-500" style={{ fontWeight: 600 }}>{item.label}</p>
+                            <p className="mt-1 text-sm text-slate-800 break-words">{String(item.value || 'Pendiente')}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="lg:col-span-2">
+                        <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>
+                          Output editable antes de confirmar
+                        </label>
+                        <textarea
+                          value={adaptiveOutputJson}
+                          onChange={(event) => setAdaptiveOutputJson(event.target.value)}
+                          disabled={adaptiveAlreadyConfirmed}
+                          rows={18}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-950 px-3 py-3 font-mono text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-70"
+                        />
+                        {adaptiveOutputError ? (
+                          <p className="mt-2 text-xs text-red-600">{adaptiveOutputError}</p>
+                        ) : null}
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={confirmAdaptiveStep4Output}
+                            disabled={!adaptiveReadyForReview || adaptiveAlreadyConfirmed || adaptiveConfirming}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 transition-colors"
+                            style={{ fontWeight: 600 }}
+                          >
+                            <CheckCircle2 size={15} />
+                            {adaptiveConfirming ? 'Confirmando...' : adaptiveAlreadyConfirmed ? 'Output confirmado' : 'Confirmar output Step 4'}
+                          </button>
+                          <p className="text-xs text-slate-400">
+                            La confirmacion actualiza InitiativeMasterContext, Portfolio Lead, cobertura y estado final.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                      Completa los checkpoints CP-4.1 a CP-4.5 desde el flujo adaptativo para generar el output final revisable.
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                  Step 4 adaptativo aun no esta configurado. Confirma el output de Step 3 para desbloquear CP-4.1.
+                </div>
+              )}
+            </div>
+          </div>
 
           {activeModule === 'overview' ? (
             <div className="space-y-5">

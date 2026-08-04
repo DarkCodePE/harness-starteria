@@ -2,6 +2,7 @@
 
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'purple';
 export type RiskLevel = 'low' | 'medium' | 'high';
+import type { ChallengeContribution, ProgressSignal } from '../../adaptive-core/domain/types';
 
 export interface StatusCopy {
   label: string;
@@ -350,6 +351,7 @@ export interface Challenge {
   whyNow: string;
   successCriteria: string;
   challengeOwner: string;
+  challengeOwnerName?: string;
   sponsorName?: string;
   sponsorEmail?: string;
   horizon?: string;
@@ -366,6 +368,7 @@ export interface Challenge {
   selectedPeople: ChallengeInvitation[];
   assignedSquad: SquadMember[];
   initiativeCount: number;
+  blockedInitiativesCount?: number;
   coverageStatus: ChallengeCoverageStatus;
   visibleToParticipants: boolean;
   publicationNotes: string;
@@ -509,6 +512,14 @@ export interface Initiative {
   mentorCommentSummary: string;
   decisionRecommendationReason: string;
   stepsTimeline: InitiativeStepTimelineEntry[];
+  progressSignal?: ProgressSignal;
+  challengeContribution?: ChallengeContribution;
+  adaptationEvents?: Array<{
+    id: string;
+    eventType: string;
+    summary: string;
+    createdAt: string;
+  }>;
 }
 
 export type PortfolioInitiative = Initiative;
@@ -525,7 +536,7 @@ export type InitiativeEditableMeta = Partial<Pick<Initiative,
   | 'signalSummary' | 'mainBlocker' | 'requiresSponsor' | 'readyForDecision'
   | 'requiresExternalCapability' | 'partialSignal' | 'resolvedCorePart'
   | 'executiveSummary' | 'experimentSummary' | 'aiCommentSummary' | 'mentorCommentSummary'
-  | 'decisionRecommendationReason' | 'deliverables' | 'stepsTimeline'
+  | 'decisionRecommendationReason' | 'deliverables' | 'stepsTimeline' | 'progressSignal' | 'challengeContribution'
 >>;
 
 export interface InitiativeOverlap {
@@ -1051,6 +1062,7 @@ export interface ChallengeFocusRecommendation {
 }
 
 export interface PortfolioLeadContextValue extends PortfolioLeadState {
+  refreshPortfolioData: () => Promise<void>;
   createStrategicFront: (input: CreateStrategicFrontInput) => StrategicFront;
   updateStrategicFront: (frontId: string, input: CreateStrategicFrontInput) => void;
   updateStrategicFrontStatus: (frontId: string, status: StrategicFrontStatus) => void;
@@ -1080,4 +1092,3 @@ export interface PortfolioLeadContextValue extends PortfolioLeadState {
   // ADR-024 (#114): persist editable tracking fields of a reto-linked iniciativa.
   updateInitiativeMeta: (projectId: string, input: InitiativeEditableMeta) => void;
 }
-

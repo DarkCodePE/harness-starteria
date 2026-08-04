@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../../app/context/AppContext';
 import * as portfolioService from '../../../app/services/portfolioService';
 import {
@@ -173,26 +173,30 @@ export function PortfolioLeadProvider({
   // #100: hydrate the read path from the real backend (frentes → retos → iniciativas).
   // The mock fixtures above are the initial/fallback state, kept if the API is empty or
   // unreachable so local dev still works. Mutations remain local for now (follow-up).
+  const refreshPortfolioData = useCallback(async () => {
+    const rawFronts = await portfolioService.listStrategicFronts();
+    if (!rawFronts || rawFronts.length === 0) return;
+    const fronts = rawFronts.map(adaptStrategicFront);
+    const challengesByFront = await Promise.all(
+      fronts.map((f) => portfolioService.listChallenges(f.id).catch(() => [])),
+    );
+    const allChallenges = challengesByFront.flat().map(adaptChallenge);
+    const initiativesByChallenge = await Promise.all(
+      allChallenges.map((c) => portfolioService.listInitiatives(c.id).catch(() => [])),
+    );
+    const allInitiatives = initiativesByChallenge.flat().map(adaptInitiative);
+    setStrategicFronts(fronts);
+    setChallenges(allChallenges);
+    setInitiatives(allInitiatives);
+  }, []);
+
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
     let cancelled = false;
     (async () => {
       try {
-        const rawFronts = await portfolioService.listStrategicFronts();
-        if (!rawFronts || rawFronts.length === 0) return; // no real data → keep mocks
-        const fronts = rawFronts.map(adaptStrategicFront);
-        const challengesByFront = await Promise.all(
-          fronts.map((f) => portfolioService.listChallenges(f.id).catch(() => [])),
-        );
-        const allChallenges = challengesByFront.flat().map(adaptChallenge);
-        const initiativesByChallenge = await Promise.all(
-          allChallenges.map((c) => portfolioService.listInitiatives(c.id).catch(() => [])),
-        );
-        const allInitiatives = initiativesByChallenge.flat().map(adaptInitiative);
+        await refreshPortfolioData();
         if (cancelled) return;
-        setStrategicFronts(fronts);
-        setChallenges(allChallenges);
-        setInitiatives(allInitiatives);
       } catch {
         // Keep the mock fixtures on any failure.
       }
@@ -200,7 +204,7 @@ export function PortfolioLeadProvider({
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, refreshPortfolioData]);
 
   const value = useMemo<PortfolioLeadContextValue>(() => ({
     strategicFronts,
@@ -209,6 +213,7 @@ export function PortfolioLeadProvider({
     initiativeOverlaps,
     portfolioDecisions,
     executiveOutputs,
+    refreshPortfolioData,
     createStrategicFront: input => {
       const front: StrategicFront = {
         id: `front-${Date.now()}`,
@@ -223,7 +228,7 @@ export function PortfolioLeadProvider({
       persistCreate(
         front.id,
         () => portfolioService.createStrategicFront(toBackendStrategicFront(input) as CreateStrategicFrontInput),
-        (raw) => adaptStrategicFront(raw as Record<string, unknown>),
+        (raw) => raw,
         setStrategicFronts,
         'strategic-front',
       );
@@ -295,7 +300,7 @@ export function PortfolioLeadProvider({
         challenge.id,
         () => portfolioService.createChallenge(input.strategicFrontId, toBackendChallenge(input) as CreateChallengeInput),
         (raw) => ({
-          ...adaptChallenge(raw as Record<string, unknown>),
+          ...raw,
           activationInputs: challenge.activationInputs,
           activationRecommendationNote: challenge.activationRecommendationNote,
           activationMessageDraft: challenge.activationMessageDraft,
@@ -728,7 +733,7 @@ export function PortfolioLeadProvider({
         'initiative-meta',
       );
     },
-  }), [challenges, executiveOutputs, initiativeOverlaps, initiatives, portfolioDecisions, strategicFronts]);
+  }), [challenges, executiveOutputs, initiativeOverlaps, initiatives, portfolioDecisions, refreshPortfolioData, strategicFronts]);
 
   return <PortfolioLeadContext.Provider value={value}>{children}</PortfolioLeadContext.Provider>;
 }
