@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, matchPath } from 'react-router';
 import {
   LayoutDashboard, FolderOpen, Users, BarChart3, User, HelpCircle,
-  LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard
+  LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard, Target
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
@@ -125,6 +125,8 @@ export function AppLayout() {
     { icon: BarChart3, label: 'Panel cohorte', path: '/admin' },
     { icon: LayoutDashboard, label: 'Todos los proyectos', path: '/dashboard' },
     { icon: Users, label: 'Mentores', path: '/admin#mentores' },
+    // Sin este enlace la capa estratégica solo se alcanza escribiendo la URL a mano.
+    { icon: Target, label: 'Portafolio', path: '/portfolio/inicio' },
     { icon: User, label: 'Mi perfil', path: '/perfil' },
   ];
 

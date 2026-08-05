@@ -60,18 +60,27 @@ function PortfolioLeadLayoutContent() {
     },
   ];
 
+  // El admin también entra: el backend YA le concede las escrituras de portafolio
+  // (`requireRole('admin', 'portfolio_lead')`, ADR-028), así que dejarle fuera de la UI
+  // era una incoherencia — autorizado por API, bloqueado por pantalla.
+  //
+  // A diferencia del portfolio lead, el admin NO queda encerrado aquí: `AppLayout` solo
+  // redirige a `/portfolio` a los `portfolio_lead`, de modo que el admin conserva el
+  // dashboard y navega entre las dos zonas.
+  const canViewPortfolio = user?.role === 'portfolio_lead' || user?.role === 'admin';
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/auth', { replace: true });
       return;
     }
 
-    if (user?.role !== 'portfolio_lead') {
+    if (!canViewPortfolio) {
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate, user?.role]);
+  }, [isAuthenticated, navigate, canViewPortfolio]);
 
-  if (!isAuthenticated || user?.role !== 'portfolio_lead') return null;
+  if (!isAuthenticated || !canViewPortfolio) return null;
 
   const isActive = (path: string) => {
     if (path === '/portfolio/decisiones') {
