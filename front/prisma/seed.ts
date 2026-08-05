@@ -90,14 +90,16 @@ async function main() {
     },
   });
 
+  // ADR-028: el `update` corrige el rol de filas ya sembradas. Con `update: {}` un
+  // re-seed dejaba a Valeria como `viewer` para siempre, que es de donde venía el 403.
   const valeria = await prisma.user.upsert({
     where: { email: 'portfolio@starteria.io' },
-    update: {},
+    update: { role: Role.portfolio_lead },
     create: {
       email: 'portfolio@starteria.io',
       name: 'Valeria Castro',
       passwordHash: DEMO_HASH,
-      role: Role.viewer,
+      role: Role.portfolio_lead,
       initials: 'VC',
       skills: ['Gestion de portafolio', 'Priorizacion estrategica'],
     },

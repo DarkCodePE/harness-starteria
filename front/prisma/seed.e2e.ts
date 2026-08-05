@@ -75,7 +75,10 @@ async function main() {
   const authorized = await upsertUser({
     email: process.env.E2E_USER_EMAIL ?? 'portfolio.e2e@starteria.test',
     name: 'Portfolio E2E',
-    role: Role.mentor,
+    // ADR-028: era `Role.mentor` porque `portfolio_lead` no existía y el front lo
+    // suplía con VITE_PORTFOLIO_LEAD_EMAIL. Ahora es el rol de verdad — sin esto las
+    // escrituras de portafolio de la suite responden 403.
+    role: Role.portfolio_lead,
     initials: 'PE',
     organizationId: organization.id,
     password: TEST_PASSWORD,

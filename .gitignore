@@ -75,3 +75,10 @@ Screencast*.webm
 
 # Config local de herramientas de agente.
 /.serena/
+
+# Artefactos de Playwright: trazas, vídeos y capturas de cada corrida e2e.
+# Son megabytes de binarios por corrida y no son evidencia versionable.
+# `.last-run.json` sí se versiona: es el puntero de estado, no un artefacto.
+front/test-results/*
+!front/test-results/.last-run.json
+test-results/.playwright-artifacts-*/

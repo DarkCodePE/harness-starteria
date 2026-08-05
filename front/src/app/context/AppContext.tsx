@@ -492,6 +492,10 @@ function createLocalProjectDraft(
   };
 }
 
+// ADR-028: `portfolio_lead` viaja en el token como los demás roles. Antes se sintetizaba
+// aquí comparando el correo del usuario contra un Set (con override por
+// VITE_PORTFOLIO_LEAD_EMAIL), lo que hacía que el backend nunca supiera quién era un
+// portfolio lead — su JWT decía `viewer` y las escrituras de portafolio devolvían 403.
 const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
   participante: 'owner',
   colaborador: 'owner',
@@ -499,19 +503,14 @@ const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
   mentor: 'mentor',
   admin: 'admin',
   sponsor: 'sponsor',
+  portfolio_lead: 'portfolio_lead',
 };
 
-function mapBackendUser(raw: AuthUser): User {
+// Exportada para test: es la función que decide el rol, y era la única pieza de esta
+// cadena sin cobertura (ADR-028).
+export function mapBackendUser(raw: AuthUser): User {
   const rawAny = raw as AuthUser & { cohortCode?: string | null };
-  const portfolioLeadEmails = new Set([
-    (import.meta.env.VITE_PORTFOLIO_LEAD_EMAIL || 'portfolio@starteria.io').toLowerCase(),
-  ]);
-  if (import.meta.env.MODE !== 'production') {
-    portfolioLeadEmails.add('pilot.portfolio@starteria.test');
-  }
-  const role = portfolioLeadEmails.has(raw.email.toLowerCase())
-    ? 'portfolio_lead'
-    : BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner';
+  const role = BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner';
 
   return {
     id: raw.id,

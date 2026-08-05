@@ -9,6 +9,8 @@ datasource db {
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
+// ADR-028: séptimo rol. Añadir un valor es `ALTER TYPE ... ADD VALUE`, aditivo, y pasa
+// el guard de `prisma db push` sin `--accept-data-loss` que impone el CD (ADR-018).
 enum Role {
   participante
   mentor
@@ -16,6 +18,7 @@ enum Role {
   sponsor
   colaborador
   viewer
+  portfolio_lead
 }
 
 enum SponsorCheckpointStatus {

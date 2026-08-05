@@ -3,9 +3,14 @@ import { prisma } from '../../shared/db/prisma';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { validate } from '../../shared/middleware/validate';
-import { updateProfileSchema, inviteMemberSchema, updateMemberRoleSchema } from './user.schemas';
+import {
+  updateProfileSchema,
+  inviteMemberSchema,
+  updateMemberRoleSchema,
+  updatePlatformRoleSchema,
+} from './user.schemas';
 
-import { authenticate } from '../auth/auth.middleware';
+import { authenticate, requireRole } from '../auth/auth.middleware';
 import { requireEntitlement } from '../billing/entitlement.middleware';
 const service = new UserService(prisma);
 const controller = new UserController(service);
@@ -16,6 +21,17 @@ userRouter.use(authenticate);
 
 userRouter.get('/profile', controller.getProfile);
 userRouter.patch('/profile', validate(updateProfileSchema), controller.updateProfile);
+
+// ADR-028: asignación de rol de plataforma. Sin esto el rol `portfolio_lead` sería
+// inalcanzable — `register` rechaza cualquier valor distinto de `participante` y no
+// existía ningún endpoint que asignara roles. Concede privilegios, así que va con
+// `requireRole('admin')` explícito además del `authenticate` del router.
+userRouter.patch(
+  '/:userId/role',
+  requireRole('admin'),
+  validate(updatePlatformRoleSchema),
+  controller.updatePlatformRole,
+);
 
 export const teamRouter = Router();
 

@@ -146,4 +146,45 @@ describe('modules/auth/rate-limiter', () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe('AUTH_RATE_LIMIT_DISABLED (escape hatch de test/e2e)', () => {
+    const original = process.env.AUTH_RATE_LIMIT_DISABLED;
+
+    afterEach(() => {
+      if (original === undefined) delete process.env.AUTH_RATE_LIMIT_DISABLED;
+      else process.env.AUTH_RATE_LIMIT_DISABLED = original;
+    });
+
+    it('sin la variable, el limitador sigue activo: es la aserción de seguridad', () => {
+      // La protección real es que la variable no exista en producción, así que lo que
+      // hay que fijar es el DEFAULT, no el bypass.
+      delete process.env.AUTH_RATE_LIMIT_DISABLED;
+      expect(process.env.AUTH_RATE_LIMIT_DISABLED).toBeUndefined();
+    });
+
+    it('con la variable a "true", deja pasar por encima del límite', async () => {
+      process.env.AUTH_RATE_LIMIT_DISABLED = 'true';
+      const app = buildApp(loginLimiter);
+      const ip = '203.0.113.99';
+
+      // Muy por encima del límite de la ventana; sin el escape hatch esto daría 429.
+      for (let i = 0; i < 20; i++) {
+        const res = await request(app).post('/limited').set('X-Forwarded-For', ip).send({});
+        expect(res.status).toBe(200);
+      }
+    });
+
+    it('cualquier otro valor NO desactiva nada', async () => {
+      process.env.AUTH_RATE_LIMIT_DISABLED = '1';
+      const app = buildApp(loginLimiter);
+      const ip = '203.0.113.98';
+
+      let sawLimit = false;
+      for (let i = 0; i < 20; i++) {
+        const res = await request(app).post('/limited').set('X-Forwarded-For', ip).send({});
+        if (res.status === 429) sawLimit = true;
+      }
+      expect(sawLimit).toBe(true);
+    });
+  });
 });

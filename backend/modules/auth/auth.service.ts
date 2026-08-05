@@ -52,7 +52,7 @@ const DEMO_USERS: Record<string, SafeUser> = {
     id: 'demo-portfolio',
     name: 'Valeria Castro',
     email: 'portfolio@starteria.io',
-    role: 'viewer',
+    role: 'portfolio_lead',
     initials: 'VC',
   },
   'sponsor@starteria.io': {

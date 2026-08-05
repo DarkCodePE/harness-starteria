@@ -156,7 +156,6 @@ async function main() {
     VITE_API_URL: process.env.VITE_API_URL || '/api/v1',
     VITE_BACKEND_PROXY_TARGET: process.env.VITE_BACKEND_PROXY_TARGET || `http://${backendHost}:${backendPort}`,
     VITE_FEATURE_PDF_AUTOFILL: process.env.VITE_FEATURE_PDF_AUTOFILL || 'true',
-    VITE_PORTFOLIO_LEAD_EMAIL: process.env.VITE_PORTFOLIO_LEAD_EMAIL || process.env.E2E_USER_EMAIL || 'portfolio.e2e@starteria.test',
     VITE_ENABLE_INITIAL_REVIEW: process.env.VITE_ENABLE_INITIAL_REVIEW || 'true',
     E2E_BASE_URL: baseURL,
     E2E_API_URL: process.env.E2E_API_URL || '',

@@ -41,6 +41,7 @@ describe('modules/auth/auth.schemas', () => {
       'sponsor',
       'colaborador',
       'viewer',
+      'portfolio_lead', // ADR-028
     ])('accepts role=%s', (role) => {
       const r = registerSchema.safeParse({ ...valid, role });
       expect(r.success).toBe(true);

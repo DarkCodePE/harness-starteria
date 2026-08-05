@@ -571,7 +571,10 @@
         "Medir cómo se comporta el contrato con un LLM real — vive en MAH-03",
         "Tocar el pipeline deepagents existente: esta feature solo AÑADE módulos"
       ],
-      "deferred_to": ["MAH-02-orchestrator-wiring", "MAH-03-ab-eval"],
+      "deferred_to": [
+        "MAH-02-orchestrator-wiring",
+        "MAH-03-ab-eval"
+      ],
       "status": "passing",
       "verification": [
         "cd ai-service && .venv/bin/python -m pytest tests/test_harness_*.py -q",
@@ -598,7 +601,9 @@
         "Cambiar el default: mode=\"baseline\" sigue siendo el comportamiento por defecto y no se toca",
         "La calidad del diagnóstico que devuelve el endpoint — eso lo mide MAH-03, no esta feature"
       ],
-      "deferred_to": ["MAH-03-ab-eval"],
+      "deferred_to": [
+        "MAH-03-ab-eval"
+      ],
       "status": "passing",
       "verification": [
         "cd ai-service && .venv/bin/python -m pytest tests/test_harness_integration.py -q (endpoint real vía TestClient, etapa LLM monkeypatcheada: hermético, sin red)",
@@ -626,8 +631,8 @@
         "Correr el scorecard en CI: hoy es manual y así se queda en esta feature",
         "Cambiar el default a mode=\"harness\" en producción — decisión posterior a tener los números"
       ],
-      "status": "in_progress",
-      "status_note": "Determinista en verde; degrada con LLM real — la clasificación multidimensional no sobrevive.",
+      "status": "blocked",
+      "status_note": "APARCADA POR LÍMITE WIP (2026-08-04) para abrir portfolio-lead-platform-role. QUÉ LA DESBLOQUEA: subir classification_accuracy y confidence_calibration en live por encima de 0.0 — el trabajo está acotado (el prompt de clasificación multidimensional y el umbral del hard gate que provoca la sobre-confirmación de orden-compra), no depende de nada externo. Estado al aparcar: determinista en verde; degrada con LLM real.",
       "verification": [
         "Correr el runner A/B en modo determinista (stub) sobre los 12 casos golden.",
         "Correr el runner A/B en modo live contra el modelo configurado.",
@@ -640,6 +645,43 @@
         "Casos que fallan en live: orden-compra (falla en LAS DOS corridas live: espera route:research-assistant, devuelve confirm → sobre-confirmación), piloto-reconstruct (falla solo en deepseek) y solucion-disfrazada (falla solo en minimax: devuelve escalate)."
       ],
       "notes": "GAP PRINCIPAL DEL ÉPICO: el eje en el que se apoya el diseño (modular depth/route en vez de saltar steps) es justo el que colapsa con LLM real — classification_accuracy 0.0 live vs 1.0 con stub. La sobre-confirmación de orden-compra es probablemente síntoma del mismo problema (diagnóstico vacío o de baja confianza → el gate pide confirmar). Dataset: ai-service/harness/eval/dataset.py (12 casos, taxonomía §21). Ver methodology-agent-harness."
+    },
+    {
+      "id": "portfolio-lead-platform-role",
+      "priority": 30,
+      "epic": "portfolio-lead",
+      "area": "backend + front + schema",
+      "title": "portfolio_lead deja de ser un email hardcodeado y pasa a ser un rol real que autoriza en el servidor",
+      "user_visible_behavior": "Un portfolio lead entra a /portfolio y puede ESCRIBIR: crear frentes estratégicos, publicar retos, editar la meta de iniciativas. Hoy la UI le deja entrar pero el backend le devuelve 403 en las 19 rutas de escritura, porque su JWT dice 'viewer'. Además un admin puede convertir a cualquier usuario en portfolio lead por API, en vez de que el rol sea inalcanzable salvo para una dirección de correo concreta.",
+      "scope_out": [
+        "Cerrar con rol las 7 rutas GET de portfolio.router.ts hoy abiertas a cualquier autenticado: AppLayout llama getInitiativeMeta para TODO usuario autenticado, así que cerrarlas rompe a los participantes",
+        "UI de administración para asignar roles: el endpoint queda expuesto y se usa por API",
+        "Validar en runtime el cast sin comprobar de auth.service.ts (role as TokenPayload['role']) y en token.service.ts verifyAccessToken — debilidad preexistente que este cambio no introduce",
+        "Unificar las tres definiciones duplicadas del union de roles (backend/shared/types/user.types.ts, auth.schemas.ts, front/src/app/services/auth.service.ts)",
+        "Resolver la colisión de numeración de ADR-009 (tres archivos) y ADR-010 (dos)",
+        "Persistir las mutaciones del provider portfolio-lead: es otra feature, ya aparcada"
+      ],
+      "deferred_to": [
+        "portfolio-persist-mutations"
+      ],
+      "status": "passing",
+      "status_note": "",
+      "verification": [
+        "cd front && npm run test:backend — verde, incluyendo: auth.schemas acepta portfolio_lead; test supertest donde un JWT portfolio_lead pasa PUT /portfolio/initiatives/:id/meta y un JWT mentor recibe 403 en la misma ruta; tests del endpoint de rol (admin 200 + refresh tokens revocados, no-admin 403, admin sobre sí mismo 403, rol inválido 400).",
+        "cd front && npm run test:front — verde, incluyendo un test nuevo de mapBackendUser: {role:'portfolio_lead', email:'cualquiera@x.com'} -> portfolio_lead, y {role:'viewer', email:'portfolio@starteria.io'} -> owner (prueba que el email dejó de mandar).",
+        "cd front && npm run docker:up && npx prisma db push --schema=./prisma/schema.prisma SIN --accept-data-loss — replica el comando exacto del CD y debe pasar sin prompt destructivo.",
+        "cd front && npm run docker:up && npm run test:e2e — la ruta de referencia (pdf-autofill.spec.ts) sigue verde y una spec nueva loguea como portfolio lead, aterriza en /portfolio/inicio y ejecuta una escritura de portafolio con 2xx (hoy sería 403).",
+        "./init.sh verde de punta a punta."
+      ],
+      "evidence": [
+        "Unit backend: 52 files / 491 tests passed, 0 failed (`cd front && npm run test:backend`). Incluye portfolio.router.authz.test.ts 5/5 (portfolio_lead 200 en PUT /portfolio/initiatives/:id/meta; mentor 403 en la misma ruta; participante 403; lecturas 200) y user.role.test.ts 9/9 (admin 200, mentor/portfolio_lead/participante/sponsor 403, rol invalido 400, auto-cambio 403, refresh tokens revocados, 404 sin tocar nada).",
+        "Unit front: 43 files / 286 tests passed, 0 failed (`cd front && npm run test:front`). Incluye mapBackendUser.test.ts 10/10: {role:'portfolio_lead', email:'cualquiera@x.com'} -> portfolio_lead y {role:'viewer', email:'portfolio@starteria.io'} -> owner (esta segunda es la que prueba que el correo dejo de mandar).",
+        "Typecheck limpio: `cd front && npm run typecheck` (front + backend) sin errores.",
+        "DEPLOY / db push contra base POBLADA: postgres:16-alpine efimero, schema PREVIO a ADR-028 aplicado, fila insertada en User con role='viewer', y luego el comando EXACTO del CD (`npx prisma db push --schema=./prisma/schema.prisma --skip-generate`, SIN --accept-data-loss) -> EXIT=0, 'Your database is now in sync'. Post-condicion verificada en SQL: enum Role = participante,mentor,admin,sponsor,colaborador,viewer,portfolio_lead; la fila preexistente sobrevive; UPDATE a 'portfolio_lead' funciona.",
+        "E2E contra el stack real (`npm run test:e2e -- e2e/portfolio-lead-role.spec.ts`): 4 passed, EXIT=0. (1) el JWT del portfolio lead lleva role=portfolio_lead; (2) con ese token crea frente estrategico Y reto (2xx) — antes 403; (3) un participante recibe 403 al escribir; (4) las lecturas siguen abiertas.",
+        "REGRESION E2E MEDIDA, NO ASUMIDA: la suite pasa de 12 rojas a 4. Las 4 restantes se verificaron ROJAS TAMBIEN EN EL BASELINE (worktree en 75fd0df, sin ninguno de estos cambios): pdf-autofill (2 corridas independientes, fallo identico) e initial-review-prd-audit x2. portfolio-steps-integration y team-inheritance piden admin@starteria.io, que siembra el seed de DESARROLLO y no existe en el stack e2e aislado (sus propias cabeceras dicen 'requires prisma db seed'). Ninguna de las 4 es un 403."
+      ],
+      "notes": "DECISIONES DE PRODUCTO (tomadas por el usuario, 2026-08-04): (a) se INCLUYE endpoint de admin para asignar rol de plataforma, en vez de dejar el aprovisionamiento en seed/DB como el resto de roles; (b) las escrituras de portafolio pasan a admin + portfolio_lead y MENTOR PIERDE ese acceso. Verificado antes de decidir que quitar mentor es seguro: portfolioService solo lo consumen AppLayout.tsx (lectura) y la feature portfolio-lead; MentorPanelPage.tsx y AdminCohorte.tsx no lo importan; ningún test de backend cubre esos gates.\nENMIENDA A ADR-010 (Accepted): pasa de 6 a 7 roles de plataforma, por eso la feature abre con ADR-028 y no con código. schema.prisma cita el modelo de 6 roles.\nRIESGO DE DEPLOY ACOTADO: añadir un valor al enum es ALTER TYPE ... ADD VALUE, aditivo, y pasa el guard de db push sin --accept-data-loss. Es distinto de añadir @@unique a tabla poblada, que es lo que prohiben ADR-018/020/023/026.\nEL PARCHE QUE REEMPLAZA: en esta rama el email-match ya evolucionó a un Set con VITE_PORTFOLIO_LEAD_EMAIL más un correo de test en no-producción. Sigue siendo identidad por email; esta feature lo sustituye por el rol del token."
     }
   ]
 }

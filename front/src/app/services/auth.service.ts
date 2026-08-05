@@ -5,7 +5,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'participante' | 'mentor' | 'admin' | 'sponsor' | 'colaborador' | 'viewer';
+  role: 'participante' | 'mentor' | 'admin' | 'sponsor' | 'colaborador' | 'viewer' | 'portfolio_lead';
   initials: string;
   cohort?: string | null;
 }

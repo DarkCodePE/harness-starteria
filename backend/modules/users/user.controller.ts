@@ -26,6 +26,21 @@ export class UserController {
     }
   };
 
+  // ADR-028: rol de PLATAFORMA. `updateMemberRole` (más abajo) es el rol de PROYECTO.
+  updatePlatformRole = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
+    try {
+      const actor = req.user!;
+      const updated = await this.service.updatePlatformRole(
+        actor.id,
+        req.params.userId,
+        req.body.role,
+      );
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   getTeam = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
     try {
       const team = await this.service.getTeam(req.params.projectId);

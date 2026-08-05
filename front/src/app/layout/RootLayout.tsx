@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router';
 import { Toaster } from 'sonner';
-import { AppProvider, useApp } from '../context/AppContext';
+import { AppProvider } from '../context/AppContext';
 import { AutofillProvider } from '../context/AutofillContext';
 import { PortfolioLeadProvider } from '../portfolio/PortfolioLeadContext';
 
@@ -12,8 +12,11 @@ function isExplicitDemoEnabled() {
 }
 
 function PortfolioLeadDataBoundary() {
-  const { user } = useApp();
-  const enableDemoData = user?.email?.toLowerCase() === 'portfolio@starteria.io' || isExplicitDemoEnabled();
+  // ADR-028: aquí había un correo hardcodeado que activaba fixtures de demo. Se quita
+  // sin sustituirlo por `role === 'portfolio_lead'`: esto sirve datos FALSOS, y dárselos
+  // a todo portfolio lead real sería un cambio de comportamiento que nadie pidió. Queda
+  // solo el flag explícito.
+  const enableDemoData = isExplicitDemoEnabled();
 
   return (
     <PortfolioLeadProvider enableDemoData={enableDemoData}>

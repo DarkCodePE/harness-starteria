@@ -30,26 +30,33 @@ export const portfolioRouter = Router();
 
 portfolioRouter.use(authenticate);
 
+// ADR-028: las escrituras son `admin` + `portfolio_lead`. `mentor` las tenía por no
+// existir el rol correcto, no por decisión de producto; se le retiran aquí.
+//
+// Las lecturas se quedan SIN gate a propósito: `AppLayout` llama a
+// `GET /initiatives/:projectId/meta` para todo usuario autenticado, así que cerrarlas
+// rompería a los participantes. Deuda declarada en el `scope_out` de la feature.
+
 // ─── Strategic Fronts ─────────────────────────────────────────────────────────
 portfolioRouter.get('/strategic-fronts', controller.listStrategicFronts);
 
 portfolioRouter.post(
   '/strategic-fronts',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(createStrategicFrontSchema),
   controller.createStrategicFront,
 );
 
 portfolioRouter.patch(
   '/strategic-fronts/:id',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(updateStrategicFrontSchema),
   controller.updateStrategicFront,
 );
 
 portfolioRouter.delete(
   '/strategic-fronts/:id',
-  requireRole('admin'),
+  requireRole('admin', 'portfolio_lead'),
   controller.deleteStrategicFront,
 );
 
@@ -61,14 +68,14 @@ portfolioRouter.get(
 
 portfolioRouter.post(
   '/strategic-fronts/:frontId/challenges',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(createChallengeSchema),
   controller.createChallenge,
 );
 
 portfolioRouter.patch(
   '/challenges/:id',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(updateChallengeSchema),
   controller.updateChallenge,
 );
@@ -76,27 +83,27 @@ portfolioRouter.patch(
 // ─── Challenge Actions ────────────────────────────────────────────────────────
 portfolioRouter.post(
   '/challenges/:id/activate-open-call',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   controller.activateOpenCall,
 );
 
 portfolioRouter.post(
   '/challenges/:id/publish',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   controller.publishChallenge,
 );
 
 // ─── Invitations ──────────────────────────────────────────────────────────────
 portfolioRouter.post(
   '/challenges/:id/invitations',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(addInvitationSchema),
   controller.addInvitation,
 );
 
 portfolioRouter.patch(
   '/challenges/:id/invitations/:invId',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(updateInvitationSchema),
   controller.updateInvitation,
 );
@@ -104,14 +111,14 @@ portfolioRouter.patch(
 // ─── Squad Members ────────────────────────────────────────────────────────────
 portfolioRouter.post(
   '/challenges/:id/squad',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(addSquadMemberSchema),
   controller.addSquadMember,
 );
 
 portfolioRouter.patch(
   '/challenges/:id/squad/:memberId',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(updateSquadMemberSchema),
   controller.updateSquadMember,
 );
@@ -124,21 +131,21 @@ portfolioRouter.get(
 
 portfolioRouter.post(
   '/challenges/:challengeId/team',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(addChallengeTeamMemberSchema),
   controller.addChallengeTeamMember,
 );
 
 portfolioRouter.patch(
   '/challenges/:challengeId/team/:memberId',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(updateChallengeTeamMemberSchema),
   controller.updateChallengeTeamMember,
 );
 
 portfolioRouter.delete(
   '/challenges/:challengeId/team/:memberId',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   controller.removeChallengeTeamMember,
 );
 
@@ -150,14 +157,14 @@ portfolioRouter.get(
 
 portfolioRouter.put(
   '/initiatives/:projectId/team/:userId',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(upsertInitiativeTeamMemberSchema),
   controller.upsertInitiativeTeamMember,
 );
 
 portfolioRouter.delete(
   '/initiatives/:projectId/team/:userId',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   controller.removeInitiativeTeamMember,
 );
 
@@ -174,7 +181,7 @@ portfolioRouter.get(
 
 portfolioRouter.put(
   '/initiatives/:projectId/meta',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(upsertInitiativeMetaSchema),
   controller.upsertInitiativeMeta,
 );
@@ -187,7 +194,7 @@ portfolioRouter.get(
 
 portfolioRouter.post(
   '/challenges/:challengeId/overlaps',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(createOverlapSchema),
   controller.createOverlap,
 );
@@ -202,7 +209,7 @@ portfolioRouter.get(
 // high-value gated deliverable. Shadow mode by default.
 portfolioRouter.post(
   '/challenges/:challengeId/executive-outputs',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   requireEntitlement('exec_export'),
   validate(createExecutiveOutputSchema),
   controller.createExecutiveOutput,
@@ -210,7 +217,7 @@ portfolioRouter.post(
 
 portfolioRouter.patch(
   '/executive-outputs/:id',
-  requireRole('admin', 'mentor'),
+  requireRole('admin', 'portfolio_lead'),
   validate(updateExecutiveOutputSchema),
   controller.updateExecutiveOutput,
 );

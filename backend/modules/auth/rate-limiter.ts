@@ -25,6 +25,19 @@ function createRateLimiter(
   }, CLEANUP_INTERVAL).unref();
 
   return (req: Request, res: Response, next: NextFunction): void => {
+    // Escape hatch SOLO para test/e2e, opt-in explícito por env. `run-e2e.ts` ya
+    // exportaba AUTH_RATE_LIMIT_DISABLED pero NADIE la leía: la variable estaba
+    // muerta y el limitador seguía activo, así que la suite e2e caía con 429 en
+    // cuanto pasaba de ~10 logins en la ventana.
+    //
+    // Mismo patrón que AUTH_DISABLE_WAITLIST (auth.service.ts): NO se puede gatear
+    // por NODE_ENV, porque el stack e2e corre con NODE_ENV=production. La seguridad
+    // es que esta variable sencillamente no se define en el entorno productivo real.
+    if (process.env.AUTH_RATE_LIMIT_DISABLED === 'true') {
+      next();
+      return;
+    }
+
     const key = keyFn(req);
     const now = Date.now();
 
