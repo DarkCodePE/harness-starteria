@@ -473,7 +473,12 @@ export function AuthPage() {
                   }}
                   placeholder="••••••••"
                   required
-                  minLength={8}
+                  // La longitud mínima es una regla de REGISTRO, no de login. Aplicarla
+                  // al login impedía entrar a cualquier cuenta cuya contraseña se creara
+                  // antes de la regla — incluidas las cuentas demo que esta misma página
+                  // ofrece como atajo (`demo123`, 7 caracteres). El backend acepta
+                  // cualquier longitud al iniciar sesión (`loginSchema`: password.min(1)).
+                  minLength={mode === 'register' ? 8 : undefined}
                   aria-invalid={!!fieldErrors.password}
                   aria-describedby={[
                     fieldErrors.password ? 'auth-password-error' : null,
