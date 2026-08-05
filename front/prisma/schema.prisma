@@ -427,6 +427,7 @@ model User {
   @@index([cohortId])
   @@index([googleId])
   @@index([organizationId])
+  copilotConversations     CopilotConversation[]
 }
 
 model Project {
@@ -1715,4 +1716,245 @@ model RouteConfirmation {
 
   @@index([snapshotId])
   @@index([status])
+}
+
+enum ActionExecutionStatus {
+  pending
+  validating
+  executing
+  completed
+  failed
+  idempotent_replay
+  partially_completed
+  manual_review_required
+}
+
+enum ActionPlanStatus {
+  draft
+  awaiting_confirmation
+  partially_approved
+  approved
+  executing
+  partially_completed
+  completed
+  failed
+  cancelled
+  superseded
+}
+
+enum CopilotAdapterType {
+  deterministic
+}
+
+enum CopilotConfidence {
+  low
+  medium
+  high
+  not_evaluable
+}
+
+enum CopilotConversationStatus {
+  collecting_context
+  interpreting
+  asking_clarification
+  proposal_ready
+  awaiting_confirmation
+  executing
+  completed
+  partially_completed
+  blocked
+  cancelled
+}
+
+enum CopilotIntent {
+  create_strategic_front
+  unknown
+}
+
+enum CopilotMessageRole {
+  user
+  assistant
+  system
+}
+
+enum CopilotMessageType {
+  free_text
+  clarification
+  plan_summary
+  approval_request
+  execution_result
+  error
+}
+
+enum CopilotOperation {
+  create
+  unsupported
+}
+
+enum ProposedActionStatus {
+  proposed
+  edited
+  approved
+  rejected
+  executing
+  completed
+  failed
+  blocked
+  cancelled
+}
+
+model CopilotConversation {
+  id                String                    @id @default(cuid())
+  organizationId    String
+  userId            String
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status            CopilotConversationStatus @default(collecting_context)
+  contextObjectType String?
+  contextObjectId   String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  messages          CopilotMessage[]
+  intentAssessments IntentAssessment[]
+  actionPlans       ActionPlan[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([organizationId, status])
+  @@index([userId, status])
+}
+
+model CopilotMessage {
+  id               String              @id @default(cuid())
+  conversationId   String
+  conversation     CopilotConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  role             CopilotMessageRole
+  messageType      CopilotMessageType
+  content          String
+  sourceReferences Json
+  createdAt        DateTime            @default(now())
+
+  intentAssessments IntentAssessment[] @relation("OriginalCopilotMessage")
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([role])
+  @@index([messageType])
+}
+
+model IntentAssessment {
+  id                      String              @id @default(cuid())
+  conversationId          String
+  conversation            CopilotConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  originalMessageId       String
+  originalMessage         CopilotMessage      @relation("OriginalCopilotMessage", fields: [originalMessageId], references: [id], onDelete: Restrict)
+  primaryIntent           CopilotIntent
+  operation               CopilotOperation
+  detectedEntities        Json
+  ambiguousObjects        Json
+  missingInformation      Json
+  recommendedCapabilities Json
+  confidence              CopilotConfidence
+  sourceReferences        Json
+  adapterType             CopilotAdapterType
+  rubricVersion           String
+  createdAt               DateTime            @default(now())
+
+  actionPlans ActionPlan[]
+
+  @@index([conversationId])
+  @@index([originalMessageId])
+  @@index([primaryIntent])
+  @@index([operation])
+  @@index([confidence])
+}
+
+model ActionPlan {
+  id                 String              @id @default(cuid())
+  conversationId     String
+  conversation       CopilotConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  intentAssessmentId String
+  intentAssessment   IntentAssessment    @relation(fields: [intentAssessmentId], references: [id], onDelete: Restrict)
+  summary            String
+  status             ActionPlanStatus    @default(draft)
+  version            Int                 @default(1)
+  createdBy          String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  supersededById     String?
+  supersededBy       ActionPlan?         @relation("ActionPlanSupersession", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersedes         ActionPlan[]        @relation("ActionPlanSupersession")
+
+  proposedActions ProposedAction[]
+
+  @@unique([conversationId, version])
+  @@index([conversationId])
+  @@index([intentAssessmentId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([supersededById])
+}
+
+model ProposedAction {
+  id                   String               @id @default(cuid())
+  actionPlanId         String
+  actionPlan           ActionPlan           @relation(fields: [actionPlanId], references: [id], onDelete: Restrict)
+  capabilityId         String
+  ownerPrd             String
+  operation            String
+  commandType          String
+  title                String
+  explanation          String
+  proposedPayload      Json
+  editableFields       Json
+  requiredPermissions  Json
+  requiresConfirmation Boolean
+  dependencyActionIds  Json
+  status               ProposedActionStatus @default(proposed)
+  version              Int                  @default(1)
+  approvedAt           DateTime?
+  approvedBy           String?
+  rejectedAt           DateTime?
+  rejectedBy           String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  executions ActionExecution[]
+
+  @@index([actionPlanId])
+  @@index([capabilityId])
+  @@index([status])
+  @@index([actionPlanId, status])
+}
+
+model ActionExecution {
+  id                      String                @id @default(cuid())
+  proposedActionId        String
+  proposedAction          ProposedAction        @relation(fields: [proposedActionId], references: [id], onDelete: Restrict)
+  idempotencyKey          String                @unique
+  status                  ActionExecutionStatus @default(pending)
+  attempt                 Int                   @default(1)
+  approvedBy              String
+  executedBy              String?
+  correlationId           String?
+  reconciliationClaimId   String?
+  reconciliationClaimedAt DateTime?
+  commandPayload          Json
+  result                  Json?
+  error                   Json?
+  createdObjectReferences Json
+  updatedObjectReferences Json
+  projectionLinks         Json
+  startedAt               DateTime?
+  completedAt             DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  @@index([proposedActionId])
+  @@index([status])
+  @@index([proposedActionId, status])
+  @@index([status, updatedAt])
+  @@index([correlationId])
+  @@index([reconciliationClaimId])
 }

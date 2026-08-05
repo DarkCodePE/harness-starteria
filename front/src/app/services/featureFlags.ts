@@ -19,13 +19,25 @@
  */
 export function isEnabled(flagId: string, _userId?: string): boolean {
   if (flagId === 'feature.pdfAutofill') {
-    const raw = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-      ?.VITE_FEATURE_PDF_AUTOFILL;
+    const raw = readFlagEnv('VITE_FEATURE_PDF_AUTOFILL');
+    return raw === 'true' || raw === '1';
+  }
+  if (flagId === 'feature.portfolioCopilot') {
+    const raw = readFlagEnv('VITE_PORTFOLIO_COPILOT_ENABLED');
     return raw === 'true' || raw === '1';
   }
   return false;
 }
 
+function readFlagEnv(key: string): string | undefined {
+  const viteEnv = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
+  return viteEnv?.[key] ?? (typeof process !== 'undefined' ? process.env[key] : undefined);
+}
+
 /** Convenience helper for the PDF autofill flag (most-used path). */
 export const isPdfAutofillEnabled = (userId?: string): boolean =>
   isEnabled('feature.pdfAutofill', userId);
+
+/** Portfolio Copilot (copilot-first vertical). Default off; see docs/implementation/copilot-first-rollout-plan.md. */
+export const isPortfolioCopilotEnabled = (userId?: string): boolean =>
+  isEnabled('feature.portfolioCopilot', userId);

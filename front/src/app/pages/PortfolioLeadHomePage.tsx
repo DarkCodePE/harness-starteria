@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   getHomeCommandCenterModel,
@@ -13,10 +13,13 @@ import {
   RecentActivitySection,
   StrategicObjectivesOverview,
 } from '../components/portfolio/PortfolioLeadHomeExperience';
+import { PortfolioCopilotDrawer, PortfolioCopilotLauncher } from '../../features/copilot';
+import { isPortfolioCopilotEnabled } from '../services/featureFlags';
 
 export function PortfolioLeadHomePage() {
   const navigate = useNavigate();
   const portfolioState = usePortfolioLead();
+  const [copilotOpen, setCopilotOpen] = useState(false);
 
   const firstName = 'Ana';
 
@@ -26,6 +29,8 @@ export function PortfolioLeadHomePage() {
   );
 
   const commandCenter = useMemo(() => getHomeCommandCenterModel(portfolioState), [portfolioState]);
+
+  const showPortfolioCopilot = isPortfolioCopilotEnabled();
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -37,6 +42,19 @@ export function PortfolioLeadHomePage() {
         actions={model.banner.actions}
         onNavigate={path => navigate(path)}
       />
+
+      {showPortfolioCopilot && (
+        <div className="flex justify-end">
+          <PortfolioCopilotLauncher onClick={() => setCopilotOpen(true)} />
+          {copilotOpen && (
+            <PortfolioCopilotDrawer
+              open={copilotOpen}
+              onOpenChange={setCopilotOpen}
+              onPortfolioRefresh={portfolioState.refreshPortfolioData}
+            />
+          )}
+        </div>
+      )}
 
       <PortfolioPrimaryActionRail summary={commandCenter.summary} onNavigate={path => navigate(path)} />
 
