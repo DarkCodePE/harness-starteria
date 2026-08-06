@@ -52,6 +52,19 @@ export interface CheckpointVariableSpec {
 export const CHECKPOINT_VARIABLES: Record<string, CheckpointVariableSpec[]> = {
   'CP-0.1': [
     {
+      variable: 'initiativeTitle',
+      prompt: 'Como se llama esta iniciativa?',
+      reason: 'Un nombre simple para poder referirse a ella; se puede ajustar despues.',
+      priority: 'should',
+    },
+    {
+      variable: 'initiativeFrame',
+      prompt: 'Como quieres enmarcarla hoy: corregir una friccion, capturar una oportunidad, explorar una apuesta o mejorar un proceso?',
+      reason: 'El encuadre orienta que tipo de hipotesis tiene sentido construir.',
+      answerType: 'single_choice',
+      priority: 'should',
+    },
+    {
       variable: 'objective',
       prompt: 'Que resultado o cambio debe quedar entendible para un lider?',
       reason: 'Step 0 no puede cerrar sin un proposito que un tercero entienda.',
@@ -193,6 +206,8 @@ export function resolveKnownValues(
   }
 
   // 3. Revision inicial (pre-Step 0): lo que la persona ya conto antes de entrar al Step.
+  remember('initiativeTitle', masterContext?.initiativeTitle, 'revision_inicial');
+  remember('initiativeFrame', masterContext?.initiativeFrame, 'revision_inicial');
   remember('objective', firstText(masterContext?.knownFacts), 'revision_inicial');
   remember('challengeType', masterContext?.challengeType, 'revision_inicial');
   remember('priorityHypothesis', firstText(masterContext?.assumptions), 'revision_inicial');

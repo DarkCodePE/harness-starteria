@@ -616,11 +616,12 @@ export function Step0Page() {
   // Solo los campos que siguen siendo del formulario. `getRequiredFieldKeys` todavia
   // enumera los 7 que pasaron al catalogo de checkpoints, y exigirlos aqui dejaria el Step
   // imposible de cerrar porque ya no tienen input.
-  const requiredKeys = MODULE_ORDER.flatMap(moduleId => MODULE_REQUIRED[moduleId]);
-  const completed = requiredKeys.filter(key => isFilled(form[key])).length;
-  const usefulStart = [form.initiativeTitle, project.name, form.rolArea].some(isFilled) ? 1 : 0;
-  const progress = Math.max(Math.round((completed / Math.max(requiredKeys.length, 1)) * 100), usefulStart ? 8 : 0);
-  const missing = requiredKeys.filter(key => !isFilled(form[key]));
+  // Ya no queda ningun campo obligatorio en el formulario: todo lo pregunta el catalogo de
+  // checkpoints. El avance se calcula mas abajo sobre los checkpoints cerrados; calcularlo
+  // aqui daba 100% con el Step recien abierto, porque los dos campos residuales que
+  // quedaban venian rellenos de la revision inicial.
+  const requiredKeys: Array<keyof Step0Data> = [];
+  const missing: Array<keyof Step0Data> = [];
   const readyBlocks = MODULE_ORDER.filter(moduleId => getModuleState(form, moduleId) === 'Listo').length;
   const descriptionLabel = getDynamicDescriptionLabel(form.initiativeFrame ?? '', mode);
   const consequenceHelper = getConsequenceHelper(form.primaryObjective ?? '');
@@ -726,6 +727,10 @@ export function Step0Page() {
   const canSave = missing.length === 0
     && checkpointSections.length > 0
     && completedCheckpoints === checkpointSections.length;
+  // El avance del Step es el de su recorrido, no el de un formulario.
+  const progress = checkpointSections.length
+    ? Math.round((completedCheckpoints / checkpointSections.length) * 100)
+    : 0;
   const draftStep0Brief = (adaptiveCore.stepOutputs ?? []).find((output: any) => output.step === 0 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
@@ -968,9 +973,14 @@ export function Step0Page() {
                     {mode === 'linked_to_challenge' ? 'Iniciativa dentro de reto' : 'Proyecto independiente'}
                   </span>
                 </div>
-                <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>Alinea tu iniciativa con el negocio</h1>
+                {/* El encabezado nombra el resultado del paso, no una consigna generica:
+                    lo que se construye aqui es la hipotesis que Step 1 va a validar. */}
+                <h1 className="text-xl text-slate-900" style={{ fontWeight: 700 }}>
+                  En este espacio aterrizaremos tu objetivo inicial en una hipótesis a validar
+                </h1>
                 <p className="mt-1 max-w-3xl text-sm text-slate-500">
-                  Antes de investigar, ordena tu iniciativa para que un líder entienda qué quieres mover, por qué importa y qué decisión necesitas.
+                  Completa estos {checkpointSections.length} checkpoints para llegar a ella.
+                  Cada uno se arma con lo que ya nos contaste, así que solo te preguntamos lo que falta.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1055,50 +1065,33 @@ export function Step0Page() {
         )}
 
         {initialReviewMeta && (
-          <div className="border-b border-indigo-100 bg-indigo-50/60 px-5 py-4">
-            <div className="mx-auto max-w-[1480px] rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-indigo-600" />
-                  <div>
-                    <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Base importada desde tu revision inicial</p>
-                    <p className="mt-1 max-w-3xl text-sm text-slate-500">
-                      Ya tenemos una primera lectura de tu iniciativa. Ahora vamos a completarla con mas precision para que puedas avanzar con claridad.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {initialReviewMeta.challengeType && (
-                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 800 }}>
-                      {CHALLENGE_TYPE_LABELS[initialReviewMeta.challengeType]}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => initialReviewArtifact ? setShowInitialReviewOnePager(true) : navigate(`/initial-reviews/${initialReviewMeta.reviewId}`)}
-                    className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50"
-                    style={{ fontWeight: 800 }}
-                  >
-                    Ver one-pager inicial
-                  </button>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {initialReviewMeta.risk && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Riesgo a cuidar</p>
-                    <p className="mt-2 text-sm leading-5 text-slate-700">{initialReviewMeta.risk}</p>
-                  </div>
-                )}
-                {(initialReviewMeta.pendingQuestions?.length ?? 0) > 0 && (
-                  <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-amber-600">Pendiente para completar</p>
-                    <ul className="mt-2 space-y-1 text-sm leading-5 text-amber-800">
-                      {initialReviewMeta.pendingQuestions?.slice(0, 3).map(question => <li key={question}>{question}</li>)}
-                    </ul>
-                  </div>
-                )}
-              </div>
+          /* Antes era un bloque grande que empujaba los checkpoints fuera de pantalla. El
+             valor real esta en el one-pager, asi que aqui queda solo una linea y el detalle
+             se abre en modal. */
+          <div className="border-b border-indigo-100 bg-indigo-50/60 px-5 py-2.5">
+            <div className="mx-auto flex max-w-[1480px] flex-wrap items-center gap-3">
+              <CheckCircle2 size={15} className="shrink-0 text-indigo-600" />
+              <p className="text-sm text-slate-700">
+                Partimos de tu revisión inicial.
+              </p>
+              {initialReviewMeta.challengeType && (
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-xs text-indigo-700 ring-1 ring-indigo-100" style={{ fontWeight: 700 }}>
+                  {CHALLENGE_TYPE_LABELS[initialReviewMeta.challengeType]}
+                </span>
+              )}
+              {initialReviewMeta.risk && (
+                <span className="truncate text-xs text-amber-800" title={initialReviewMeta.risk}>
+                  Riesgo a cuidar: {initialReviewMeta.risk}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowInitialReviewOnePager(true)}
+                className="ml-auto rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-50"
+                style={{ fontWeight: 700 }}
+              >
+                Ver one-pager inicial
+              </button>
             </div>
           </div>
         )}
@@ -1202,41 +1195,6 @@ export function Step0Page() {
                 isActive={Boolean(sectionFor('start')?.isActive)}
               >
                 {sectionFor('start')?.isActive && checkpointWorkspace}
-              <ModuleShell moduleId="start" active={activeModule === 'start'} form={form} projectName={project.name} onOpen={() => scrollToModule('start')}>
-                <div className="space-y-5">
-                  <Field id="step0-initiativeTitle" label="¿Cómo se llama tu iniciativa?" helper="Usa un nombre simple. Podrás ajustarlo después." highlight={highlightField === 'initiativeTitle'}>
-                    <AutofillField
-                      fieldPath="step0.initiativeTitle"
-                      initiativeId={projectId}
-                      value={form.initiativeTitle ?? project.name}
-                      onChange={(v) => setField('initiativeTitle', String(v ?? ''))}
-                      label="¿Cómo se llama tu iniciativa?"
-                    >
-                      {({ value, onChange, readOnly }) => (
-                        <Input value={String(value ?? '')} onChange={event => onChange(event.target.value)} readOnly={readOnly} />
-                      )}
-                    </AutofillField>
-                  </Field>
-                  <Field id="step0-initiativeFrame" label="¿Cómo quieres enmarcar esta iniciativa hoy?" highlight={highlightField === 'initiativeFrame'}>
-                    <ChoiceGroup value={form.initiativeFrame ?? ''} options={FRAME_OPTIONS} onChange={value => setField('initiativeFrame', value)} />
-                  </Field>
-                  {/* `primaryObjective` lo pregunta ahora CP-0.1 (checkpoint-planner). */}
-                  <OptionalToggle open={optionalOpen.start} label="Agregar más contexto" onClick={() => setOptionalOpen(prev => ({ ...prev, start: !prev.start }))} />
-                  {optionalOpen.start && (
-                    <div className="space-y-5 border-t border-slate-100 pt-5">
-                      <Field label="¿Desde qué rol o área estás viendo esta iniciativa?" helper="Esto ayuda a entender desde qué perspectiva nace la necesidad.">
-                        <Input value={form.rolArea} onChange={event => setField('rolArea', event.target.value)} />
-                      </Field>
-                      <Field label="¿Con qué nivel de claridad llegas hoy?">
-                        <ChoiceGroup value={form.clarityLevel ?? ''} options={CLARITY_OPTIONS} onChange={value => setField('clarityLevel', value)} />
-                      </Field>
-                      {mode === 'linked_to_challenge' && <Field label="¿Qué parte específica del reto estás buscando mover?"><Area rows={3} value={form.specificChallengePart ?? ''} onChange={event => setField('specificChallengePart', event.target.value)} /></Field>}
-                      {mode === 'linked_to_challenge' && <Field label="¿Cómo se conecta con el objetivo o KPI del reto?"><Area rows={3} value={form.challengeGoalConnection ?? ''} onChange={event => setField('challengeGoalConnection', event.target.value)} /></Field>}
-                      {mode === 'linked_to_challenge' && <Field label="¿Qué tipo de aporte crees que puede hacer dentro del reto?"><ChoiceGroup value={form.linkedContributionType ?? ''} options={CONTRIBUTION_OPTIONS} onChange={value => setField('linkedContributionType', value)} /></Field>}
-                    </div>
-                  )}
-                </div>
-              </ModuleShell>
               </CheckpointSection>
             </div>
 
@@ -1249,30 +1207,6 @@ export function Step0Page() {
                 isActive={Boolean(sectionFor('impact')?.isActive)}
               >
                 {sectionFor('impact')?.isActive && checkpointWorkspace}
-              <ModuleShell moduleId="impact" active={activeModule === 'impact'} form={form} projectName={project.name} onOpen={() => scrollToModule('impact')}>
-                <div className="space-y-5">
-                  {/* `objective`, `outcome` y `whyNow` los pregunta ahora CP-0.2. Solo queda
-                      el atajo de multi-seleccion, que el checkpoint no cubre. */}
-                  <Field label="Atajo: ¿a quién impacta?" helper="Opcional. Complementa la respuesta del checkpoint.">
-                    <QuickPickGroup
-                      values={form.impacta ?? []}
-                      options={IMPACT_OPTIONS}
-                      onChange={values => setForm(prev => ({ ...prev, impacta: values, impactWho: values.length ? values.join(', ') : prev.impactWho }))}
-                    />
-                  </Field>
-                  <OptionalToggle open={optionalOpen.impact} label="Agregar más contexto de impacto" onClick={() => setOptionalOpen(prev => ({ ...prev, impact: !prev.impact }))} />
-                  {optionalOpen.impact && (
-                    <div className="space-y-5 border-t border-slate-100 pt-5">
-                      <Field label="¿Dónde se hace visible el reto?" helper="Puede ser en un proceso, canal, reporte, decisión o momento operativo.">
-                        <Area rows={3} value={form.visibleMoment ?? ''} onChange={event => setField('visibleMoment', event.target.value)} />
-                      </Field>
-                      <Field label="¿Qué costo tendría no hacer nada?" helper={consequenceHelper}>
-                        <Area rows={3} value={form.ifNotNowConsequence ?? ''} onChange={event => setField('ifNotNowConsequence', event.target.value)} />
-                      </Field>
-                    </div>
-                  )}
-                </div>
-              </ModuleShell>
               </CheckpointSection>
             </div>
 
@@ -1285,45 +1219,6 @@ export function Step0Page() {
                 isActive={Boolean(sectionFor('decision')?.isActive)}
               >
                 {sectionFor('decision')?.isActive && checkpointWorkspace}
-              <ModuleShell moduleId="decision" active={activeModule === 'decision'} form={form} projectName={project.name} onOpen={() => scrollToModule('decision')}>
-                <div className="space-y-5">
-                  {/* `availableEvidence`, `owner_and_actor_required` y `decisionCriteria`
-                      los pregunta ahora CP-0.3. Quedan solo los atajos de seleccion. */}
-                  <Field label="Atajo: tipo de señal" helper="Opcional. Complementa la respuesta del checkpoint.">
-                    <ChoiceGroup value={form.evidenceType ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={value => setField('evidenceType', value)} />
-                  </Field>
-                  <Field label="Atajo: decisión buscada" helper="Opcional. Complementa la respuesta del checkpoint.">
-                    <QuickPickGroup values={[]} options={DECISION_OPTIONS} onChange={values => setField('decisionRequested', values[values.length - 1] ?? form.decisionRequested ?? '')} />
-                  </Field>
-                  <OptionalToggle open={optionalOpen.decision} label="Agregar apoyo, confirmaciones o datos de contacto" onClick={() => setOptionalOpen(prev => ({ ...prev, decision: !prev.decision }))} />
-                  {optionalOpen.decision && (
-                    <div className="space-y-5 border-t border-slate-100 pt-5">
-                      <Field label="Describe brevemente la señal o respaldo disponible.">
-                        <Area rows={3} value={form.currentEvidence ?? ''} onChange={event => setField('currentEvidence', event.target.value)} />
-                      </Field>
-                      <Field label="¿Qué necesitarías confirmar para seguir avanzando?" helper="Esto se trabajará con más profundidad en Step 1.">
-                        <Area rows={3} value={form.validationSignal ?? ''} onChange={event => setField('validationSignal', event.target.value)} />
-                      </Field>
-                      <Field label="¿Por qué le debería importar?">
-                        <Area rows={3} value={form.sponsorInterestReason ?? ''} onChange={event => setField('sponsorInterestReason', event.target.value)} />
-                      </Field>
-                      <Field label="¿Qué apoyo mínimo necesitas para que esto avance?">
-                        <div className="space-y-3">
-                          <QuickPickGroup
-                            values={form.siMinimo ?? []}
-                            options={SUPPORT_OPTIONS}
-                            onChange={values => setForm(prev => ({ ...prev, siMinimo: values, supportNeeded: values.length ? values.join(', ') : prev.supportNeeded }))}
-                          />
-                          <Area rows={3} value={form.supportNeeded ?? ''} onChange={event => setField('supportNeeded', event.target.value)} />
-                        </div>
-                      </Field>
-                      <Field label="¿A qué correo te envío el one-pager listo para compartir?">
-                        <Input type="email" value={form.deliveryEmail ?? ''} onChange={event => setField('deliveryEmail', event.target.value)} />
-                      </Field>
-                    </div>
-                  )}
-                </div>
-              </ModuleShell>
               </CheckpointSection>
             </div>
 
@@ -1645,6 +1540,50 @@ export function Step0Page() {
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button onClick={() => { setShowPendingWarning(false); openAlignmentCard(); }} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Registrar feedback ahora</button>
               <button onClick={() => { setShowPendingWarning(false); void goToStep1({ alignmentStatus: 'pending', alignmentAdvancedPending: true, leaderFeedbackStatus: form.leaderFeedbackStatus ?? 'pending' }); }} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Avanzar a Step 1</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sin artefacto, el boton navegaba a /initial-reviews/:id y esa ruta no existe en el
+          router, asi que reventaba. Ahora siempre abre modal: con el one-pager si esta, y
+          si no con lo que si tenemos de la revision inicial. */}
+      {showInitialReviewOnePager && !initialReviewArtifact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4 py-6">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.12em] text-indigo-500" style={{ fontWeight: 800 }}>Revisión inicial</p>
+                <h2 className="mt-1 text-lg text-slate-950" style={{ fontWeight: 800 }}>{form.initiativeTitle || project.name}</h2>
+              </div>
+              <button onClick={() => setShowInitialReviewOnePager(false)} className="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" aria-label="Cerrar">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="max-h-[72vh] space-y-3 overflow-y-auto p-5">
+              {initialReviewMeta?.challengeType && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Tipo de reto</p>
+                  <p className="mt-2 text-sm text-slate-800">{CHALLENGE_TYPE_LABELS[initialReviewMeta.challengeType]}</p>
+                </div>
+              )}
+              {initialReviewMeta?.risk && (
+                <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-amber-600">Riesgo a cuidar</p>
+                  <p className="mt-2 text-sm leading-5 text-amber-900">{initialReviewMeta.risk}</p>
+                </div>
+              )}
+              {(initialReviewMeta?.pendingQuestions?.length ?? 0) > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-white p-3">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Pendiente para completar</p>
+                  <ul className="mt-2 space-y-1 text-sm leading-5 text-slate-700">
+                    {initialReviewMeta?.pendingQuestions?.map(question => <li key={question}>• {question}</li>)}
+                  </ul>
+                </div>
+              )}
+              <p className="text-xs text-slate-400">
+                El one-pager completo no está disponible para esta iniciativa; esto es lo que quedó registrado en la revisión inicial.
+              </p>
             </div>
           </div>
         </div>
