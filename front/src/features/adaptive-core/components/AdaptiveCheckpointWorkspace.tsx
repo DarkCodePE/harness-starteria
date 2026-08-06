@@ -110,6 +110,10 @@ export function AdaptiveCheckpointWorkspace({
   const criteria = checkpointCriteria(checkpoint).length ? checkpointCriteria(checkpoint) : configuredCheckpoint?.completionCriteria ?? [];
   const gates = checkpointGates(checkpoint).length ? checkpointGates(checkpoint) : configuredCheckpoint?.gates ?? [];
   const canConfirmCheckpoint = Boolean(onConfirmCheckpoint && checkpoint && missing.length === 0 && !saving);
+  // Si el contexto ya subido resuelve todas las variables del checkpoint, no tiene sentido
+  // pedir de nuevo lo mismo: se presenta como resuelto, con lo usado a la vista, para que
+  // la persona valide en vez de rellenar.
+  const resolvedByContext = questions.length > 0 && questions.every(question => Boolean(question.prefilledFrom));
   const outputReady = Boolean(outputPreview);
 
   const payload = () => questions.reduce<Record<string, unknown>>((acc, question) => {
@@ -167,15 +171,26 @@ export function AdaptiveCheckpointWorkspace({
 
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>Preguntas minimas para avanzar</p>
-              <p className="mt-1 text-xs text-slate-500">Responde solo lo necesario para este checkpoint. Si falta informacion permitida, dejala trazada.</p>
+          {resolvedByContext ? (
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm text-emerald-900" style={{ fontWeight: 800 }}>
+                Este checkpoint ya queda resuelto con la informacion que subiste
+              </p>
+              <p className="mt-1 text-xs text-emerald-800">
+                No hace falta responder nada nuevo. Revisa abajo lo que usamos y confirma si es correcto.
+              </p>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600" style={{ fontWeight: 700 }}>
-              {questions.length} preguntas / {missing.length} pendientes
-            </span>
-          </div>
+          ) : (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>Preguntas minimas para avanzar</p>
+                <p className="mt-1 text-xs text-slate-500">Responde solo lo necesario para este checkpoint. Si falta informacion permitida, dejala trazada.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600" style={{ fontWeight: 700 }}>
+                {questions.length} preguntas / {missing.length} pendientes
+              </span>
+            </div>
+          )}
 
           {questions.length > 0 ? (
             <div className="space-y-3">
@@ -248,7 +263,7 @@ export function AdaptiveCheckpointWorkspace({
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 style={{ fontWeight: 800 }}
               >
-                <CheckCircle2 size={16} /> {saving ? 'Confirmando...' : 'Confirmar checkpoint'}
+                <CheckCircle2 size={16} /> {saving ? 'Confirmando...' : resolvedByContext ? 'Validar y cerrar este checkpoint' : 'Confirmar checkpoint'}
               </button>
             )}
             {onConfirmOutput && (

@@ -912,6 +912,10 @@ export class AdaptiveCoreService {
       id: legacy.id ?? `master-context-${project.initialReviewSnapshotId ?? project.id}-v1`,
       version: Number(legacy.version ?? 1),
       legacyFallback: !raw.adaptiveCore,
+      // Nombre y encuadre pasaron al catalogo de checkpoints; se exponen aqui para que el
+      // planificador los reconozca como ya resueltos y no los vuelva a preguntar.
+      initiativeTitle: raw.initiativeTitle ?? project.name ?? '',
+      initiativeFrame: raw.initiativeFrame ?? '',
       challengeType: legacy.challengeType ?? raw.challengeType ?? portfolioMeta?.challenge?.type ?? 'exploration',
       routeType,
       depthLevel,
