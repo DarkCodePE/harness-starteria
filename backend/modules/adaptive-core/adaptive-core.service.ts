@@ -11,6 +11,7 @@ import type {
   Step0AlignmentBrief,
 } from './adaptive-core.types';
 import type { CheckpointResponseInput, ConfirmBriefInput, ConfirmStep1OutputInput, ConfirmStep2OutputInput, ConfirmStep3OutputInput, ConfirmStep4OutputInput, CriticalChangeInput } from './adaptive-core.schemas';
+import { CHECKPOINT_VARIABLES, missingRequiredVariables, planCheckpointQuestions } from './checkpoint-planner';
 
 type Role = 'participante' | 'owner' | 'mentor' | 'admin' | 'sponsor' | 'portfolio_lead' | string;
 type StepNumber = 0 | 1 | 2 | 3 | 4;
@@ -20,6 +21,33 @@ const STEP0_CHECKPOINTS = [
   { key: 'CP-0.2', sequence: 2, title: 'Aterrizar condiciones reales', outputKey: 'ExecutionConditionsMap' },
   { key: 'CP-0.3', sequence: 3, title: 'Definir que validar o decidir', outputKey: 'AlignmentBrief + ValidationContract' },
 ] as const;
+
+// PRD-03 §5 — matriz ruta × Step. Steps 1-4 ya resolvian su output por ruta
+// (STEPn_OUTPUT_BY_ROUTE); Step 0 era la unica fila que devolvia un texto fijo, y por
+// eso la UI terminaba rotulando el output con copy legacy ("Propuesta para lider").
+// `lightweight_plan` no esta en la matriz del PRD: replica explore_validate, igual que
+// hacen los mapas de Steps 1-4.
+// Debe coincidir con STEP_VISIBLE_NAME_BY_ROUTE / STEP_OUTPUT_BY_ROUTE (fila step 0) de
+// front/src/features/adaptive-core/domain/adaptiveCore.ts, que ya implementaba la matriz
+// del PRD. Cuando el backend responde, su configuracion gana sobre la del cliente: si las
+// tablas divergen, el nombre del output cambia solo con que llegue la respuesta HTTP.
+const STEP0_VISIBLE_NAME_BY_ROUTE: Record<AdaptiveRouteType, string> = {
+  explore_validate: 'Ordenar contexto y definir que validar',
+  design_solution: 'Confirmar oportunidad y condiciones',
+  implement_handoff: 'Confirmar mandato y readiness inicial',
+  plan_coordinate: 'Aclarar objetivo, deadline y stakeholders',
+  reconstruct_existing: 'Reconstruir contexto, ownership y supuestos',
+  lightweight_plan: 'Ordenar quick win',
+};
+
+const STEP0_OUTPUT_BY_ROUTE: Record<AdaptiveRouteType, string> = {
+  explore_validate: 'Context Brief + Validation Contract',
+  design_solution: 'Opportunity Brief',
+  implement_handoff: 'Implementation Brief',
+  plan_coordinate: 'Project Brief + Validation Contract',
+  reconstruct_existing: 'Reconstructed Context',
+  lightweight_plan: 'Quick Brief',
+};
 
 const STEP1_CHECKPOINTS = [
   { key: 'CP-1.1', sequence: 1, title: 'Priorizar validacion', outputKey: 'ValidationFocus' },
@@ -150,13 +178,24 @@ export class AdaptiveCoreService {
   async getState(projectId: string, userId: string, role: Role): Promise<AdaptiveCoreState> {
     await this.getAccessibleProject(projectId, userId, role);
     const db = this.prisma as any;
-    const [configs, instances, outputs, signal, events] = await Promise.all([
+    const [configs, instances, outputs, signal, events, responses] = await Promise.all([
       db.adaptiveStepConfiguration.findMany({ where: { projectId }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
       db.adaptiveCheckpointInstance.findMany({ where: { projectId }, orderBy: [{ stepNumber: 'asc' }, { sequence: 'asc' }, { createdAt: 'asc' }] }),
       db.adaptiveStepOutput.findMany({ where: { projectId }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
       db.adaptiveProgressSignal.findUnique({ where: { projectId } }),
       db.adaptiveAdaptationEvent.findMany({ where: { projectId }, orderBy: { createdAt: 'desc' }, take: 30 }),
+      db.adaptiveCheckpointResponse.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } }),
     ]);
+    // Las respuestas confirmadas son la fuente de verdad del recorrido adaptativo. Antes
+    // no salian del backend, asi que el frontend reconstruia las variables raspando el
+    // formulario legacy de Step 0 y terminaban existiendo dos verdades para el mismo dato.
+    const responsesByInstance = new Map<string, Record<string, unknown>>();
+    for (const response of responses) {
+      responsesByInstance.set(response.checkpointInstanceId, {
+        ...(responsesByInstance.get(response.checkpointInstanceId) ?? {}),
+        ...((response.responseJson ?? {}) as Record<string, unknown>),
+      });
+    }
     const activeConfig = configs.find((c: any) => c.status === 'active' && c.stepNumber === 4)
       ?? configs.find((c: any) => c.status === 'active' && c.stepNumber === 3)
       ?? configs.find((c: any) => c.status === 'active' && c.stepNumber === 2)
@@ -169,8 +208,15 @@ export class AdaptiveCoreService {
       masterContext: activeConfig?.sourceContextJson ?? {},
       activeStepConfigurationId: activeConfig?.id ?? '',
       stepConfigurations: configs.map((c: any) => ({ ...c.configurationJson, id: c.id, version: c.version, status: c.status, requiresReview: c.requiresReview })),
-      activeCheckpoint: activeCheckpoint ? this.serializeCheckpoint(activeCheckpoint) : null,
-      checkpointInstances: instances.map((i: any) => this.serializeCheckpoint(i)),
+      activeCheckpoint: activeCheckpoint ? this.serializeCheckpoint(activeCheckpoint, responsesByInstance.get(activeCheckpoint.id)) : null,
+      checkpointInstances: instances.map((i: any) => this.serializeCheckpoint(i, responsesByInstance.get(i.id))),
+      // Vista fusionada en orden cronologico: es la misma semantica que el servicio usa
+      // internamente para construir los outputs (Object.assign sobre las respuestas), y
+      // deja el merge en un solo lugar en vez de duplicarlo en el frontend.
+      confirmedResponses: responses.reduce(
+        (acc: Record<string, unknown>, response: any) => Object.assign(acc, (response.responseJson ?? {}) as Record<string, unknown>),
+        {} as Record<string, unknown>,
+      ),
       stepOutputs: outputs.map((o: any) => ({ id: o.id, step: o.stepNumber, version: o.version, status: o.status, outputKey: o.outputKey, output: o.outputJson, requiresReview: o.requiresReview })),
       progressSignal: signal?.signalJson ?? null,
       events,
@@ -195,7 +241,12 @@ export class AdaptiveCoreService {
     if (!stepConfiguration) throw AppError.badRequest('No existe configuracion para el checkpoint activo.', 'CHECKPOINT_CONFIGURATION_MISSING');
 
     const previousResponses = await db.adaptiveCheckpointResponse.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } });
-    const sufficiency = this.evaluateCheckpoint(instance.checkpointKey, input.responses, previousResponses.map((r: any) => r.responseJson));
+    const sufficiency = this.evaluateCheckpoint(
+      instance.checkpointKey,
+      input.responses,
+      previousResponses.map((r: any) => r.responseJson),
+      stepConfiguration.sourceContextJson ?? {},
+    );
     if (!sufficiency.sufficient) {
       throw AppError.badRequest('El checkpoint aun no tiene informacion suficiente.', 'CHECKPOINT_INSUFFICIENT', {
         details: sufficiency.missing.map((field) => ({ field, code: 'MISSING_REQUIRED_FIELD', message: 'Completa o marca como pendiente este dato.' })),
@@ -917,7 +968,7 @@ export class AdaptiveCoreService {
       id: `step-${step}-${routeType}-v${version}`,
       step,
       version,
-      visibleName: step === 0 ? 'Step 0 adaptativo' : step === 1 ? 'Step 1 adaptativo' : step === 2 ? 'Step 2 adaptativo' : step === 3 ? 'Step 3 adaptativo' : 'Step 4 configurado',
+      visibleName: step === 0 ? STEP0_VISIBLE_NAME_BY_ROUTE[routeType] : step === 1 ? 'Step 1 adaptativo' : step === 2 ? 'Step 2 adaptativo' : step === 3 ? 'Step 3 adaptativo' : 'Step 4 configurado',
       objective: step === 0
         ? 'Convertir la intencion inicial en hipotesis estrategica delimitada y contrato de validacion o ejecucion.'
         : step === 1
@@ -927,7 +978,7 @@ export class AdaptiveCoreService {
             : step === 3
               ? 'Ejecutar, analizar resultados y confirmar una decision trazable desde la apuesta seleccionada.'
               : 'Preparar continuidad o cierre operativo desde la decision confirmada de Step 3.',
-      expectedOutput: step === 0 ? 'Step0AlignmentBrief + ValidationContract' : step === 1 ? STEP1_OUTPUT_BY_ROUTE[routeType] : step === 2 ? STEP2_OUTPUT_BY_ROUTE[routeType] : step === 3 ? STEP3_OUTPUT_BY_ROUTE[routeType] : STEP4_OUTPUT_BY_ROUTE[routeType],
+      expectedOutput: step === 0 ? STEP0_OUTPUT_BY_ROUTE[routeType] : step === 1 ? STEP1_OUTPUT_BY_ROUTE[routeType] : step === 2 ? STEP2_OUTPUT_BY_ROUTE[routeType] : step === 3 ? STEP3_OUTPUT_BY_ROUTE[routeType] : STEP4_OUTPUT_BY_ROUTE[routeType],
       routeType,
       depthLevel: masterContext.depthLevel ?? 'standard',
       transferredFromStep0: step0Output ?? null,
@@ -938,7 +989,19 @@ export class AdaptiveCoreService {
     };
   }
 
+  /**
+   * Step 0 se planifica con el motor adaptativo (checkpoint-planner): sus preguntas se
+   * arman con lo ya respondido, la revision inicial y el contexto de empresa. Steps 1-4
+   * siguen con el catalogo fijo de `buildStaticQuestions` hasta que se migren.
+   */
   private buildQuestions(checkpointKey: string, configurationVersion: number, masterContext: any, previousAnswers: Record<string, unknown>[]): MaterializedQuestion[] {
+    if (CHECKPOINT_VARIABLES[checkpointKey]) {
+      return planCheckpointQuestions({ checkpointKey, configurationVersion, masterContext, previousAnswers });
+    }
+    return this.buildStaticQuestions(checkpointKey, configurationVersion, masterContext, previousAnswers);
+  }
+
+  private buildStaticQuestions(checkpointKey: string, configurationVersion: number, masterContext: any, previousAnswers: Record<string, unknown>[]): MaterializedQuestion[] {
     const questions: MaterializedQuestion[] = [];
     const add = (source: AdaptiveQuestionSource, prompt: string, clarifiesVariable: string, required: boolean, reason: string, sourceRefs: string[] = [], extra: Partial<MaterializedQuestion> = {}) => {
       questions.push({
@@ -1112,7 +1175,13 @@ export class AdaptiveCoreService {
     return created;
   }
 
-  private evaluateCheckpoint(checkpointKey: string, responses: Record<string, unknown>, previous: Record<string, unknown>[]) {
+  private evaluateCheckpoint(checkpointKey: string, responses: Record<string, unknown>, previous: Record<string, unknown>[], masterContext?: any) {
+    // Para los checkpoints planificados, el gate lo calcula el mismo motor que armo las
+    // preguntas: si una variable ya venia resuelta del contexto, no puede bloquear.
+    if (CHECKPOINT_VARIABLES[checkpointKey]) {
+      const missing = missingRequiredVariables(checkpointKey, masterContext ?? {}, previous, responses);
+      return { sufficient: missing.length === 0, missing, previousResponseCount: previous.length };
+    }
     const requiredByCheckpoint: Record<string, string[]> = {
       'CP-0.1': ['objective'],
       'CP-0.2': ['scope', 'owner_and_actor_required'],
@@ -2255,7 +2324,7 @@ export class AdaptiveCoreService {
     return next;
   }
 
-  private serializeCheckpoint(instance: any) {
+  private serializeCheckpoint(instance: any, responses?: Record<string, unknown>) {
     const spec = [...STEP0_CHECKPOINTS, ...STEP1_CHECKPOINTS, ...STEP2_CHECKPOINTS, ...STEP3_CHECKPOINTS, ...STEP4_CHECKPOINTS].find((cp) => cp.key === instance.checkpointKey);
     return {
       id: instance.id,
@@ -2267,6 +2336,7 @@ export class AdaptiveCoreService {
       sequence: instance.sequence,
       questions: instance.materializedQuestionsJson,
       sufficiency: instance.sufficiencyJson,
+      responses: responses ?? {},
       startedAt: instance.startedAt,
       completedAt: instance.completedAt,
       configurationId: instance.stepConfigurationId,

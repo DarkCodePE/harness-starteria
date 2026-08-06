@@ -14,6 +14,11 @@ export interface AdaptiveCheckpointWorkspaceProps {
   outputConfirmed?: boolean;
   saving?: boolean;
   error?: string | null;
+  /**
+   * El workspace se monta dentro de una seccion que ya declara codigo, titulo y proposito
+   * del checkpoint (Step 0). En ese caso su propia cabecera seria una repeticion.
+   */
+  embedded?: boolean;
   onConfirmCheckpoint?: (responses: Record<string, unknown>) => void | Promise<void>;
   onConfirmOutput?: () => void | Promise<void>;
   onRefresh?: () => void;
@@ -85,6 +90,7 @@ export function AdaptiveCheckpointWorkspace({
   outputConfirmed,
   saving = false,
   error,
+  embedded = false,
   onConfirmCheckpoint,
   onConfirmOutput,
   onRefresh,
@@ -113,14 +119,20 @@ export function AdaptiveCheckpointWorkspace({
   }, {});
 
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm" aria-label="Workspace adaptativo del checkpoint">
-      <div className="border-b border-indigo-100 bg-indigo-50 px-5 py-5">
+    <section
+      className={embedded ? 'overflow-hidden rounded-2xl border border-indigo-100 bg-white' : 'mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm'}
+      aria-label="Workspace adaptativo del checkpoint"
+    >
+      <div className={embedded ? 'border-b border-indigo-100 bg-indigo-50/50 px-5 py-4' : 'border-b border-indigo-100 bg-indigo-50 px-5 py-5'}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-4xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs text-white" style={{ fontWeight: 800 }}>
-                {code}
-              </span>
+              {/* Embebido, el codigo ya lo declara la cabecera de la seccion. */}
+              {!embedded && (
+                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs text-white" style={{ fontWeight: 800 }}>
+                  {code}
+                </span>
+              )}
               <span className="rounded-full bg-white px-3 py-1 text-xs text-indigo-700 ring-1 ring-indigo-100" style={{ fontWeight: 700 }}>
                 {config?.routeType.replaceAll('_', ' ') ?? core.masterContext?.routeType?.replaceAll('_', ' ') ?? 'ruta adaptativa'}
               </span>
@@ -128,9 +140,11 @@ export function AdaptiveCheckpointWorkspace({
                 {config?.depthLevel ?? core.masterContext?.depthLevel ?? 'standard'}
               </span>
             </div>
-            <h2 className="mt-3 text-xl text-slate-950" style={{ fontWeight: 850 }}>
-              {checkpointTitle(checkpoint, configuredCheckpoint?.title)}
-            </h2>
+            {!embedded && (
+              <h2 className="mt-3 text-xl text-slate-950" style={{ fontWeight: 850 }}>
+                {checkpointTitle(checkpoint, configuredCheckpoint?.title)}
+              </h2>
+            )}
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">{purpose}</p>
             <p className="mt-2 text-sm text-indigo-900" style={{ fontWeight: 700 }}>
               Output que estas construyendo: {checkpointOutputKey(checkpoint, configuredCheckpoint?.outputKey ?? config?.expectedOutput ?? 'output adaptativo')}
