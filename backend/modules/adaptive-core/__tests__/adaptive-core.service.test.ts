@@ -1114,4 +1114,63 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
     expect(store.project[0].status).toBe('ITERATION');
     expect(closed.progressSignal?.finalState).toBe('new_iteration_required');
   });
+
+  it('33. Step 0 declara nombre visible y output segun la ruta (PRD-03 §5)', async () => {
+    // La ruta se deriva del texto de step0Data; una fila por ruta de la matriz del PRD.
+    const cases: Array<{ initialFocus: string; route: string; output: string }> = [
+      { initialFocus: 'Validar oportunidad', route: 'explore_validate', output: 'Context Brief + Validation Contract' },
+      { initialFocus: 'Disenar la solucion', route: 'design_solution', output: 'Opportunity Brief' },
+      { initialFocus: 'Implementar adopcion', route: 'implement_handoff', output: 'Implementation Brief' },
+      { initialFocus: 'Coordinar plan con deadline', route: 'plan_coordinate', output: 'Project Brief + Validation Contract' },
+      { initialFocus: 'Reconstruir la iniciativa', route: 'reconstruct_existing', output: 'Reconstructed Context' },
+    ];
+
+    for (const { initialFocus, route, output } of cases) {
+      const store = createStore();
+      const project = seedProject(store, { initialFocus });
+      const service = new AdaptiveCoreService(makePrisma(store));
+      const state = await service.ensureInitialized(project.id, 'u1', 'participante');
+      const step0 = state.stepConfigurations.find((config: any) => config.step === 0) as any;
+
+      expect(step0.routeType).toBe(route);
+      expect(step0.expectedOutput).toBe(output);
+      // El nombre visible tambien sale de la matriz, no del placeholder generico.
+      expect(step0.visibleName).not.toBe('Step 0 adaptativo');
+    }
+  });
+
+  it('34. el estado expone las respuestas confirmadas como fuente de verdad del recorrido', async () => {
+    const store = createStore();
+    const project = seedProject(store);
+    const service = new AdaptiveCoreService(makePrisma(store));
+    await service.ensureInitialized(project.id, 'u1', 'participante');
+
+    await service.confirmCheckpoint(project.id, 'u1', 'participante', {
+      idempotencyKey: `${project.id}-cp01`,
+      checkpointKey: 'CP-0.1',
+      responses: { objective: 'Mover adopcion', challengeType: 'growth' },
+    });
+    const state = await service.confirmCheckpoint(project.id, 'u1', 'participante', {
+      idempotencyKey: `${project.id}-cp02`,
+      checkpointKey: 'CP-0.2',
+      responses: { scope: 'Equipo comercial', owner_and_actor_required: 'Owner comercial' },
+    });
+
+    // Fusionadas en orden cronologico: es lo que el frontend consume en vez de raspar
+    // el formulario legacy de Step 0.
+    expect(state.confirmedResponses).toMatchObject({
+      objective: 'Mover adopcion',
+      scope: 'Equipo comercial',
+      owner_and_actor_required: 'Owner comercial',
+    });
+
+    // Y ademas adjuntas al checkpoint que las respondio, para poder rehidratar la vista.
+    const cp01 = state.checkpointInstances.find((item: any) => item.checkpointKey === 'CP-0.1') as any;
+    const cp02 = state.checkpointInstances.find((item: any) => item.checkpointKey === 'CP-0.2') as any;
+    expect(cp01.responses).toMatchObject({ objective: 'Mover adopcion' });
+    expect(cp02.responses).toMatchObject({ scope: 'Equipo comercial' });
+    // Un checkpoint aun sin responder no inventa respuestas.
+    const cp03 = state.checkpointInstances.find((item: any) => item.checkpointKey === 'CP-0.3') as any;
+    expect(cp03?.responses ?? {}).toEqual({});
+  });
 });

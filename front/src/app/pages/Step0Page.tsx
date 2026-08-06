@@ -26,6 +26,7 @@ import type { Project, Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
 import { ensureAdaptiveCoreForProject, getActiveStepConfiguration, materializeQuestionsForCheckpoint } from '../../features/adaptive-core/domain/adaptiveCore';
+import { mergeCheckpointResponses, projectCheckpointResponsesToFields } from '../../features/adaptive-core/domain/checkpointResponses';
 import { confirmAdaptiveCheckpoint, confirmStep0Brief, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 import { AutofillField } from '../components/autofill/AutofillField';
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
@@ -41,16 +42,57 @@ const MODULE_TITLES: Record<ModuleId, string> = {
   decision: 'Apoyo y decisión',
 };
 
+/**
+ * PRD-03 §6 (Zona 3): un Step se presenta como UNA jerarquia, no como dos.
+ *
+ * Los tres modulos historicos de Step 0 corresponden uno a uno con los checkpoints del
+ * catalogo adaptativo, asi que cada modulo se pliega dentro de su checkpoint en vez de
+ * vivir como una seccion paralela con su propio contador de avance.
+ */
+const CHECKPOINT_TO_MODULE: Record<string, ModuleId> = {
+  'CP-0.1': 'start',
+  'CP-0.2': 'impact',
+  'CP-0.3': 'decision',
+};
+
 const MODULE_DESCRIPTIONS: Record<ModuleId, string> = {
   start: 'Define desde dónde nace la iniciativa y cómo quieres enmarcarla.',
   impact: 'Explica qué está pasando, a quién afecta y por qué conviene moverlo ahora.',
   decision: 'Define qué señales existen hoy, quién debe escucharlo y qué decisión buscas.',
 };
 
+/**
+ * Solo lo que el motor de checkpoints NO pregunta. `primaryObjective`, `quePasaQueQuieres`,
+ * `impactWho`, `whyNowText`, `evidenceType`, `quienEscuchar` y `decisionRequested` pasaron
+ * al catalogo de `checkpoint-planner`, asi que el formulario ya no puede exigirlos: quien
+ * decide si el Step puede cerrar es el checkpoint.
+ */
 const MODULE_REQUIRED: Record<ModuleId, Array<keyof Step0Data>> = {
-  start: ['initiativeTitle', 'initiativeFrame', 'primaryObjective'],
-  impact: ['quePasaQueQuieres', 'impactWho', 'whyNowText'],
-  decision: ['evidenceType', 'quienEscuchar', 'decisionRequested'],
+  start: ['initiativeTitle', 'initiativeFrame'],
+  impact: [],
+  decision: [],
+};
+
+/**
+ * Proyeccion checkpoint → formulario legacy de Step 0.
+ *
+ * `legacyStep0Seed` mapea en la direccion contraria usando cadenas de fallback
+ * (`form.a || form.b || form.c`), asi que la inversa es ambigua: aqui se escribe solo
+ * el campo PRIMARIO de cada cadena, que es el unico determinista. Las secciones legacy
+ * pasan a ser una vista del recorrido adaptativo en vez de una segunda captura.
+ */
+const CHECKPOINT_VARIABLE_TO_STEP0_FIELD: Record<string, keyof Step0Data> = {
+  objective: 'quePasaQueQuieres',
+  scope: 'specificChallengePart',
+  owner_and_actor_required: 'quienEscuchar',
+  priorityHypothesis: 'validationSignal',
+  decisionCriteria: 'decisionRequested',
+  currentEvidence: 'currentEvidence',
+  adoption: 'sponsorInterestReason',
+  outcome: 'impactWho',
+  // Variables que el planificador incorporo al absorber el formulario estatico.
+  whyNow: 'whyNowText',
+  availableEvidence: 'currentEvidence',
 };
 
 const FIELD_LABELS: Partial<Record<keyof Step0Data, string>> = {
@@ -318,6 +360,60 @@ function OptionalToggle({ open, label, onClick }: { open: boolean; label: string
   );
 }
 
+/**
+ * Contenedor de un checkpoint del Step. Envuelve las preguntas minimas del catalogo y el
+ * modulo historico que le corresponde, de modo que la persona ve una sola seccion con un
+ * solo estado en vez de dos bloques compitiendo por el mismo dato.
+ */
+function CheckpointSection({
+  code,
+  title,
+  sequence,
+  status,
+  isActive,
+  children,
+}: {
+  code: string;
+  title: string;
+  sequence: number;
+  status: string;
+  isActive: boolean;
+  children: React.ReactNode;
+}) {
+  const completed = status === 'completed';
+  const locked = status === 'locked';
+  const tone = isActive
+    ? 'border-indigo-300 ring-1 ring-indigo-100'
+    : completed
+      ? 'border-emerald-200'
+      : 'border-slate-200';
+
+  return (
+    <section className={`overflow-hidden rounded-2xl border bg-white ${tone}`} aria-label={`${code} ${title}`}>
+      <header className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 ${isActive ? 'border-indigo-100 bg-indigo-50' : completed ? 'border-emerald-100 bg-emerald-50/50' : 'border-slate-100 bg-slate-50'}`}>
+        <div className="flex items-center gap-3">
+          <span
+            className={`rounded-full px-3 py-1 text-xs ${isActive ? 'bg-indigo-600 text-white' : completed ? 'bg-emerald-600 text-white' : 'bg-white text-slate-500 ring-1 ring-slate-200'}`}
+            style={{ fontWeight: 800 }}
+          >
+            {code}
+          </span>
+          <div>
+            <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>
+              {completed ? '✓ ' : ''}{title}
+            </p>
+            <p className="text-xs text-slate-500">Checkpoint {sequence} de 3</p>
+          </div>
+        </div>
+        <span className={`text-xs ${isActive ? 'text-indigo-700' : completed ? 'text-emerald-700' : 'text-slate-400'}`} style={{ fontWeight: 700 }}>
+          {isActive ? 'En curso' : completed ? 'Completado' : locked ? 'Se abre al cerrar el anterior' : 'Pendiente'}
+        </span>
+      </header>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
 function ModuleShell({
   moduleId,
   active,
@@ -347,7 +443,6 @@ function ModuleShell({
               {complete ? '✓' : '○'} {complete ? `${MODULE_TITLES[moduleId]} listo` : MODULE_TITLES[moduleId]}
             </p>
             <p className="mt-1 truncate text-sm text-slate-500">{buildModuleSummary(form, moduleId, projectName)}</p>
-            <p className="mt-2 text-xs text-slate-400">{state} · {done}/{total} campos clave</p>
           </div>
           <button onClick={onOpen} className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50" style={{ fontWeight: 600 }}>
             {complete ? 'Editar' : 'Completar'}
@@ -361,7 +456,9 @@ function ModuleShell({
     <div className="rounded-2xl border border-indigo-200 bg-white p-5 ring-1 ring-indigo-100">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.08em] text-indigo-500" style={{ fontWeight: 700 }}>{state} · {done}/{total}</p>
+          {/* El estado lo posee el checkpoint que envuelve a este modulo (CheckpointSection).
+              Mostrarlo aqui reintroducia dos contadores para el mismo tramo. */}
+          <p className="text-xs uppercase tracking-[0.08em] text-slate-400" style={{ fontWeight: 700 }}>Complementa tu contexto</p>
           <h2 className="mt-1 text-base text-slate-900" style={{ fontWeight: 700 }}>{MODULE_TITLES[moduleId]}</h2>
           <p className="mt-1 text-sm text-slate-500">{MODULE_DESCRIPTIONS[moduleId]}</p>
         </div>
@@ -460,6 +557,35 @@ export function Step0Page() {
     };
   }, [project?.id]);
 
+  // El checkpoint manda: cuando el backend devuelve respuestas confirmadas, las secciones
+  // legacy de Step 0 se hidratan desde ellas. Antes cada una capturaba el dato por su
+  // cuenta, asi que el usuario respondia lo mismo dos veces y los dos contadores de
+  // avance de la pagina podian contradecirse.
+  useEffect(() => {
+    if (!serverAdaptiveCore) return;
+    const confirmed: Record<string, unknown> = {
+      ...(serverAdaptiveCore.confirmedResponses ?? {}),
+      ...(serverAdaptiveCore.activeCheckpoint?.responses ?? {}),
+    };
+    const projected = projectCheckpointResponsesToFields(confirmed, CHECKPOINT_VARIABLE_TO_STEP0_FIELD);
+    if (projected.length === 0) return;
+    setForm(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [field, value] of projected) {
+        if (next[field] !== value) {
+          (next as Record<string, unknown>)[field] = value;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    // `project` va en las dependencias a proposito: el efecto de arriba resetea el
+    // formulario con normalizeStep0Data cada vez que cambia la identidad del proyecto, y
+    // sin esto la proyeccion del checkpoint quedaba pisada. Al declararse despues, React
+    // lo ejecuta despues del reset y el checkpoint vuelve a ganar.
+  }, [serverAdaptiveCore, project]);
+
   useEffect(() => {
     if (!projectId || !project) return;
     if (!isStep0DataMissingPublicFields(project.step0Data)) return;
@@ -487,12 +613,14 @@ export function Step0Page() {
 
   const mode = form.mode ?? getStep0Mode(project);
   const inherited = buildInheritedChallengeContext(project, challenges, strategicFronts);
-  const requiredKeys = getRequiredFieldKeys(mode, form);
+  // Solo los campos que siguen siendo del formulario. `getRequiredFieldKeys` todavia
+  // enumera los 7 que pasaron al catalogo de checkpoints, y exigirlos aqui dejaria el Step
+  // imposible de cerrar porque ya no tienen input.
+  const requiredKeys = MODULE_ORDER.flatMap(moduleId => MODULE_REQUIRED[moduleId]);
   const completed = requiredKeys.filter(key => isFilled(form[key])).length;
   const usefulStart = [form.initiativeTitle, project.name, form.rolArea].some(isFilled) ? 1 : 0;
-  const progress = Math.max(Math.round((completed / requiredKeys.length) * 100), usefulStart ? 8 : 0);
+  const progress = Math.max(Math.round((completed / Math.max(requiredKeys.length, 1)) * 100), usefulStart ? 8 : 0);
   const missing = requiredKeys.filter(key => !isFilled(form[key]));
-  const canSave = missing.length === 0;
   const readyBlocks = MODULE_ORDER.filter(moduleId => getModuleState(form, moduleId) === 'Listo').length;
   const descriptionLabel = getDynamicDescriptionLabel(form.initiativeFrame ?? '', mode);
   const consequenceHelper = getConsequenceHelper(form.primaryObjective ?? '');
@@ -547,6 +675,19 @@ export function Step0Page() {
   const initialReviewArtifact = initialReviewMeta?.artifact ?? null;
   const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
   const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
+  // PRD-03 §5/§11: el nombre visible del Step y su output principal salen de la matriz
+  // ruta × Step, no de copy fijo. El copy legacy ("propuesta para lider") describia un
+  // solo caso de uso y quedaba mal en las otras cuatro rutas.
+  //
+  // Ojo: `activeStepConfigurationId` apunta al Step MAS ALTO activo (el backend lo
+  // resuelve 4→3→2→1→0), asi que en una iniciativa que ya avanzo a Step 2 devolveria la
+  // configuracion de Step 2. Esta pagina siempre debe rotular con la de Step 0.
+  const step0Configuration = adaptiveCore.stepConfigurations
+    .filter(config => config.step === 0)
+    .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] ?? activeConfiguration;
+  const stepOutputLabel = step0Configuration.expectedOutput;
+  const stepVisibleName = step0Configuration.visibleName;
+
   const activeCheckpointFromServer = adaptiveCore.activeCheckpoint;
   const configuredServerCheckpoint = activeCheckpointFromServer
     ? activeConfiguration.checkpoints.find(checkpoint => checkpoint.code === activeCheckpointFromServer.checkpointKey)
@@ -562,6 +703,29 @@ export function Step0Page() {
       }
     : activeConfiguration.checkpoints.find(checkpoint => checkpoint.status === 'ready' || checkpoint.status === 'in_progress') ?? activeConfiguration.checkpoints[0];
   const activeCheckpointQuestions = activeCheckpointFromServer?.questions ?? materializeQuestionsForCheckpoint(adaptiveCore, activeCheckpoint.code);
+
+  // Estado real de cada checkpoint: manda la instancia persistida; la configuracion solo
+  // aporta el valor por defecto cuando el backend todavia no materializo la instancia.
+  // Va despues de `activeCheckpoint` porque depende de el.
+  const checkpointSections = (step0Configuration.checkpoints ?? []).map((checkpoint, index) => {
+    const instance = (adaptiveCore.checkpointInstances ?? []).find(
+      (item: any) => item.checkpointKey === checkpoint.code && item.step === 0,
+    ) as { status?: string } | undefined;
+    return {
+      code: checkpoint.code,
+      title: checkpoint.title,
+      sequence: index + 1,
+      status: instance?.status ?? checkpoint.status ?? 'locked',
+      moduleId: CHECKPOINT_TO_MODULE[checkpoint.code],
+      isActive: checkpoint.code === activeCheckpoint.code,
+    };
+  });
+  const completedCheckpoints = checkpointSections.filter(section => section.status === 'completed').length;
+  // El output del Step se elabora cuando el recorrido esta cerrado, no cuando el
+  // formulario tiene sus campos llenos (PRD-03 §8: se desbloquea por criterios de cierre).
+  const canSave = missing.length === 0
+    && checkpointSections.length > 0
+    && completedCheckpoints === checkpointSections.length;
   const draftStep0Brief = (adaptiveCore.stepOutputs ?? []).find((output: any) => output.step === 0 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
@@ -658,7 +822,13 @@ export function Step0Page() {
     void goToStep1();
   };
 
-  const buildCheckpointResponses = () => ({
+  /**
+   * Semilla de MIGRACION, no fuente de verdad. Las iniciativas creadas antes del core
+   * adaptativo solo tienen el formulario legacy de Step 0, asi que sus variables se
+   * derivan de ahi la primera vez. En cuanto el checkpoint tiene una respuesta
+   * confirmada para una variable, manda el checkpoint (ver `buildCheckpointResponses`).
+   */
+  const legacyStep0Seed = (): Record<string, unknown> => ({
     objective: form.quePasaQueQuieres || form.initiativeTitle || project.name,
     challengeType: initialReviewMeta?.challengeType ?? form.initiativeFrame,
     scope: form.specificChallengePart || form.visibleMoment || form.impactWho,
@@ -672,6 +842,24 @@ export function Step0Page() {
     outcome: form.impactWho,
     missingInformation: activeCheckpointQuestions.filter(question => question.allowsUnknown).map(question => question.prompt).join('\n'),
   });
+
+  /**
+   * Respuestas confirmadas del recorrido adaptativo (PRD-03 §17): el backend las fusiona
+   * en orden cronologico y las devuelve en `confirmedResponses`. Las del checkpoint
+   * activo van encima por ser las mas recientes.
+   */
+  const confirmedCheckpointResponses: Record<string, unknown> = {
+    ...(adaptiveCore.confirmedResponses ?? {}),
+    ...(activeCheckpointFromServer?.responses ?? {}),
+  };
+
+  /**
+   * El checkpoint es la fuente de verdad; el formulario legacy solo rellena los huecos
+   * que el recorrido todavia no respondio. Antes era al reves —se raspaba el formulario
+   * en cada render— y por eso el mismo dato quedaba capturado dos veces.
+   */
+  const buildCheckpointResponses = (): Record<string, unknown> =>
+    mergeCheckpointResponses(confirmedCheckpointResponses, legacyStep0Seed());
 
   const confirmActiveCheckpoint = async (workspaceResponses?: Record<string, unknown>) => {
     if (!projectId) return;
@@ -730,12 +918,38 @@ export function Step0Page() {
   };
 
   const primaryLabel = (() => {
-    if (analysisState === 'done') return 'Ver propuesta';
+    if (analysisState === 'done') return `Ver ${stepOutputLabel}`;
     if (firstMissingInModule(form, activeModule)) return 'Continuar este bloque';
     if (activeModule === 'start') return 'Pasar a impacto y urgencia';
     if (activeModule === 'impact') return 'Pasar a apoyo y decisión';
-    return 'Generar propuesta para líder';
+    return `Elaborar ${stepOutputLabel}`;
   })();
+
+  // Se define una sola vez y se monta dentro de la seccion del checkpoint activo, para que
+  // las preguntas minimas y los campos del modulo vivan en el mismo bloque.
+  const checkpointWorkspace = (
+    <AdaptiveCheckpointWorkspace
+      embedded
+      core={adaptiveCore}
+      step={0}
+      checkpoint={activeCheckpointFromServer ?? activeCheckpoint}
+      questions={activeCheckpointQuestions}
+      initialResponses={buildCheckpointResponses()}
+      outputPreview={draftStep0Brief?.output ?? null}
+      saving={checkpointSaving}
+      error={checkpointError}
+      onConfirmCheckpoint={confirmActiveCheckpoint}
+      onConfirmOutput={draftStep0Brief?.output ? confirmBriefAndGoToStep1 : undefined}
+      onRefresh={() => {
+        if (!projectId) return;
+        getAdaptiveCore(projectId)
+          .then(core => setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>))
+          .catch((err: any) => setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos recargar el checkpoint.'));
+      }}
+    />
+  );
+
+  const sectionFor = (moduleId: ModuleId) => checkpointSections.find(section => section.moduleId === moduleId);
 
   return (
     <div className="flex h-full flex-col">
@@ -767,25 +981,28 @@ export function Step0Page() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-2 md:grid-cols-3">
-              {MODULE_ORDER.map(moduleId => {
-                const state = getModuleState(form, moduleId);
-                const done = moduleCompletedCount(form, moduleId);
-                const active = activeModule === moduleId;
-                return (
-                  <button
-                    key={moduleId}
-                    onClick={() => scrollToModule(moduleId, firstMissingInModule(form, moduleId))}
-                    className={`rounded-xl border px-4 py-3 text-left transition-colors ${active ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{MODULE_TITLES[moduleId]}</p>
-                      <span className={`h-2.5 w-2.5 rounded-full ${state === 'Listo' ? 'bg-emerald-500' : done > 0 ? 'bg-indigo-500' : 'bg-slate-300'}`} />
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">{state} · {done}/{MODULE_REQUIRED[moduleId].length}</p>
-                  </button>
-                );
-              })}
+            {/* La tira de modulos vivia aqui con su propio contador (`Listo · n/3`), en
+                paralelo al del checkpoint. Ahora el recorrido se lee por checkpoints. */}
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              {checkpointSections.map(section => (
+                <button
+                  key={section.code}
+                  onClick={() => section.moduleId && scrollToModule(section.moduleId)}
+                  className={`rounded-xl border px-3 py-2 text-left text-xs transition-colors ${
+                    section.isActive
+                      ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
+                      : section.status === 'completed'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  }`}
+                  style={{ fontWeight: 700 }}
+                >
+                  {section.status === 'completed' ? '✓ ' : ''}{section.code} · {section.title}
+                </button>
+              ))}
+              <span className="ml-auto text-xs text-slate-500">
+                {completedCheckpoints}/{checkpointSections.length} checkpoints · Output: {stepOutputLabel}
+              </span>
             </div>
           </div>
         </div>
@@ -886,29 +1103,6 @@ export function Step0Page() {
           </div>
         )}
 
-        <div className="border-b border-slate-200 bg-white px-5 py-5">
-          <div className="mx-auto max-w-[1480px]">
-            <AdaptiveCheckpointWorkspace
-              core={adaptiveCore}
-              step={0}
-              checkpoint={activeCheckpointFromServer ?? activeCheckpoint}
-              questions={activeCheckpointQuestions}
-              initialResponses={buildCheckpointResponses()}
-              outputPreview={draftStep0Brief?.output ?? null}
-              saving={checkpointSaving}
-              error={checkpointError}
-              onConfirmCheckpoint={confirmActiveCheckpoint}
-              onConfirmOutput={draftStep0Brief?.output ? confirmBriefAndGoToStep1 : undefined}
-              onRefresh={() => {
-                if (!projectId) return;
-                getAdaptiveCore(projectId)
-                  .then(core => setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>))
-                  .catch((err: any) => setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos recargar el checkpoint.'));
-              }}
-            />
-          </div>
-        </div>
-
         <div className="hidden">
           <div className="mx-auto max-w-[1480px] rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1000,6 +1194,14 @@ export function Step0Page() {
             )}
 
             <div ref={node => { moduleRefs.current.start = node; }}>
+              <CheckpointSection
+                code={sectionFor('start')?.code ?? 'CP-0.1'}
+                title={sectionFor('start')?.title ?? 'Enmarcar la iniciativa'}
+                sequence={sectionFor('start')?.sequence ?? 1}
+                status={sectionFor('start')?.status ?? 'locked'}
+                isActive={Boolean(sectionFor('start')?.isActive)}
+              >
+                {sectionFor('start')?.isActive && checkpointWorkspace}
               <ModuleShell moduleId="start" active={activeModule === 'start'} form={form} projectName={project.name} onOpen={() => scrollToModule('start')}>
                 <div className="space-y-5">
                   <Field id="step0-initiativeTitle" label="¿Cómo se llama tu iniciativa?" helper="Usa un nombre simple. Podrás ajustarlo después." highlight={highlightField === 'initiativeTitle'}>
@@ -1018,9 +1220,7 @@ export function Step0Page() {
                   <Field id="step0-initiativeFrame" label="¿Cómo quieres enmarcar esta iniciativa hoy?" highlight={highlightField === 'initiativeFrame'}>
                     <ChoiceGroup value={form.initiativeFrame ?? ''} options={FRAME_OPTIONS} onChange={value => setField('initiativeFrame', value)} />
                   </Field>
-                  <Field id="step0-primaryObjective" label="¿Qué objetivo principal ayudaría a mover esta iniciativa?" highlight={highlightField === 'primaryObjective'}>
-                    <ChoiceGroup value={form.primaryObjective ?? ''} options={PRIMARY_OBJECTIVE_OPTIONS} onChange={value => setField('primaryObjective', value)} />
-                  </Field>
+                  {/* `primaryObjective` lo pregunta ahora CP-0.1 (checkpoint-planner). */}
                   <OptionalToggle open={optionalOpen.start} label="Agregar más contexto" onClick={() => setOptionalOpen(prev => ({ ...prev, start: !prev.start }))} />
                   {optionalOpen.start && (
                     <div className="space-y-5 border-t border-slate-100 pt-5">
@@ -1037,29 +1237,28 @@ export function Step0Page() {
                   )}
                 </div>
               </ModuleShell>
+              </CheckpointSection>
             </div>
 
             <div ref={node => { moduleRefs.current.impact = node; }}>
+              <CheckpointSection
+                code={sectionFor('impact')?.code ?? 'CP-0.2'}
+                title={sectionFor('impact')?.title ?? 'Aterrizar condiciones reales'}
+                sequence={sectionFor('impact')?.sequence ?? 2}
+                status={sectionFor('impact')?.status ?? 'locked'}
+                isActive={Boolean(sectionFor('impact')?.isActive)}
+              >
+                {sectionFor('impact')?.isActive && checkpointWorkspace}
               <ModuleShell moduleId="impact" active={activeModule === 'impact'} form={form} projectName={project.name} onOpen={() => scrollToModule('impact')}>
                 <div className="space-y-5">
-                  <Field id="step0-quePasaQueQuieres" label={descriptionLabel} helper="No necesitas tenerlo perfecto. Solo deja claro qué quieres mover." highlight={highlightField === 'quePasaQueQuieres'}>
-                    <Area rows={5} value={form.quePasaQueQuieres} onChange={event => setField('quePasaQueQuieres', event.target.value)} />
-                  </Field>
-                  <Field id="step0-impactWho" label="¿A quién impacta más directamente esta iniciativa?" highlight={highlightField === 'impactWho'}>
-                    <div className="space-y-3">
-                      <QuickPickGroup
-                        values={form.impacta ?? []}
-                        options={IMPACT_OPTIONS}
-                        onChange={values => setForm(prev => ({ ...prev, impacta: values, impactWho: values.length ? values.join(', ') : prev.impactWho }))}
-                      />
-                      <Area rows={2} value={form.impactWho ?? ''} onChange={event => setField('impactWho', event.target.value)} placeholder="Describe brevemente cómo les impacta." />
-                    </div>
-                  </Field>
-                  <Field id="step0-whyNowText" label="¿Por qué importa ahora?" helper="Elige señales rápidas o escríbelo con tus palabras." highlight={highlightField === 'whyNowText'}>
-                    <div className="space-y-3">
-                      <QuickPickGroup values={[]} options={URGENCY_OPTIONS} onChange={values => setField('whyNowText', appendText(form.whyNowText, values[values.length - 1] ?? ''))} />
-                      <Area rows={3} value={form.whyNowText ?? ''} onChange={event => setField('whyNowText', event.target.value)} />
-                    </div>
+                  {/* `objective`, `outcome` y `whyNow` los pregunta ahora CP-0.2. Solo queda
+                      el atajo de multi-seleccion, que el checkpoint no cubre. */}
+                  <Field label="Atajo: ¿a quién impacta?" helper="Opcional. Complementa la respuesta del checkpoint.">
+                    <QuickPickGroup
+                      values={form.impacta ?? []}
+                      options={IMPACT_OPTIONS}
+                      onChange={values => setForm(prev => ({ ...prev, impacta: values, impactWho: values.length ? values.join(', ') : prev.impactWho }))}
+                    />
                   </Field>
                   <OptionalToggle open={optionalOpen.impact} label="Agregar más contexto de impacto" onClick={() => setOptionalOpen(prev => ({ ...prev, impact: !prev.impact }))} />
                   {optionalOpen.impact && (
@@ -1074,22 +1273,27 @@ export function Step0Page() {
                   )}
                 </div>
               </ModuleShell>
+              </CheckpointSection>
             </div>
 
             <div ref={node => { moduleRefs.current.decision = node; }}>
+              <CheckpointSection
+                code={sectionFor('decision')?.code ?? 'CP-0.3'}
+                title={sectionFor('decision')?.title ?? 'Definir que validar o decidir'}
+                sequence={sectionFor('decision')?.sequence ?? 3}
+                status={sectionFor('decision')?.status ?? 'locked'}
+                isActive={Boolean(sectionFor('decision')?.isActive)}
+              >
+                {sectionFor('decision')?.isActive && checkpointWorkspace}
               <ModuleShell moduleId="decision" active={activeModule === 'decision'} form={form} projectName={project.name} onOpen={() => scrollToModule('decision')}>
                 <div className="space-y-5">
-                  <Field id="step0-evidenceType" label="¿Qué señales tienes hoy?" helper="Puede ser una hipótesis. Step 0 no exige evidencia robusta." highlight={highlightField === 'evidenceType'}>
+                  {/* `availableEvidence`, `owner_and_actor_required` y `decisionCriteria`
+                      los pregunta ahora CP-0.3. Quedan solo los atajos de seleccion. */}
+                  <Field label="Atajo: tipo de señal" helper="Opcional. Complementa la respuesta del checkpoint.">
                     <ChoiceGroup value={form.evidenceType ?? ''} options={EVIDENCE_TYPE_OPTIONS} onChange={value => setField('evidenceType', value)} />
                   </Field>
-                  <Field id="step0-quienEscuchar" label="¿Quién debería escuchar esto primero?" helper="Puede ser un líder, sponsor, área dueña del proceso o persona que pueda destrabar la conversación." highlight={highlightField === 'quienEscuchar'}>
-                    <Area rows={3} value={form.quienEscuchar} onChange={event => setField('quienEscuchar', event.target.value)} />
-                  </Field>
-                  <Field id="step0-decisionRequested" label="¿Qué decisión estás buscando en esta etapa?" highlight={highlightField === 'decisionRequested'}>
-                    <div className="space-y-3">
-                      <QuickPickGroup values={[]} options={DECISION_OPTIONS} onChange={values => setField('decisionRequested', values[values.length - 1] ?? form.decisionRequested ?? '')} />
-                      <Area rows={3} value={form.decisionRequested ?? ''} onChange={event => setField('decisionRequested', event.target.value)} />
-                    </div>
+                  <Field label="Atajo: decisión buscada" helper="Opcional. Complementa la respuesta del checkpoint.">
+                    <QuickPickGroup values={[]} options={DECISION_OPTIONS} onChange={values => setField('decisionRequested', values[values.length - 1] ?? form.decisionRequested ?? '')} />
                   </Field>
                   <OptionalToggle open={optionalOpen.decision} label="Agregar apoyo, confirmaciones o datos de contacto" onClick={() => setOptionalOpen(prev => ({ ...prev, decision: !prev.decision }))} />
                   {optionalOpen.decision && (
@@ -1120,21 +1324,22 @@ export function Step0Page() {
                   )}
                 </div>
               </ModuleShell>
+              </CheckpointSection>
             </div>
 
             {analysisState !== 'done' && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Propuesta de iniciativa para tu líder</h2>
-                <p className="mt-1 text-sm text-slate-500">Cuando completes los campos clave, podrás generar una propuesta breve para compartir con un líder.</p>
+                <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Output de este paso</h2>
+                <p className="mt-1 text-sm text-slate-500">Cuando completes los campos clave, podrás elaborar el output de este paso: {stepOutputLabel}.</p>
                 <button onClick={runAnalysis} disabled={!canSave} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ fontWeight: 600 }}>
-                  <Sparkles size={14} className="mr-2 inline" />Generar propuesta para líder
+                  <Sparkles size={14} className="mr-2 inline" />Elaborar {stepOutputLabel}
                 </button>
               </div>
             )}
 
             {analysisState === 'loading' && (
               <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">
-                <Loader2 size={28} className="mx-auto mb-3 animate-spin text-indigo-500" />Ordenando tu propuesta para líder...
+                <Loader2 size={28} className="mx-auto mb-3 animate-spin text-indigo-500" />Elaborando {stepOutputLabel}...
               </div>
             )}
 
@@ -1143,8 +1348,8 @@ export function Step0Page() {
                 <div ref={executiveCardRef} className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.08em] text-emerald-600" style={{ fontWeight: 700 }}>Propuesta para líder</p>
-                      <h2 className="mt-1 text-lg text-slate-900" style={{ fontWeight: 700 }}>Tu propuesta de iniciativa para tu líder está lista</h2>
+                      <p className="text-xs uppercase tracking-[0.08em] text-emerald-600" style={{ fontWeight: 700 }}>{stepOutputLabel}</p>
+                      <h2 className="mt-1 text-lg text-slate-900" style={{ fontWeight: 700 }}>Ya tienes el output de este paso: {stepVisibleName}</h2>
                       <p className="mt-1 max-w-2xl text-sm text-slate-500">Úsala para conversar con tu jefe, gerente, sponsor o persona con poder de decisión mientras avanzas a buscar evidencia.</p>
                     </div>
                     <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 700 }}>Artefacto listo</span>
@@ -1266,7 +1471,7 @@ export function Step0Page() {
           <div className="hidden min-[1280px]:block">
             <div className="sticky top-4 max-h-[calc(100vh-120px)] space-y-3 overflow-y-auto pr-1">
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Propuesta para líder</p>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{stepOutputLabel}</p>
                 {analysisState === 'done' ? (
                   <>
                     <p className="mt-1 text-sm text-slate-500">Base lista. Compártela con tu líder o registra una conversación antes de avanzar a Step 1.</p>
@@ -1290,40 +1495,33 @@ export function Step0Page() {
                   </>
                 ) : (
                   <>
-                <p className="mt-1 text-sm text-slate-500">
-                  {canSave
-                        ? 'Ya puedes generar una primera propuesta para líder.'
-                    : `Te falta${missing.length === 1 ? '' : 'n'} ${missing.length} dato${missing.length === 1 ? '' : 's'} clave para generar una primera versión.`}
-                </p>
-                    <div className={`mt-4 rounded-xl p-3 ${nextMissing ? 'border border-orange-200 bg-orange-50' : 'bg-slate-50'}`}>
-                      <p className={`text-xs ${nextMissing ? 'text-orange-600' : 'text-slate-400'}`} style={{ fontWeight: 800 }}>SIGUIENTE FALTANTE</p>
-                      <p className={`mt-1 text-sm ${nextMissing ? 'text-orange-950' : 'text-slate-800'}`} style={{ fontWeight: 800 }}>{nextMissing ? FIELD_LABELS[nextMissing] : 'Base mínima lista'}</p>
-                      {nextMissing && (
-                        <button onClick={() => scrollToModule(nextMissingModule, nextMissing)} className="mt-3 rounded-lg bg-orange-600 px-3 py-1.5 text-xs text-white shadow-sm hover:bg-orange-700" style={{ fontWeight: 700 }}>
-                          Completar ahora
-                        </button>
-                      )}
-                </div>
-                <div className="mt-4">
-                  <p className="text-xs text-slate-400" style={{ fontWeight: 700 }}>LO QUE YA TENEMOS</p>
-                  <div className="mt-2 space-y-1.5">
-                    {readyLabels.length > 0 ? readyLabels.map(key => (
-                      <p key={String(key)} className="text-xs text-emerald-700">✓ {FIELD_LABELS[key] ?? String(key)}</p>
-                    )) : <p className="text-xs text-slate-500">Empieza por el tipo de iniciativa y objetivo.</p>}
-                  </div>
-                </div>
-                {previewMissing.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-xs text-slate-400" style={{ fontWeight: 700 }}>FALTANTES IMPORTANTES</p>
-                    <div className="mt-2 space-y-1.5">
-                      {previewMissing.map(key => <p key={String(key)} className="text-xs text-slate-600">○ {FIELD_LABELS[key] ?? String(key)}</p>)}
+                    {/* El rail tenia su propio recuento de faltantes ("Te faltan N datos
+                        clave", SIGUIENTE FALTANTE, LO QUE YA TENEMOS, Modulos listos n/3),
+                        que contradecia al del checkpoint. Ahora refleja el recorrido. */}
+                    <p className="mt-1 text-sm text-slate-500">
+                      Se construye al cerrar los tres checkpoints de este paso.
+                    </p>
+                    <div className="mt-4 space-y-2">
+                      {checkpointSections.map(section => (
+                        <div key={section.code} className="flex items-start gap-2 text-xs">
+                          <span className={section.status === 'completed' ? 'text-emerald-600' : section.isActive ? 'text-indigo-600' : 'text-slate-300'} style={{ fontWeight: 800 }}>
+                            {section.status === 'completed' ? '✓' : section.isActive ? '▶' : '○'}
+                          </span>
+                          <span className={section.status === 'completed' ? 'text-emerald-700' : section.isActive ? 'text-indigo-800' : 'text-slate-500'}>
+                            {section.code} · {section.title}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                )}
-                <div className="mt-4 border-t border-slate-100 pt-4">
-                  <div className="mb-1.5 flex justify-between text-xs text-slate-400"><span>Módulos listos</span><span className="text-indigo-600" style={{ fontWeight: 700 }}>{readyBlocks}/3</span></div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${(readyBlocks / 3) * 100}%` }} /></div>
-                </div>
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <div className="mb-1.5 flex justify-between text-xs text-slate-400">
+                        <span>Checkpoints cerrados</span>
+                        <span className="text-indigo-600" style={{ fontWeight: 700 }}>{completedCheckpoints}/{checkpointSections.length}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full rounded-full bg-indigo-500" style={{ width: `${checkpointSections.length ? (completedCheckpoints / checkpointSections.length) * 100 : 0}%` }} />
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
@@ -1345,13 +1543,14 @@ export function Step0Page() {
             </button>
           )}
           <button onClick={openIA} className="rounded-xl border border-violet-200 px-4 py-2.5 text-sm text-violet-600" style={{ fontWeight: 600 }}><Sparkles size={14} className="mr-2 inline" />Hacerlo más claro sin inventar</button>
-          {nextMissing && (
-            <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800">
-              <AlertCircle size={14} className="shrink-0 text-orange-600" />
-              <span><span style={{ fontWeight: 800 }}>Te falta 1 campo clave:</span> {FIELD_LABELS[nextMissing]}</span>
-              <button onClick={() => scrollToModule(nextMissingModule, nextMissing)} className="rounded-lg bg-orange-600 px-2.5 py-1 text-white shadow-sm hover:bg-orange-700" style={{ fontWeight: 700 }}>Completar ahora</button>
-            </div>
-          )}
+          {/* PRD-03 §6 (Zona 4): un unico CTA contextual. El aviso "Te falta 1 campo clave"
+              era un cuarto contador de faltantes; el que manda es el del checkpoint. */}
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span style={{ fontWeight: 800 }}>{activeCheckpoint.code}</span>
+            <span>{activeCheckpoint.title ?? ''}</span>
+            <span className="text-slate-400">·</span>
+            <span>{completedCheckpoints}/{checkpointSections.length} cerrados</span>
+          </div>
           <div className="ml-auto hidden items-center gap-3 sm:flex">
             {project.mentorCredits !== undefined && <div className="flex items-center gap-1.5 text-xs text-slate-400"><CreditCard size={12} /><span>{project.mentorCredits} créditos disponibles</span></div>}
             <AutosaveIndicator state={saveState.state} />
@@ -1364,7 +1563,7 @@ export function Step0Page() {
           <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5">
               <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-emerald-600" style={{ fontWeight: 800 }}>Propuesta para líder</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-emerald-600" style={{ fontWeight: 800 }}>{stepOutputLabel}</p>
                 <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 800 }}>{form.initiativeTitle || project.name}</h2>
                 <p className="mt-1 max-w-2xl text-sm text-slate-500">One-pager para abrir conversación, pedir feedback y decidir si vale la pena investigar con más profundidad.</p>
               </div>
@@ -1497,8 +1696,8 @@ export function Step0Page() {
         </div>
       )}
 
-      <MentorVirtualPanel open={showIAPanel} onClose={() => setShowIAPanel(false)} context="Paso 0 · Propuesta para líder" feedback={IA_FEEDBACK} loading={iaLoading} />
-      {showMentorModal && <MentorSupportModal onClose={() => setShowMentorModal(false)} context="Paso 0 · Propuesta para líder" mentorCredits={project.mentorCredits ?? 3} onOpenIA={() => { setShowMentorModal(false); openIA(); }} />}
+      <MentorVirtualPanel open={showIAPanel} onClose={() => setShowIAPanel(false)} context={`Paso 0 · ${stepOutputLabel}`} feedback={IA_FEEDBACK} loading={iaLoading} />
+      {showMentorModal && <MentorSupportModal onClose={() => setShowMentorModal(false)} context={`Paso 0 · ${stepOutputLabel}`} mentorCredits={project.mentorCredits ?? 3} onOpenIA={() => { setShowMentorModal(false); openIA(); }} />}
     </div>
   );
 }
