@@ -33,10 +33,12 @@ vi.mock('../../auth/auth.middleware', async (importOriginal) => {
 
 vi.mock('../../../shared/db/prisma', () => ({ default: {}, prisma: {} }));
 
-const updatePlatformRole = vi.fn();
+// ADR-029: el controller llama `updatePlatformRoles` (conjunto). `updatePlatformRole`
+// (singular) sigue existiendo en el servicio como envoltorio compatible.
+const updatePlatformRoles = vi.fn();
 vi.mock('../user.service', () => ({
   UserService: class {
-    updatePlatformRole = updatePlatformRole;
+    updatePlatformRoles = updatePlatformRoles;
   },
 }));
 
@@ -61,7 +63,7 @@ function makeApp() {
 describe('PATCH /users/:userId/role — cableado (ADR-028)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    updatePlatformRole.mockResolvedValue({ id: 'u-target', role: 'portfolio_lead' });
+    updatePlatformRoles.mockResolvedValue({ id: 'u-target', role: 'portfolio_lead', roles: ['portfolio_lead'] });
   });
 
   it('un admin puede convertir a otro usuario en portfolio_lead', async () => {
@@ -72,7 +74,32 @@ describe('PATCH /users/:userId/role — cableado (ADR-028)', () => {
       .send({ role: 'portfolio_lead' });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
-    expect(updatePlatformRole).toHaveBeenCalledWith('u-admin', 'u-target', 'portfolio_lead');
+    // `role` (escalar) se sigue aceptando y llega como el conjunto de un elemento.
+    expect(updatePlatformRoles).toHaveBeenCalledWith('u-admin', 'u-target', ['portfolio_lead']);
+  });
+
+  it('un admin puede conceder DOS roles a la vez sin que uno revoque al otro', async () => {
+    // La capacidad que motiva ADR-029: con el escalar era imposible de expresar.
+    currentUser = { id: 'u-admin', email: 'admin@starteria.io', role: 'admin' };
+
+    const res = await request(makeApp())
+      .patch('/api/v1/users/u-target/role')
+      .send({ roles: ['participante', 'portfolio_lead'] });
+
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(updatePlatformRoles).toHaveBeenCalledWith('u-admin', 'u-target', [
+      'participante',
+      'portfolio_lead',
+    ]);
+  });
+
+  it('rechaza un cuerpo sin `role` ni `roles`', async () => {
+    currentUser = { id: 'u-admin', email: 'admin@starteria.io', role: 'admin' };
+
+    const res = await request(makeApp()).patch('/api/v1/users/u-target/role').send({});
+
+    expect(res.status).toBe(400);
+    expect(updatePlatformRoles).not.toHaveBeenCalled();
   });
 
   it.each<Role>(['mentor', 'portfolio_lead', 'participante', 'sponsor'])(
@@ -85,7 +112,7 @@ describe('PATCH /users/:userId/role — cableado (ADR-028)', () => {
         .send({ role: 'admin' });
 
       expect(res.status).toBe(403);
-      expect(updatePlatformRole).not.toHaveBeenCalled();
+      expect(updatePlatformRoles).not.toHaveBeenCalled();
     },
   );
 
@@ -97,7 +124,7 @@ describe('PATCH /users/:userId/role — cableado (ADR-028)', () => {
       .send({ role: 'superadmin' });
 
     expect(res.status).toBe(400);
-    expect(updatePlatformRole).not.toHaveBeenCalled();
+    expect(updatePlatformRoles).not.toHaveBeenCalled();
   });
 });
 
@@ -130,6 +157,39 @@ describe('UserService.updatePlatformRole — guardas (ADR-028)', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
+  it('concede DOS roles conservando ambos, y el primario queda en el escalar', async () => {
+    // La regresión que motiva ADR-029: con `role` escalar, dar portfolio_lead
+    // REVOCABA participante. Aquí conviven.
+    const { service, prisma } = await makeService();
+
+    await service.updatePlatformRoles('u-admin', 'u-target', ['participante', 'portfolio_lead']);
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { role: 'participante', roles: ['participante', 'portfolio_lead'] },
+      }),
+    );
+  });
+
+  it('deduplica el conjunto de roles', async () => {
+    const { service, prisma } = await makeService();
+
+    await service.updatePlatformRoles('u-admin', 'u-target', ['admin', 'admin', 'mentor']);
+
+    expect(prisma.user.update.mock.calls[0][0].data.roles).toEqual(['admin', 'mentor']);
+  });
+
+  it('rechaza dejar a un usuario sin ningún rol', async () => {
+    // Un conjunto vacío derivaría a cero permisos: cerraría la cuenta en silencio.
+    const { service, prisma } = await makeService();
+
+    await expect(service.updatePlatformRoles('u-admin', 'u-target', [])).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'EMPTY_ROLE_SET',
+    });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
   it('NUNCA devuelve passwordHash ni el estado de bloqueo de cuenta', async () => {
     // Salió al probar el endpoint a mano contra el stack local: devolver la fila
     // entera de Prisma filtra el hash de la contraseña en la respuesta HTTP.
@@ -149,10 +209,12 @@ describe('UserService.updatePlatformRole — guardas (ADR-028)', () => {
 
     await service.updatePlatformRole('u-admin', 'u-target', 'portfolio_lead');
 
+    // ADR-029: se escriben las DOS columnas de la fase 1 en la misma operación.
+    // Que vayan juntas es lo que impide que `role` y `roles` se desincronicen.
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'u-target' },
-        data: { role: 'portfolio_lead' },
+        data: { role: 'portfolio_lead', roles: ['portfolio_lead'] },
       }),
     );
     // Sin esto el cambio no aterriza hasta que el usuario decida renovar.

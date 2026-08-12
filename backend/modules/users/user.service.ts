@@ -42,7 +42,37 @@ export class UserService {
    * expire (`JWT_EXPIRES_IN`, 15 min por defecto). Es la misma propiedad que ADR-004 ya
    * documentaba para cualquier cambio de rol.
    */
+  /**
+   * ADR-028: asignar UN rol. Se conserva por compatibilidad y delega en la
+   * versión de conjunto — un rol es el conjunto de un elemento.
+   */
   async updatePlatformRole(actorId: string, targetUserId: string, role: Role): Promise<User> {
+    return this.updatePlatformRoles(actorId, targetUserId, [role]);
+  }
+
+  /**
+   * ADR-029: asignar el CONJUNTO de roles de plataforma.
+   *
+   * Es lo que hace posible pertenecer a las dos superficies con un solo login:
+   * `['participante','portfolio_lead']` conserva el dashboard y añade el portafolio.
+   *
+   * Escribe las DOS columnas de la fase 1. `role` (escalar) recibe el primero del
+   * conjunto y queda como rol PRIMARIO: sirve de etiqueta de presentación y de
+   * respaldo para las filas sin migrar. Mientras exista `role` hay dos fuentes de
+   * verdad, así que este método es el ÚNICO sitio que las escribe — mantenerlas
+   * coherentes desde un solo punto es lo que impide que se desincronicen (#160
+   * retira la columna y con ella este acoplamiento).
+   */
+  async updatePlatformRoles(actorId: string, targetUserId: string, roles: Role[]): Promise<User> {
+    const conjunto = [...new Set(roles)];
+    if (conjunto.length === 0) {
+      throw AppError.badRequest(
+        'Un usuario necesita al menos un rol de plataforma.',
+        'EMPTY_ROLE_SET',
+        { hint: 'Envía al menos un rol en `roles`.' },
+      );
+    }
+
     if (actorId === targetUserId) {
       throw AppError.forbidden(
         'No puedes cambiar tu propio rol de plataforma.',
@@ -60,12 +90,16 @@ export class UserService {
     // `googleId` y el estado de bloqueo de cuenta en la respuesta HTTP.
     const updated = await this.prisma.user.update({
       where: { id: targetUserId },
-      data: { role },
+      // Las DOS columnas, en la misma escritura: `role` es el primario (etiqueta
+      // + respaldo de fase 1) y `roles` es la autorización real. Escribirlas
+      // juntas es lo que impide que se desincronicen mientras coexistan (#160).
+      data: { role: conjunto[0], roles: conjunto },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        roles: true,
         initials: true,
         skills: true,
         cohortId: true,
@@ -114,7 +148,9 @@ export class UserService {
           passwordHash: '',
           name: data.name || data.email.split('@')[0],
           initials,
+          // ADR-029: las dos columnas de la fase 1, para que ninguna fila nazca sin `roles`.
           role: 'participante',
+          roles: ['participante'],
           skills: [],
         },
       });

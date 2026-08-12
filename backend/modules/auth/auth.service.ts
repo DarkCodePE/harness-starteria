@@ -179,7 +179,10 @@ export class AuthService {
         name: data.name,
         email: data.email.toLowerCase(),
         passwordHash,
+        // ADR-029: se escriben las DOS columnas de la fase 1 en el mismo create,
+        // para que ninguna fila nueva nazca sin `roles`.
         role: data.role,
+        roles: [data.role],
         initials,
         isActive: waitlistDisabled,
       },
@@ -459,7 +462,9 @@ export class AuthService {
             passwordHash: null,
             googleId: payload.googleId,
             avatarUrl: payload.picture ?? null,
+            // ADR-029: las dos columnas, igual que en el registro con contraseña.
             role: 'participante',
+            roles: ['participante'],
             initials,
             isActive: false,
           },

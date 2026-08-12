@@ -30,10 +30,12 @@ export class UserController {
   updatePlatformRole = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
     try {
       const actor = req.user!;
-      const updated = await this.service.updatePlatformRole(
+      // ADR-029: `roles` (conjunto) gana; `role` se acepta como el conjunto de un
+      // elemento para no romper a los clientes que ya usan el endpoint.
+      const updated = await this.service.updatePlatformRoles(
         actor.id,
         req.params.userId,
-        req.body.role,
+        req.body.roles ?? [req.body.role],
       );
       res.json({ success: true, data: updated });
     } catch (err) {

@@ -1,6 +1,6 @@
 {
   "project": "Starteria (Dashboardstarteria)",
-  "last_updated": "2026-07-26",
+  "last_updated": "2026-08-12",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -682,6 +682,174 @@
         "REGRESION E2E MEDIDA, NO ASUMIDA: la suite pasa de 12 rojas a 4. Las 4 restantes se verificaron ROJAS TAMBIEN EN EL BASELINE (worktree en 75fd0df, sin ninguno de estos cambios): pdf-autofill (2 corridas independientes, fallo identico) e initial-review-prd-audit x2. portfolio-steps-integration y team-inheritance piden admin@starteria.io, que siembra el seed de DESARROLLO y no existe en el stack e2e aislado (sus propias cabeceras dicen 'requires prisma db seed'). Ninguna de las 4 es un 403."
       ],
       "notes": "DECISIONES DE PRODUCTO (tomadas por el usuario, 2026-08-04): (a) se INCLUYE endpoint de admin para asignar rol de plataforma, en vez de dejar el aprovisionamiento en seed/DB como el resto de roles; (b) las escrituras de portafolio pasan a admin + portfolio_lead y MENTOR PIERDE ese acceso. Verificado antes de decidir que quitar mentor es seguro: portfolioService solo lo consumen AppLayout.tsx (lectura) y la feature portfolio-lead; MentorPanelPage.tsx y AdminCohorte.tsx no lo importan; ningún test de backend cubre esos gates.\nENMIENDA A ADR-010 (Accepted): pasa de 6 a 7 roles de plataforma, por eso la feature abre con ADR-028 y no con código. schema.prisma cita el modelo de 6 roles.\nRIESGO DE DEPLOY ACOTADO: añadir un valor al enum es ALTER TYPE ... ADD VALUE, aditivo, y pasa el guard de db push sin --accept-data-loss. Es distinto de añadir @@unique a tabla poblada, que es lo que prohiben ADR-018/020/023/026.\nEL PARCHE QUE REEMPLAZA: en esta rama el email-match ya evolucionó a un Set con VITE_PORTFOLIO_LEAD_EMAIL más un correo de test en no-producción. Sigue siendo identidad por email; esta feature lo sustituye por el rol del token."
+    },
+    {
+      "id": "PBA-01-permission-catalog",
+      "priority": 31,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "Catálogo de permisos y tabla de derivación rol→permisos, con unión sobre un conjunto de roles",
+      "user_visible_behavior": "Ninguno directo (capa interna). Habilita que la autorización se exprese como capacidad ('portfolio:write') en vez de identidad ('eres portfolio_lead'), y que un usuario con DOS roles obtenga la UNIÓN de sus permisos — que es lo único que rompe el 'gana en una plataforma, pierde en la otra'.",
+      "scope_out": [
+        "Aplicar los permisos en cualquier guard — vive en PBA-03/PBA-04",
+        "Persistir permisos en base de datos: la tabla de derivación vive en código y se cambia sin migrar",
+        "Permisos de grano fino por recurso (por frente estratégico): ADR-028 ya lo descartó por falta de modelo de membresía"
+      ],
+      "deferred_to": [
+        "PBA-03-require-permission",
+        "PBA-04-migrate-guards"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- permissions"
+      ],
+      "evidence": [
+        "`cd front && npm run test:backend -- permissions` → 25 passed (backend/shared/authz/__tests__/permissions.test.ts). Cubre: la tabla define los 7 roles de PLATFORM_ROLES (si se añade uno al enum y no a la tabla, falla); ningún rol concede un permiso fuera del catálogo; derivación exacta por rol; admin = catálogo completo expandido; la UNIÓN participante+portfolio_lead conserva project:own Y portfolio:write; la unión es conmutativa, idempotente y MONÓTONA (sumar un rol nunca quita un permiso — el test que impide reintroducir el bug); entradas degeneradas fallan cerrado (sin roles, rol desconocido a solas o mezclado).",
+        "Suite backend completa 522 passed / 53 files, desde 492 de baseline."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El comodín de admin es fiel al comportamiento de hoy pero concede permisos futuros sin decisión explícita: queda vigilado en el ADR."
+    },
+    {
+      "id": "PBA-02-roles-array-schema",
+      "priority": 32,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "schema + backend",
+      "title": "User.roles como array, backfill idempotente y escritura coherente con role durante la fase 1",
+      "user_visible_behavior": "Un admin puede dar portfolio_lead a alguien SIN quitarle participante. El usuario conserva las dos pertenencias en base de datos.",
+      "scope_out": [
+        "Eliminar la columna role: es pérdida de datos, exige ventana propia y va en un ADR aparte (fase 2)",
+        "UI de administración de roles: se sigue usando PATCH /users/:id/role por API",
+        "Sacar participante/colaborador/viewer del enum Role hacia TeamRole: ADR-029 lo descarta explícitamente porque los permisos vuelven el problema inocuo sin migrar datos"
+      ],
+      "deferred_to": [
+        "#160"
+      ],
+      "status": "passing",
+      "verification": [
+        "./node_modules/.bin/prisma db push (SIN --accept-data-loss, replicando el CD)",
+        "backfill ejecutado 2 veces: roles=[role] en el 100% de filas y la 2ª corrida no cambia nada",
+        "cd front && npm run test:backend"
+      ],
+      "evidence": [
+        "`prisma db push` SIN --accept-data-loss contra Postgres 16 POBLADO (5 usuarios: participante, portfolio_lead, admin, mentor, viewer) creado con el schema PRE-cambio → 'Your database is now in sync'. Replica el comando exacto del CD (ADR-018).",
+        "HALLAZGO que cambió el diseño: con `@default([participante])` el ALTER TABLE rellenó las 5 filas con {participante} — el admin quedaba indistinguible de un participante real. Se QUITÓ el default: las filas viejas quedan en NULL (columna verificada is_nullable=YES, sin column_default), señal inequívoca de 'sin migrar', y `rolesForUser` cae a `role`. El orden de despliegue deja de ser condición de corrección.",
+        "Backfill idempotente (`front/scripts/backfill-user-roles.ts`, npm run db:backfill-roles): corrida 1 → migrated=5 skipped=0 y roles=[role] correcto por fila (admin→{admin}, portfolio_lead→{portfolio_lead}); corrida 2 → migrated=0 skipped=5. Filas con roles != ARRAY[role] tras el backfill: 0.",
+        "Escritura dual coherente desde un solo punto (updatePlatformRoles) + las 3 creaciones de usuario (registro, Google sign-in, invitación a equipo) nacen con roles. Suite backend 522 passed / 53 files (baseline 492): user.role.test.ts cubre concesión de DOS roles conservando ambos, deduplicación, rechazo del conjunto vacío (EMPTY_ROLE_SET) y coherencia role+roles en la misma escritura."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Añadir columna con default es aditivo y pasa el guard del CD; lo prohibido por ADR-018/020/023/026 es el @@unique sobre tabla poblada, que aquí no aparece."
+    },
+    {
+      "id": "PBA-03-require-permission",
+      "priority": 33,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "El JWT lleva roles[] y el servidor deriva permisos; nuevo guard requirePermission",
+      "user_visible_behavior": "Ninguno directo. Las rutas pasan a autorizar por capacidad. Los tokens ya emitidos (con role escalar) siguen funcionando hasta expirar.",
+      "scope_out": [
+        "Migrar los call sites: vive en PBA-04",
+        "Cerrar las 7 lecturas de portfolio hoy sin gate: rompería a los participantes (deuda declarada desde ADR-028)",
+        "Meter los permisos derivados dentro del token: el ADR lo descarta por congelar la tabla de derivación en sesiones vivas"
+      ],
+      "deferred_to": [
+        "PBA-04-migrate-guards",
+        "#161"
+      ],
+      "status": "in_progress",
+      "verification": [
+        "cd front && npm run test:backend -- auth.middleware",
+        "cd front && npm run test:backend"
+      ],
+      "evidence": [],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md)."
+    },
+    {
+      "id": "PBA-04-migrate-guards",
+      "priority": 34,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "Los 30 requireRole pasan a requirePermission",
+      "user_visible_behavior": "Un admin y un portfolio lead conservan exactamente el acceso de escritura de portafolio que tienen hoy; el resto de roles sigue con 403. El comportamiento no cambia: cambia cómo se decide.",
+      "scope_out": [
+        "Ampliar o reducir a quién se le concede algo: esta feature es equivalencia de comportamiento, no cambio de política",
+        "Las 7 rutas GET sin gate siguen sin gate"
+      ],
+      "deferred_to": [
+        "#161"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:backend (492 de baseline, sin regresión)"
+      ],
+      "evidence": [],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). 20 de los 30 sitios son la misma línea repetida en portfolio.router.ts."
+    },
+    {
+      "id": "PBA-05-frontend-permissions",
+      "priority": 35,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "front",
+      "title": "El frontend decide por permiso y se elimina el redirect-cárcel del portfolio lead",
+      "user_visible_behavior": "Un portfolio lead que además es participante YA NO queda encerrado en /portfolio: conserva su dashboard, sus iniciativas y el flujo Step 0-4. Es la regresión que motiva el ADR.",
+      "scope_out": [
+        "El switcher de zona: vive en PBA-06",
+        "Quitar user.role del frontend: sobrevive como concepto de PRESENTACIÓN (etiquetas, badge). Lo que se prohíbe es que una decisión de acceso lo lea",
+        "Revisar cada componente que muestra un nombre de rol"
+      ],
+      "deferred_to": [
+        "PBA-06-workspace-switcher"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test -- PortfolioLeadLayout.access",
+        "cd front && npm test (294 de baseline, sin regresión)"
+      ],
+      "evidence": [],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El borde que fijó el test de #156 (admin y portfolio lead entran; mentor/sponsor/participante no) debe seguir verde: es el detector de regresión."
+    },
+    {
+      "id": "PBA-06-workspace-switcher",
+      "priority": 36,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "front",
+      "title": "Switcher de workspace derivado de permisos, con la última zona recordada",
+      "user_visible_behavior": "Quien pertenece a las dos superficies ve un selector arriba del sidebar para cambiar entre 'Mis iniciativas' y 'Portafolio', y vuelve a la última zona que usó al entrar. Quien pertenece a una sola NO ve switcher y su experiencia no cambia en absoluto.",
+      "scope_out": [
+        "Una tercera superficie",
+        "Personalizar el orden de las zonas",
+        "Recordar la zona por dispositivo/servidor: se guarda en localStorage"
+      ],
+      "deferred_to": [
+        "PBA-07-e2e-dual-role"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test -- WorkspaceSwitcher",
+        "cd front && npm test"
+      ],
+      "evidence": [],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Un localStorage corrupto no debe dejar a nadie sin navegación: degrada a la primera zona permitida."
+    },
+    {
+      "id": "PBA-07-e2e-dual-role",
+      "priority": 37,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "e2e + verificación",
+      "title": "La regresión que motiva el ADR queda cubierta por un test que hoy no existe",
+      "user_visible_behavior": "Un usuario con roles ['participante','portfolio_lead'] entra a /dashboard Y a /portfolio/inicio en la misma sesión, escribe en portafolio y vuelve al workspace sin perder nada.",
+      "scope_out": [
+        "Cubrir por e2e las combinaciones de los 7 roles: se cubre la que motiva el ADR y el borde de #156",
+        "El smoke de referencia (pdf-autofill) no se modifica: solo se comprueba que sigue verde"
+      ],
+      "deferred_to": [
+        "PBA-04-migrate-guards"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e",
+        "cd front && npm test && npm run test:backend"
+      ],
+      "evidence": [],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md)."
     }
   ]
 }
