@@ -754,12 +754,15 @@
         "PBA-04-migrate-guards",
         "#161"
       ],
-      "status": "in_progress",
+      "status": "passing",
       "verification": [
         "cd front && npm run test:backend -- auth.middleware",
         "cd front && npm run test:backend"
       ],
-      "evidence": [],
+      "evidence": [
+        "`npm run test:backend -- require-permission` → 10 passed. Cubre: buildRequestUser deriva roles+permisos; un token PRE-ADR-029 (sin `roles`) sigue autorizando porque cae a [role] — nadie es expulsado a mitad de sesión al desplegar; requirePermission 200/403/401; el admin conserva su acceso; el doble rol entra a portfolio:write Y project:own aunque su rol PRIMARIO sea participante; requireRole (deprecado) también mira el conjunto.",
+        "Suite backend 534/534 / 54 files (baseline 492). `npm run build:backend` exit 0."
+      ],
       "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md)."
     },
     {
@@ -776,11 +779,15 @@
       "deferred_to": [
         "#161"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm run test:backend (492 de baseline, sin regresión)"
       ],
-      "evidence": [],
+      "evidence": [
+        "30 guards migrados: 20 portfolio.router (portfolio:write), 2 users (users:assign-roles), 3 sponsor (sponsor:manage x2, sponsor:decide), 1 mentor (mentor:panel), 1 cohort (cohort:manage). `grep requireRole` en *.router.ts → 0 resultados.",
+        "HALLAZGO que corrigió el ADR: `PATCH /sponsor/checkpoints/:id/respond` usa requireRole('sponsor') y EXCLUYE al admin a propósito (el admin tiene /skip, otro acto de gobierno). O sea que 'admin puede todo' NO era fiel al comportamiento de hoy, y el comodín habría colado un cambio de política en una migración que sólo debía cambiar cómo se decide. El admin ahora ENUMERA sus permisos y NO tiene sponsor:decide; hay 2 tests que lo fijan.",
+        "portfolio.router.authz.test.ts (el borde de #156) sigue verde. Suite backend 534/534."
+      ],
       "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). 20 de los 30 sitios son la misma línea repetida en portfolio.router.ts."
     },
     {
@@ -798,12 +805,17 @@
       "deferred_to": [
         "PBA-06-workspace-switcher"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm test -- PortfolioLeadLayout.access",
         "cd front && npm test (294 de baseline, sin regresión)"
       ],
-      "evidence": [],
+      "evidence": [
+        "BORRADO el redirect de AppLayout.tsx:55-58 que encerraba al portfolio lead en /portfolio. Nuevo `AppLayout.dual-role.test.tsx` 4/4: un portfolio lead que TAMBIÉN es participante conserva su workspace; un portfolio lead puro tampoco es expulsado; un participante sin portafolio no nota nada (navigate no se llama); sin sesión sigue yendo a /auth.",
+        "PortfolioLeadLayout pregunta can(user,'portfolio:read') en vez de enumerar roles. `PortfolioLeadLayout.access.test.tsx` 6/6: el borde que fijó #156 (admin y portfolio lead entran; owner/mentor/sponsor fuera) sigue verde con el guard nuevo.",
+        "Backend expone roles+permissions ya derivados (toSafeUser unifica los 6 literales que había repartidos); el front sólo declara el vocabulario y falla CERRADO si le falta un permiso. La tabla de derivación NO se duplica.",
+        "front 298/298 (baseline 294) · backend 534/534 · npm run build y build:backend exit 0."
+      ],
       "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El borde que fijó el test de #156 (admin y portfolio lead entran; mentor/sponsor/participante no) debe seguir verde: es el detector de regresión."
     },
     {
@@ -821,12 +833,16 @@
       "deferred_to": [
         "PBA-07-e2e-dual-role"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm test -- WorkspaceSwitcher",
         "cd front && npm test"
       ],
-      "evidence": [],
+      "evidence": [
+        "`workspaces.test.ts` 13/13. Cubre: el doble rol ve las 2 zonas y SÍ ve switcher; un participante ve 1 zona y NO ve switcher (su experiencia no cambia); vuelve a la última zona usada; y las 4 degradaciones — zona guardada sin acceso ya, basura en localStorage, getItem que lanza (modo privado), setItem que lanza — todas devuelven una zona permitida en vez de dejar sin navegación.",
+        "Decisión de diseño verificada por test: la zona de iniciativas NO se gatea por permiso. Derivar ambas zonas de permisos dejaba a mentor y sponsor sin NINGUNA (no tienen project:own ni portfolio:read) pese a vivir hoy bajo AppLayout.",
+        "AuthPage: destino post-login = resolveInitialWorkspace(user) en vez del redirect por igualdad de rol. front 311/311 (baseline 294) · npm run build exit 0."
+      ],
       "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Un localStorage corrupto no debe dejar a nadie sin navegación: degrada a la primera zona permitida."
     },
     {
@@ -843,13 +859,14 @@
       "deferred_to": [
         "PBA-04-migrate-guards"
       ],
-      "status": "not_started",
+      "status": "blocked",
       "verification": [
         "cd front && npm run docker:up && npm run test:e2e",
         "cd front && npm test && npm run test:backend"
       ],
       "evidence": [],
-      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md)."
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md).",
+      "status_note": "BLOQUEADA por entorno, no por código. El stack e2e no levanta: el puerto 5433 tiene un docker-proxy HUÉRFANO que retiene el bind (`bind: address already in use`) pero rechaza toda conexión, así que `docker compose up` falla en starteria-db. QUÉ LA DESBLOQUEA: liberar 5433 — reiniciar el daemon de Docker (NO se hizo: hay contenedores cf-* del usuario con 18-22h de uptime que no son de esta sesión y se perderían), o mapear starteria-db a otro puerto en docker-compose + DATABASE_URL. Hecho eso: `cd front && npm run docker:up && npm run test:e2e`, más el smoke de referencia pdf-autofill. Lo que SÍ está verificado sin stack: la regresión del ADR está cubierta por unit (AppLayout.dual-role 4/4 + require-permission 10/10 + permissions 26/26) y la migración de schema contra Postgres 16 real."
     }
   ]
 }
