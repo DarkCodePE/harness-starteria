@@ -12,7 +12,7 @@
  * Este archivo existe para que no vuelva.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { AppLayout } from '../AppLayout';
 
 const navigate = vi.fn();
@@ -90,5 +90,75 @@ describe('AppLayout — el portfolio lead ya no queda encerrado (ADR-029)', () =
     render(<AppLayout />);
 
     expect(navigate).toHaveBeenCalledWith('/auth', { replace: true });
+  });
+});
+
+describe('el menú se compone por PERMISOS, no por el rol primario', () => {
+  const enMenu = (etiqueta: string | RegExp) => screen.queryAllByRole('button', { name: etiqueta }).length > 0;
+
+  beforeEach(() => {
+    navigate.mockReset();
+    currentUser = null;
+  });
+
+  it('un admin con participante de PRIMARIO ve la sección de administración', () => {
+    // La regresión concreta: pasó en producción. `{participante, admin}` tenía el
+    // permiso `users:assign-roles` y NO veía el enlace, porque el menú se elegía con
+    // `user.role === 'admin'`. Autorizado por API, invisible por pantalla — el mismo
+    // defecto que el parche #156 vino a arreglar, reintroducido por la puerta de atrás.
+    currentUser = sesion('participante', [
+      'project:own',
+      'users:assign-roles',
+      'cohort:manage',
+      'portfolio:read',
+    ]);
+
+    render(<AppLayout />);
+
+    expect(enMenu('Roles de plataforma'), 'no ve el enlace que su permiso le concede').toBe(true);
+    expect(enMenu('Panel cohorte')).toBe(true);
+    expect(enMenu('Portafolio')).toBe(true);
+  });
+
+  it('un participante no ve nada de administración', () => {
+    currentUser = sesion('participante', ['project:own']);
+
+    render(<AppLayout />);
+
+    expect(enMenu('Roles de plataforma')).toBe(false);
+    expect(enMenu('Panel cohorte')).toBe(false);
+    expect(enMenu('Portafolio')).toBe(false);
+    // Y conserva lo suyo.
+    expect(enMenu('Evidencias')).toBe(true);
+    expect(enMenu('Mi perfil')).toBe(true);
+  });
+
+  it('un mentor ve su panel y nada de admin', () => {
+    currentUser = sesion('mentor', ['mentor:panel']);
+
+    render(<AppLayout />);
+
+    expect(enMenu('Revisiones pendientes')).toBe(true);
+    expect(enMenu('Roles de plataforma')).toBe(false);
+    expect(enMenu('Todos los proyectos')).toBe(true);
+  });
+
+  it('un sponsor conserva su menú mínimo', () => {
+    currentUser = sesion('sponsor', ['sponsor:decide']);
+
+    render(<AppLayout />);
+
+    expect(enMenu('Iniciativas patrocinadas')).toBe(true);
+    expect(enMenu('Evidencias')).toBe(false);
+    expect(enMenu('Roles de plataforma')).toBe(false);
+  });
+
+  it('un portfolio lead ve el acceso a la capa estratégica', () => {
+    currentUser = sesion('portfolio_lead', ['portfolio:read', 'portfolio:write']);
+
+    render(<AppLayout />);
+
+    expect(enMenu('Portafolio')).toBe(true);
+    expect(enMenu('Roles de plataforma')).toBe(false);
   });
 });

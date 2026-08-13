@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useApp } from '../context/AppContext';
+import { can } from '../authz/permissions';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
 import * as portfolioService from '../services/portfolioService';
 import type { InitiativeMeta } from '../services/portfolioService';
@@ -111,35 +112,46 @@ export function AppLayout() {
     )
     : [];
 
-  const ownerLinks = [
-    { icon: LayoutDashboard, label: 'Mis iniciativas', path: '/dashboard' },
-    { icon: FolderOpen, label: 'Evidencias', path: '/evidencias' },
+  // ADR-029: el menú se COMPONE POR PERMISOS, no por el rol primario.
+  //
+  // Antes se elegía una lista entera según `user.role === 'admin' | 'mentor' | ...`.
+  // Con roles múltiples eso reintroducía el defecto que el ADR vino a erradicar:
+  // alguien con `{participante, admin}` y participante de primario tenía el permiso
+  // y NO veía el menú — autorizado por API, invisible por pantalla, que es
+  // exactamente lo que el parche #156 describía como el bug a eliminar.
+  //
+  // La ETIQUETA del dashboard sí sigue el rol primario: eso es presentación, que es
+  // el único papel que ADR-029 le deja a `role`.
+  const etiquetaDashboard =
+    user?.role === 'sponsor'
+      ? 'Iniciativas patrocinadas'
+      : user?.role === 'mentor' || user?.role === 'admin'
+        ? 'Todos los proyectos'
+        : 'Mis iniciativas';
+
+  const links = [
+    { icon: LayoutDashboard, label: etiquetaDashboard, path: '/dashboard' },
+    ...(can(user, 'mentor:panel')
+      ? [{ icon: Users, label: 'Revisiones pendientes', path: '/mentor' }]
+      : []),
+    ...(can(user, 'cohort:manage')
+      ? [
+        { icon: BarChart3, label: 'Panel cohorte', path: '/admin' },
+        { icon: Users, label: 'Mentores', path: '/admin#mentores' },
+      ]
+      : []),
+    ...(can(user, 'users:assign-roles')
+      ? [{ icon: ShieldCheck, label: 'Roles de plataforma', path: '/admin/roles' }]
+      : []),
+    // Sin este enlace la capa estratégica sólo se alcanza escribiendo la URL a mano.
+    ...(can(user, 'portfolio:read')
+      ? [{ icon: Target, label: 'Portafolio', path: '/portfolio/inicio' }]
+      : []),
+    ...(can(user, 'project:own')
+      ? [{ icon: FolderOpen, label: 'Evidencias', path: '/evidencias' }]
+      : []),
     { icon: User, label: 'Mi perfil', path: '/perfil' },
   ];
-
-  const mentorLinks = [
-    { icon: Users, label: 'Revisiones pendientes', path: '/mentor' },
-    { icon: LayoutDashboard, label: 'Todos los proyectos', path: '/dashboard' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
-
-  const adminLinks = [
-    { icon: BarChart3, label: 'Panel cohorte', path: '/admin' },
-    { icon: LayoutDashboard, label: 'Todos los proyectos', path: '/dashboard' },
-    { icon: Users, label: 'Mentores', path: '/admin#mentores' },
-    // ADR-029: sin este enlace, dar dos roles a alguien sólo se alcanza con curl.
-    { icon: ShieldCheck, label: 'Roles de plataforma', path: '/admin/roles' },
-    // Sin este enlace la capa estratégica solo se alcanza escribiendo la URL a mano.
-    { icon: Target, label: 'Portafolio', path: '/portfolio/inicio' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
-
-  const sponsorLinks = [
-    { icon: FolderOpen, label: 'Iniciativas patrocinadas', path: '/dashboard' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
-
-  const links = user?.role === 'mentor' ? mentorLinks : user?.role === 'admin' ? adminLinks : user?.role === 'sponsor' ? sponsorLinks : ownerLinks;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
