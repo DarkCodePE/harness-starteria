@@ -6,6 +6,15 @@ import { ApiResponse } from '../../shared/types/api.types';
 export class UserController {
   constructor(private service: UserService) {}
 
+  /** ADR-029: lista de usuarios para la pantalla de administración de roles. */
+  listUsers = async (_req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
+    try {
+      res.json({ success: true, data: await this.service.listUsers() });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   getProfile = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
     try {
       const user = req.user!;

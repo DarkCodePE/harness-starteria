@@ -20,6 +20,11 @@ export const userRouter = Router();
 userRouter.use(authenticate);
 
 userRouter.get('/profile', controller.getProfile);
+
+// ADR-029: la lista que alimenta la pantalla de administración de roles. Va con el
+// MISMO permiso que la asignación: quien no puede cambiar roles tampoco necesita
+// el padrón de usuarios con sus correos.
+userRouter.get('/', requirePermission('users:assign-roles'), controller.listUsers);
 userRouter.patch('/profile', validate(updateProfileSchema), controller.updateProfile);
 
 // ADR-028: asignación de rol de plataforma. Sin esto el rol `portfolio_lead` sería

@@ -1,4 +1,5 @@
 import { PrismaClient, TeamRole, TeamMemberStatus } from '@prisma/client';
+import { rolesForUser } from '../../shared/authz/permissions';
 import { AppError } from '../../shared/errors/AppError';
 import { User, Role } from '../../shared/types';
 import { UpdateProfileInput, InviteMemberInput } from './user.schemas';
@@ -25,6 +26,28 @@ export class UserService {
     });
 
     return user as unknown as User;
+  }
+
+  /**
+   * ADR-029: lista de usuarios para la administración de roles.
+   *
+   * Devuelve `roles` (el conjunto) además de `role`, porque la pantalla administra
+   * el conjunto. Selecciona campos EXPLÍCITOS: devolver la fila entera de Prisma
+   * filtraría el hash de contraseña y el estado de bloqueo de cuenta — es el mismo
+   * defecto que ya apareció en `updatePlatformRole` y que su test fija.
+   */
+  async listUsers(limit = 200): Promise<Array<{
+    id: string; name: string; email: string; role: Role; roles: Role[]; initials: string;
+  }>> {
+    const users = await this.prisma.user.findMany({
+      take: Math.min(Math.max(limit, 1), 500),
+      orderBy: [{ name: 'asc' }],
+      select: { id: true, name: true, email: true, role: true, roles: true, initials: true },
+    });
+
+    // Fase 1: una fila sin migrar tiene `roles` vacío. Se normaliza aquí para que la
+    // UI nunca pinte un usuario "sin roles" cuando en realidad tiene su rol escalar.
+    return users.map((u) => ({ ...u, roles: [...rolesForUser(u)] }));
   }
 
   /**

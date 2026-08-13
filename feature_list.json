@@ -867,6 +867,36 @@
       "evidence": [],
       "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md).",
       "status_note": "BLOQUEADA por entorno, no por código. El stack e2e no levanta: el puerto 5433 tiene un docker-proxy HUÉRFANO que retiene el bind (`bind: address already in use`) pero rechaza toda conexión, así que `docker compose up` falla en starteria-db. QUÉ LA DESBLOQUEA: liberar 5433 — reiniciar el daemon de Docker (NO se hizo: hay contenedores cf-* del usuario con 18-22h de uptime que no son de esta sesión y se perderían), o mapear starteria-db a otro puerto en docker-compose + DATABASE_URL. Hecho eso: `cd front && npm run docker:up && npm run test:e2e`, más el smoke de referencia pdf-autofill. Lo que SÍ está verificado sin stack: la regresión del ADR está cubierta por unit (AppLayout.dual-role 4/4 + require-permission 10/10 + permissions 26/26) y la migración de schema contra Postgres 16 real."
+    },
+    {
+      "id": "PBA-08-role-admin-ui",
+      "priority": 38,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend + front",
+      "title": "Pantalla de administración de roles de plataforma: un admin concede varios roles sin tocar la API a mano",
+      "user_visible_behavior": "Un admin entra a /admin/roles, ve la lista de usuarios con los roles que tiene cada uno, marca o desmarca roles y guarda. Puede dar portfolio_lead a alguien SIN quitarle participante — la capacidad que ADR-029 habilitó en el backend pero que hoy sólo se alcanza con curl.",
+      "scope_out": [
+        "Invitar o crear usuarios: esta pantalla sólo cambia roles de usuarios existentes",
+        "Editar el rol de PROYECTO (TeamRole, ADR-023): es otro eje y tiene su propia superficie",
+        "Auditoría/historial de cambios de rol",
+        "Paginación y búsqueda avanzada: hoy son 15 usuarios en producción; se lista con un límite",
+        "Que un admin se cambie su propio rol: el servicio ya lo prohíbe (CANNOT_CHANGE_OWN_ROLE) y la UI lo refleja, no lo reimplementa"
+      ],
+      "deferred_to": [
+        "#160"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- user.list",
+        "cd front && npm test -- RoleAdmin",
+        "cd front && npm test && npm run build"
+      ],
+      "evidence": [
+        "Backend `npm run test:backend -- user.list` → 10 passed. GET /users va con requirePermission('users:assign-roles'): admin 200; participante/mentor/sponsor/portfolio_lead 403 y el servicio NI SE LLAMA; sin sesión 401. El select NUNCA expone passwordHash/googleId/failedLoginAttempts/lockedUntil (el mismo defecto que ya apareció una vez en updatePlatformRole). Una fila sin migrar se normaliza a su rol escalar — sin eso la UI pintaría a un admin como 'sin roles' y al guardar le quitaría todo. El límite se acota a 500.",
+        "Front `vitest RoleAdminPage` → 8 passed. El caso central: marcar Portfolio Lead NO desmarca Participante y lo que viaja al servidor es el CONJUNTO ['participante','portfolio_lead'] (mandar el escalar reintroduciría el bug). Además: sin users:assign-roles no se pide la lista ni se pinta; una fila sin cambios no se puede guardar; no deja dejar a nadie sin roles; un admin no puede editarse a sí mismo (refleja CANNOT_CHANGE_OWN_ROLE en vez de reimplementarlo); un fallo al guardar avisa y no deja la fila en estado mentiroso; un fallo de la lista avisa en vez de mostrar pantalla vacía.",
+        "Suite completa: backend 546/546 (55 files) · front 329/329 (49 files) · npm run build y build:backend exit 0."
+      ],
+      "notes": "ADR-029. El endpoint de lista no existía; se añade GET /api/v1/users gateado con users:assign-roles."
     }
   ]
 }

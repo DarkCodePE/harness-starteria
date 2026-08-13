@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, matchPath } from 'react-router';
 import {
   LayoutDashboard, FolderOpen, Users, BarChart3, User, HelpCircle,
-  LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard, Target
+  LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard, Target, ShieldCheck
 } from 'lucide-react';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useApp } from '../context/AppContext';
@@ -127,6 +127,8 @@ export function AppLayout() {
     { icon: BarChart3, label: 'Panel cohorte', path: '/admin' },
     { icon: LayoutDashboard, label: 'Todos los proyectos', path: '/dashboard' },
     { icon: Users, label: 'Mentores', path: '/admin#mentores' },
+    // ADR-029: sin este enlace, dar dos roles a alguien sólo se alcanza con curl.
+    { icon: ShieldCheck, label: 'Roles de plataforma', path: '/admin/roles' },
     // Sin este enlace la capa estratégica solo se alcanza escribiendo la URL a mano.
     { icon: Target, label: 'Portafolio', path: '/portfolio/inicio' },
     { icon: User, label: 'Mi perfil', path: '/perfil' },
