@@ -153,7 +153,20 @@ Tabla de derivación (código, no datos — se puede cambiar sin migrar nada):
 | `mentor` | `mentor:panel` |
 | `sponsor` | `sponsor:decide` |
 | `portfolio_lead` | `portfolio:read`, `portfolio:write` |
-| `admin` | todos |
+| `admin` | todos **menos `sponsor:decide`** — ver la corrección abajo |
+
+> **Corrección tras revisar los guards reales (2026-08-12).** Este ADR daba por
+> hecho que «admin puede todo» era fiel al comportamiento de hoy. **No lo es**:
+> `PATCH /sponsor/checkpoints/:id/respond` está gateado con `requireRole('sponsor')`
+> y **excluye al admin a propósito** — responder un checkpoint es la decisión del
+> sponsor, y el admin tiene su propia ruta `/skip` para saltarlo. Son dos actos de
+> gobierno distintos.
+>
+> Por eso el admin **enumera** sus permisos en vez de recibir el catálogo entero.
+> Un comodín habría colado ese cambio de política dentro de una migración que sólo
+> debía cambiar *cómo* se decide. De paso desaparece el riesgo que este mismo ADR
+> registraba en «Consecuencias»: conceder algo al admin vuelve a ser una decisión
+> explícita, de una línea, en vez de un efecto secundario de definir un permiso.
 
 Nótese el efecto lateral útil: el enredo que ADR-028 señaló (`participante`/`colaborador`/
 `viewer` colapsando a `owner`) **deja de doler sin migrar datos**. Los tres derivan a
@@ -279,8 +292,9 @@ cuando exista, será una fuente más de permisos, no un rediseño de los guards.
 - **La tabla de derivación se convierte en superficie de seguridad.** Un error ahí concede
   privilegios en silencio y en todas las rutas a la vez. Debe tener test propio, exhaustivo
   por rol, y revisarse como se revisa un guard.
-- `admin → todos` es un comodín. Es fiel al comportamiento de hoy, pero significa que un
-  permiso nuevo se le concede al admin sin que nadie lo decida explícitamente.
+- ~~`admin → todos` es un comodín~~ **RESUELTO durante la implementación**: el admin
+  enumera sus permisos, así que un permiso nuevo NO se le concede solo. El coste es
+  una línea por permiso nuevo, y un test que falla si alguien vuelve al comodín.
 - **Las 7 lecturas de portafolio siguen sin gate**, igual que en ADR-028 (`AppLayout` llama
   `getInitiativeMeta` para todo autenticado). El permiso `portfolio:read` se define ahora
   para que la deuda tenga dónde aterrizar, pero **no se aplica en este ADR**: hacerlo

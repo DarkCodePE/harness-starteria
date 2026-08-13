@@ -57,10 +57,19 @@ describe('permissionsForRoles — derivación por rol', () => {
     expect([...permissionsForRoles([role])].sort()).toEqual([...esperados].sort());
   });
 
-  it('admin recibe el catálogo completo', () => {
-    // Expandido, no un centinela '*': así `can` sigue siendo pertenencia a un
+  it('admin recibe todo MENOS sponsor:decide', () => {
+    // Enumerado, no un centinela '*': así `can` sigue siendo pertenencia a un
     // set y ningún sitio de chequeo necesita conocer un caso especial.
-    expect([...permissionsForRoles(['admin'])].sort()).toEqual([...ALL_PERMISSIONS].sort());
+    expect([...permissionsForRoles(['admin'])].sort()).toEqual([...ROLE_PERMISSIONS.admin].sort());
+  });
+
+  it('admin NO puede responder un checkpoint de sponsor', () => {
+    // Fidelidad con el comportamiento real: `PATCH /sponsor/checkpoints/:id/respond`
+    // usa requireRole('sponsor') y excluye al admin a propósito — el admin tiene
+    // /skip, que es otro acto. Si alguien le da el catálogo entero al admin "por
+    // comodidad", este test lo detiene.
+    expect(can(permissionsForRoles(['admin']), 'sponsor:decide')).toBe(false);
+    expect(can(permissionsForRoles(['sponsor']), 'sponsor:decide')).toBe(true);
   });
 
   it('viewer no obtiene permisos de plataforma: su acceso lo resuelve requireProjectAccess', () => {
@@ -149,7 +158,7 @@ describe('rolesForUser — el shim de la fase 1', () => {
   it('un admin sin migrar conserva TODOS sus permisos', () => {
     // La propiedad concreta que impide la purga silenciosa de privilegios.
     const perms = permissionsForRoles(rolesForUser({ role: 'admin', roles: null }));
-    expect([...perms].sort()).toEqual([...ALL_PERMISSIONS].sort());
+    expect([...perms].sort()).toEqual([...ROLE_PERMISSIONS.admin].sort());
   });
 });
 

@@ -310,7 +310,7 @@ export class AuthService {
       });
     }
 
-    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);
+    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.roles, user.cohortId);
 
     logger.info({ userId: user.id }, 'User logged in');
 
@@ -377,6 +377,7 @@ export class AuthService {
       user.id,
       user.email,
       user.role,
+      user.roles,
       user.cohortId,
       storedToken.family,
     );
@@ -507,7 +508,7 @@ export class AuthService {
       };
     }
 
-    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);
+    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.roles, user.cohortId);
 
     return {
       user: {
@@ -552,12 +553,17 @@ export class AuthService {
     userId: string,
     email: string,
     role: string,
+    // ADR-029: el conjunto va al token para que el servidor derive los permisos.
+    // Opcional porque las filas sin migrar aún no lo tienen; `authenticate` cae
+    // a `[role]` en ese caso.
+    roles: TokenPayload['roles'],
     cohort?: string | null,
     existingFamily?: string,
   ): Promise<AuthTokens> {
     const payload: TokenPayload = {
       sub: userId,
       role: role as TokenPayload['role'],
+      ...(roles && roles.length > 0 ? { roles } : {}),
       email,
       ...(cohort ? { cohort } : {}),
     };

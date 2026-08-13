@@ -3,7 +3,7 @@ import { prisma } from '../../shared/db/prisma';
 import { PortfolioController } from './portfolio.controller';
 import { PortfolioService } from './portfolio.service';
 import { validate } from '../../shared/middleware/validate';
-import { authenticate, requireRole } from '../auth/auth.middleware';
+import { authenticate, requirePermission } from '../auth/auth.middleware';
 import { requireEntitlement } from '../billing/entitlement.middleware';
 import {
   createStrategicFrontSchema,
@@ -42,21 +42,21 @@ portfolioRouter.get('/strategic-fronts', controller.listStrategicFronts);
 
 portfolioRouter.post(
   '/strategic-fronts',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(createStrategicFrontSchema),
   controller.createStrategicFront,
 );
 
 portfolioRouter.patch(
   '/strategic-fronts/:id',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(updateStrategicFrontSchema),
   controller.updateStrategicFront,
 );
 
 portfolioRouter.delete(
   '/strategic-fronts/:id',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   controller.deleteStrategicFront,
 );
 
@@ -68,14 +68,14 @@ portfolioRouter.get(
 
 portfolioRouter.post(
   '/strategic-fronts/:frontId/challenges',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(createChallengeSchema),
   controller.createChallenge,
 );
 
 portfolioRouter.patch(
   '/challenges/:id',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(updateChallengeSchema),
   controller.updateChallenge,
 );
@@ -83,27 +83,27 @@ portfolioRouter.patch(
 // ─── Challenge Actions ────────────────────────────────────────────────────────
 portfolioRouter.post(
   '/challenges/:id/activate-open-call',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   controller.activateOpenCall,
 );
 
 portfolioRouter.post(
   '/challenges/:id/publish',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   controller.publishChallenge,
 );
 
 // ─── Invitations ──────────────────────────────────────────────────────────────
 portfolioRouter.post(
   '/challenges/:id/invitations',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(addInvitationSchema),
   controller.addInvitation,
 );
 
 portfolioRouter.patch(
   '/challenges/:id/invitations/:invId',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(updateInvitationSchema),
   controller.updateInvitation,
 );
@@ -111,14 +111,14 @@ portfolioRouter.patch(
 // ─── Squad Members ────────────────────────────────────────────────────────────
 portfolioRouter.post(
   '/challenges/:id/squad',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(addSquadMemberSchema),
   controller.addSquadMember,
 );
 
 portfolioRouter.patch(
   '/challenges/:id/squad/:memberId',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(updateSquadMemberSchema),
   controller.updateSquadMember,
 );
@@ -131,21 +131,21 @@ portfolioRouter.get(
 
 portfolioRouter.post(
   '/challenges/:challengeId/team',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(addChallengeTeamMemberSchema),
   controller.addChallengeTeamMember,
 );
 
 portfolioRouter.patch(
   '/challenges/:challengeId/team/:memberId',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(updateChallengeTeamMemberSchema),
   controller.updateChallengeTeamMember,
 );
 
 portfolioRouter.delete(
   '/challenges/:challengeId/team/:memberId',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   controller.removeChallengeTeamMember,
 );
 
@@ -157,14 +157,14 @@ portfolioRouter.get(
 
 portfolioRouter.put(
   '/initiatives/:projectId/team/:userId',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(upsertInitiativeTeamMemberSchema),
   controller.upsertInitiativeTeamMember,
 );
 
 portfolioRouter.delete(
   '/initiatives/:projectId/team/:userId',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   controller.removeInitiativeTeamMember,
 );
 
@@ -181,7 +181,7 @@ portfolioRouter.get(
 
 portfolioRouter.put(
   '/initiatives/:projectId/meta',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(upsertInitiativeMetaSchema),
   controller.upsertInitiativeMeta,
 );
@@ -194,7 +194,7 @@ portfolioRouter.get(
 
 portfolioRouter.post(
   '/challenges/:challengeId/overlaps',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(createOverlapSchema),
   controller.createOverlap,
 );
@@ -209,7 +209,7 @@ portfolioRouter.get(
 // high-value gated deliverable. Shadow mode by default.
 portfolioRouter.post(
   '/challenges/:challengeId/executive-outputs',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   requireEntitlement('exec_export'),
   validate(createExecutiveOutputSchema),
   controller.createExecutiveOutput,
@@ -217,7 +217,7 @@ portfolioRouter.post(
 
 portfolioRouter.patch(
   '/executive-outputs/:id',
-  requireRole('admin', 'portfolio_lead'),
+  requirePermission('portfolio:write'),
   validate(updateExecutiveOutputSchema),
   controller.updateExecutiveOutput,
 );

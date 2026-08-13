@@ -50,12 +50,10 @@ export type Permission = (typeof ALL_PERMISSIONS)[number];
 /**
  * Tabla de derivación.
  *
- * `admin` recibe el catálogo EXPANDIDO en vez de un centinela `'*'`. Con un
- * centinela, cada sitio de chequeo tendría que conocerlo
- * (`perms.has('*') || perms.has(p)`) y bastaría con que uno lo olvidara para
- * abrir un agujero; expandiéndolo, `can` es pertenencia a un set y no hay caso
- * especial que olvidar. El precio —que un permiso nuevo se le concede al admin
- * sin decisión explícita— queda registrado en ADR-029 §Consecuencias.
+ * No hay centinela `'*'`: cada rol enumera sus permisos. Con un centinela, cada
+ * sitio de chequeo tendría que conocerlo (`perms.has('*') || perms.has(p)`) y
+ * bastaría con que uno lo olvidara para abrir un agujero; enumerando, `can` es
+ * pertenencia a un set y no hay caso especial que olvidar.
  *
  * `viewer` no recibe permisos de PLATAFORMA a propósito: lo que puede ver lo
  * decide `requireProjectAccess` sobre cada proyecto concreto.
@@ -67,7 +65,31 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   mentor: ['mentor:panel'],
   sponsor: ['sponsor:decide'],
   portfolio_lead: ['portfolio:read', 'portfolio:write'],
-  admin: ALL_PERMISSIONS,
+
+  /**
+   * El admin se enumera, NO recibe `ALL_PERMISSIONS`.
+   *
+   * ADR-029 asumía que "admin puede todo" era fiel al comportamiento de hoy. No lo
+   * es: `PATCH /sponsor/checkpoints/:id/respond` está gateado con
+   * `requireRole('sponsor')` y EXCLUYE al admin a propósito — responder un
+   * checkpoint es la decisión del sponsor, y el admin tiene su propia ruta
+   * `/skip` para saltarlo. Son dos actos de gobierno distintos.
+   *
+   * Darle el catálogo entero habría colado ese cambio de política dentro de una
+   * migración que sólo debía cambiar CÓMO se decide. Enumerar cuesta una línea por
+   * permiso nuevo y, a cambio, conceder algo al admin vuelve a ser una decisión
+   * explícita en vez de un efecto secundario.
+   */
+  admin: [
+    'portfolio:read',
+    'portfolio:write',
+    'users:assign-roles',
+    'cohort:manage',
+    'mentor:panel',
+    'sponsor:manage',
+    'project:own',
+    // 'sponsor:decide' NO: ver arriba.
+  ],
 };
 
 const CONOCIDOS = new Set<string>(PLATFORM_ROLES);

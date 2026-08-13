@@ -3,6 +3,12 @@ import { prisma } from '../../shared/db/prisma';
 import { verifyAccessToken } from './token.service';
 import { AppError } from '../../shared/errors/AppError';
 import { Role } from '../../shared/types/user.types';
+import {
+  permissionsForRoles,
+  rolesForUser,
+  can,
+  type Permission,
+} from '../../shared/authz/permissions';
 
 // Extend Express Request with authenticated user info
 declare global {
@@ -11,12 +17,48 @@ declare global {
       user?: {
         id: string;
         email: string;
+        /** Rol PRIMARIO: etiqueta y eje de proyecto. NO decide acceso de plataforma. */
         role: Role;
+        /** ADR-029: el conjunto de roles del que se derivan los permisos. */
+        roles: Role[];
+        /** ADR-029: permisos efectivos, ya derivados. Es lo que consultan los guards. */
+        permissions: ReadonlySet<Permission>;
         cohort?: string;
       };
       projectAccess?: 'none' | 'read' | 'write' | 'admin';
     }
   }
+}
+
+/**
+ * buildRequestUser — construye el `req.user` a partir de una identidad, derivando
+ * los roles efectivos y sus permisos (ADR-029).
+ *
+ * Existe como función exportada para que los tests que simulan `authenticate`
+ * construyan el MISMO objeto que produce el middleware real, en vez de armar uno
+ * a mano que se desincroniza en cuanto cambia la derivación. Un mock que miente
+ * sobre la forma de `req.user` deja pasar guards que en producción fallarían.
+ *
+ * Un token anterior a ADR-029 no trae `roles`; `rolesForUser` cae a `[role]`, así
+ * que las sesiones vivas siguen siendo válidas hasta expirar.
+ */
+export function buildRequestUser(u: {
+  id: string;
+  email: string;
+  role: Role;
+  roles?: readonly Role[] | null;
+  cohort?: string;
+}): NonNullable<Request['user']> {
+  const roles = [...rolesForUser(u)];
+
+  return {
+    id: u.id,
+    email: u.email,
+    role: u.role,
+    roles,
+    permissions: permissionsForRoles(roles),
+    cohort: u.cohort,
+  };
 }
 
 /**
@@ -39,12 +81,13 @@ export async function authenticate(
     const token = authHeader.slice(7);
     const payload = verifyAccessToken(token);
 
-    req.user = {
+    req.user = buildRequestUser({
       id: payload.sub,
       email: payload.email,
       role: payload.role,
+      roles: payload.roles,
       cohort: payload.cohort,
-    };
+    });
 
     next();
   } catch (err) {
@@ -53,6 +96,11 @@ export async function authenticate(
 }
 
 /**
+ * @deprecated ADR-029 — usa `requirePermission`. Ya no queda ningún router que
+ * lo llame; se conserva porque autoriza por identidad y algún consumidor externo
+ * podría importarlo, y porque los tests lo usan para fijar la equivalencia entre
+ * el guard viejo y el nuevo. Se retira con la fase 2 (#160).
+ *
  * requireRole — Check that the authenticated user has one of the required roles.
  * Must be used after `authenticate`.
  *
@@ -67,7 +115,41 @@ export function requireRole(
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    // ADR-029: compara contra el CONJUNTO de roles, no contra el escalar. Sin esto,
+    // un usuario con ['participante','portfolio_lead'] fallaría un requireRole
+    // ('portfolio_lead') porque su rol primario es participante.
+    if (!roles.some((r) => req.user!.roles.includes(r))) {
+      next(AppError.forbidden('No tienes permiso para acceder a este recurso'));
+      return;
+    }
+
+    next();
+  };
+}
+
+/**
+ * requirePermission — ADR-029. El guard de plataforma: pregunta QUÉ PUEDE HACER
+ * el usuario, no QUÉ ES.
+ *
+ * Sustituye a `requireRole`. La diferencia práctica: añadir un rol nuevo con
+ * acceso a portafolio ya no obliga a editar 20 rutas — se declara una fila en la
+ * tabla de derivación y ninguna ruta se entera. Ese bucle de "editar cada ruta
+ * al añadir un rol" es exactamente lo que produjo el parche #156.
+ *
+ * Debe usarse después de `authenticate`.
+ *
+ * Uso: router.post('/frentes', authenticate, requirePermission('portfolio:write'), handler)
+ */
+export function requirePermission(
+  permission: Permission,
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      next(AppError.unauthorized('Autenticacion requerida'));
+      return;
+    }
+
+    if (!can(req.user.permissions, permission)) {
       next(AppError.forbidden('No tienes permiso para acceder a este recurso'));
       return;
     }

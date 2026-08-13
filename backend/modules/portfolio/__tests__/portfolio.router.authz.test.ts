@@ -29,7 +29,9 @@ vi.mock('../../auth/auth.middleware', async (importOriginal) => {
   return {
     ...actual,
     authenticate: (req: any, _res: any, next: any) => {
-      req.user = currentUser;
+      // ADR-029: se construye con el MISMO helper que usa el middleware real, para
+      // que el mock no mienta sobre la forma de req.user (roles + permissions).
+      req.user = currentUser ? actual.buildRequestUser(currentUser) : currentUser;
       next();
     },
   };
