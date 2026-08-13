@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { can } from '../authz/permissions';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 
 const ROLE_LABELS = {
@@ -60,14 +61,16 @@ function PortfolioLeadLayoutContent() {
     },
   ];
 
-  // El admin también entra: el backend YA le concede las escrituras de portafolio
-  // (`requireRole('admin', 'portfolio_lead')`, ADR-028), así que dejarle fuera de la UI
-  // era una incoherencia — autorizado por API, bloqueado por pantalla.
+  // ADR-029: se pregunta por CAPACIDAD, no por identidad.
   //
-  // A diferencia del portfolio lead, el admin NO queda encerrado aquí: `AppLayout` solo
-  // redirige a `/portfolio` a los `portfolio_lead`, de modo que el admin conserva el
-  // dashboard y navega entre las dos zonas.
-  const canViewPortfolio = user?.role === 'portfolio_lead' || user?.role === 'admin';
+  // Antes esto enumeraba roles (`role === 'portfolio_lead' || role === 'admin'`), y esa
+  // lista tenía que ampliarse a mano cada vez que otro rol necesitaba entrar — el parche
+  // #156 fue exactamente eso. Ahora quien tenga el permiso entra, y añadir un rol nuevo
+  // con acceso al portafolio no toca este archivo.
+  //
+  // Ya nadie queda encerrado aquí: el redirect-cárcel de AppLayout desapareció, así que
+  // un portfolio lead que además es participante conserva su dashboard.
+  const canViewPortfolio = can(user, 'portfolio:read');
 
   useEffect(() => {
     if (!isAuthenticated) {

@@ -52,10 +52,11 @@ export function AppLayout() {
       return;
     }
 
-    if (user?.role === 'portfolio_lead') {
-      navigate('/portfolio/inicio', { replace: true });
-      return;
-    }
+    // ADR-029: AQUÍ vivía el redirect que encerraba al portfolio lead en /portfolio.
+    // Comparaba el rol PRIMARIO, así que quien fuera participante Y portfolio lead
+    // perdía su dashboard, sus iniciativas y el flujo Step 0-4 — no por una decisión
+    // de producto, sino porque `role` era un escalar y no sabía decir "las dos cosas".
+    // Ahora la zona se ELIGE (WorkspaceSwitcher) en vez de imponerse.
 
     if (user?.role !== 'sponsor') return;
 

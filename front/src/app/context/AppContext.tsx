@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authService, AuthUser } from '../services/auth.service';
+import { PERMISSIONS, type Permission } from '../authz/permissions';
 import { initAuth, getAccessToken, parseApiError, AuthError } from '../services/api';
 import * as projectService from '../services/projectService';
 import { mapPublicDraftToStep0Data } from '../../features/public-start/domain/mappers';
@@ -280,7 +281,15 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  /**
+   * ADR-029: rol de PRESENTACIÓN (etiqueta del sidebar, badge de perfil).
+   * NO decide acceso — para eso está `permissions` / `can()`. Un usuario con dos
+   * roles tiene un solo `role` primario, así que compararlo para decidir a qué
+   * zona entra es justo el bug que ADR-029 arregla.
+   */
   role: Role;
+  /** ADR-029: permisos derivados en el servidor. La base de toda decisión de acceso. */
+  permissions: Permission[];
   initials: string;
   skills: string[];
   cohort?: string;
@@ -517,6 +526,11 @@ export function mapBackendUser(raw: AuthUser): User {
     name: raw.name,
     email: raw.email,
     role,
+    // ADR-029: se filtran a los permisos conocidos por este cliente. Un permiso que
+    // el backend conozca y el front no simplemente no se usa — falla cerrado.
+    permissions: ((raw.permissions ?? []) as Permission[]).filter((p) =>
+      (PERMISSIONS as readonly string[]).includes(p),
+    ),
     initials: raw.initials || inferInitials(raw.name),
     skills: [],
     cohort: rawAny.cohortCode ?? raw.cohort ?? '',
