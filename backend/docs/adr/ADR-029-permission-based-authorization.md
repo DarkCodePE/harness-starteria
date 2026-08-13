@@ -1,7 +1,9 @@
 # ADR-029: Autorización por permisos, con roles como asignación múltiple
 
-- **Estado**: Propuesto
+- **Estado**: Aceptado — fase 1 implementada y desplegada
 - **Fecha**: 2026-08-12
+- **Actualizado**: 2026-08-12 — la fase 1 (permisos + `roles[]` + switcher) está en `main`.
+  Sigue abierta la fase 2 (retirar la columna `role`, #160) y el gate de `portfolio:read` (#161).
 - **Enmienda a**: ADR-028 (Aceptado) — resuelve la deuda que su sección «Consecuencias» dejó anotada
 - **Relacionados**: ADR-004 (autorización original, 4 roles), ADR-009 (modelo de 6 roles),
   ADR-010 (implementación authz), ADR-023 (`TeamRole`, eje de equipo),
