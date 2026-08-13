@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { can } from '../authz/permissions';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 
 const ROLE_LABELS = {
@@ -105,6 +106,9 @@ function PortfolioLeadLayoutContent() {
           </div>
         </div>
       </div>
+
+      {/* ADR-029: desde aquí se vuelve al workspace sin perder la sesión ni la zona. */}
+      <WorkspaceSwitcher activa="portafolio" />
 
       <div className="mx-3 mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
         <p className="text-xs text-amber-800" style={{ fontWeight: 700 }}>CAPA ESTRATÉGICA</p>

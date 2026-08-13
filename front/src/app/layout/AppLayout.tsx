@@ -4,6 +4,7 @@ import {
   LayoutDashboard, FolderOpen, Users, BarChart3, User, HelpCircle,
   LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard, Target
 } from 'lucide-react';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useApp } from '../context/AppContext';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
 import * as portfolioService from '../services/portfolioService';
@@ -149,6 +150,10 @@ export function AppLayout() {
           <span className="text-base text-slate-900" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Startería</span>
         </div>
       </div>
+
+      {/* ADR-029: elegir zona en vez de que se imponga por rol. Invisible para
+          quien pertenece a una sola superficie. */}
+      <WorkspaceSwitcher activa="iniciativas" />
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
