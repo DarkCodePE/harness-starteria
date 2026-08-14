@@ -31,6 +31,7 @@ import { aiRouter } from './modules/ai';
 import { companyRouter, initiativeContextRouter } from './modules/companies/company.router';
 import { copilotRouter } from './modules/copilot/copilot.router';
 import { copilotReadinessHandler } from './modules/copilot/copilot-readiness';
+import { truthRouter } from './modules/truth/truth.router';
 
 export function createApp() {
   const app = express();
@@ -63,6 +64,7 @@ export function createApp() {
   app.use('/api/v1/sponsor', sponsorRouter);
   app.use('/api/v1/portfolio', portfolioRouter);
   app.use('/api/v1/copilot', copilotRouter);
+  app.use('/api/v1/truth', truthRouter);
   app.use('/api/v1/initial-reviews', initialReviewRouter);
   app.use('/api/v1/companies', companyRouter);
   // PRD-005 / issue #85: AUTHENTICATED AI bridge (refine-field). Same ai-service

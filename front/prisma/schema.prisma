@@ -91,6 +91,65 @@ enum EvidenceType {
   OTHER
 }
 
+enum SourceRefType {
+  USER_INPUT
+  AI_OUTPUT
+  PDF_PROPOSAL
+  CONTEXT_SOURCE
+  FILE_UPLOAD
+  URL
+  SYSTEM_RULE
+  API
+  OTHER
+}
+
+enum TruthClaimVerificationState {
+  unvalidated
+  supported
+  contradicted
+  insufficient
+}
+
+enum TruthEvidenceStatus {
+  supports
+  contradicts
+  insufficient
+}
+
+enum TruthValidationResult {
+  unvalidated
+  supported
+  contradicted
+  insufficient
+}
+
+enum TruthValidatorType {
+  human
+  system_rule
+  ai
+}
+
+enum AttentionItemStatus {
+  open
+  acknowledged
+  resolved
+  cancelled
+}
+
+enum AttentionItemSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum ImpactStatus {
+  declared
+  estimated
+  validated
+  realized
+}
+
 enum TeamRole {
   OWNER
   EDITOR
@@ -463,6 +522,11 @@ model Project {
 
   steps                 Step[]
   evidence              Evidence[]
+  sourceRefs            SourceRef[]
+  truthClaims           TruthClaim[]
+  truthValidations      TruthValidation[]
+  attentionItems        AttentionItem[]
+  impactAssertions      ImpactAssertion[]
   teamMembers           TeamMember[]
   mentorSessions        MentorSession[]
   helpRequests          HelpRequest[]
@@ -698,12 +762,183 @@ model Evidence {
   ownerId    String
   owner      User           @relation(fields: [ownerId], references: [id])
   status     EvidenceStatus @default(UPLOADED)
+  sourceRefId String?
+  sourceRef   SourceRef?    @relation(fields: [sourceRefId], references: [id], onDelete: Restrict)
+  targetClaimId String?
+  targetClaim TruthClaim?   @relation(fields: [targetClaimId], references: [id], onDelete: SetNull)
+  validations TruthValidation[] @relation("EvidenceValidations")
+  truthStatus TruthEvidenceStatus?
+  capturedAt DateTime?
+  excerpt    String?
+  provenance Json?
+  metadataJson Json?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
   @@index([projectId])
   @@index([ownerId])
   @@index([stepRef])
+  @@index([sourceRefId])
+  @@index([targetClaimId])
+  @@index([truthStatus])
+}
+
+model SourceRef {
+  id              String        @id @default(cuid())
+  projectId       String?
+  project         Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceType      SourceRefType
+  reference       String
+  location        String?
+  originActorId   String?
+  originActorType String?
+  contentHash     String?
+  version         String?
+  metadataJson    Json?
+  capturedAt      DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  evidence Evidence[]
+  validations TruthValidation[]
+  attentionItems AttentionItem[]
+  claimLinks TruthClaimSourceRef[]
+  impactAssertions ImpactAssertion[]
+
+  @@index([projectId])
+  @@index([sourceType])
+  @@index([originActorId])
+  @@index([contentHash])
+}
+
+model TruthClaim {
+  id                  String                      @id @default(cuid())
+  projectId           String
+  project             Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subjectType         String
+  subjectId           String?
+  claimType           String
+  statement           String
+  valueJson           Json?
+  createdById         String
+  createdByType       String                      @default("human")
+  verificationState   TruthClaimVerificationState @default(unvalidated)
+  sourceRefsJson      Json?
+  currentValidationId String?
+  currentValidation   TruthValidation?            @relation("CurrentTruthClaimValidation", fields: [currentValidationId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  evidence Evidence[]
+  validations TruthValidation[] @relation("TruthClaimValidations")
+  sourceRefLinks TruthClaimSourceRef[]
+  impactAssertions ImpactAssertion[]
+
+  @@index([projectId])
+  @@index([subjectType, subjectId])
+  @@index([claimType])
+  @@index([verificationState])
+  @@index([createdById])
+  @@index([currentValidationId])
+}
+
+model TruthClaimSourceRef {
+  id          String     @id @default(cuid())
+  claimId     String
+  claim       TruthClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  sourceRefId String
+  sourceRef   SourceRef  @relation(fields: [sourceRefId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+
+  @@unique([claimId, sourceRefId])
+  @@index([sourceRefId])
+}
+
+model TruthValidation {
+  id              String                @id @default(cuid())
+  projectId       String
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  claimId         String?
+  claim           TruthClaim?           @relation("TruthClaimValidations", fields: [claimId], references: [id], onDelete: Cascade)
+  evidenceId      String?
+  evidence        Evidence?             @relation("EvidenceValidations", fields: [evidenceId], references: [id], onDelete: Restrict)
+  sourceRefId     String?
+  sourceRef       SourceRef?            @relation(fields: [sourceRefId], references: [id], onDelete: Restrict)
+  result          TruthValidationResult
+  validatedById   String
+  validatorType   TruthValidatorType
+  validatorRole   String?
+  rationale       String
+  version         Int                   @default(1)
+  validatedAt     DateTime              @default(now())
+  createdAt       DateTime              @default(now())
+
+  currentForClaims TruthClaim[] @relation("CurrentTruthClaimValidation")
+  impactAssertions ImpactAssertion[]
+
+  @@index([projectId])
+  @@index([claimId])
+  @@index([evidenceId])
+  @@index([sourceRefId])
+  @@index([result])
+  @@index([validatedById])
+}
+
+model AttentionItem {
+  id              String                @id @default(cuid())
+  projectId       String
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  objectType      String?
+  objectId        String?
+  category        String
+  reason          String
+  severity        AttentionItemSeverity @default(medium)
+  sourceRefId     String?
+  sourceRef       SourceRef?            @relation(fields: [sourceRefId], references: [id], onDelete: SetNull)
+  ownerId         String?
+  status          AttentionItemStatus   @default(open)
+  exitCondition   String
+  nextAction      String
+  resolutionNote  String?
+  resolvedById    String?
+  resolvedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([severity])
+  @@index([ownerId])
+  @@index([sourceRefId])
+}
+
+model ImpactAssertion {
+  id              String       @id @default(cuid())
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subjectType     String
+  subjectId       String?
+  claimId         String?
+  claim           TruthClaim?  @relation(fields: [claimId], references: [id], onDelete: Restrict)
+  metric          String?
+  valueJson       Json?
+  status          ImpactStatus @default(declared)
+  sourceRefId     String?
+  sourceRef       SourceRef?   @relation(fields: [sourceRefId], references: [id], onDelete: Restrict)
+  validationId    String?
+  validation      TruthValidation? @relation(fields: [validationId], references: [id], onDelete: Restrict)
+  transitionedById String?
+  transitionedAt DateTime?
+  createdById     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([projectId])
+  @@index([subjectType, subjectId])
+  @@index([claimId])
+  @@index([sourceRefId])
+  @@index([validationId])
+  @@index([status])
 }
 
 model TeamMember {

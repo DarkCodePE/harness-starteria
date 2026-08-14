@@ -178,11 +178,11 @@ export function PortfolioLeadProvider({
     if (!rawFronts || rawFronts.length === 0) return;
     const fronts = rawFronts.map(adaptStrategicFront);
     const challengesByFront = await Promise.all(
-      fronts.map((f) => portfolioService.listChallenges(f.id).catch(() => [])),
+      fronts.map((f) => portfolioService.listChallenges(f.id)),
     );
     const allChallenges = challengesByFront.flat().map(adaptChallenge);
     const initiativesByChallenge = await Promise.all(
-      allChallenges.map((c) => portfolioService.listInitiatives(c.id).catch(() => [])),
+      allChallenges.map((c) => portfolioService.listInitiatives(c.id)),
     );
     const allInitiatives = initiativesByChallenge.flat().map(adaptInitiative);
     setStrategicFronts(fronts);
@@ -197,8 +197,14 @@ export function PortfolioLeadProvider({
       try {
         await refreshPortfolioData();
         if (cancelled) return;
-      } catch {
-        // Keep the mock fixtures on any failure.
+      } catch (err) {
+        if (!cancelled && !enableDemoData) {
+          setStrategicFronts([]);
+          setChallenges([]);
+          setInitiatives([]);
+        }
+        // eslint-disable-next-line no-console
+        console.error('[portfolio] backend truth unavailable; not substituting mock data', err);
       }
     })();
     return () => {
