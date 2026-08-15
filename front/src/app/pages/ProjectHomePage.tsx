@@ -24,7 +24,8 @@ import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact }
 import { getInitialReview } from '../../features/initial-review/services/initialReviewStorage';
 import { buildInitialReviewArtifact } from '../../features/initial-review/services/initialReviewMappers';
 import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
-import { buildAdaptiveJourney, getCurrentAdaptiveJourneyStep, resolveAdaptiveCoreForProject } from '../../features/adaptive-core/domain/adaptiveJourney';
+import { buildAdaptiveJourney, getCurrentAdaptiveJourneyStep } from '../../features/adaptive-core/domain/adaptiveJourney';
+import { canNavigateToAdaptiveStep } from '../../features/adaptive-core/domain/adaptiveAuthority';
 import { getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 const STEP_DESCRIPTIONS = [
@@ -56,6 +57,7 @@ const INTRO_STEP_SUMMARY = [
 ] as const;
 
 type ProjectStepOverviewStatus = 'current' | 'completed' | 'available' | 'locked' | 'review_pending' | 'blocked';
+type AdaptiveCoreLoadState = 'loading' | 'loaded' | 'error';
 type StepPreviewState = {
   selectedStepId: string | null;
   isOpen: boolean;
@@ -615,22 +617,40 @@ export function ProjectHomePage() {
   const [initialReviewArtifactTab, setInitialReviewArtifactTab] = useState<InitialReviewArtifactTab>('onePager');
   const [artifactDownloadReady, setArtifactDownloadReady] = useState(false);
   const [serverAdaptiveCore, setServerAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
-  const [adaptiveCoreLoadFailed, setAdaptiveCoreLoadFailed] = useState(false);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<AdaptiveCoreLoadState>('loading');
+  const [adaptiveCoreError, setAdaptiveCoreError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadAdaptiveCore = React.useCallback(() => {
     let cancelled = false;
     setServerAdaptiveCore(null);
-    setAdaptiveCoreLoadFailed(false);
+    setAdaptiveCoreStatus('loading');
+    setAdaptiveCoreError(null);
     if (!projectId) return () => { cancelled = true; };
     getAdaptiveCore(projectId)
       .then((core) => {
-        if (!cancelled) setServerAdaptiveCore(core);
+        if (!cancelled) {
+          setServerAdaptiveCore(core);
+          setAdaptiveCoreStatus('loaded');
+        }
       })
       .catch(() => {
-        if (!cancelled) setAdaptiveCoreLoadFailed(true);
+        if (!cancelled) {
+          setServerAdaptiveCore(null);
+          setAdaptiveCoreStatus('error');
+          setAdaptiveCoreError('No pudimos cargar el estado adaptativo persistido.');
+        }
       });
     return () => { cancelled = true; };
   }, [projectId]);
+
+  useEffect(() => {
+    const cleanup = loadAdaptiveCore();
+    return cleanup;
+  }, [loadAdaptiveCore]);
+
+  const retryAdaptiveCore = () => {
+    void loadAdaptiveCore();
+  };
 
   const project = projects.find(p => p.id === projectId);
   if (!project) return (
@@ -823,9 +843,10 @@ export function ProjectHomePage() {
 
   const canAccessStep = (stepNum: number) => {
     if (isSponsorViewer) return false;
-    if (stepNum === 1) return project.step0Status === 'Completado';
-    const prevStep = project.steps.find(s => s.number === stepNum - 1);
-    return prevStep?.status === 'Aprobado';
+    if (stepNum === 0) return true;
+    if (adaptiveCoreStatus !== 'loaded' || !serverAdaptiveCore) return false;
+    if (stepNum < 0 || stepNum > 4) return false;
+    return canNavigateToAdaptiveStep(serverAdaptiveCore, stepNum as 0 | 1 | 2 | 3 | 4);
   };
 
   const handleStepClick = (step: Step) => {
@@ -924,31 +945,36 @@ export function ProjectHomePage() {
     ...step0SummaryBlocks.slice(0, 6).map(block => `${block.label}: ${block.value}`),
     step0ContactHint ? `Contacto clave sugerido: ${step0ContactHint}` : null,
   ].filter(Boolean).join('\n');
-  const adaptiveCore = resolveAdaptiveCoreForProject(project, serverAdaptiveCore);
-  const adaptiveJourney = buildAdaptiveJourney(project, adaptiveCore, (stepNumber) => {
-    if (isSponsorViewer) return false;
-    return stepNumber === 0 || canAccessStep(stepNumber);
-  });
-  const currentAdaptiveJourneyStep = getCurrentAdaptiveJourneyStep(adaptiveJourney);
-  const currentJourneyStep = currentAdaptiveJourneyStep.step;
+  const adaptiveCore = adaptiveCoreStatus === 'loaded' ? serverAdaptiveCore : null;
+  const adaptiveJourney = adaptiveCore
+    ? buildAdaptiveJourney(project, adaptiveCore, (stepNumber) => {
+      if (isSponsorViewer) return false;
+      return stepNumber === 0 || canAccessStep(stepNumber);
+    })
+    : [];
+  const currentAdaptiveJourneyStep = adaptiveJourney.length > 0 ? getCurrentAdaptiveJourneyStep(adaptiveJourney) : null;
+  const currentJourneyStep = currentAdaptiveJourneyStep?.step ?? 0;
   const selectedStepNumber = stepPreview.selectedStepId ? Number(stepPreview.selectedStepId) : currentJourneyStep;
   const getStepOverviewState = (stepNumber: number) => {
-    const adaptiveStep = adaptiveJourney.find(item => item.step === stepNumber) ?? adaptiveJourney[0];
+    const adaptiveStep = adaptiveJourney.find(item => item.step === stepNumber) ?? null;
     const legacyConfig = PROJECT_STEPS_OVERVIEW.find(item => item.step === stepNumber) ?? PROJECT_STEPS_OVERVIEW[0];
     const config = {
       ...legacyConfig,
-      title: adaptiveStep.title,
-      shortTitle: adaptiveStep.shortTitle,
-      shortDescription: adaptiveStep.description,
-      whatItSolves: adaptiveStep.objective,
-      output: adaptiveStep.expectedOutput,
-      requirements: adaptiveStep.nextAction,
+      title: adaptiveStep?.title ?? legacyConfig.title,
+      shortTitle: adaptiveStep?.shortTitle ?? `Step ${stepNumber}`,
+      shortDescription: adaptiveStep?.description ?? legacyConfig.shortDescription,
+      whatItSolves: adaptiveStep?.objective ?? legacyConfig.whatItSolves,
+      output: adaptiveStep?.expectedOutput ?? legacyConfig.output,
+      requirements: adaptiveStep?.nextAction ?? 'Estado adaptativo pendiente de cargar desde backend.',
       ctaStart: stepNumber === 0 ? 'Empezar Step 0 adaptativo' : `Continuar Step ${stepNumber}`,
       ctaContinue: stepNumber === 0 ? 'Continuar Step 0 adaptativo' : `Continuar Step ${stepNumber}`,
     };
     const appStep = project.steps.find(item => item.number === stepNumber);
-    let status: ProjectStepOverviewStatus = adaptiveStep.status as ProjectStepOverviewStatus;
-    let lockReason = stepNumber === 0 ? '' : adaptiveStep.nextAction || (BLOCK_REASONS[String(stepNumber)] ?? 'Se desbloquea al completar el paso anterior.');
+    let status: ProjectStepOverviewStatus = (adaptiveStep?.status as ProjectStepOverviewStatus | undefined) ?? 'locked';
+    let lockReason = adaptiveStep?.nextAction
+      ?? (adaptiveCoreStatus === 'loading'
+        ? 'Cargando estado adaptativo persistido desde backend.'
+        : 'Estado adaptativo no disponible. Reintenta para recuperar checkpoints, progreso y desbloqueos.');
 
     if (stepNumber === 0) {
       status = step0Complete ? 'completed' : 'current';
@@ -962,14 +988,14 @@ export function ProjectHomePage() {
     } else if (canAccessStep(stepNumber)) {
       status = currentJourneyStep === stepNumber || appStep?.status === 'En progreso' ? 'current' : 'available';
     }
-    status = adaptiveStep.status as ProjectStepOverviewStatus;
-    lockReason = stepNumber === 0 ? '' : adaptiveStep.nextAction || lockReason;
+    status = (adaptiveStep?.status as ProjectStepOverviewStatus | undefined) ?? 'locked';
+    lockReason = adaptiveStep?.nextAction ?? lockReason;
 
     const completedModules = stepNumber === 0
       ? step0Complete
         ? ['Base inicial completada', ...(step0SummaryChips.length ? step0SummaryChips : ['Contexto inicial ordenado'])]
         : []
-      : adaptiveStep.status === 'completed'
+      : adaptiveStep?.status === 'completed'
         ? [`${adaptiveStep.expectedOutput} confirmado`]
         : appStep?.modules.filter(module => module.status === 'Completado' || module.status === 'Aprobado').map(module => module.name) ?? [];
     const pendingModules = stepNumber === 0
@@ -978,7 +1004,7 @@ export function ProjectHomePage() {
           ? []
           : ['Feedback del líder pendiente o por actualizar']
         : ['Completar base, impacto y decisión inicial']
-      : adaptiveStep.checkpointSummary.length
+      : adaptiveStep?.checkpointSummary.length
         ? adaptiveStep.checkpointSummary
         : appStep?.modules.filter(module => module.status !== 'Completado' && module.status !== 'Aprobado').map(module => module.name) ?? [];
 
@@ -990,10 +1016,11 @@ export function ProjectHomePage() {
       lockReason,
       completionBullets: completedModules,
       pendingBullets: pendingModules,
-      canNavigate: adaptiveStep.canNavigate,
+      canNavigate: adaptiveStep?.canNavigate ?? false,
     };
   };
-  const journeySteps = adaptiveJourney.map(item => getStepOverviewState(item.step));
+  const journeySteps = (adaptiveJourney.length > 0 ? adaptiveJourney.map(item => item.step) : PROJECT_STEPS_OVERVIEW.map(item => item.step))
+    .map(step => getStepOverviewState(step));
   const selectedStepOverview = getStepOverviewState(selectedStepNumber);
   const selectedStepStyle = STEP_STATUS_COPY[selectedStepOverview.status];
   const selectedStepIsComplete = selectedStepOverview.status === 'completed';
@@ -1045,20 +1072,22 @@ export function ProjectHomePage() {
   });
   const selectedPersonalizedStep = {
     ...(personalizedStepRoute.find(item => item.step === selectedStepNumber) ?? personalizedStepRoute[0]),
-    title: selectedStepOverview.adaptiveStep.title,
-    shortDescription: selectedStepOverview.adaptiveStep.description,
-    previewTitle: `Step ${selectedStepNumber}: ${selectedStepOverview.adaptiveStep.title}`,
-    previewSubtitle: selectedStepOverview.adaptiveStep.nextAction,
-    workItems: selectedStepOverview.adaptiveStep.checkpointSummary.length
+    title: selectedStepOverview.adaptiveStep?.title ?? selectedStepOverview.config.title,
+    shortDescription: selectedStepOverview.adaptiveStep?.description ?? selectedStepOverview.config.shortDescription,
+    previewTitle: `Step ${selectedStepNumber}: ${selectedStepOverview.adaptiveStep?.title ?? selectedStepOverview.config.title}`,
+    previewSubtitle: selectedStepOverview.adaptiveStep?.nextAction ?? selectedStepOverview.lockReason,
+    workItems: selectedStepOverview.adaptiveStep?.checkpointSummary.length
       ? selectedStepOverview.adaptiveStep.checkpointSummary
-      : [selectedStepOverview.adaptiveStep.objective],
-    whyItMatters: selectedStepOverview.adaptiveStep.objective,
-    expectedOutputs: [selectedStepOverview.adaptiveStep.expectedOutput],
+      : [selectedStepOverview.adaptiveStep?.objective ?? selectedStepOverview.config.whatItSolves],
+    whyItMatters: selectedStepOverview.adaptiveStep?.objective ?? selectedStepOverview.config.whatItSolves,
+    expectedOutputs: [selectedStepOverview.adaptiveStep?.expectedOutput ?? selectedStepOverview.config.output],
     requirementsToAdvance: [
-      selectedStepOverview.adaptiveStep.activeCheckpointCode
+      selectedStepOverview.adaptiveStep?.activeCheckpointCode
         ? `${selectedStepOverview.adaptiveStep.activeCheckpointCode}: ${selectedStepOverview.adaptiveStep.activeCheckpointTitle ?? 'checkpoint activo'}`
-        : selectedStepOverview.adaptiveStep.nextAction,
-      `${selectedStepOverview.adaptiveStep.questionsCount} preguntas materializadas para esta ruta`,
+        : selectedStepOverview.adaptiveStep?.nextAction ?? selectedStepOverview.lockReason,
+      selectedStepOverview.adaptiveStep
+        ? `${selectedStepOverview.adaptiveStep.questionsCount} preguntas materializadas para esta ruta`
+        : 'Checkpoint persistido pendiente de cargar desde backend.',
     ],
     ctaLabel: selectedStepOverview.config.ctaContinue,
   };
@@ -1485,20 +1514,42 @@ export function ProjectHomePage() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-base text-slate-900" style={{ fontWeight: 700 }}>Recorrido del proyecto</h2>
-            <p className="mt-1 text-sm text-slate-500">{currentAdaptiveJourneyStep.nextAction || getJourneySubtitle(currentJourneyStep)}</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {currentAdaptiveJourneyStep?.nextAction
+                ?? (adaptiveCoreStatus === 'loading'
+                  ? 'Cargando estado adaptativo persistido desde backend.'
+                  : 'Estado adaptativo no disponible. Reintenta para recuperar checkpoints, progreso y desbloqueos.')}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 700 }}>
-              Ruta {currentAdaptiveJourneyStep.routeType.replaceAll('_', ' ')}
-            </span>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 700 }}>
-              Step activo: {currentJourneyStep}
-            </span>
-          </div>
+          {currentAdaptiveJourneyStep && (
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700" style={{ fontWeight: 700 }}>
+                Ruta {currentAdaptiveJourneyStep.routeType.replaceAll('_', ' ')}
+              </span>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700" style={{ fontWeight: 700 }}>
+                Step activo: {currentJourneyStep}
+              </span>
+            </div>
+          )}
         </div>
-        {adaptiveCoreLoadFailed && (
-          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            Mostrando configuracion adaptativa local mientras el backend sincroniza este proyecto.
+        {adaptiveCoreStatus !== 'loaded' && (
+          <div
+            role={adaptiveCoreStatus === 'error' ? 'alert' : 'status'}
+            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"
+          >
+            {adaptiveCoreStatus === 'loading'
+              ? 'Cargando Adaptive Core desde backend. La ruta queda bloqueada hasta recibir el estado persistido.'
+              : adaptiveCoreError ?? 'Estado adaptativo no disponible.'}
+            {adaptiveCoreStatus === 'error' && (
+              <button
+                type="button"
+                onClick={retryAdaptiveCore}
+                className="ml-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-amber-900 hover:bg-amber-100"
+                style={{ fontWeight: 700 }}
+              >
+                Reintentar
+              </button>
+            )}
           </div>
         )}
 
@@ -1522,10 +1573,10 @@ export function ProjectHomePage() {
                     {status === 'current' && config.step === 0 ? 'Comienza aquí' : style.label}
                   </span>
                 </div>
-                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{adaptiveStep.title}</p>
-                <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{adaptiveStep.nextAction}</p>
+                <p className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{adaptiveStep?.title ?? config.title}</p>
+                <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{adaptiveStep?.nextAction ?? config.requirements}</p>
                 <p className="mt-2 text-[11px] text-slate-400">
-                  {adaptiveStep.routeType.replaceAll('_', ' ')} · {adaptiveStep.depthLevel} · {adaptiveStep.questionsCount} preguntas
+                  {(adaptiveStep?.routeType ?? 'estado_persistido_pendiente').replaceAll('_', ' ')} · {adaptiveStep?.depthLevel ?? 'backend'} · {adaptiveStep?.questionsCount ?? 0} preguntas
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2" onClick={event => event.stopPropagation()}>
                   {canNavigate && (status === 'current' || status === 'available') && (
@@ -1535,7 +1586,7 @@ export function ProjectHomePage() {
                       className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] text-white hover:bg-indigo-700"
                       style={{ fontWeight: 800 }}
                     >
-                      {adaptiveStep.step === 0 ? 'Abrir Step 0 adaptativo' : `Abrir Step ${adaptiveStep.step}`}
+                      {config.step === 0 ? 'Abrir Step 0 adaptativo' : `Abrir Step ${config.step}`}
                     </button>
                   )}
                   {canNavigate && status === 'completed' && (
@@ -2088,8 +2139,9 @@ export function ProjectHomePage() {
 
         {/* ── PASOS 1–4 ── */}
         {project.steps.map(step => {
-          const accessible = canAccessStep(step.number);
           const adaptiveDetail = adaptiveJourney.find(item => item.step === step.number);
+          const overviewState = getStepOverviewState(step.number);
+          const accessible = overviewState.canNavigate;
           const isActive = adaptiveDetail?.status === 'current' || (step.status !== 'Aprobado' && step.status !== 'No iniciado' && step.status !== 'Bloqueado');
           const hasPendingSession = step.mentorSession?.status === 'Pendiente agendar';
 

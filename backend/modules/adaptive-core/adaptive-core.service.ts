@@ -1,6 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
 import { syncInitiativeProgress } from '../portfolio/initiative-progress';
+import { TruthService, type EvidenceReferenceBindingInput, type ValidatedSupportBindingInput } from '../truth/truth.service';
+import { getCheckpointEvidencePolicy } from './checkpoint-evidence-policy';
 import type {
   AdaptiveCoreState,
   AdaptiveDepthLevel,
@@ -201,6 +203,8 @@ export class AdaptiveCoreService {
         details: sufficiency.missing.map((field) => ({ field, code: 'MISSING_REQUIRED_FIELD', message: 'Completa o marca como pendiente este dato.' })),
       });
     }
+    const readiness = await this.evaluateCheckpointReadiness(projectId, instance.checkpointKey, input);
+    const responseJson = this.responseWithPolicyBindings(input.responses, input.truthBindings, input.evidenceBindings);
 
     await db.$transaction(async (tx: any) => {
       await tx.adaptiveCheckpointResponse.create({
@@ -208,20 +212,20 @@ export class AdaptiveCoreService {
           projectId,
           checkpointInstanceId: instance.id,
           checkpointKey: instance.checkpointKey,
-          responseJson: input.responses,
+          responseJson,
           answeredById: userId,
           idempotencyKey: input.idempotencyKey,
         },
       });
       await tx.adaptiveCheckpointInstance.update({
         where: { id: instance.id },
-        data: { status: 'completed', completedAt: new Date(), sufficiencyJson: sufficiency },
+        data: { status: 'completed', completedAt: new Date(), sufficiencyJson: { ...sufficiency, readiness } },
       });
       await this.recordEventTx(tx, projectId, 'checkpoint_completed', `${instance.checkpointKey} completado.`, { checkpointKey: instance.checkpointKey, sufficiency }, userId, input.idempotencyKey);
 
       const nextKey = this.nextCheckpointKey(instance.checkpointKey);
       if (nextKey === 'CP-2.5' && !this.shouldActivateReadiness(stepConfiguration.sourceContextJson ?? {}, input.responses)) {
-        const allResponses = [...previousResponses.map((r: any) => r.responseJson), input.responses];
+        const allResponses = [...previousResponses.map((r: any) => r.responseJson), responseJson];
         const output = this.buildStep2Output(stepConfiguration.sourceContextJson, allResponses);
         await this.upsertStepOutputTx(tx, projectId, 2, stepConfiguration.id, output.outputKey, output as unknown as Record<string, unknown>, 'draft');
         await this.upsertProgressSignalTx(tx, projectId, {
@@ -243,7 +247,7 @@ export class AdaptiveCoreService {
         });
         await this.recordEventTx(tx, projectId, 'actor_action_required', 'El owner debe confirmar el output de Step 2.', { step: 2, outputKey: output.outputKey, readinessSkipped: true }, userId, `step2-output-review-required:${projectId}:2`);
       } else if (nextKey === 'CP-3.5' && !this.shouldActivateOperationalReadiness(stepConfiguration.sourceContextJson ?? {}, [...previousResponses.map((r: any) => r.responseJson), input.responses])) {
-        const allResponses = [...previousResponses.map((r: any) => r.responseJson), input.responses];
+        const allResponses = [...previousResponses.map((r: any) => r.responseJson), responseJson];
         const output = this.buildStep3Output(stepConfiguration.sourceContextJson, allResponses);
         await this.upsertStepOutputTx(tx, projectId, 3, stepConfiguration.id, output.outputKey, output as unknown as Record<string, unknown>, 'draft');
         await this.upsertProgressSignalTx(tx, projectId, {
@@ -269,10 +273,10 @@ export class AdaptiveCoreService {
         });
         await this.recordEventTx(tx, projectId, 'actor_action_required', 'El owner debe confirmar el output de Step 3.', { step: 3, outputKey: output.outputKey, operationalReadinessSkipped: true }, userId, `step3-output-review-required:${projectId}:3`);
       } else if (nextKey) {
-        await this.materializeCheckpointTx(tx, projectId, stepConfiguration, nextKey, [...previousResponses.map((r: any) => r.responseJson), input.responses], userId, `checkpoint_started:${projectId}:${nextKey}:${stepConfiguration.version}`);
+        await this.materializeCheckpointTx(tx, projectId, stepConfiguration, nextKey, [...previousResponses.map((r: any) => r.responseJson), responseJson], userId, `checkpoint_started:${projectId}:${nextKey}:${stepConfiguration.version}`);
         await this.updateSignalForCheckpointTx(tx, projectId, nextKey, input.responses, stepConfiguration.sourceContextJson);
       } else {
-        const allResponses = [...previousResponses.map((r: any) => r.responseJson), input.responses];
+        const allResponses = [...previousResponses.map((r: any) => r.responseJson), responseJson];
         if (instance.stepNumber === 0) {
           const brief = this.buildStep0Brief(stepConfiguration.sourceContextJson, allResponses);
           await this.upsertStepOutputTx(tx, projectId, 0, stepConfiguration.id, 'Step0AlignmentBrief', brief as unknown as Record<string, unknown>, 'draft');
@@ -292,21 +296,26 @@ export class AdaptiveCoreService {
           });
           await this.recordEventTx(tx, projectId, 'actor_action_required', 'El owner debe confirmar el Alignment Brief.', { step: 0, outputKey: 'Step0AlignmentBrief' }, userId, `brief-review-required:${projectId}:0`);
         } else if (instance.stepNumber === 1) {
-          const output = this.buildStep1Output(stepConfiguration.sourceContextJson, allResponses);
+          const output = await this.buildStep1Output(projectId, stepConfiguration.sourceContextJson, allResponses, [
+            ...previousResponses.map((r: any) => ({ checkpointKey: r.checkpointKey, responseJson: r.responseJson })),
+            { checkpointKey: instance.checkpointKey, responseJson },
+          ]);
           await this.upsertStepOutputTx(tx, projectId, 1, stepConfiguration.id, output.outputKey, output as unknown as Record<string, unknown>, 'draft');
+          const supportedByTruth = output.truthReadiness?.satisfiesValidatedSupport === true;
           await this.upsertProgressSignalTx(tx, projectId, {
             step: 1,
             checkpointCode: 'CP-1.4',
             checkpointTitle: 'Sintetizar y decidir foco',
-            health: output.sufficiency === 'sufficient' ? 'ready_for_decision' : 'attention',
+            health: supportedByTruth && output.sufficiency === 'sufficient' ? 'ready_for_decision' : 'attention',
             hypothesis: output.hypothesisForStep2,
             evidence: output.evidenceSummary,
-            evidenceStrength: output.sufficiency === 'sufficient' ? 'medium' : 'weak',
+            evidenceStrength: supportedByTruth ? 'medium' : 'weak',
             blocker: output.blocker,
             actorRequired: output.actorRequired,
             nextAction: 'Revisar y confirmar el output de Step 1 antes de configurar Step 2.',
             upcomingDecision: output.futureDecision,
             updatedAt: new Date().toISOString(),
+            truthReadiness: output.truthReadiness,
           });
           await this.recordEventTx(tx, projectId, 'actor_action_required', 'El owner debe confirmar el output de Step 1.', { step: 1, outputKey: output.outputKey }, userId, `step1-output-review-required:${projectId}:1`);
         } else if (instance.stepNumber === 2) {
@@ -457,8 +466,16 @@ export class AdaptiveCoreService {
     const step1Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: 1, status: 'active' }, orderBy: { version: 'desc' } });
     if (!step1Config) throw AppError.badRequest('No existe configuracion activa de Step 1.', 'STEP1_CONFIGURATION_MISSING');
 
-    const step1Output = { ...(draft.outputJson ?? {}), ...(input.brief ?? {}) };
+    const draftOutput = draft.outputJson ?? {};
+    const step1Output = {
+      ...draftOutput,
+      ...(input.brief ?? {}),
+      truthReadiness: (draftOutput as any).truthReadiness ?? null,
+      methodologicalSufficiency: (draftOutput as any).methodologicalSufficiency ?? (input.brief as any)?.methodologicalSufficiency,
+      sufficiency: this.contractualStep1Sufficiency(draftOutput, input.brief),
+    };
     const nextMasterContext = this.buildStep2MasterContext(step1Config.sourceContextJson ?? {}, step1Output);
+    const supportedByTruth = step1Output.truthReadiness?.satisfiesValidatedSupport === true;
 
     await db.$transaction(async (tx: any) => {
       await tx.adaptiveStepOutput.update({
@@ -490,7 +507,7 @@ export class AdaptiveCoreService {
         health: 'healthy',
         hypothesis: String(step1Output.hypothesisForStep2 ?? step1Output.updatedFocus ?? 'Hipotesis confirmada en Step 1.'),
         evidence: String(step1Output.evidenceSummary ?? 'Evidencia confirmada en Step 1.'),
-        evidenceStrength: String(step1Output.sufficiency ?? '') === 'sufficient' ? 'medium' : 'weak',
+        evidenceStrength: supportedByTruth ? 'medium' : 'weak',
         blocker: '',
         actorRequired: String(step1Output.actorRequired ?? 'Owner de iniciativa'),
         nextAction: 'Revisar transferencia de Step 1 y preparar el diseno de apuesta en Step 2.',
@@ -500,6 +517,8 @@ export class AdaptiveCoreService {
         plannedEvidence: step1Output.evidencePlan,
         obtainedEvidence: step1Output.evidenceMap,
         sufficiency: step1Output.sufficiency,
+        methodologicalSufficiency: step1Output.methodologicalSufficiency,
+        truthReadiness: step1Output.truthReadiness,
         contradictions: step1Output.contradictions,
         contributionToChallenge: step1Output.challengeContribution,
       });
@@ -1142,6 +1161,97 @@ export class AdaptiveCoreService {
     return { sufficient: missing.length === 0, missing, previousResponseCount: previous.length };
   }
 
+  private async evaluateCheckpointReadiness(projectId: string, checkpointKey: string, input: CheckpointResponseInput) {
+    const policy = getCheckpointEvidencePolicy(checkpointKey);
+    const truth = new TruthService(this.prisma);
+    if (policy.requirements.includes('validated_support_required')) {
+      const binding = this.normalizeTruthBindings(input.truthBindings) ?? this.extractTruthBindings(input.responses);
+      if (!binding) {
+        throw AppError.badRequest('Este checkpoint requiere binding explicito a Claim, Evidence y SourceRef persistentes.', 'CHECKPOINT_TRUTH_BINDING_REQUIRED');
+      }
+      const readiness = await truth.evaluateValidatedSupportBinding(projectId, binding);
+      if (!readiness.satisfiesValidatedSupport) {
+        const code = readiness.verificationState === 'contradicted'
+          ? 'CHECKPOINT_CLAIM_CONTRADICTED'
+          : readiness.verificationState === 'insufficient'
+            ? 'CHECKPOINT_CLAIM_INSUFFICIENT'
+            : 'CHECKPOINT_CLAIM_UNVALIDATED';
+        throw AppError.badRequest('El Claim ligado al checkpoint no tiene soporte validado.', code, {
+          details: [{ field: 'truthBindings.claimId', code, message: String(readiness.verificationState) }],
+        });
+      }
+      return { policy, truthRequired: true, ...readiness };
+    }
+    if (!policy.requirements.includes('evidence_reference_required')) {
+      return { policy, truthRequired: false, evidenceReferenceRequired: false, satisfiesValidatedSupport: null };
+    }
+    const binding = this.normalizeEvidenceReferenceBindings(input.evidenceBindings)
+      ?? this.extractEvidenceReferenceBindings(input.responses)
+      ?? this.evidenceReferenceFromTruthBinding(this.normalizeTruthBindings(input.truthBindings) ?? this.extractTruthBindings(input.responses));
+    if (!binding) {
+      throw AppError.badRequest('Este checkpoint requiere Evidence y SourceRef persistentes.', 'CHECKPOINT_EVIDENCE_REFERENCE_REQUIRED');
+    }
+    const reference = await truth.evaluateEvidenceReferenceBinding(projectId, binding);
+    return { policy, truthRequired: false, evidenceReferenceRequired: true, ...reference, satisfiesValidatedSupport: null };
+  }
+
+  private responseWithPolicyBindings(responses: Record<string, unknown>, bindings?: unknown, evidenceBindings?: unknown) {
+    const normalized = this.normalizeTruthBindings(bindings) ?? this.extractTruthBindings(responses);
+    const normalizedEvidence = this.normalizeEvidenceReferenceBindings(evidenceBindings) ?? this.extractEvidenceReferenceBindings(responses);
+    const {
+      truthBinding: _truthBinding,
+      truthBindings: _truthBindings,
+      evidenceBinding: _evidenceBinding,
+      evidenceBindings: _evidenceBindings,
+      evidenceReferences: _evidenceReferences,
+      ...rest
+    } = responses as Record<string, unknown>;
+    return {
+      ...rest,
+      ...(normalizedEvidence ? { evidenceBindings: normalizedEvidence } : {}),
+      ...(normalized ? { truthBindings: normalized } : {}),
+    };
+  }
+
+  private extractTruthBindings(responses: Record<string, unknown>): ValidatedSupportBindingInput | null {
+    const raw = responses.truthBindings ?? responses.truthBinding;
+    return this.normalizeTruthBindings(raw);
+  }
+
+  private normalizeTruthBindings(raw: unknown): ValidatedSupportBindingInput | null {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const record = raw as Record<string, unknown>;
+    const claimId = typeof record.claimId === 'string' ? record.claimId.trim() : '';
+    const evidenceIds = this.idList(record.evidenceIds ?? record.evidenceId);
+    const sourceRefIds = this.idList(record.sourceRefIds ?? record.sourceRefId);
+    if (!claimId || evidenceIds.length === 0 || sourceRefIds.length === 0) return null;
+    return { claimId, evidenceIds, sourceRefIds };
+  }
+
+  private extractEvidenceReferenceBindings(responses: Record<string, unknown>): EvidenceReferenceBindingInput | null {
+    const raw = responses.evidenceBindings ?? responses.evidenceBinding ?? responses.evidenceReferences ?? responses.truthBindings ?? responses.truthBinding ?? responses;
+    return this.normalizeEvidenceReferenceBindings(raw);
+  }
+
+  private normalizeEvidenceReferenceBindings(raw: unknown): EvidenceReferenceBindingInput | null {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const record = raw as Record<string, unknown>;
+    const evidenceIds = this.idList(record.evidenceIds ?? record.evidenceId);
+    const sourceRefIds = this.idList(record.sourceRefIds ?? record.sourceRefId);
+    if (evidenceIds.length === 0 || sourceRefIds.length === 0) return null;
+    return { evidenceIds, sourceRefIds };
+  }
+
+  private evidenceReferenceFromTruthBinding(binding: ValidatedSupportBindingInput | null): EvidenceReferenceBindingInput | null {
+    return binding ? { evidenceIds: binding.evidenceIds, sourceRefIds: binding.sourceRefIds } : null;
+  }
+
+  private idList(value: unknown): string[] {
+    if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
+    if (typeof value === 'string') return [value.trim()].filter(Boolean);
+    return [];
+  }
+
   private buildStep0Brief(masterContext: any, responses: Record<string, any>[]): Step0AlignmentBrief {
     const merged = Object.assign({}, ...responses);
     return {
@@ -1168,17 +1278,25 @@ export class AdaptiveCoreService {
     };
   }
 
-  private buildStep1Output(masterContext: any, responses: Record<string, any>[]) {
+  private async buildStep1Output(
+    projectId: string,
+    masterContext: any,
+    responses: Record<string, any>[],
+    checkpointResponses: { checkpointKey: string; responseJson: Record<string, any> }[] = [],
+  ) {
     const merged = Object.assign({}, ...responses);
     const routeType = (masterContext.routeType ?? 'explore_validate') as AdaptiveRouteType;
     const outputKey = STEP1_OUTPUT_BY_ROUTE[routeType];
     const evidenceItems = this.normalizeEvidenceItems(merged.evidenceItems, merged.evidenceClassifications, merged.sourceRefs);
+    const truthReadiness = await this.resolveStep1TruthReadiness(projectId, checkpointResponses);
     const classifications = evidenceItems.map((item) => item.classification);
     const contradictions = evidenceItems.filter((item) => item.classification === 'contradicts');
     const insufficient = evidenceItems.filter((item) => item.classification === 'insufficient' || item.classification === 'weak_signal');
     const supports = evidenceItems.filter((item) => item.classification === 'supports');
     const companyInfluences = this.buildCompanyInfluences(masterContext.companySnapshot);
-    const sufficiency = supports.length > 0 && contradictions.length === 0 && insufficient.length <= supports.length ? 'sufficient' : 'partial';
+    const methodologicalSufficiency = supports.length > 0 && contradictions.length === 0 && insufficient.length <= supports.length ? 'sufficient' : 'partial';
+    const truthSupported = truthReadiness?.satisfiesValidatedSupport === true;
+    const sufficiency = methodologicalSufficiency === 'sufficient' && truthSupported ? 'sufficient' : 'partial';
     const blocker = contradictions[0]?.summary ?? insufficient[0]?.summary ?? '';
     const validationFocus = {
       mainHypothesis: String(merged.mainHypothesis ?? merged.validationFocus ?? masterContext.step0Output?.priorityHypothesis ?? ''),
@@ -1212,6 +1330,7 @@ export class AdaptiveCoreService {
       validationFocus,
       evidencePlan,
       evidenceMap,
+      truthReadiness,
       facts: this.toList(merged.facts),
       contradictions: contradictions.map((item) => item.summary),
       gaps: this.compact([merged.gaps, ...insufficient.map((item) => item.summary)]),
@@ -1219,6 +1338,7 @@ export class AdaptiveCoreService {
       updatedFocus,
       hypothesisForStep2: updatedFocus,
       continuityDecision,
+      methodologicalSufficiency,
       sufficiency,
       evidenceSummary: `${supports.length} evidencia(s) apoyan; ${contradictions.length} contradicen; ${insufficient.length} son debiles o insuficientes.`,
       blocker,
@@ -1232,6 +1352,34 @@ export class AdaptiveCoreService {
       } : null,
       createdAt: new Date().toISOString(),
     };
+  }
+
+  private async resolveStep1TruthReadiness(projectId: string, responses: { checkpointKey: string; responseJson: Record<string, any> }[]) {
+    const cp13 = [...responses].reverse().find((response) => response.checkpointKey === 'CP-1.3');
+    const binding = cp13 ? this.extractTruthBindings(cp13.responseJson) : null;
+    if (!binding) {
+      return {
+        verificationState: 'missing',
+        satisfiesValidatedSupport: false,
+        claimId: null,
+        evidenceIds: [],
+        sourceRefIds: [],
+      };
+    }
+    const readiness = await new TruthService(this.prisma).evaluateValidatedSupportBinding(projectId, binding);
+    return {
+      claimId: readiness.claimId,
+      verificationState: readiness.verificationState,
+      satisfiesValidatedSupport: readiness.satisfiesValidatedSupport,
+      evidenceIds: readiness.evidenceIds,
+      sourceRefIds: readiness.sourceRefIds,
+    };
+  }
+
+  private contractualStep1Sufficiency(draftOutput: any, brief: Record<string, unknown>) {
+    const truthReadiness = draftOutput?.truthReadiness ?? null;
+    if (truthReadiness?.satisfiesValidatedSupport !== true) return 'partial';
+    return String(draftOutput?.sufficiency ?? (brief as any)?.sufficiency ?? '') === 'sufficient' ? 'sufficient' : 'partial';
   }
 
   private buildStep2MasterContext(masterContext: any, step1Output: Record<string, any>) {
@@ -1248,6 +1396,7 @@ export class AdaptiveCoreService {
         focus: step1Output.updatedFocus,
         hypothesis: step1Output.hypothesisForStep2,
         evidence: step1Output.evidenceMap,
+        truthReadiness: step1Output.truthReadiness ?? null,
         restrictions: masterContext.step0Output?.restrictions ?? [],
         criteria: step1Output.validationFocus?.dependentDecision ?? step1Output.futureDecision,
         baseline: step1Output.evidenceSummary,

@@ -13,6 +13,9 @@ import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator'
 import { StepWorkspaceShell } from '../components/layout/StepWorkspaceShell';
 import * as stepService from '../services/stepService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
+import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
+import { confirmStep2Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 type ModuleId = 'A' | 'B' | 'C' | 'D';
 
@@ -202,6 +205,10 @@ export function Step2Page() {
   const [mentorDate, setMentorDate] = useState('');
   const [mentorTime, setMentorTime] = useState('');
   const [mentorNotes, setMentorNotes] = useState('');
+  const [adaptiveCore, setAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [adaptiveAuthorityError, setAdaptiveAuthorityError] = useState<string | null>(null);
+  const [adaptiveTransitionSaving, setAdaptiveTransitionSaving] = useState(false);
 
   // HMW helpers
   const [showHelpA, setShowHelpA] = useState(false);
@@ -361,18 +368,96 @@ export function Step2Page() {
     enabled: !!projectId,
   });
 
+  const loadAdaptiveCore = useCallback(async () => {
+    if (!projectId) return null;
+    setAdaptiveCoreStatus('loading');
+    setAdaptiveAuthorityError(null);
+    try {
+      const core = await getAdaptiveCore(projectId);
+      setAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
+      return core;
+    } catch (err: any) {
+      setAdaptiveCore(null);
+      setAdaptiveCoreStatus('error');
+      setAdaptiveAuthorityError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos cargar el estado adaptativo persistido.');
+      return null;
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadAdaptiveCore();
+  }, [loadAdaptiveCore]);
+
+  const confirmStep2Transition = async () => {
+    if (!projectId || !project) return;
+    setAdaptiveTransitionSaving(true);
+    setAdaptiveAuthorityError(null);
+    try {
+      const draft = latestAdaptiveStepOutput(adaptiveCore, 2, 'draft');
+      await confirmStep2Output(projectId, {
+        idempotencyKey: `${projectId}-step2-output-${draft?.id ?? 'ui'}-confirm`,
+        brief: draft?.output ?? step2FormData,
+        confirmed: true,
+      });
+      const refreshedCore = await loadAdaptiveCore();
+      if (!refreshedCore || !canNavigateToAdaptiveStep(refreshedCore, 3)) {
+        throw new Error('El backend confirmó Step 2, pero Step 3 todavía no aparece activo en el estado adaptativo persistido.');
+      }
+      const updatedSteps = project.steps.map(s => {
+        if (s.number === 2) return { ...s, status: 'Aprobado' as const, progress: 100 };
+        if (s.number === 3) return { ...s, status: s.status === 'Bloqueado' ? 'En progreso' as const : s.status };
+        return s;
+      });
+      updateProject(projectId, { steps: updatedSteps, status: 'En progreso' });
+      setShowMentorModal(false);
+      setSessionBooked(true);
+      toast.success('Step 2 confirmado en Adaptive Core.', {
+        description: 'Step 3 ya esta disponible desde el estado persistido.',
+        duration: 3000,
+      });
+      navigate(`/projects/${projectId}/step/3`);
+    } catch (err: any) {
+      const message = err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar Step 2 en Adaptive Core.';
+      setAdaptiveAuthorityError(message);
+      toast.error(message);
+    } finally {
+      setAdaptiveTransitionSaving(false);
+    }
+  };
+
   if (!project || !step) return <div className="p-6"><p className="text-slate-500">Proyecto no encontrado.</p></div>;
 
-  const step1Approved = project.steps.find(s => s.number === 1)?.status === 'Aprobado';
-  if (!step1Approved) {
+  const adaptiveStep2Allowed = adaptiveCoreStatus === 'loaded' && canNavigateToAdaptiveStep(adaptiveCore, 2);
+  if (adaptiveCoreStatus === 'loading') {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
+        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Cargando estado adaptativo</h2>
+        <p className="text-sm text-slate-500">Validando con backend si Step 2 esta disponible.</p>
+      </div>
+    );
+  }
+  if (adaptiveCoreStatus === 'error' || !adaptiveStep2Allowed) {
     return (
       <div className="p-8 max-w-lg mx-auto text-center">
         <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
         <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Step 2 bloqueado</h2>
-        <p className="text-sm text-slate-500 mb-4">Para diseñar la solución, primero necesitas la aprobación del mentor en el Step 1.</p>
-        <button onClick={() => navigate(`/projects/${projectId}/step/1`)} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors" style={{ fontWeight: 500 }}>
-          → Ir al Step 1
-        </button>
+        <p className="text-sm text-slate-500 mb-4">
+          {adaptiveCoreStatus === 'error'
+            ? adaptiveAuthorityError
+            : 'El backend Adaptive Core todavia no habilita Step 2.'}
+        </p>
+        <div className="flex justify-center gap-2">
+          {adaptiveCoreStatus === 'error' ? (
+            <button onClick={() => void loadAdaptiveCore()} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors" style={{ fontWeight: 500 }}>
+              Reintentar
+            </button>
+          ) : null}
+          <button onClick={() => navigate(`/projects/${projectId}/step/1`)} className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors" style={{ fontWeight: 500 }}>
+            Ir al Step 1
+          </button>
+        </div>
       </div>
     );
   }
@@ -3345,9 +3430,9 @@ export function Step2Page() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm text-emerald-800" style={{ fontWeight: 600 }}>Sesión agendada</p>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800" style={{ fontWeight: 600 }}>✓ Aprobado</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800" style={{ fontWeight: 600 }}>Aprobado</span>
                         </div>
-                        <p className="text-xs text-emerald-600 mt-0.5">Step 2 aprobado · Step 3 desbloqueado</p>
+                        <p className="text-xs text-emerald-600 mt-0.5">Step 2 confirmado por Adaptive Core.</p>
                         {mentorDate && (
                           <p className="text-xs text-emerald-600 mt-1">
                             <Clock size={10} className="inline mr-1" />{mentorDate}{mentorTime ? ` · ${mentorTime}` : ''}
@@ -3355,7 +3440,9 @@ export function Step2Page() {
                         )}
                       </div>
                       <button
-                        onClick={() => navigate(`/projects/${projectId}/step/3`)}
+                        onClick={() => {
+                          if (canNavigateToAdaptiveStep(adaptiveCore, 3)) navigate(`/projects/${projectId}/step/3`);
+                        }}
                         className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
                         style={{ fontWeight: 500 }}
                       >
@@ -3367,7 +3454,7 @@ export function Step2Page() {
                   /* ── Estado pendiente ── */
                   <div className="border border-amber-200 bg-amber-50 rounded-xl p-4">
                     <p className="text-sm text-amber-800 mb-1" style={{ fontWeight: 600 }}>Sesión con experto obligatoria</p>
-                    <p className="text-xs text-amber-600 mb-3">Agenda la sesión con tu mentor para validar el Step 2 y desbloquear el Step 3.</p>
+                    <p className="text-xs text-amber-600 mb-3">Agenda la sesión con tu mentor. El Step 3 se habilita solo si Adaptive Core confirma el cierre de Step 2.</p>
                     <button
                       onClick={() => setShowMentorModal(true)}
                       className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl px-4 py-2 text-sm transition-colors"
@@ -3375,7 +3462,7 @@ export function Step2Page() {
                     >
                       <Calendar size={14} /> Agendar sesión con mentor
                     </button>
-                    <p className="text-xs text-amber-500 mt-2 italic">Modo demo: al agendar se desbloquea el Step 3.</p>
+                    {adaptiveAuthorityError ? <p className="text-xs text-amber-700 mt-2">{adaptiveAuthorityError}</p> : null}
                   </div>
                 )
               )}
@@ -3405,7 +3492,7 @@ export function Step2Page() {
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
               <div>
                 <h3 className="text-slate-900" style={{ fontWeight: 600 }}>Agendar sesión con mentor</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Selecciona fecha y hora para validar el Step 2 y desbloquear el Step 3.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Selecciona fecha y hora. El avance requiere confirmación backend.</p>
               </div>
               <button onClick={() => setShowMentorModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
                 <X size={16} className="text-slate-400" />
@@ -3467,11 +3554,10 @@ export function Step2Page() {
                 />
               </div>
 
-              {/* Demo note */}
               <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-                <span className="text-indigo-400 text-sm shrink-0">ℹ️</span>
+                <AlertCircle size={14} className="text-indigo-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-indigo-600">
-                  <span style={{ fontWeight: 600 }}>Modo demo:</span> al confirmar se simula la aprobación y se desbloquea el Step 3 automáticamente.
+                  <span style={{ fontWeight: 600 }}>Autoridad Adaptive:</span> confirmar la sesión no desbloquea Step 3 por sí sola. El backend debe confirmar el output de Step 2.
                 </p>
               </div>
             </div>
@@ -3486,31 +3572,12 @@ export function Step2Page() {
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  // ── Mutar contexto: Step 2 → Aprobado, Step 3 → En progreso ──
-                  if (project && projectId) {
-                    const updatedSteps = project.steps.map(s => {
-                      if (s.number === 2) return { ...s, status: 'Aprobado' as const, progress: 100 };
-                      if (s.number === 3) return { ...s, status: 'En progreso' as const };
-                      return s;
-                    });
-                    updateProject(projectId, { steps: updatedSteps, status: 'En progreso' });
-                  }
-                  setShowMentorModal(false);
-                  setSessionBooked(true);
-                  toast.success('Sesión agendada. Step 3 desbloqueado (demo).', {
-                    description: 'Redirigiendo a Step 3 · Probar en pequeño…',
-                    duration: 3000,
-                  });
-                  setTimeout(() => {
-                    navigate(`/projects/${projectId}/step/3`);
-                  }, 1600);
-                }}
-                disabled={!mentorDate || !mentorTime}
+                onClick={() => void confirmStep2Transition()}
+                disabled={!mentorDate || !mentorTime || adaptiveTransitionSaving}
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm transition-colors"
                 style={{ fontWeight: 500 }}
               >
-                Confirmar sesión
+                {adaptiveTransitionSaving ? 'Confirmando...' : 'Confirmar con backend'}
               </button>
             </div>
           </div>

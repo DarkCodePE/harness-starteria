@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   ArrowLeft, ChevronRight, Lock, Send, CheckCircle2, X, Plus,
@@ -14,6 +14,9 @@ import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator'
 import { useStepData } from '../hooks/useStepData';
 import * as stepService from '../services/stepService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
+import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
+import { confirmStep3Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 type ModuleId = 'A' | 'B' | 'C';
 type GoNoGoDecision = 'Go' | 'Iterar' | 'No-Go' | 'Pivote' | null;
@@ -351,7 +354,6 @@ export function Step3Page() {
   const { projectId } = useParams();
   const { projects, updateProject } = useApp();
   const navigate = useNavigate();
-  const location = useLocation();
   const project = projects.find(p => p.id === projectId);
 
   const { data: step2Raw } = useStepData<any>(projectId ?? '', 2);
@@ -361,15 +363,6 @@ export function Step3Page() {
     metrica: (step2Raw as any)?.metrica ?? '',
     evidencia: (step2Raw as any)?.evidencia ?? '',
   }), [step2Raw]);
-
-  const step2Status = project?.steps.find(s => s.number === 2)?.status;
-  const step3Status = project?.steps.find(s => s.number === 3)?.status;
-  const isUnlocked =
-    step2Status === 'Aprobado' ||
-    step3Status === 'En progreso' ||
-    step3Status === 'Enviado' ||
-    step3Status === 'Aprobado' ||
-    location.state?.demoUnlocked === true;
 
   // ── Navigation ───────────────────────────────────────────────────────────────
   const [activeModule, setActiveModule] = useState<ModuleId>('A');
@@ -604,6 +597,10 @@ export function Step3Page() {
   const [s3SessionBooked, setS3SessionBooked] = useState(false);
   const [s3MentorDate, setS3MentorDate] = useState('');
   const [s3MentorTime, setS3MentorTime] = useState('');
+  const [adaptiveCore, setAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [adaptiveAuthorityError, setAdaptiveAuthorityError] = useState<string | null>(null);
+  const [adaptiveTransitionSaving, setAdaptiveTransitionSaving] = useState(false);
 
   // S3C_DiagnosticoIA
   const [editandoDiag, setEditandoDiag] = useState(false);
@@ -700,15 +697,90 @@ export function Step3Page() {
     enabled: !!projectId,
   });
 
+  const loadAdaptiveCore = useCallback(async () => {
+    if (!projectId) return null;
+    setAdaptiveCoreStatus('loading');
+    setAdaptiveAuthorityError(null);
+    try {
+      const core = await getAdaptiveCore(projectId);
+      setAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
+      return core;
+    } catch (err: any) {
+      setAdaptiveCore(null);
+      setAdaptiveCoreStatus('error');
+      setAdaptiveAuthorityError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos cargar el estado adaptativo persistido.');
+      return null;
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadAdaptiveCore();
+  }, [loadAdaptiveCore]);
+
+  const confirmStep3Transition = async () => {
+    if (!projectId || !project) return;
+    setAdaptiveTransitionSaving(true);
+    setAdaptiveAuthorityError(null);
+    try {
+      const draft = latestAdaptiveStepOutput(adaptiveCore, 3, 'draft');
+      await confirmStep3Output(projectId, {
+        idempotencyKey: `${projectId}-step3-output-${draft?.id ?? 'ui'}-confirm`,
+        brief: draft?.output ?? step3FormData,
+        confirmed: true,
+      });
+      const refreshedCore = await loadAdaptiveCore();
+      if (!refreshedCore || !canNavigateToAdaptiveStep(refreshedCore, 4)) {
+        throw new Error('El backend confirmó Step 3, pero Step 4 todavía no aparece activo en el estado adaptativo persistido.');
+      }
+      const updatedSteps = project.steps.map(s => {
+        if (s.number === 3) return { ...s, status: 'Aprobado' as const, progress: 100 };
+        if (s.number === 4) return { ...s, status: s.status === 'Bloqueado' ? 'En progreso' as const : s.status };
+        return s;
+      });
+      updateProject(projectId, { steps: updatedSteps, status: 'En progreso' as const });
+      setS3SessionBooked(true);
+      setShowFinalizarDemo(false);
+      setShowS3MentorModal(false);
+      toast.success('Step 3 confirmado en Adaptive Core.', { description: 'Step 4 ya esta disponible desde el estado persistido.' });
+      navigate(`/projects/${projectId}/step/4`);
+    } catch (err: any) {
+      const message = err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar Step 3 en Adaptive Core.';
+      setAdaptiveAuthorityError(message);
+      toast.error(message);
+    } finally {
+      setAdaptiveTransitionSaving(false);
+    }
+  };
+
   // ── Gate ─────────────────────────────────────────────────────────────────────
   if (!project) return <div className="p-6"><p className="text-slate-500">Proyecto no encontrado.</p></div>;
-  if (!isUnlocked) {
+  const adaptiveStep3Allowed = adaptiveCoreStatus === 'loaded' && canNavigateToAdaptiveStep(adaptiveCore, 3);
+  if (adaptiveCoreStatus === 'loading') {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
+        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Cargando estado adaptativo</h2>
+        <p className="text-sm text-slate-500">Validando con backend si Step 3 esta disponible.</p>
+      </div>
+    );
+  }
+  if (adaptiveCoreStatus === 'error' || !adaptiveStep3Allowed) {
     return (
       <div className="p-8 max-w-lg mx-auto text-center">
         <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
         <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Step 3 bloqueado</h2>
-        <p className="text-sm text-slate-500 mb-4">Para probar en pequeño, primero necesitas agendar y completar la sesión con mentor del Step 2.</p>
-        <button onClick={() => navigate(`/projects/${projectId}/step/2`)} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors" style={{ fontWeight: 500 }}>→ Ir al Step 2</button>
+        <p className="text-sm text-slate-500 mb-4">
+          {adaptiveCoreStatus === 'error'
+            ? adaptiveAuthorityError
+            : 'El backend Adaptive Core todavia no habilita Step 3.'}
+        </p>
+        <div className="flex justify-center gap-2">
+          {adaptiveCoreStatus === 'error' ? (
+            <button onClick={() => void loadAdaptiveCore()} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors" style={{ fontWeight: 500 }}>Reintentar</button>
+          ) : null}
+          <button onClick={() => navigate(`/projects/${projectId}/step/2`)} className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors" style={{ fontWeight: 500 }}>Ir al Step 2</button>
+        </div>
       </div>
     );
   }
@@ -798,17 +870,6 @@ export function Step3Page() {
     setNuevoMalla({ tipo: 'idea', descripcion: '', evidencia: '', severidad: '' });
     setShowMallaModal(false);
     toast.success('Hallazgo registrado');
-  };
-
-  // ── Aprobar Step 3 en contexto (muta AppContext para desbloquear Step 4) ────
-  const aprobarStep3EnContexto = () => {
-    if (!project || !projectId) return;
-    const updatedSteps = project.steps.map(s => {
-      if (s.number === 3) return { ...s, status: 'Aprobado' as const, progress: 100 };
-      if (s.number === 4) return { ...s, status: 'En progreso' as const };
-      return s;
-    });
-    updateProject(projectId, { steps: updatedSteps, status: 'En progreso' as const });
   };
 
   const applyIASugerencia = (idx: number) => {
@@ -1396,8 +1457,8 @@ export function Step3Page() {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
               <div>
-                <h3 className="text-slate-900" style={{ fontWeight: 600 }}>Sesión con mentor (demo)</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Simula la aprobación del Step 3 para desbloquear el Step 4.</p>
+                <h3 className="text-slate-900" style={{ fontWeight: 600 }}>Sesión con mentor</h3>
+                <p className="text-xs text-slate-500 mt-0.5">La aprobación requiere confirmación persistida de Adaptive Core.</p>
               </div>
               <button onClick={() => setShowFinalizarDemo(false)} className="p-1.5 hover:bg-slate-100 rounded-lg"><X size={16} className="text-slate-400" /></button>
             </div>
@@ -1428,9 +1489,9 @@ export function Step3Page() {
                 <span className="ml-auto text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full" style={{ fontWeight: 600 }}>Pendiente</span>
               </div>
               <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-                <span className="text-sm shrink-0">ℹ️</span>
+                <AlertCircle size={14} className="text-indigo-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-indigo-600">
-                  <span style={{ fontWeight: 600 }}>Modo demo:</span> al hacer click en "Marcar sesión como completada" el Step 3 se aprueba automáticamente y el Step 4 se desbloquea.
+                  <span style={{ fontWeight: 600 }}>Autoridad Adaptive:</span> el Step 4 solo se habilita si el backend confirma el output de Step 3.
                 </p>
               </div>
             </div>
@@ -1438,15 +1499,12 @@ export function Step3Page() {
               <button onClick={() => setShowFinalizarDemo(false)} className="flex-1 border border-slate-200 text-slate-600 rounded-xl py-2.5 text-sm hover:bg-slate-50 transition-colors" style={{ fontWeight: 500 }}>Cancelar</button>
               <button
                 onClick={() => {
-                  aprobarStep3EnContexto();
-                  setS3SessionBooked(true);
-                  setShowFinalizarDemo(false);
-                  toast.success('Step 3 aprobado. Step 4 desbloqueado.', { description: 'Redirigiendo al Step 4…' });
-                  setTimeout(() => navigate(`/projects/${projectId}/step/4`), 1600);
+                  void confirmStep3Transition();
                 }}
+                disabled={adaptiveTransitionSaving}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2.5 text-sm transition-colors flex items-center justify-center gap-2"
                 style={{ fontWeight: 600 }}>
-                <CheckCircle2 size={14} /> Marcar sesión como completada
+                <CheckCircle2 size={14} /> {adaptiveTransitionSaving ? 'Confirmando...' : 'Confirmar con backend'}
               </button>
             </div>
           </div>
@@ -1487,22 +1545,18 @@ export function Step3Page() {
                 </select>
               </div>
               <div className="flex items-start gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-                <span className="text-sm shrink-0">ℹ️</span>
-                <p className="text-xs text-indigo-600"><span style={{ fontWeight: 600 }}>Modo demo:</span> al confirmar se simula el cierre del Step 3.</p>
+                <AlertCircle size={14} className="text-indigo-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-indigo-600"><span style={{ fontWeight: 600 }}>Autoridad Adaptive:</span> la sesión no desbloquea Step 4 por si sola; el backend debe confirmar el output de Step 3.</p>
               </div>
             </div>
             <div className="flex gap-3 px-6 pb-5">
               <button onClick={() => setShowS3MentorModal(false)} className="flex-1 border border-slate-200 text-slate-600 rounded-xl py-2.5 text-sm hover:bg-slate-50 transition-colors" style={{ fontWeight: 500 }}>Cancelar</button>
               <button onClick={() => {
-                aprobarStep3EnContexto();
-                setShowS3MentorModal(false);
-                setS3SessionBooked(true);
-                toast.success('Step 3 aprobado. Step 4 desbloqueado.', { description: 'Redirigiendo al Step 4…' });
-                setTimeout(() => navigate(`/projects/${projectId}/step/4`), 1600);
+                void confirmStep3Transition();
               }}
-                disabled={!s3MentorDate || !s3MentorTime}
+                disabled={!s3MentorDate || !s3MentorTime || adaptiveTransitionSaving}
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm transition-colors" style={{ fontWeight: 500 }}>
-                Confirmar sesión
+                {adaptiveTransitionSaving ? 'Confirmando...' : 'Confirmar con backend'}
               </button>
             </div>
           </div>

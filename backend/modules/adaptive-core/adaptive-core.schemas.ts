@@ -4,6 +4,15 @@ export const checkpointResponseSchema = z.object({
   idempotencyKey: z.string().min(6),
   checkpointKey: z.string().min(1),
   responses: z.record(z.unknown()).default({}),
+  truthBindings: z.object({
+    claimId: z.string().min(1),
+    evidenceIds: z.array(z.string().min(1)).min(1),
+    sourceRefIds: z.array(z.string().min(1)).min(1),
+  }).optional(),
+  evidenceBindings: z.object({
+    evidenceIds: z.array(z.string().min(1)).min(1),
+    sourceRefIds: z.array(z.string().min(1)).min(1),
+  }).optional(),
   confirmedAt: z.string().datetime().optional(),
 });
 

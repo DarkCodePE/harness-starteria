@@ -79,6 +79,7 @@ function makePrisma() {
           store.evidence.push(row);
           return hydrateEvidence(row);
         }),
+        findMany: vi.fn(async ({ where }: any) => store.evidence.filter((row: any) => whereMatch(row, where)).map(hydrateEvidence)),
         findFirst: vi.fn(async ({ where }: any) => hydrateEvidence(store.evidence.find((row: any) => whereMatch(row, where)) ?? null)),
         update: vi.fn(async ({ where, data }: any) => {
           const row = store.evidence.find((ev: any) => ev.id === where.id);
@@ -401,6 +402,218 @@ describe('TruthService R1 truth foundation', () => {
 
     await expect(service.transitionImpact(projectId, impact.id, { status: 'validated', validationId: validation.id }, actor))
       .resolves.toMatchObject({ status: 'validated', validationId: validation.id });
+  });
+
+  it('evaluates evidence reference integrity without requiring validated support', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'API', reference: 'result-log' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'metric', statement: 'El resultado se midio', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Resultado piloto', evidenceType: 'OTHER', truthStatus: 'contradicts', stepRef: 3 }, actor);
+
+    await expect(service.evaluateEvidenceReferenceBinding(projectId, {
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    })).resolves.toEqual({
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    });
+  });
+
+  it('rejects missing or cross-project evidence references', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const otherSource = await service.createSourceRef({ projectId: otherProjectId, sourceType: 'API', reference: 'other-source' }, actor);
+    const otherClaim = await service.createClaim({ projectId: otherProjectId, subjectType: 'initiative', claimType: 'metric', statement: 'Externo', createdByType: 'human', sourceRefIds: [] }, actor);
+    const otherEvidence = await service.attachEvidence({ projectId: otherProjectId, targetClaimId: otherClaim.id, sourceRefId: otherSource.id, name: 'Externa', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 3 }, actor);
+
+    await expect(service.evaluateEvidenceReferenceBinding(projectId, {
+      evidenceIds: ['missing-evidence'],
+      sourceRefIds: [otherSource.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_REFERENCE_EVIDENCE_NOT_FOUND' });
+    await expect(service.evaluateEvidenceReferenceBinding(projectId, {
+      evidenceIds: [otherEvidence.id],
+      sourceRefIds: [otherSource.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_REFERENCE_EVIDENCE_NOT_FOUND' });
+  });
+
+  it('rejects missing source refs and Evidence to SourceRef mismatches', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'API', reference: 'result-source' }, actor);
+    const otherSource = await service.createSourceRef({ projectId, sourceType: 'API', reference: 'other-result-source' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'metric', statement: 'El resultado se midio', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Resultado piloto', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 3 }, actor);
+
+    await expect(service.evaluateEvidenceReferenceBinding(projectId, {
+      evidenceIds: [evidence.id],
+      sourceRefIds: ['missing-source'],
+    })).rejects.toMatchObject({ code: 'TRUTH_REFERENCE_SOURCE_REF_NOT_FOUND' });
+    await expect(service.evaluateEvidenceReferenceBinding(projectId, {
+      evidenceIds: [evidence.id],
+      sourceRefIds: [otherSource.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_REFERENCE_EVIDENCE_SOURCE_MISMATCH' });
+  });
+
+  it('evaluates a coherent supported binding without replacing getClaimReadiness as authority', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'interview-supported' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'El foco esta soportado', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Entrevista', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 1 }, actor);
+    await service.recordValidation({ projectId, claimId: claim.id, evidenceId: evidence.id, result: 'supported', validatorType: 'human', rationale: 'Coherente.' }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    })).resolves.toMatchObject({
+      claimId: claim.id,
+      verificationState: 'supported',
+      satisfiesValidatedSupport: true,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    });
+  });
+
+  it('preserves contradicted readiness for coherent contradicted bindings', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'API', reference: 'metric-contradicted-binding' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'metric', statement: 'La metrica mejoro', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Metrica', evidenceType: 'OTHER', truthStatus: 'contradicts', stepRef: 1 }, actor);
+    await service.recordValidation({ projectId, claimId: claim.id, evidenceId: evidence.id, result: 'contradicted', validatorType: 'human', rationale: 'Contradice.' }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    })).resolves.toMatchObject({
+      verificationState: 'contradicted',
+      satisfiesValidatedSupport: false,
+    });
+  });
+
+  it('preserves insufficient readiness for coherent insufficient bindings', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'note-insufficient-binding' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'La evidencia basta', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Nota parcial', evidenceType: 'OTHER', truthStatus: 'insufficient', stepRef: 1 }, actor);
+    await service.recordValidation({ projectId, claimId: claim.id, evidenceId: evidence.id, result: 'insufficient', validatorType: 'human', rationale: 'No alcanza.' }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    })).resolves.toMatchObject({
+      verificationState: 'insufficient',
+      satisfiesValidatedSupport: false,
+    });
+  });
+
+  it('rejects missing or cross-project claim bindings', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const otherClaim = await service.createClaim({ projectId: otherProjectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Externo', createdByType: 'human', sourceRefIds: [] }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: 'claim-missing',
+      evidenceIds: ['ev-any'],
+      sourceRefIds: ['src-any'],
+    })).rejects.toMatchObject({ code: 'TRUTH_CLAIM_NOT_FOUND' });
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: otherClaim.id,
+      evidenceIds: ['ev-any'],
+      sourceRefIds: ['src-any'],
+    })).rejects.toMatchObject({ code: 'TRUTH_CLAIM_NOT_FOUND' });
+  });
+
+  it('rejects missing or cross-project Evidence bindings', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'source-local' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Local', createdByType: 'human', sourceRefIds: [] }, actor);
+    const otherSource = await service.createSourceRef({ projectId: otherProjectId, sourceType: 'USER_INPUT', reference: 'source-other' }, actor);
+    const otherClaim = await service.createClaim({ projectId: otherProjectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Other', createdByType: 'human', sourceRefIds: [] }, actor);
+    const otherEvidence = await service.attachEvidence({ projectId: otherProjectId, targetClaimId: otherClaim.id, sourceRefId: otherSource.id, name: 'Otra evidencia', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 1 }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: ['ev-missing'],
+      sourceRefIds: [source.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_EVIDENCE_NOT_FOUND' });
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [otherEvidence.id],
+      sourceRefIds: [source.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_EVIDENCE_NOT_FOUND' });
+  });
+
+  it('rejects missing or cross-project SourceRef bindings', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'source-local-binding' }, actor);
+    const otherSource = await service.createSourceRef({ projectId: otherProjectId, sourceType: 'USER_INPUT', reference: 'source-other-binding' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Local', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Local evidence', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 1 }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: ['src-missing'],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_SOURCE_REF_NOT_FOUND' });
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [otherSource.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_SOURCE_REF_NOT_FOUND' });
+  });
+
+  it('rejects Evidence bound to a different Claim than the binding claimId', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'source-mismatch-claim' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Claim A', createdByType: 'human', sourceRefIds: [] }, actor);
+    const otherClaim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Claim B', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: otherClaim.id, sourceRefId: source.id, name: 'Evidence B', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 1 }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_EVIDENCE_CLAIM_MISMATCH' });
+  });
+
+  it('rejects Evidence whose SourceRef is not included in sourceRefIds', async () => {
+    const { prisma } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'source-real' }, actor);
+    const otherSource = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'source-listed' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Claim', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Evidence', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 1 }, actor);
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [otherSource.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_EVIDENCE_SOURCE_MISMATCH' });
+  });
+
+  it('rejects supported Claim binding when Evidence.truthStatus is not supports', async () => {
+    const { prisma, store } = makePrisma();
+    const service = new TruthService(prisma as any);
+    const source = await service.createSourceRef({ projectId, sourceType: 'USER_INPUT', reference: 'source-bad-status' }, actor);
+    const claim = await service.createClaim({ projectId, subjectType: 'initiative', claimType: 'hypothesis', statement: 'Claim supported', createdByType: 'human', sourceRefIds: [] }, actor);
+    const evidence = await service.attachEvidence({ projectId, targetClaimId: claim.id, sourceRefId: source.id, name: 'Evidence', evidenceType: 'OTHER', truthStatus: 'supports', stepRef: 1 }, actor);
+    await service.recordValidation({ projectId, claimId: claim.id, evidenceId: evidence.id, result: 'supported', validatorType: 'human', rationale: 'Supported.' }, actor);
+    store.evidence.find((item: any) => item.id === evidence.id).truthStatus = 'insufficient';
+
+    await expect(service.evaluateValidatedSupportBinding(projectId, {
+      claimId: claim.id,
+      evidenceIds: [evidence.id],
+      sourceRefIds: [source.id],
+    })).rejects.toMatchObject({ code: 'TRUTH_BINDING_EVIDENCE_NOT_SUPPORTING' });
   });
 
   it('rejects impact realized when persisted validation is missing', async () => {

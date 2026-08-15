@@ -13,7 +13,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { getById } from '../services/projectService';
 import { trackInitialReviewEvent } from '../../features/initiative-review/services/initialReviewTelemetry';
-import { ensureAdaptiveCoreForProject, getActiveStepConfiguration } from '../../features/adaptive-core/domain/adaptiveCore';
+import { getActiveStepConfiguration } from '../../features/adaptive-core/domain/adaptiveCore';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 import { getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 const ROUTE_STEPS = [
@@ -30,11 +31,15 @@ const CHALLENGE_TYPE_LABEL: Record<string, string> = {
   exploration: 'Exploración',
 };
 
+type AdaptiveCoreLoadState = 'loading' | 'loaded' | 'error';
+
 export function InitiativeOverviewPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState<any | null>(null);
-  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<any | null>(null);
+  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<AdaptiveCoreLoadState>('loading');
+  const [adaptiveCoreError, setAdaptiveCoreError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInitialReview, setShowInitialReview] = useState(false);
@@ -64,20 +69,39 @@ export function InitiativeOverviewPage() {
     };
   }, [projectId]);
 
-  useEffect(() => {
+  const loadAdaptiveCore = React.useCallback(() => {
+    if (!projectId || !project) return undefined;
     let cancelled = false;
-    if (!projectId || !project) return;
+    setAdaptiveCoreStatus('loading');
+    setAdaptiveCoreError(null);
+    setServerAdaptiveCore(null);
     getAdaptiveCore(projectId)
       .then(core => {
-        if (!cancelled) setServerAdaptiveCore(core);
+        if (!cancelled) {
+          setServerAdaptiveCore(core);
+          setAdaptiveCoreStatus('loaded');
+        }
       })
       .catch(() => {
-        if (!cancelled) setServerAdaptiveCore(null);
+        if (!cancelled) {
+          setServerAdaptiveCore(null);
+          setAdaptiveCoreStatus('error');
+          setAdaptiveCoreError('Estado adaptativo no disponible. No pudimos cargar la ruta persistida desde backend.');
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [projectId, project]);
+
+  useEffect(() => {
+    const cleanup = loadAdaptiveCore();
+    return cleanup;
+  }, [loadAdaptiveCore]);
+
+  const retryAdaptiveCore = () => {
+    void loadAdaptiveCore();
+  };
 
   if (loading) {
     return <div role="status" className="p-8 text-slate-500">Cargando tu iniciativa…</div>;
@@ -89,9 +113,9 @@ export function InitiativeOverviewPage() {
   const prefill = (project.step0Data ?? {}) as Record<string, any>;
   const pending = Array.isArray(prefill.pendingQuestions) ? prefill.pendingQuestions : [];
   const challengeType = typeof prefill.challengeType === 'string' ? prefill.challengeType : undefined;
-  const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
-  const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
-  const progressSignal = adaptiveCore.progressSignal;
+  const adaptiveCore = adaptiveCoreStatus === 'loaded' ? serverAdaptiveCore : null;
+  const activeConfiguration = adaptiveCore ? getActiveStepConfiguration(adaptiveCore) : null;
+  const progressSignal = adaptiveCore?.progressSignal;
 
   return (
     <div className="mx-auto max-w-3xl p-6 md:p-8">
@@ -138,39 +162,63 @@ export function InitiativeOverviewPage() {
 
       <section aria-label="Configuracion adaptativa" className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuracion adaptativa</p>
-        <h2 className="mt-2 text-lg font-semibold text-slate-900">{activeConfiguration.visibleName}</h2>
-        <p className="mt-2 text-sm text-slate-600">{activeConfiguration.objective}</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500">Ruta</p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{adaptiveCore.masterContext.routeType.replaceAll('_', ' ')}</p>
+        {adaptiveCoreStatus === 'loading' && (
+          <div role="status" className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+            Cargando estado adaptativo persistido...
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500">Profundidad</p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{adaptiveCore.masterContext.depthLevel}</p>
+        )}
+        {adaptiveCoreStatus === 'error' && (
+          <div role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-semibold text-amber-900">Estado adaptativo no disponible</p>
+            <p className="mt-1 text-sm text-amber-800">
+              {adaptiveCoreError} La ruta, checkpoints y desbloqueos se mantienen bloqueados hasta recuperar el estado persistido.
+            </p>
+            <button
+              type="button"
+              onClick={retryAdaptiveCore}
+              className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+            >
+              Reintentar
+            </button>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500">Output esperado</p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{activeConfiguration.expectedOutput}</p>
-          </div>
-        </div>
-        <ol className="mt-4 grid gap-2">
-          {activeConfiguration.checkpoints.map(checkpoint => (
-            <li key={checkpoint.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900">{checkpoint.code} - {checkpoint.title}</p>
-                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">{checkpoint.status}</span>
+        )}
+        {adaptiveCore && activeConfiguration && progressSignal && (
+          <>
+            <h2 className="mt-2 text-lg font-semibold text-slate-900">{activeConfiguration.visibleName}</h2>
+            <p className="mt-2 text-sm text-slate-600">{activeConfiguration.objective}</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">Ruta</p>
+                <p className="mt-1 text-sm font-medium text-slate-900">{adaptiveCore.masterContext.routeType.replaceAll('_', ' ')}</p>
               </div>
-              <p className="mt-1 text-sm text-slate-600">{checkpoint.purpose}</p>
-            </li>
-          ))}
-        </ol>
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Senal ejecutiva inicial</p>
-          <p className="mt-2 text-sm text-amber-900">
-            {progressSignal.checkpointCode}: {progressSignal.checkpointTitle}. Siguiente accion: {progressSignal.nextAction}
-          </p>
-        </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">Profundidad</p>
+                <p className="mt-1 text-sm font-medium text-slate-900">{adaptiveCore.masterContext.depthLevel}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">Output esperado</p>
+                <p className="mt-1 text-sm font-medium text-slate-900">{activeConfiguration.expectedOutput}</p>
+              </div>
+            </div>
+            <ol className="mt-4 grid gap-2">
+              {activeConfiguration.checkpoints.map(checkpoint => (
+                <li key={checkpoint.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{checkpoint.code} - {checkpoint.title}</p>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">{checkpoint.status}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">{checkpoint.purpose}</p>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Senal ejecutiva inicial</p>
+              <p className="mt-2 text-sm text-amber-900">
+                {progressSignal.checkpointCode}: {progressSignal.checkpointTitle}. Siguiente accion: {progressSignal.nextAction}
+              </p>
+            </div>
+          </>
+        )}
       </section>
 
       <section aria-label="Resumen de revisión inicial" className="mt-6 grid gap-3">

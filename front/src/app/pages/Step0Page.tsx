@@ -25,13 +25,15 @@ import {
 import type { Project, Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
-import { ensureAdaptiveCoreForProject, getActiveStepConfiguration, materializeQuestionsForCheckpoint } from '../../features/adaptive-core/domain/adaptiveCore';
+import { getActiveStepConfiguration, materializeQuestionsForCheckpoint } from '../../features/adaptive-core/domain/adaptiveCore';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 import { confirmAdaptiveCheckpoint, confirmStep0Brief, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 import { AutofillField } from '../components/autofill/AutofillField';
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
 import { getById } from '../services/projectService';
 
 type ModuleId = 'start' | 'impact' | 'decision';
+type AdaptiveCoreLoadState = 'loading' | 'loaded' | 'error';
 type ModuleState = 'No iniciado' | 'En progreso' | 'Listo' | 'Necesita ajuste';
 
 const MODULE_ORDER: ModuleId[] = ['start', 'impact', 'decision'];
@@ -395,7 +397,8 @@ export function Step0Page() {
   const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
   const [publicDraftCardDismissed, setPublicDraftCardDismissed] = useState(false);
   const [showInitialReviewOnePager, setShowInitialReviewOnePager] = useState(false);
-  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<ReturnType<typeof ensureAdaptiveCoreForProject> | null>(null);
+  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<AdaptiveCoreLoadState>('loading');
   const [checkpointSaving, setCheckpointSaving] = useState(false);
   const [checkpointError, setCheckpointError] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<ModuleId>('start');
@@ -445,20 +448,39 @@ export function Step0Page() {
     setForm(normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? ''));
   }, [project, user?.email, user?.name]);
 
-  useEffect(() => {
+  const loadAdaptiveCore = React.useCallback(() => {
     let cancelled = false;
-    if (!project?.id) return;
+    setServerAdaptiveCore(null);
+    setAdaptiveCoreStatus('loading');
+    setCheckpointError(null);
+    if (!project?.id) return () => { cancelled = true; };
     getAdaptiveCore(project.id)
       .then(core => {
-        if (!cancelled) setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+        if (!cancelled) {
+          setServerAdaptiveCore(core);
+          setAdaptiveCoreStatus('loaded');
+        }
       })
       .catch(() => {
-        if (!cancelled) setServerAdaptiveCore(null);
+        if (!cancelled) {
+          setServerAdaptiveCore(null);
+          setAdaptiveCoreStatus('error');
+          setCheckpointError('Estado adaptativo no disponible. Reintenta para cargar checkpoints y habilitar confirmaciones.');
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [project?.id]);
+
+  useEffect(() => {
+    const cleanup = loadAdaptiveCore();
+    return cleanup;
+  }, [loadAdaptiveCore]);
+
+  const retryAdaptiveCore = () => {
+    void loadAdaptiveCore();
+  };
 
   useEffect(() => {
     if (!projectId || !project) return;
@@ -545,24 +567,26 @@ export function Step0Page() {
       : undefined
   );
   const initialReviewArtifact = initialReviewMeta?.artifact ?? null;
-  const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
-  const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
-  const activeCheckpointFromServer = adaptiveCore.activeCheckpoint;
+  const adaptiveCore = adaptiveCoreStatus === 'loaded' ? serverAdaptiveCore : null;
+  const activeConfiguration = adaptiveCore ? getActiveStepConfiguration(adaptiveCore) : null;
+  const activeCheckpointFromServer = adaptiveCore?.activeCheckpoint ?? null;
   const configuredServerCheckpoint = activeCheckpointFromServer
-    ? activeConfiguration.checkpoints.find(checkpoint => checkpoint.code === activeCheckpointFromServer.checkpointKey)
+    ? activeConfiguration?.checkpoints.find(checkpoint => checkpoint.code === activeCheckpointFromServer.checkpointKey)
     : null;
   const activeCheckpoint = activeCheckpointFromServer
     ? {
-        ...(configuredServerCheckpoint ?? activeConfiguration.checkpoints[0]),
+        ...(configuredServerCheckpoint ?? activeConfiguration?.checkpoints[0]),
         id: activeCheckpointFromServer.id,
         step: activeCheckpointFromServer.step,
         code: activeCheckpointFromServer.checkpointKey,
         status: activeCheckpointFromServer.status,
         questions: activeCheckpointFromServer.questions,
       }
-    : activeConfiguration.checkpoints.find(checkpoint => checkpoint.status === 'ready' || checkpoint.status === 'in_progress') ?? activeConfiguration.checkpoints[0];
-  const activeCheckpointQuestions = activeCheckpointFromServer?.questions ?? materializeQuestionsForCheckpoint(adaptiveCore, activeCheckpoint.code);
-  const draftStep0Brief = (adaptiveCore.stepOutputs ?? []).find((output: any) => output.step === 0 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
+    : null;
+  const activeCheckpointQuestions = adaptiveCore && activeCheckpoint
+    ? activeCheckpointFromServer?.questions ?? materializeQuestionsForCheckpoint(adaptiveCore, activeCheckpoint.code)
+    : [];
+  const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find((output: any) => output.step === 0 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
 
@@ -593,7 +617,7 @@ export function Step0Page() {
   };
 
   const persistStep0 = async (overrides: Partial<Step0Data> = {}) => {
-    const nextForm = { ...form, adaptiveCore, ...overrides };
+    const nextForm = { ...form, ...(adaptiveCore ? { adaptiveCore } : {}), ...overrides };
     const syncedBase = syncLegacyFields({ ...nextForm, mode });
     const synced = initialReviewMeta
       ? ({ ...syncedBase, initialReview: initialReviewMeta } as Step0Data)
@@ -674,7 +698,10 @@ export function Step0Page() {
   });
 
   const confirmActiveCheckpoint = async (workspaceResponses?: Record<string, unknown>) => {
-    if (!projectId) return;
+    if (!projectId || !adaptiveCore || !activeCheckpoint) {
+      setCheckpointError('Estado adaptativo no disponible. Reintenta antes de confirmar checkpoints.');
+      return;
+    }
     setCheckpointSaving(true);
     setCheckpointError(null);
     try {
@@ -683,7 +710,8 @@ export function Step0Page() {
         checkpointKey: activeCheckpoint.code,
         responses: { ...buildCheckpointResponses(), ...(workspaceResponses ?? {}) },
       });
-      setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+      setServerAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
     } catch (err: any) {
       setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el checkpoint.');
     } finally {
@@ -692,7 +720,10 @@ export function Step0Page() {
   };
 
   const confirmBriefAndGoToStep1 = async () => {
-    if (!projectId || !draftStep0Brief?.output) return;
+    if (!projectId || !adaptiveCore || !draftStep0Brief?.output) {
+      setCheckpointError('Estado adaptativo no disponible. Reintenta antes de confirmar el Brief.');
+      return;
+    }
     setCheckpointSaving(true);
     setCheckpointError(null);
     try {
@@ -701,7 +732,8 @@ export function Step0Page() {
         brief: draftStep0Brief.output,
         confirmed: true,
       });
-      setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+      setServerAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
       navigate(`/projects/${projectId}/step/1`);
     } catch (err: any) {
       setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el Brief.');
@@ -888,27 +920,47 @@ export function Step0Page() {
 
         <div className="border-b border-slate-200 bg-white px-5 py-5">
           <div className="mx-auto max-w-[1480px]">
-            <AdaptiveCheckpointWorkspace
-              core={adaptiveCore}
-              step={0}
-              checkpoint={activeCheckpointFromServer ?? activeCheckpoint}
-              questions={activeCheckpointQuestions}
-              initialResponses={buildCheckpointResponses()}
-              outputPreview={draftStep0Brief?.output ?? null}
-              saving={checkpointSaving}
-              error={checkpointError}
-              onConfirmCheckpoint={confirmActiveCheckpoint}
-              onConfirmOutput={draftStep0Brief?.output ? confirmBriefAndGoToStep1 : undefined}
-              onRefresh={() => {
-                if (!projectId) return;
-                getAdaptiveCore(projectId)
-                  .then(core => setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>))
-                  .catch((err: any) => setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos recargar el checkpoint.'));
-              }}
-            />
+            {adaptiveCore && activeCheckpoint ? (
+              <AdaptiveCheckpointWorkspace
+                core={adaptiveCore}
+                step={0}
+                checkpoint={activeCheckpointFromServer ?? activeCheckpoint}
+                questions={activeCheckpointQuestions}
+                initialResponses={buildCheckpointResponses()}
+                outputPreview={draftStep0Brief?.output ?? null}
+                saving={checkpointSaving}
+                error={checkpointError}
+                onConfirmCheckpoint={confirmActiveCheckpoint}
+                onConfirmOutput={draftStep0Brief?.output ? confirmBriefAndGoToStep1 : undefined}
+                onRefresh={retryAdaptiveCore}
+              />
+            ) : (
+              <div
+                role={adaptiveCoreStatus === 'error' ? 'alert' : 'status'}
+                className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+              >
+                <p className="font-semibold">Estado adaptativo no disponible</p>
+                <p className="mt-1">
+                  {adaptiveCoreStatus === 'loading'
+                    ? 'Cargando checkpoints persistidos desde backend. Las confirmaciones quedan bloqueadas mientras carga.'
+                    : checkpointError ?? 'No pudimos cargar checkpoints persistidos. Las confirmaciones quedan bloqueadas.'}
+                </p>
+                {adaptiveCoreStatus === 'error' && (
+                  <button
+                    type="button"
+                    onClick={retryAdaptiveCore}
+                    className="mt-3 rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm text-amber-900 hover:bg-amber-100"
+                    style={{ fontWeight: 800 }}
+                  >
+                    Reintentar
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
+        {adaptiveCore && activeCheckpoint && (
         <div className="hidden">
           <div className="mx-auto max-w-[1480px] rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -981,6 +1033,7 @@ export function Step0Page() {
             )}
           </div>
         </div>
+        )}
 
         <div className="mx-auto grid max-w-[1480px] items-start gap-6 px-5 py-6 min-[1280px]:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">

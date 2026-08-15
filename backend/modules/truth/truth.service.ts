@@ -13,6 +13,17 @@ import type {
 
 type Actor = { id: string; role?: string; type?: 'human' | 'ai' | 'system' };
 
+export interface ValidatedSupportBindingInput {
+  claimId: string;
+  evidenceIds: string[];
+  sourceRefIds: string[];
+}
+
+export interface EvidenceReferenceBindingInput {
+  evidenceIds: string[];
+  sourceRefIds: string[];
+}
+
 const FINAL_VALIDATION_RESULTS = new Set(['supported', 'contradicted', 'insufficient']);
 
 const CLAIM_STATE_BY_VALIDATION = {
@@ -177,6 +188,107 @@ export class TruthService {
       claimId,
       verificationState: claim.verificationState,
       satisfiesValidatedSupport: claim.verificationState === 'supported',
+    };
+  }
+
+  async evaluateValidatedSupportBinding(projectId: string, input: ValidatedSupportBindingInput) {
+    if (!input.claimId) {
+      throw AppError.badRequest('Validated support requiere un Claim persistente.', 'TRUTH_BINDING_CLAIM_REQUIRED');
+    }
+    if (!input.evidenceIds?.length) {
+      throw AppError.badRequest('Validated support requiere Evidence persistente.', 'TRUTH_BINDING_EVIDENCE_REQUIRED');
+    }
+    if (!input.sourceRefIds?.length) {
+      throw AppError.badRequest('Validated support requiere SourceRef persistente.', 'TRUTH_BINDING_SOURCE_REF_REQUIRED');
+    }
+
+    const readiness = await this.getClaimReadiness(projectId, input.claimId);
+    const evidence = await this.prisma.evidence.findMany({
+      where: { id: { in: input.evidenceIds }, projectId },
+      select: { id: true, targetClaimId: true, sourceRefId: true, truthStatus: true },
+    });
+    const foundEvidenceIds = new Set(evidence.map((item: { id: string }) => item.id));
+    const missingEvidenceIds = input.evidenceIds.filter((id) => !foundEvidenceIds.has(id));
+    if (missingEvidenceIds.length > 0) {
+      throw AppError.badRequest('Evidence no encontrada para el proyecto.', 'TRUTH_BINDING_EVIDENCE_NOT_FOUND', {
+        details: missingEvidenceIds.map((id) => ({ field: 'evidenceIds', code: 'EVIDENCE_NOT_FOUND', message: id })),
+      });
+    }
+
+    const sourceRefs = await this.prisma.sourceRef.findMany({
+      where: { id: { in: input.sourceRefIds }, projectId },
+      select: { id: true, projectId: true },
+    });
+    const foundSourceRefIds = new Set(sourceRefs.map((item: { id: string }) => item.id));
+    const missingSourceRefIds = input.sourceRefIds.filter((id) => !foundSourceRefIds.has(id));
+    if (missingSourceRefIds.length > 0) {
+      throw AppError.badRequest('SourceRef no encontrado para el proyecto.', 'TRUTH_BINDING_SOURCE_REF_NOT_FOUND', {
+        details: missingSourceRefIds.map((id) => ({ field: 'sourceRefIds', code: 'SOURCE_REF_NOT_FOUND', message: id })),
+      });
+    }
+
+    const boundSourceRefIds = new Set(input.sourceRefIds);
+    for (const item of evidence as { id: string; targetClaimId: string | null; sourceRefId: string | null; truthStatus: string | null }[]) {
+      if (item.targetClaimId !== input.claimId) {
+        throw AppError.badRequest('Evidence no corresponde al Claim del checkpoint.', 'TRUTH_BINDING_EVIDENCE_CLAIM_MISMATCH');
+      }
+      if (!item.sourceRefId || !boundSourceRefIds.has(item.sourceRefId)) {
+        throw AppError.badRequest('Evidence debe estar ligada a uno de los SourceRef persistentes del binding.', 'TRUTH_BINDING_EVIDENCE_SOURCE_MISMATCH');
+      }
+      if (readiness.satisfiesValidatedSupport && item.truthStatus !== 'supports') {
+        throw AppError.badRequest('Evidence no esta marcada como soporte persistente.', 'TRUTH_BINDING_EVIDENCE_NOT_SUPPORTING');
+      }
+    }
+
+    return {
+      ...readiness,
+      evidenceIds: input.evidenceIds,
+      sourceRefIds: input.sourceRefIds,
+    };
+  }
+
+  async evaluateEvidenceReferenceBinding(projectId: string, input: EvidenceReferenceBindingInput) {
+    if (!input.evidenceIds?.length) {
+      throw AppError.badRequest('Evidence reference requiere Evidence persistente.', 'TRUTH_REFERENCE_EVIDENCE_REQUIRED');
+    }
+    if (!input.sourceRefIds?.length) {
+      throw AppError.badRequest('Evidence reference requiere SourceRef persistente.', 'TRUTH_REFERENCE_SOURCE_REF_REQUIRED');
+    }
+
+    const evidence = await this.prisma.evidence.findMany({
+      where: { id: { in: input.evidenceIds }, projectId },
+      select: { id: true, sourceRefId: true },
+    });
+    const foundEvidenceIds = new Set(evidence.map((item: { id: string }) => item.id));
+    const missingEvidenceIds = input.evidenceIds.filter((id) => !foundEvidenceIds.has(id));
+    if (missingEvidenceIds.length > 0) {
+      throw AppError.badRequest('Evidence no encontrada para el proyecto.', 'TRUTH_REFERENCE_EVIDENCE_NOT_FOUND', {
+        details: missingEvidenceIds.map((id) => ({ field: 'evidenceIds', code: 'EVIDENCE_NOT_FOUND', message: id })),
+      });
+    }
+
+    const sourceRefs = await this.prisma.sourceRef.findMany({
+      where: { id: { in: input.sourceRefIds }, projectId },
+      select: { id: true },
+    });
+    const foundSourceRefIds = new Set(sourceRefs.map((item: { id: string }) => item.id));
+    const missingSourceRefIds = input.sourceRefIds.filter((id) => !foundSourceRefIds.has(id));
+    if (missingSourceRefIds.length > 0) {
+      throw AppError.badRequest('SourceRef no encontrado para el proyecto.', 'TRUTH_REFERENCE_SOURCE_REF_NOT_FOUND', {
+        details: missingSourceRefIds.map((id) => ({ field: 'sourceRefIds', code: 'SOURCE_REF_NOT_FOUND', message: id })),
+      });
+    }
+
+    const boundSourceRefIds = new Set(input.sourceRefIds);
+    for (const item of evidence as { id: string; sourceRefId: string | null }[]) {
+      if (!item.sourceRefId || !boundSourceRefIds.has(item.sourceRefId)) {
+        throw AppError.badRequest('Evidence debe estar ligada a uno de los SourceRef persistentes del binding.', 'TRUTH_REFERENCE_EVIDENCE_SOURCE_MISMATCH');
+      }
+    }
+
+    return {
+      evidenceIds: input.evidenceIds,
+      sourceRefIds: input.sourceRefIds,
     };
   }
 

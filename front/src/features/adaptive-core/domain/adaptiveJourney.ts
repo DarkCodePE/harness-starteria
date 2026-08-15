@@ -99,8 +99,21 @@ function getCheckpointTitle(checkpoint: StepConfiguration['checkpoints'][number]
   return checkpoint.checkpointKey;
 }
 
+export function resolveAuthoritativeAdaptiveCore(serverCore?: AdaptiveInitiativeCore | null): AdaptiveInitiativeCore | null {
+  return serverCore ?? null;
+}
+
+export function resolveLegacyAdaptivePreview(project: Project): AdaptiveInitiativeCore {
+  return ensureAdaptiveCoreForProject(project);
+}
+
+/**
+ * @deprecated Use resolveAuthoritativeAdaptiveCore for operational journey state.
+ * This legacy helper only exists for preview/migration contexts and must not
+ * drive checkpoint unlocks, progression, confirmations, or current step state.
+ */
 export function resolveAdaptiveCoreForProject(project: Project, serverCore?: AdaptiveInitiativeCore | null): AdaptiveInitiativeCore {
-  return serverCore ?? ensureAdaptiveCoreForProject(project);
+  return serverCore ?? resolveLegacyAdaptivePreview(project);
 }
 
 export function buildAdaptiveJourney(project: Project, core: AdaptiveInitiativeCore, canNavigate: (step: number) => boolean): AdaptiveJourneyStep[] {
