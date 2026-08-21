@@ -38,6 +38,8 @@ async function clean() {
   await prisma.adaptiveCheckpointInstance.deleteMany({ where });
   await prisma.adaptiveStepOutput.deleteMany({ where });
   await prisma.adaptiveStepConfiguration.deleteMany({ where });
+  await prisma.cycleStepState.deleteMany({ where: { cycle: { projectId: { in: projectIds } } } });
+  await prisma.initiativeCycle.deleteMany({ where });
   await prisma.attentionItem.deleteMany({ where });
   await prisma.impactAssertion.deleteMany({ where });
   await prisma.truthClaimSourceRef.deleteMany({ where: { claim: { projectId: { in: projectIds } } } });
@@ -640,6 +642,7 @@ describeR2Persistence('R2 Adaptive Core persistence E2E', () => {
     await prisma.adaptiveStepOutput.create({
       data: {
         projectId,
+        cycleId: step1Config.cycleId,
         sourceConfigurationId: step1Config.id,
         stepNumber: 1,
         version: 1,

@@ -12,6 +12,9 @@ function createStore() {
     adaptiveStepOutput: [] as Row[],
     adaptiveProgressSignal: [] as Row[],
     adaptiveAdaptationEvent: [] as Row[],
+    criticalChange: [] as Row[],
+    initiativeCycle: [] as Row[],
+    cycleStepState: [] as Row[],
     initiativePortfolioMeta: [] as Row[],
     sourceRef: [] as Row[],
     truthClaim: [] as Row[],
@@ -27,6 +30,7 @@ function matches(row: Row, where: Row): boolean {
   if (!where) return true;
   return Object.entries(where).every(([key, expected]) => {
     const actual = row[key];
+    if (expected === null) return actual == null;
     if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
       if ('in' in expected) return expected.in.includes(actual);
       if ('gte' in expected) return actual >= expected.gte;
@@ -63,6 +67,9 @@ function collection(store: ReturnType<typeof createStore>, name: keyof ReturnTyp
       if ('id' in where) return store[name].find((row) => row.id === where.id) ?? null;
       if ('projectId' in where) return store[name].find((row) => row.projectId === where.projectId) ?? null;
       if ('idempotencyKey' in where) return store[name].find((row) => row.idempotencyKey === where.idempotencyKey) ?? null;
+      if ('cycleId_stepNumber' in where) {
+        return store[name].find((row) => row.cycleId === where.cycleId_stepNumber.cycleId && row.stepNumber === where.cycleId_stepNumber.stepNumber) ?? null;
+      }
       return store[name].find((row) => matches(row, where)) ?? null;
     }),
     create: vi.fn(async (args: any) => {
@@ -103,6 +110,9 @@ function makePrisma(store = createStore()) {
     adaptiveStepOutput: collection(store, 'adaptiveStepOutput'),
     adaptiveProgressSignal: collection(store, 'adaptiveProgressSignal'),
     adaptiveAdaptationEvent: collection(store, 'adaptiveAdaptationEvent'),
+    criticalChange: collection(store, 'criticalChange'),
+    initiativeCycle: collection(store, 'initiativeCycle'),
+    cycleStepState: collection(store, 'cycleStepState'),
     initiativePortfolioMeta: collection(store, 'initiativePortfolioMeta'),
     sourceRef: collection(store, 'sourceRef'),
     truthClaim: collection(store, 'truthClaim'),
@@ -824,7 +834,7 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
     expect(String(contextual.reason)).toContain('hipotesis');
   });
 
-  it('3. scope change creates a new version', async () => {
+  it('3. scope change creates critical change assessment without reconfiguration', async () => {
     const store = createStore();
     const project = seedProject(store);
     const service = new AdaptiveCoreService(makePrisma(store));
@@ -837,11 +847,12 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
       confirmed: true,
     });
 
-    expect(store.adaptiveStepConfiguration).toHaveLength(2);
-    expect(store.adaptiveStepConfiguration.map((c) => c.version)).toEqual([1, 2]);
+    expect(store.criticalChange).toHaveLength(1);
+    expect(store.criticalChange[0].status).toBe('assessment_ready');
+    expect(store.adaptiveStepConfiguration).toHaveLength(1);
   });
 
-  it('4. previous configuration is not lost after reconfiguration', async () => {
+  it('4. previous configuration remains active after critical change assessment', async () => {
     const store = createStore();
     const project = seedProject(store);
     const service = new AdaptiveCoreService(makePrisma(store));
@@ -854,9 +865,9 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
       confirmed: true,
     });
 
-    expect(store.adaptiveStepConfiguration[0].status).toBe('superseded');
+    expect(store.adaptiveStepConfiguration[0].status).toBe('active');
     expect(store.adaptiveStepConfiguration[0].configurationJson).toBeTruthy();
-    expect(store.adaptiveStepConfiguration[1].status).toBe('active');
+    expect(store.initiativeCycle).toHaveLength(1);
   });
 
   it('5. cannot close Step 0 without confirmed Brief', async () => {
@@ -1879,7 +1890,7 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
     expect(store.adaptiveProgressSignal[0].signalJson.step).toBe(3);
   });
 
-  it('20. changing selected bet creates a new Step 2 version', async () => {
+  it('20. changing selected bet creates assessment without a new Step 2 version', async () => {
     const store = createStore();
     const project = seedProject(store);
     const service = new AdaptiveCoreService(makePrisma(store));
@@ -1898,8 +1909,10 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
     });
 
     const step2Configs = store.adaptiveStepConfiguration.filter((config) => config.stepNumber === 2);
-    expect(step2Configs.map((config) => config.version)).toEqual([1, 2]);
-    expect(step2Configs[0].status).toBe('superseded');
+    expect(step2Configs.map((config) => config.version)).toEqual([1]);
+    expect(step2Configs[0].status).toBe('active');
+    expect(store.criticalChange).toHaveLength(1);
+    expect(store.criticalChange[0].status).toBe('assessment_ready');
   });
 
   it('21. Step 3 receives confirmed Step 2 output', async () => {
@@ -2145,7 +2158,8 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
 
     expect(store.project[0].status).toBe('COMPLETED');
     expect(store.adaptiveStepOutput.filter((item) => item.stepNumber === 4 && item.status === 'confirmed')).toHaveLength(1);
-    expect(store.adaptiveAdaptationEvent.filter((event) => event.eventType === 'initiative_closed')).toHaveLength(1);
+    expect(store.adaptiveAdaptationEvent.filter((event) => event.eventType === 'initiative_completed')).toHaveLength(1);
+    expect(store.adaptiveAdaptationEvent.filter((event) => event.eventType === 'initiative_closed')).toHaveLength(0);
   });
 
   it('31. Portfolio receives final signal and challenge coverage is not auto resolved', async () => {
@@ -2175,14 +2189,15 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
 
     expect(output.finalChallengeContribution.challengeId).toBe('ch1');
     expect(output.challengeCoverage).toMatchObject({ status: 'ready_for_decision', autoResolved: false });
-    expect(store.adaptiveProgressSignal[0].signalJson.finalState).toBe('scaled');
-    expect(store.initiativePortfolioMeta[0]).toMatchObject({ status: 'cerrada', resolvedCorePart: false });
+    expect(store.adaptiveProgressSignal[0].signalJson.finalState).toBe('presented');
+    expect(store.adaptiveProgressSignal[0].signalJson.completionRoute).toBe('portfolio_presented');
+    expect(store.initiativePortfolioMeta[0]).toMatchObject({ status: 'lista_para_decision', resolvedCorePart: true });
 
     const reloaded = await new AdaptiveCoreService(makePrisma(store)).getState(project.id, 'u1', 'participante');
     expect(reloaded.activeCheckpoint).toBeNull();
-    expect(reloaded.progressSignal).toMatchObject({ step: 4, finalState: 'scaled' });
+    expect(reloaded.progressSignal).toMatchObject({ step: 4, finalState: 'presented', completionRoute: 'portfolio_presented' });
     expect(reloaded.progressSignal?.checkpointKey).not.toBe('CP-3.1');
-    expect(store.initiativePortfolioMeta[0]).toMatchObject({ status: 'cerrada', resolvedCorePart: false });
+    expect(store.initiativePortfolioMeta[0]).toMatchObject({ status: 'lista_para_decision', resolvedCorePart: true });
     expect(store.initiativePortfolioMeta[0].nextActionRecommended).not.toContain('CP-3.1');
   });
 
@@ -2204,7 +2219,8 @@ describe('AdaptiveCoreService Step 0 cycle', () => {
     });
 
     expect(closed.legacyFallback).toBe(true);
-    expect(store.project[0].status).toBe('ITERATION');
-    expect(closed.progressSignal?.finalState).toBe('new_iteration_required');
+    expect(store.project[0].status).toBe('COMPLETED');
+    expect(closed.progressSignal?.finalState).toBe('completed');
+    expect(closed.progressSignal?.completionRoute).toBe('owner_completed');
   });
 });

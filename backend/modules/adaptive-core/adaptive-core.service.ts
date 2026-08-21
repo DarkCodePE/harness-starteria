@@ -3,6 +3,13 @@ import { AppError } from '../../shared/errors/AppError';
 import { syncInitiativeProgress } from '../portfolio/initiative-progress';
 import { TruthService, type EvidenceReferenceBindingInput, type ValidatedSupportBindingInput } from '../truth/truth.service';
 import { getCheckpointEvidencePolicy } from './checkpoint-evidence-policy';
+import { CriticalChangeDependencyResolver, mapLegacyCriticalChangeField } from './critical-change-dependency.resolver';
+import { CriticalChangeImpactResolver } from './critical-change-impact.resolver';
+import { buildCriticalChangeUserOutcome } from './critical-change-user-outcome';
+import { DecisionAuthorityResolver } from './decision-authority.resolver';
+import { DecisionReadinessResolver } from './decision-readiness.resolver';
+import { InitiativeCompletionResolver } from './initiative-completion.resolver';
+import { AdaptiveCycleService } from './cycle.service';
 import type {
   AdaptiveCoreState,
   AdaptiveDepthLevel,
@@ -10,12 +17,26 @@ import type {
   AdaptiveQuestionSource,
   AdaptiveRouteType,
   MaterializedQuestion,
+  StepNumber,
   Step0AlignmentBrief,
+  ChangeImpactResult,
+  DecisionReadinessAssessment,
+  DecisionReadinessInput,
+  DecisionType,
+  DecisionAuthorityResult,
+  DecisionOutcome,
+  DecisionEffectsResult,
+  DecisionResult,
+  DecisionRequestResult,
+  ContinuationRouteResult,
+  ContinuationRouteType,
+  InitiativeAlignmentResult,
+  InitiativeCompletionRoutingResult,
+  InitiativeHistoryResult,
 } from './adaptive-core.types';
-import type { CheckpointResponseInput, ConfirmBriefInput, ConfirmStep1OutputInput, ConfirmStep2OutputInput, ConfirmStep3OutputInput, ConfirmStep4OutputInput, CriticalChangeInput } from './adaptive-core.schemas';
+import type { ApplyDecisionEffectsInput, CheckpointResponseInput, ConfirmBriefInput, ConfirmCriticalChangeTransitionInput, ConfirmStep1OutputInput, ConfirmStep2OutputInput, ConfirmStep3OutputInput, ConfirmStep4OutputInput, CriticalChangeInput, DecisionRequestCreateInput, OrganizationalDecisionInput } from './adaptive-core.schemas';
 
 type Role = 'participante' | 'owner' | 'mentor' | 'admin' | 'sponsor' | 'portfolio_lead' | string;
-type StepNumber = 0 | 1 | 2 | 3 | 4;
 
 const STEP0_CHECKPOINTS = [
   { key: 'CP-0.1', sequence: 1, title: 'Enmarcar la iniciativa', outputKey: 'InitiativeFraming' },
@@ -91,25 +112,36 @@ const STEP4_OUTPUT_BY_ROUTE: Record<AdaptiveRouteType, string> = {
 };
 
 export class AdaptiveCoreService {
-  constructor(private prisma: PrismaClient) {}
+  private cycles: AdaptiveCycleService;
+  private criticalChangeDependencies = new CriticalChangeDependencyResolver();
+  private criticalChangeImpact = new CriticalChangeImpactResolver();
+  private decisionReadiness = new DecisionReadinessResolver();
+  private decisionAuthority = new DecisionAuthorityResolver();
+  private initiativeCompletion = new InitiativeCompletionResolver();
+
+  constructor(private prisma: PrismaClient) {
+    this.cycles = new AdaptiveCycleService(prisma);
+  }
 
   async ensureInitialized(projectId: string, userId: string, role: Role): Promise<AdaptiveCoreState> {
     const project = await this.getAccessibleProject(projectId, userId, role);
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existing = await db.adaptiveStepConfiguration.findFirst({
-      where: { projectId, stepNumber: 0, status: 'active' },
+      where: { projectId, cycleId: cycle.id, status: 'active' },
       orderBy: { version: 'desc' },
     });
     if (!existing) {
-      await this.initializeFromProject(project, userId);
+      await this.initializeFromProject(project, userId, cycle.id);
     }
     return this.getState(projectId, userId, role);
   }
 
-  async initializeFromProject(project: any, userId?: string): Promise<void> {
+  async initializeFromProject(project: any, userId?: string, cycleId?: string): Promise<void> {
     const db = this.prisma as any;
+    const cycle = cycleId ? { id: cycleId } : await this.cycles.ensureActiveCycle(project.id);
     const existing = await db.adaptiveStepConfiguration.findFirst({
-      where: { projectId: project.id, stepNumber: 0, status: 'active' },
+      where: { projectId: project.id, cycleId: cycle.id, stepNumber: 0, status: 'active' },
       select: { id: true },
     });
     if (existing) return;
@@ -120,6 +152,7 @@ export class AdaptiveCoreService {
       const createdConfig = await tx.adaptiveStepConfiguration.create({
         data: {
           projectId: project.id,
+          cycleId: cycle.id,
           stepNumber: 0,
           version: 1,
           status: 'active',
@@ -152,10 +185,11 @@ export class AdaptiveCoreService {
   async getState(projectId: string, userId: string, role: Role): Promise<AdaptiveCoreState> {
     await this.getAccessibleProject(projectId, userId, role);
     const db = this.prisma as any;
+    const cycle = await this.cycles.getOperationalCycle(projectId);
     const [configs, instances, outputs, signal, events] = await Promise.all([
-      db.adaptiveStepConfiguration.findMany({ where: { projectId }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
-      db.adaptiveCheckpointInstance.findMany({ where: { projectId }, orderBy: [{ stepNumber: 'asc' }, { sequence: 'asc' }, { createdAt: 'asc' }] }),
-      db.adaptiveStepOutput.findMany({ where: { projectId }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
+      db.adaptiveStepConfiguration.findMany({ where: { projectId, cycleId: cycle.id }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
+      db.adaptiveCheckpointInstance.findMany({ where: { projectId, cycleId: cycle.id }, orderBy: [{ stepNumber: 'asc' }, { sequence: 'asc' }, { createdAt: 'asc' }] }),
+      db.adaptiveStepOutput.findMany({ where: { projectId, cycleId: cycle.id }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
       db.adaptiveProgressSignal.findUnique({ where: { projectId } }),
       db.adaptiveAdaptationEvent.findMany({ where: { projectId }, orderBy: { createdAt: 'desc' }, take: 30 }),
     ]);
@@ -176,18 +210,405 @@ export class AdaptiveCoreService {
       stepOutputs: outputs.map((o: any) => ({ id: o.id, step: o.stepNumber, version: o.version, status: o.status, outputKey: o.outputKey, output: o.outputJson, requiresReview: o.requiresReview })),
       progressSignal: signal?.signalJson ?? null,
       events,
+      cycle: {
+        id: cycle.id,
+        cycleNumber: cycle.cycleNumber,
+        startStep: cycle.startStep,
+        currentStep: cycle.currentStep,
+        status: cycle.status,
+      },
       legacyFallback: Boolean(activeConfig?.sourceContextJson?.legacyFallback),
     };
+  }
+
+  async getDecisionReadiness(projectId: string, userId: string, role: Role, decisionType: DecisionType): Promise<DecisionReadinessAssessment> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const cycle = await this.getOperationalCycleReadOnly(projectId);
+    const input = await this.loadDecisionReadinessInput(project, cycle, decisionType);
+    return this.decisionReadiness.evaluate(input);
+  }
+
+  async getDecisionAuthority(projectId: string, userId: string, role: Role, decisionType: DecisionType): Promise<DecisionAuthorityResult> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const cycle = await this.getOperationalCycleReadOnly(projectId);
+    return this.resolveDecisionAuthority(project, cycle, userId, decisionType);
+  }
+
+  async getInitiativeAlignment(projectId: string, userId: string, role: Role): Promise<InitiativeAlignmentResult> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    return this.resolveInitiativeAlignment(project);
+  }
+
+  async getInitiativeCompletionRouting(projectId: string, userId: string, role: Role): Promise<InitiativeCompletionRoutingResult> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const cycle = await this.getOperationalCycleReadOnly(projectId);
+    const alignment = await this.resolveInitiativeAlignment(project);
+    const methodologicalCompletion = await this.hasMethodologicalCompletion(projectId, cycle.id);
+    return this.initiativeCompletion.routeCompletion({
+      projectId,
+      cycleId: cycle.id,
+      methodologicalCompletion,
+      alignment,
+    });
+  }
+
+  async getInitiativeHistory(projectId: string, userId: string, role: Role): Promise<InitiativeHistoryResult> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const db = this.prisma as any;
+    const cycle = await this.getOperationalCycleReadOnly(projectId);
+    const alignment = await this.resolveInitiativeAlignment(project);
+    const methodologicalCompletion = await this.hasMethodologicalCompletion(projectId, cycle.id);
+    const routing = this.initiativeCompletion.routeCompletion({
+      projectId,
+      cycleId: cycle.id,
+      methodologicalCompletion,
+      alignment,
+    });
+    const cycles = await db.initiativeCycle.findMany({ where: { projectId }, orderBy: { cycleNumber: 'asc' } });
+    const cycleIds = cycles.map((item: any) => item.id);
+    const [stepStates, outputs, evidence, sourceRefs, truthClaims] = await Promise.all([
+      db.cycleStepState.findMany({ where: { cycleId: { in: cycleIds } }, orderBy: [{ stepNumber: 'asc' }] }),
+      db.adaptiveStepOutput.findMany({ where: { projectId, status: 'confirmed' }, orderBy: [{ stepNumber: 'asc' }, { version: 'asc' }] }),
+      db.evidence.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } }),
+      db.sourceRef.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } }),
+      db.truthClaim.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } }),
+    ]);
+    return {
+      projectId,
+      summary: {
+        name: project.name,
+        status: project.status,
+        currentStep: project.currentStep ?? 0,
+        ownerId: project.ownerId ?? null,
+      },
+      alignment,
+      completionRouting: routing,
+      lifecycleProjection: routing.lifecycleProjection,
+      cycles: cycles.map((cycle: any) => ({
+        id: cycle.id,
+        cycleNumber: cycle.cycleNumber,
+        status: cycle.status,
+        parentCycleId: cycle.parentCycleId ?? null,
+        basedOnCycleId: cycle.basedOnCycleId ?? null,
+        triggerType: cycle.triggerType,
+        triggerRefId: cycle.triggerRefId ?? null,
+        startStep: cycle.startStep,
+        currentStep: cycle.currentStep,
+        completedAt: cycle.completedAt ?? null,
+        stepStates: stepStates
+          .filter((state: any) => state.cycleId === cycle.id)
+          .map((state: any) => ({
+            stepNumber: state.stepNumber,
+            state: state.state,
+            inheritedFromCycleId: state.inheritedFromCycleId ?? null,
+            inheritedFromOutputId: state.inheritedFromOutputId ?? null,
+          })),
+        confirmedOutputs: outputs
+          .filter((output: any) => output.cycleId === cycle.id)
+          .map((output: any) => ({
+            id: output.id,
+            stepNumber: output.stepNumber,
+            version: output.version,
+            status: output.status,
+            outputKey: output.outputKey,
+            outputJson: output.outputJson,
+            confirmedAt: output.confirmedAt ?? null,
+            sourceConfigurationId: output.sourceConfigurationId ?? null,
+          })),
+      })),
+      evidence: evidence.map((item: any) => ({
+        id: item.id,
+        name: item.name ?? null,
+        truthStatus: item.truthStatus ?? null,
+        sourceRefId: item.sourceRefId ?? null,
+        targetClaimId: item.targetClaimId ?? null,
+      })),
+      sourceRefs: sourceRefs.map((item: any) => ({
+        id: item.id,
+        sourceType: item.sourceType,
+        reference: item.reference,
+      })),
+      truthClaims: truthClaims.map((item: any) => ({
+        id: item.id,
+        statement: item.statement,
+        verificationState: item.verificationState ?? null,
+      })),
+    };
+  }
+
+  async createDecisionRequest(projectId: string, userId: string, role: Role, input: DecisionRequestCreateInput): Promise<DecisionRequestResult> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const db = this.prisma as any;
+    const existingByKey = await db.decisionRequest.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+    if (existingByKey) return this.mapDecisionRequest(existingByKey);
+
+    const created = await db.$transaction(async (tx: any) => {
+      const cycle = await this.getOperationalCycleReadOnly(projectId, tx);
+      const alignment = await this.resolveInitiativeAlignment(project, tx);
+      const methodologicalCompletion = await this.hasMethodologicalCompletion(projectId, cycle.id, tx);
+      const routing = this.initiativeCompletion.routeCompletion({
+        projectId,
+        cycleId: cycle.id,
+        methodologicalCompletion,
+        alignment,
+      });
+      if (!alignment.portfolioAligned) {
+        throw AppError.conflict('Las iniciativas auto-iniciadas no requieren DecisionRequest.', 'DECISION_REQUEST_NOT_REQUIRED');
+      }
+      if (routing.route !== 'portfolio_presented' || !routing.portfolioReviewRequired) {
+        throw AppError.conflict('La iniciativa aun no esta presentada para revision de portafolio.', 'DECISION_REQUEST_NOT_PRESENTED');
+      }
+      if (!routing.methodologicalCompletion || cycle.status !== 'completed' || !cycle.completedAt) {
+        throw AppError.conflict('La solicitud requiere un ciclo metodologico completado.', 'DECISION_REQUEST_CYCLE_NOT_COMPLETED');
+      }
+
+      const authority = await this.resolveDecisionAuthority(project, cycle, userId, 'continue_experimenting', tx, 'portfolio_review');
+      if (!authority.currentUserCanSubmit) {
+        throw AppError.forbidden('No tienes permiso para solicitar revision de esta iniciativa.', 'DECISION_REQUEST_SUBMIT_FORBIDDEN');
+      }
+      if (authority.authorityStatus !== 'resolved' || !authority.authorityUserId) {
+        throw AppError.conflict('La autoridad de decision de portafolio no esta resuelta.', 'DECISION_AUTHORITY_UNRESOLVED');
+      }
+
+      const existingPending = await tx.decisionRequest.findFirst({
+        where: { projectId, sourceCycleId: cycle.id, status: 'pending' },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (existingPending) return existingPending;
+
+      const readinessSnapshot = await this.buildDecisionReadinessSnapshot(project, cycle, tx);
+      const step4Output = await tx.adaptiveStepOutput.findFirst({
+        where: { projectId, cycleId: cycle.id, stepNumber: 4, status: 'confirmed' },
+        orderBy: { version: 'desc' },
+      });
+      if (!step4Output) {
+        throw AppError.conflict('La solicitud requiere el paquete de Step 4 confirmado.', 'DECISION_REQUEST_PACKAGE_MISSING');
+      }
+      const decisionPackageSnapshot = {
+        sourceOutputId: step4Output.id,
+        outputKey: step4Output.outputKey,
+        stepNumber: step4Output.stepNumber,
+        version: step4Output.version,
+        confirmedAt: step4Output.confirmedAt,
+        outputJson: step4Output.outputJson,
+      };
+      const presentationSnapshot = {
+        alignment,
+        completionRouting: routing,
+        projectStatus: project.status,
+        sourceCycle: {
+          id: cycle.id,
+          cycleNumber: cycle.cycleNumber,
+          status: cycle.status,
+          completedAt: cycle.completedAt,
+        },
+      };
+      const recommendationSnapshot = this.buildDecisionRequestRecommendationSnapshot(step4Output.outputJson, readinessSnapshot);
+      const request = await tx.decisionRequest.create({
+        data: {
+          projectId,
+          sourceCycleId: cycle.id,
+          requestedById: userId,
+          status: 'pending',
+          authorityType: authority.authorityType,
+          authorityUserId: authority.authorityUserId,
+          readinessSnapshotJson: readinessSnapshot,
+          authoritySnapshotJson: authority,
+          decisionPackageSnapshotJson: decisionPackageSnapshot,
+          recommendationSnapshotJson: recommendationSnapshot,
+          presentationSnapshotJson: presentationSnapshot,
+          requestVersion: 1,
+          idempotencyKey: input.idempotencyKey,
+        },
+      });
+      await this.recordEventTx(tx, projectId, 'decision_request_created', 'Solicitud de revision de portafolio creada.', {
+        decisionRequestId: request.id,
+        sourceCycleId: cycle.id,
+        authorityPurpose: 'portfolio_review',
+        authorityType: authority.authorityType,
+        authorityUserId: authority.authorityUserId,
+      }, userId, `decision-request-created:${input.idempotencyKey}`);
+      return request;
+    });
+    return this.mapDecisionRequest(created);
+  }
+
+  async listDecisionRequests(projectId: string, userId: string, role: Role): Promise<DecisionRequestResult[]> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const rows = await (this.prisma as any).decisionRequest.findMany({
+      where: { projectId },
+      orderBy: { requestedAt: 'desc' },
+    });
+    return rows.map((row: any) => this.mapDecisionRequest(row));
+  }
+
+  async getDecisionRequest(projectId: string, userId: string, role: Role, requestId: string): Promise<DecisionRequestResult> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const row = await (this.prisma as any).decisionRequest.findFirst({ where: { id: requestId, projectId } });
+    if (!row) throw AppError.notFound('DecisionRequest', 'DECISION_REQUEST_NOT_FOUND');
+    return this.mapDecisionRequest(row);
+  }
+
+  async decideDecisionRequest(projectId: string, userId: string, role: Role, requestId: string, input: OrganizationalDecisionInput): Promise<DecisionResult> {
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const db = this.prisma as any;
+    const existingByKey = await db.decision.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+    if (existingByKey) {
+      if (existingByKey.projectId === projectId && existingByKey.decisionRequestId === requestId) {
+        return this.mapDecision(existingByKey);
+      }
+      throw AppError.conflict('La idempotencyKey ya fue usada para otra decision.', 'DECISION_IDEMPOTENCY_CONFLICT');
+    }
+
+    const decision = await db.$transaction(async (tx: any) => {
+      if (tx.$queryRaw) {
+        await tx.$queryRaw`SELECT "id" FROM "DecisionRequest" WHERE "id" = ${requestId} FOR UPDATE`;
+      }
+      const request = await tx.decisionRequest.findFirst({ where: { id: requestId, projectId } });
+      if (!request) throw AppError.notFound('DecisionRequest', 'DECISION_REQUEST_NOT_FOUND');
+      const existingForRequest = await tx.decision.findFirst({ where: { decisionRequestId: request.id } });
+      if (existingForRequest) {
+        if (existingForRequest.idempotencyKey === input.idempotencyKey) return existingForRequest;
+        throw AppError.conflict('La solicitud de decision ya fue resuelta.', 'DECISION_REQUEST_ALREADY_RESOLVED');
+      }
+      if (request.status !== 'pending') {
+        throw AppError.conflict('Solo una DecisionRequest pending puede resolverse.', 'DECISION_REQUEST_NOT_PENDING');
+      }
+
+      const sourceCycle = await tx.initiativeCycle.findUnique({ where: { id: request.sourceCycleId } });
+      if (!sourceCycle || sourceCycle.projectId !== projectId) {
+        throw AppError.conflict('La solicitud no pertenece a un ciclo fuente valido.', 'DECISION_REQUEST_STALE');
+      }
+      await this.assertDecisionRequestNotStaleTx(tx, project, request, sourceCycle);
+
+      const authority = await this.resolveDecisionAuthority(project, sourceCycle, userId, input.outcome, tx, 'portfolio_review');
+      if (authority.authorityStatus !== 'resolved' || !authority.currentUserCanDecide) {
+        throw AppError.forbidden('Solo el Portfolio Lead autorizado puede confirmar esta decision.', 'DECISION_AUTHORITY_REQUIRED');
+      }
+
+      const readinessInput = await this.loadDecisionReadinessInput(project, sourceCycle, input.outcome, tx);
+      const readiness = this.decisionReadiness.evaluate(readinessInput);
+      const acceptedConditions = this.validateDecisionReadinessForDecision(readiness, input);
+      const rationale = String(input.rationale ?? '').trim();
+      if (!rationale) {
+        throw AppError.badRequest('La decision requiere rationale humano.', 'DECISION_RATIONALE_REQUIRED');
+      }
+      const recommendedOutcome = this.recommendedOutcomeFromSnapshot(request.recommendationSnapshotJson);
+      if (recommendedOutcome && recommendedOutcome !== input.outcome && !rationale) {
+        throw AppError.badRequest('Elegir un resultado distinto a la recomendacion requiere rationale.', 'DECISION_RATIONALE_REQUIRED');
+      }
+
+      const created = await tx.decision.create({
+        data: {
+          projectId,
+          sourceCycleId: request.sourceCycleId,
+          decisionRequestId: request.id,
+          outcome: input.outcome,
+          decidedById: userId,
+          rationale,
+          conditionsJson: acceptedConditions.length > 0 ? acceptedConditions : null,
+          authoritySnapshotJson: authority,
+          readinessSnapshotJson: readiness,
+          recommendationSnapshotJson: request.recommendationSnapshotJson ?? null,
+          packageSnapshotJson: request.decisionPackageSnapshotJson,
+          presentationSnapshotJson: request.presentationSnapshotJson,
+          idempotencyKey: input.idempotencyKey,
+        },
+      });
+      await tx.decisionRequest.update({
+        where: { id: request.id },
+        data: { status: 'resolved' },
+      });
+      await this.recordEventTx(tx, projectId, 'organizational_decision_created', 'Decision organizacional registrada por Portfolio Lead.', {
+        decisionId: created.id,
+        decisionRequestId: request.id,
+        sourceCycleId: request.sourceCycleId,
+        outcome: input.outcome,
+      }, userId, `organizational-decision-created:${input.idempotencyKey}`);
+      return created;
+    });
+
+    return this.mapDecision(decision);
+  }
+
+  async listDecisions(projectId: string, userId: string, role: Role): Promise<DecisionResult[]> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const rows = await (this.prisma as any).decision.findMany({
+      where: { projectId },
+      orderBy: { decidedAt: 'desc' },
+    });
+    return rows.map((row: any) => this.mapDecision(row));
+  }
+
+  async getDecision(projectId: string, userId: string, role: Role, decisionId: string): Promise<DecisionResult> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const row = await (this.prisma as any).decision.findFirst({ where: { id: decisionId, projectId } });
+    if (!row) throw AppError.notFound('Decision', 'DECISION_NOT_FOUND');
+    return this.mapDecision(row);
+  }
+
+  async applyDecisionEffects(projectId: string, userId: string, role: Role, decisionId: string, input: ApplyDecisionEffectsInput = {}): Promise<DecisionEffectsResult> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const db = this.prisma as any;
+    const idempotencyKey = input.idempotencyKey ?? `decision-effects:${decisionId}`;
+    const existingByKey = input.idempotencyKey
+      ? await db.continuationRoute.findUnique({ where: { idempotencyKey } }).catch(() => null)
+      : null;
+    if (existingByKey) {
+      if (existingByKey.projectId === projectId && existingByKey.decisionId === decisionId) {
+        return this.buildDecisionEffectsResult(db, projectId, decisionId, existingByKey);
+      }
+      throw AppError.conflict('La idempotencyKey ya fue usada para otra ruta de continuacion.', 'DECISION_EFFECTS_IDEMPOTENCY_CONFLICT');
+    }
+
+    const route = await db.$transaction(async (tx: any) => {
+      if (tx.$queryRaw) {
+        await tx.$queryRaw`SELECT "id" FROM "Decision" WHERE "id" = ${decisionId} FOR UPDATE`;
+      }
+      const decision = await tx.decision.findFirst({ where: { id: decisionId, projectId } });
+      if (!decision) throw AppError.notFound('Decision', 'DECISION_NOT_FOUND');
+      const existing = await tx.continuationRoute.findFirst({ where: { decisionId } });
+      if (existing) return existing;
+      await this.assertDecisionEffectsSourceValidTx(tx, projectId, decision);
+
+      const routeType = this.routeTypeForDecision(decision.outcome);
+      if (routeType === 'new_cycle') {
+        return this.applyContinueExperimentingEffectTx(tx, projectId, decision, idempotencyKey);
+      }
+      if (routeType === 'implementation_handoff') {
+        return this.applyImplementationHandoffEffectTx(tx, projectId, decision, idempotencyKey);
+      }
+      if (routeType === 'scaling_handoff') {
+        return this.applyScalingHandoffEffectTx(tx, projectId, decision, idempotencyKey);
+      }
+      if (routeType === 'paused') {
+        return this.applyPauseEffectTx(tx, projectId, decision, idempotencyKey);
+      }
+      return this.applyCloseWithLearningEffectTx(tx, projectId, decision, idempotencyKey);
+    });
+
+    return this.buildDecisionEffectsResult(db, projectId, decisionId, route);
+  }
+
+  async listContinuationRoutes(projectId: string, userId: string, role: Role): Promise<ContinuationRouteResult[]> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const rows = await (this.prisma as any).continuationRoute.findMany({
+      where: { projectId },
+      orderBy: { appliedAt: 'desc' },
+    });
+    return rows.map((row: any) => this.mapContinuationRoute(row));
   }
 
   async confirmCheckpoint(projectId: string, userId: string, role: Role, input: CheckpointResponseInput): Promise<AdaptiveCoreState> {
     await this.ensureInitialized(projectId, userId, role);
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existingResponse = await db.adaptiveCheckpointResponse.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existingResponse) return this.getState(projectId, userId, role);
+    this.assertCycleMutable(cycle);
 
     const instance = await db.adaptiveCheckpointInstance.findFirst({
-      where: { projectId, checkpointKey: input.checkpointKey, status: { in: ['ready', 'in_progress'] } },
+      where: { projectId, cycleId: cycle.id, checkpointKey: input.checkpointKey, status: { in: ['ready', 'in_progress'] } },
       include: { stepConfiguration: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -196,7 +617,11 @@ export class AdaptiveCoreService {
       ?? await db.adaptiveStepConfiguration.findUnique({ where: { id: instance.stepConfigurationId } });
     if (!stepConfiguration) throw AppError.badRequest('No existe configuracion para el checkpoint activo.', 'CHECKPOINT_CONFIGURATION_MISSING');
 
-    const previousResponses = await db.adaptiveCheckpointResponse.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' } });
+    const activeInstances = await db.adaptiveCheckpointInstance.findMany({ where: { projectId, cycleId: cycle.id }, select: { id: true } });
+    const previousResponses = await db.adaptiveCheckpointResponse.findMany({
+      where: { projectId, checkpointInstanceId: { in: activeInstances.map((item: any) => item.id) } },
+      orderBy: { createdAt: 'asc' },
+    });
     const sufficiency = this.evaluateCheckpoint(instance.checkpointKey, input.responses, previousResponses.map((r: any) => r.responseJson));
     if (!sufficiency.sufficient) {
       throw AppError.badRequest('El checkpoint aun no tiene informacion suficiente.', 'CHECKPOINT_INSUFFICIENT', {
@@ -402,12 +827,14 @@ export class AdaptiveCoreService {
     await this.ensureInitialized(projectId, userId, role);
     if (!input.confirmed) throw AppError.badRequest('El Brief debe ser confirmado por el usuario.', 'BRIEF_CONFIRMATION_REQUIRED');
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existingEvent = await db.adaptiveAdaptationEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existingEvent) return this.getState(projectId, userId, role);
+    this.assertCycleMutable(cycle);
 
-    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, stepNumber: 0, status: 'draft' }, orderBy: { version: 'desc' } });
+    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 0, status: 'draft' }, orderBy: { version: 'desc' } });
     if (!draft) throw AppError.badRequest('No existe Alignment Brief para confirmar.', 'STEP0_BRIEF_NOT_READY');
-    const step0Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: 0, status: 'active' }, orderBy: { version: 'desc' } });
+    const step0Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 0, status: 'active' }, orderBy: { version: 'desc' } });
     const masterContext = step0Config?.sourceContextJson ?? {};
 
     await db.$transaction(async (tx: any) => {
@@ -415,13 +842,14 @@ export class AdaptiveCoreService {
         where: { id: draft.id },
         data: { status: 'confirmed', outputJson: input.brief, confirmedById: userId, confirmedAt: new Date() },
       });
-      await tx.project.update({ where: { id: projectId }, data: { step0Status: 'COMPLETED', currentStep: 1, lastModified: new Date() } });
+      await this.cycles.syncActiveCycleProjectionTx(tx, projectId, cycle.id, 1, { step0Status: 'COMPLETED' });
 
-      const step1Version = await this.nextConfigVersionTx(tx, projectId, 1);
+      const step1Version = await this.nextConfigVersionTx(tx, projectId, cycle.id, 1);
       const step1ConfigJson = this.buildStepConfiguration(1, step1Version, masterContext, input.brief);
       const step1Config = await tx.adaptiveStepConfiguration.create({
         data: {
           projectId,
+          cycleId: cycle.id,
           stepNumber: 1,
           version: step1Version,
           status: 'active',
@@ -458,12 +886,14 @@ export class AdaptiveCoreService {
     await this.ensureInitialized(projectId, userId, role);
     if (!input.confirmed) throw AppError.badRequest('El output de Step 1 debe ser confirmado por el usuario.', 'STEP1_CONFIRMATION_REQUIRED');
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existingEvent = await db.adaptiveAdaptationEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existingEvent) return this.getState(projectId, userId, role);
+    this.assertCycleMutable(cycle);
 
-    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, stepNumber: 1, status: 'draft' }, orderBy: { version: 'desc' } });
+    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 1, status: 'draft' }, orderBy: { version: 'desc' } });
     if (!draft) throw AppError.badRequest('No existe output de Step 1 para confirmar.', 'STEP1_OUTPUT_NOT_READY');
-    const step1Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: 1, status: 'active' }, orderBy: { version: 'desc' } });
+    const step1Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 1, status: 'active' }, orderBy: { version: 'desc' } });
     if (!step1Config) throw AppError.badRequest('No existe configuracion activa de Step 1.', 'STEP1_CONFIGURATION_MISSING');
 
     const draftOutput = draft.outputJson ?? {};
@@ -482,13 +912,14 @@ export class AdaptiveCoreService {
         where: { id: draft.id },
         data: { status: 'confirmed', outputJson: step1Output, confirmedById: userId, confirmedAt: new Date(), requiresReview: false },
       });
-      await tx.project.update({ where: { id: projectId }, data: { currentStep: 2, lastModified: new Date() } });
+      await this.cycles.syncActiveCycleProjectionTx(tx, projectId, cycle.id, 2);
 
-      const step2Version = await this.nextConfigVersionTx(tx, projectId, 2);
+      const step2Version = await this.nextConfigVersionTx(tx, projectId, cycle.id, 2);
       const step2ConfigJson = this.buildStepConfiguration(2, step2Version, nextMasterContext, nextMasterContext.step0Output);
       const step2Config = await tx.adaptiveStepConfiguration.create({
         data: {
           projectId,
+          cycleId: cycle.id,
           stepNumber: 2,
           version: step2Version,
           status: 'active',
@@ -537,12 +968,14 @@ export class AdaptiveCoreService {
     await this.ensureInitialized(projectId, userId, role);
     if (!input.confirmed) throw AppError.badRequest('El output de Step 2 debe ser confirmado por el usuario.', 'STEP2_CONFIRMATION_REQUIRED');
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existingEvent = await db.adaptiveAdaptationEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existingEvent) return this.getState(projectId, userId, role);
+    this.assertCycleMutable(cycle);
 
-    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, stepNumber: 2, status: 'draft' }, orderBy: { version: 'desc' } });
+    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 2, status: 'draft' }, orderBy: { version: 'desc' } });
     if (!draft) throw AppError.badRequest('No existe output de Step 2 para confirmar.', 'STEP2_OUTPUT_NOT_READY');
-    const step2Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: 2, status: 'active' }, orderBy: { version: 'desc' } });
+    const step2Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 2, status: 'active' }, orderBy: { version: 'desc' } });
     if (!step2Config) throw AppError.badRequest('No existe configuracion activa de Step 2.', 'STEP2_CONFIGURATION_MISSING');
 
     const step2Output = { ...(draft.outputJson ?? {}), ...(input.brief ?? {}) };
@@ -557,13 +990,14 @@ export class AdaptiveCoreService {
         where: { id: draft.id },
         data: { status: 'confirmed', outputJson: step2Output, confirmedById: userId, confirmedAt: new Date(), requiresReview: false },
       });
-      await tx.project.update({ where: { id: projectId }, data: { currentStep: 3, lastModified: new Date() } });
+      await this.cycles.syncActiveCycleProjectionTx(tx, projectId, cycle.id, 3);
 
-      const step3Version = await this.nextConfigVersionTx(tx, projectId, 3);
+      const step3Version = await this.nextConfigVersionTx(tx, projectId, cycle.id, 3);
       const step3ConfigJson = this.buildStepConfiguration(3, step3Version, nextMasterContext, nextMasterContext.step0Output);
       const step3Config = await tx.adaptiveStepConfiguration.create({
         data: {
           projectId,
+          cycleId: cycle.id,
           stepNumber: 3,
           version: step3Version,
           status: 'active',
@@ -607,12 +1041,14 @@ export class AdaptiveCoreService {
     await this.ensureInitialized(projectId, userId, role);
     if (!input.confirmed) throw AppError.badRequest('El output de Step 3 debe ser confirmado por el usuario.', 'STEP3_CONFIRMATION_REQUIRED');
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existingEvent = await db.adaptiveAdaptationEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existingEvent) return this.getState(projectId, userId, role);
+    this.assertCycleMutable(cycle);
 
-    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, stepNumber: 3, status: 'draft' }, orderBy: { version: 'desc' } });
+    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 3, status: 'draft' }, orderBy: { version: 'desc' } });
     if (!draft) throw AppError.badRequest('No existe output de Step 3 para confirmar.', 'STEP3_OUTPUT_NOT_READY');
-    const step3Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: 3, status: 'active' }, orderBy: { version: 'desc' } });
+    const step3Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 3, status: 'active' }, orderBy: { version: 'desc' } });
     if (!step3Config) throw AppError.badRequest('No existe configuracion activa de Step 3.', 'STEP3_CONFIGURATION_MISSING');
 
     const step3Output = { ...(draft.outputJson ?? {}), ...(input.brief ?? {}) };
@@ -626,13 +1062,14 @@ export class AdaptiveCoreService {
         where: { id: draft.id },
         data: { status: 'confirmed', outputJson: step3Output, confirmedById: userId, confirmedAt: new Date(), requiresReview: false },
       });
-      await tx.project.update({ where: { id: projectId }, data: { currentStep: 4, lastModified: new Date() } });
+      await this.cycles.syncActiveCycleProjectionTx(tx, projectId, cycle.id, 4);
 
-      const step4Version = await this.nextConfigVersionTx(tx, projectId, 4);
+      const step4Version = await this.nextConfigVersionTx(tx, projectId, cycle.id, 4);
       const step4ConfigJson = this.buildStepConfiguration(4, step4Version, nextMasterContext, nextMasterContext.step0Output);
       const step4Config = await tx.adaptiveStepConfiguration.create({
         data: {
           projectId,
+          cycleId: cycle.id,
           stepNumber: 4,
           version: step4Version,
           status: 'active',
@@ -676,21 +1113,34 @@ export class AdaptiveCoreService {
     await this.ensureInitialized(projectId, userId, role);
     if (!input.confirmed) throw AppError.badRequest('El output de Step 4 debe ser confirmado por el usuario.', 'STEP4_CONFIRMATION_REQUIRED');
     const db = this.prisma as any;
+    const cycle = await this.cycles.ensureActiveCycle(projectId);
     const existingEvent = await db.adaptiveAdaptationEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existingEvent) return this.getState(projectId, userId, role);
+    this.assertCycleMutable(cycle);
 
-    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, stepNumber: 4, status: 'draft' }, orderBy: { version: 'desc' } });
+    const draft = await db.adaptiveStepOutput.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 4, status: 'draft' }, orderBy: { version: 'desc' } });
     if (!draft) throw AppError.badRequest('No existe output de Step 4 para confirmar.', 'STEP4_OUTPUT_NOT_READY');
-    const step4Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: 4, status: 'active' }, orderBy: { version: 'desc' } });
+    const step4Config = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, cycleId: cycle.id, stepNumber: 4, status: 'active' }, orderBy: { version: 'desc' } });
     if (!step4Config) throw AppError.badRequest('No existe configuracion activa de Step 4.', 'STEP4_CONFIGURATION_MISSING');
 
+    const project = await this.getAccessibleProject(projectId, userId, role);
+    const alignment = await this.resolveInitiativeAlignment(project);
     const step4Output = { ...(draft.outputJson ?? {}), ...(input.brief ?? {}) };
-    const finalState = this.normalizeFinalState((step4Output as any).finalState ?? (step4Output as any).transferOrClosure?.finalState);
-    const organizationalDecision = String((step4Output as any).organizationalDecision ?? (step4Output as any).transferOrClosure?.finalDecision ?? '');
-    if (!this.hasValue(organizationalDecision)) {
-      throw AppError.badRequest('Step 4 requiere una decision organizacional confirmada.', 'STEP4_DECISION_REQUIRED');
-    }
-    const confirmedStep4Output = { ...step4Output, finalState, organizationalDecision };
+    const routing = this.initiativeCompletion.routeCompletion({
+      projectId,
+      cycleId: cycle.id,
+      methodologicalCompletion: true,
+      alignment,
+    });
+    const finalState = routing.lifecycleProjection;
+    const confirmedStep4Output = {
+      ...step4Output,
+      methodologicalCompletion: true,
+      completionRoute: routing.route,
+      lifecycleProjection: routing.lifecycleProjection,
+      portfolioReviewRequired: routing.portfolioReviewRequired,
+      initiativeCompleted: routing.initiativeCompleted,
+    };
     const nextMasterContext = this.buildFinalMasterContext(step4Config.sourceContextJson ?? {}, confirmedStep4Output, finalState);
 
     await db.$transaction(async (tx: any) => {
@@ -705,28 +1155,33 @@ export class AdaptiveCoreService {
           configurationJson: {
             ...(step4Config.configurationJson ?? {}),
             finalState,
-            organizationalDecision,
+            completionRoute: routing.route,
+            portfolioReviewRequired: routing.portfolioReviewRequired,
+            initiativeCompleted: routing.initiativeCompleted,
             finalOutputKey: confirmedStep4Output.outputKey,
-            closedAt: new Date().toISOString(),
+            methodologicalCompletedAt: new Date().toISOString(),
           },
         },
       });
+      await this.cycles.completeCycleTx(tx, projectId, cycle.id, 4);
       await tx.project.update({
         where: { id: projectId },
-        data: { currentStep: 4, status: this.projectStatusForFinalState(finalState), lastModified: new Date() } as any,
+        data: { status: routing.initiativeCompleted ? 'COMPLETED' : 'IN_PROGRESS', lastModified: new Date() } as any,
       });
       await this.upsertProgressSignalTx(tx, projectId, {
         step: 4,
-        checkpointCode: 'closed',
-        checkpointTitle: 'Cierre organizacional',
-        health: finalState === 'paused' || finalState === 'new_iteration_required' ? 'attention' : 'healthy',
+        checkpointCode: routing.route,
+        checkpointTitle: routing.route === 'owner_completed' ? 'Iniciativa completada' : 'Presentada para revision de portafolio',
+        health: routing.portfolioReviewRequired ? 'ready_for_decision' : 'healthy',
         hypothesis: String(step4Output.hypothesis ?? nextMasterContext.step3Output?.hypothesis ?? ''),
         evidence: String(step4Output.recommendation ?? step4Output.narrative?.recommendation ?? ''),
         evidenceStrength: String(step4Output.finalChallengeContribution?.evidenceStrength ?? step4Output.challengeCoverage?.evidenceStrength ?? 'medium'),
         blocker: '',
         actorRequired: String(step4Output.transferOrClosure?.owner ?? step4Output.audienceBrief?.decisionMaker ?? 'Owner de iniciativa'),
-        nextAction: String(step4Output.transferOrClosure?.nextStep ?? step4Output.nextHorizon?.nextAction ?? 'Iniciativa cerrada organizacionalmente.'),
-        upcomingDecision: organizationalDecision,
+        nextAction: routing.portfolioReviewRequired
+          ? 'Mantener la iniciativa visible para revision posterior de portafolio.'
+          : 'Consultar el resumen y el historial cuando sea necesario.',
+        upcomingDecision: routing.portfolioReviewRequired ? 'Revision posterior de Portfolio Lead.' : 'Sin revision de portafolio requerida.',
         updatedAt: new Date().toISOString(),
         audience: step4Output.audienceBrief,
         recommendation: step4Output.recommendation,
@@ -735,13 +1190,15 @@ export class AdaptiveCoreService {
         futureOwner: step4Output.transferOrClosure?.receiverOwner,
         finalState,
         hypothesisResult: step4Output.hypothesisResult,
-        organizationalDecision,
+        completionRoute: routing.route,
+        portfolioReviewRequired: routing.portfolioReviewRequired,
+        initiativeCompleted: routing.initiativeCompleted,
         contributionToChallenge: step4Output.finalChallengeContribution,
         challengeCoverage: step4Output.challengeCoverage,
       });
       await tx.initiativePortfolioMeta.updateMany({
         where: { projectId },
-        data: this.portfolioMetaFinalUpdate(step4Output, finalState) as any,
+        data: this.portfolioMetaCompletionUpdate(step4Output, routing) as any,
       });
       if (nextMasterContext.challengeSnapshot?.id && tx.challenge?.update) {
         await tx.challenge.update({
@@ -749,8 +1206,8 @@ export class AdaptiveCoreService {
           data: { coverageStatus: this.prismaCoverageStatus(step4Output.challengeCoverage?.status), updatedAt: new Date() } as any,
         }).catch(() => null);
       }
-      await this.recordEventTx(tx, projectId, 'step_completed', 'Step 4 confirmado por el usuario.', { step: 4, outputId: draft.id, finalState, organizationalDecision }, userId, input.idempotencyKey);
-      await this.recordEventTx(tx, projectId, 'initiative_closed', 'Cierre organizacional registrado.', { finalState, challengeCoverage: step4Output.challengeCoverage, handoff: step4Output.transferOrClosure }, userId, `initiative-closed:${projectId}:4:${draft.version}`);
+      await this.recordEventTx(tx, projectId, 'step_completed', 'Step 4 confirmado por el usuario.', { step: 4, outputId: draft.id, completionRoute: routing.route }, userId, input.idempotencyKey);
+      await this.recordEventTx(tx, projectId, routing.route === 'owner_completed' ? 'initiative_completed' : 'initiative_presented', routing.route === 'owner_completed' ? 'Iniciativa metodologicamente completada.' : 'Iniciativa presentada para revision posterior de portafolio.', { completionRouting: routing, challengeCoverage: step4Output.challengeCoverage }, userId, `initiative-completion:${projectId}:4:${draft.version}`);
     });
     await syncInitiativeProgress(this.prisma, projectId);
     return this.getState(projectId, userId, role);
@@ -759,79 +1216,895 @@ export class AdaptiveCoreService {
   async registerCriticalChange(projectId: string, userId: string, role: Role, input: CriticalChangeInput): Promise<AdaptiveCoreState> {
     await this.ensureInitialized(projectId, userId, role);
     const db = this.prisma as any;
-    const existing = await db.adaptiveAdaptationEvent.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+    const cycle = await this.cycles.getOperationalCycle(projectId);
+    const existing = await db.criticalChange.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
     if (existing) return this.getState(projectId, userId, role);
-    if (!input.confirmed) {
-      await this.recordEventTx(db, projectId, `${input.field}_change_detected`, 'Cambio critico detectado; requiere confirmacion antes de recalibrar.', this.buildCriticalChangeReview(input), userId, input.idempotencyKey);
-      return this.getState(projectId, userId, role);
+
+    if (input.action !== 'return_to_prior_direction' && input.basedOnCycleId) {
+      throw AppError.badRequest('basedOnCycleId solo aplica para retomar una direccion anterior.', 'CRITICAL_CHANGE_BASED_ON_UNEXPECTED');
+    }
+    if (input.action === 'return_to_prior_direction') {
+      if (!input.basedOnCycleId) {
+        throw AppError.badRequest('Retomar una direccion anterior requiere basedOnCycleId.', 'CRITICAL_CHANGE_BASED_ON_REQUIRED');
+      }
+      if (input.reentryStep === undefined || input.reentryStep === null) {
+        throw AppError.badRequest('Retomar una direccion anterior requiere reentryStep.', 'CRITICAL_CHANGE_REENTRY_MISSING');
+      }
+      await this.validateReturnBasedOnCycleTx(db, projectId, cycle, input.basedOnCycleId);
     }
 
-    const targetStep = input.field === 'selected_bet' ? 2 : 0;
-    const active = await db.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber: targetStep, status: 'active' }, orderBy: { version: 'desc' } });
-    if (!active) throw AppError.badRequest('No hay configuracion activa para recalibrar.', 'NO_ACTIVE_CONFIGURATION');
-    const review = this.buildCriticalChangeReview(input, Number(active.version ?? 1) + 1);
-    if (input.action === 'keep_previous_route' || input.action === 'back_and_edit') {
-      await db.$transaction(async (tx: any) => {
-        await tx.adaptiveStepOutput.updateMany({ where: { projectId, status: { in: ['draft', 'confirmed'] } }, data: { requiresReview: true } });
-        await this.upsertProgressSignalTx(tx, projectId, {
-          step: active.stepNumber,
-          checkpointCode: 'critical-change-review',
-          checkpointTitle: 'Revision de cambio critico',
-          health: 'attention',
-          hypothesis: String(input.nextValue ?? ''),
-          evidence: String(input.reason ?? 'Cambio critico pendiente de resolucion.'),
-          evidenceStrength: 'weak',
-          blocker: input.action === 'back_and_edit' ? 'El usuario eligio volver y editar antes de recalibrar.' : '',
-          actorRequired: 'Owner de iniciativa',
-          nextAction: input.action === 'back_and_edit' ? 'Volver a editar el dato critico.' : 'Mantener ruta actual y revisar outputs dependientes.',
-          upcomingDecision: 'Decidir si recalibrar la ruta mas adelante.',
-          updatedAt: new Date().toISOString(),
-          criticalChangeReview: review,
-        });
-        await this.recordEventTx(tx, projectId, `${input.field}_change_reviewed`, 'Cambio critico revisado sin crear nueva ruta.', review, userId, input.idempotencyKey);
-      });
-      return this.getState(projectId, userId, role);
-    }
-    const nextVersion = await this.nextConfigVersionTx(db, projectId, targetStep);
-    const nextContext = this.applyCriticalChange(active.sourceContextJson ?? {}, input);
-    const nextConfigJson = this.buildStepConfiguration(targetStep as StepNumber, nextVersion, nextContext);
+    const changeScope = mapLegacyCriticalChangeField(input.field);
+    const dependency = this.criticalChangeDependencies.resolve({ changeScope, field: input.field });
+    const [stepStates, stepOutputs] = await Promise.all([
+      db.cycleStepState.findMany({ where: { cycleId: cycle.id }, orderBy: { stepNumber: 'asc' } }),
+      db.adaptiveStepOutput.findMany({ where: { projectId, cycleId: cycle.id }, orderBy: [{ stepNumber: 'asc' }, { version: 'desc' }] }),
+    ]);
+    const impact = this.criticalChangeImpact.resolve({
+      change: {
+        sourceCycleId: cycle.id,
+        changeScope,
+        field: input.field,
+        previousValue: input.previousValue ?? null,
+        nextValue: input.nextValue,
+        reason: input.reason ?? null,
+        requestedTransition: input.action === 'return_to_prior_direction' ? 'return_to_prior_direction' : null,
+        basedOnCycleId: input.basedOnCycleId ?? null,
+        requestedReentryStep: input.reentryStep ?? null,
+      },
+      sourceCycle: cycle,
+      dependency,
+      stepStates,
+      stepOutputs,
+    });
+    const userOutcome = buildCriticalChangeUserOutcome(impact);
+
     await db.$transaction(async (tx: any) => {
-      await tx.adaptiveStepConfiguration.update({ where: { id: active.id }, data: { status: 'superseded', requiresReview: true } });
-      await tx.adaptiveStepOutput.updateMany({ where: { projectId, stepNumber: { gte: targetStep }, status: { in: ['draft', 'confirmed'] } }, data: { requiresReview: true } });
-      const created = await tx.adaptiveStepConfiguration.create({
+      const criticalChange = await tx.criticalChange.create({
         data: {
           projectId,
-          stepNumber: targetStep,
-          version: nextVersion,
-          status: 'active',
-          routeType: nextContext.routeType,
-          depthLevel: nextContext.depthLevel,
-          maturity: nextContext.maturity,
-          configurationJson: nextConfigJson,
-          sourceContextJson: nextContext,
+          sourceCycleId: cycle.id,
+          detectedAtStep: cycle.currentStep ?? 0,
+          changeScope,
+          field: input.field,
+          status: 'assessment_ready',
+          proposedById: userId,
+          confirmedById: null,
+          confirmedAt: null,
+          resultingCycleId: null,
+          basedOnCycleId: input.basedOnCycleId ?? null,
+          appliedAt: null,
+          proposedReentryStep: impact.reentryStep,
+          confirmedReentryStep: null,
+          idempotencyKey: input.idempotencyKey,
+          previousValueJson: input.previousValue ?? null,
+          nextValueJson: input.nextValue,
+          impactJson: impact as any,
+          reason: input.reason ?? null,
         },
       });
-      const restartCheckpoint = targetStep === 2 ? 'CP-2.1' : 'CP-0.1';
-      await this.materializeCheckpointTx(tx, projectId, created, restartCheckpoint, [], userId, `checkpoint_started:${projectId}:${restartCheckpoint}:${nextVersion}`);
       await this.upsertProgressSignalTx(tx, projectId, {
-        step: targetStep,
-        checkpointCode: restartCheckpoint,
-        checkpointTitle: targetStep === 2 ? 'Design Criteria' : 'Enmarcar la iniciativa',
-        health: 'attention',
+        step: cycle.currentStep ?? 0,
+        checkpointCode: 'critical-change-assessment',
+        checkpointTitle: 'Evaluacion de cambio critico',
+        health: impact.materialChange ? 'attention' : 'healthy',
         hypothesis: String(input.nextValue ?? ''),
-        evidence: String(input.reason ?? 'Cambio critico confirmado.'),
+        evidence: String(input.reason ?? 'Cambio critico evaluado.'),
         evidenceStrength: 'weak',
         blocker: '',
         actorRequired: 'Owner de iniciativa',
-        nextAction: input.action === 'split_phases' ? 'Revisar nueva version y separar fases antes de continuar.' : 'Revisar nueva version de Step 0.',
-        upcomingDecision: 'Confirmar si la nueva ruta reemplaza el brief anterior.',
+        nextAction: userOutcome.message,
+        upcomingDecision: userOutcome.headline,
         updatedAt: new Date().toISOString(),
-        criticalChangeReview: { ...review, newVersion: nextVersion },
+        criticalChangeId: criticalChange.id,
+        criticalChangeImpact: impact,
+        criticalChangeOutcome: userOutcome,
       });
-      await this.recordEventTx(tx, projectId, `${input.field}_changed`, 'Cambio critico confirmado; se creo nueva configuracion y outputs dependientes requieren revision.', { ...review, newVersion: nextVersion }, userId, input.idempotencyKey);
-      await this.recordEventTx(tx, projectId, 'step_reconfigured', `Step ${targetStep} reconfigurado por cambio critico.`, { step: targetStep, version: nextVersion }, userId, `step-reconfigured:${projectId}:${targetStep}:${nextVersion}`);
+      await this.recordEventTx(tx, projectId, 'critical_change_assessment_ready', 'Cambio critico evaluado; requiere decision humana antes de aplicar transicion.', {
+        criticalChangeId: criticalChange.id,
+        changeScope,
+        field: input.field,
+        dependency,
+        impact,
+        userOutcome,
+        userActionConfirmedChange: input.confirmed,
+        legacyAction: input.action,
+        basedOnCycleId: input.basedOnCycleId ?? null,
+      }, userId, `critical-change-provenance:${input.idempotencyKey}`);
     });
     return this.getState(projectId, userId, role);
+  }
+
+  async confirmCriticalChangeTransition(
+    projectId: string,
+    userId: string,
+    role: Role,
+    criticalChangeId: string,
+    input: ConfirmCriticalChangeTransitionInput,
+  ): Promise<AdaptiveCoreState> {
+    await this.getAccessibleProject(projectId, userId, role);
+    const db = this.prisma as any;
+    const criticalChange = await db.criticalChange.findUnique({ where: { id: criticalChangeId } });
+    if (!criticalChange || criticalChange.projectId !== projectId) {
+      throw AppError.notFound('Cambio critico', 'CRITICAL_CHANGE_NOT_FOUND');
+    }
+    if (criticalChange.status === 'applied') return this.getState(projectId, userId, role);
+    if (!input.confirmed) {
+      await this.recordEventTx(db, projectId, 'critical_change_transition_not_confirmed', 'Transicion evaluada sin confirmacion humana.', {
+        criticalChangeId,
+        sourceCycleId: criticalChange.sourceCycleId,
+        transition: (criticalChange.impactJson as ChangeImpactResult | null)?.transition ?? null,
+      }, userId, input.idempotencyKey);
+      return this.getState(projectId, userId, role);
+    }
+    if (!['assessment_ready', 'confirmed'].includes(String(criticalChange.status))) {
+      throw AppError.conflict('El cambio critico no esta listo para confirmar transicion.', 'CRITICAL_CHANGE_NOT_CONFIRMABLE');
+    }
+
+    const impact = this.parseCriticalChangeImpact(criticalChange.impactJson);
+    if (impact.sourceCycleId !== criticalChange.sourceCycleId) {
+      throw AppError.conflict('La evaluacion no corresponde al ciclo fuente del cambio.', 'CRITICAL_CHANGE_SOURCE_MISMATCH');
+    }
+    if (impact.transition === 'derived_initiative_recommended') {
+      throw AppError.badRequest('Esta transicion no se aplica en R3-B.', 'CRITICAL_CHANGE_TRANSITION_UNSUPPORTED');
+    }
+    if (!['same_cycle', 'new_cycle', 'return_to_prior_direction'].includes(impact.transition)) {
+      throw AppError.badRequest('La transicion evaluada no es aplicable.', 'CRITICAL_CHANGE_TRANSITION_INVALID');
+    }
+    if (impact.transition !== 'return_to_prior_direction' && input.basedOnCycleId) {
+      throw AppError.badRequest('basedOnCycleId solo aplica para retomar una direccion anterior.', 'CRITICAL_CHANGE_BASED_ON_UNEXPECTED');
+    }
+
+    const reentryStep = this.resolveConfirmedReentryStep(impact, input.confirmedReentryStep);
+    const basedOnCycleId = this.resolveConfirmedBasedOnCycleId(impact, criticalChange.basedOnCycleId, input.basedOnCycleId);
+    const confirmedAt = new Date();
+    const appliedAt = new Date();
+
+    await db.$transaction(async (tx: any) => {
+      await this.lockCriticalChangeTx(tx, criticalChangeId);
+      const current = await tx.criticalChange.findUnique({ where: { id: criticalChangeId } });
+      if (!current || current.projectId !== projectId) {
+        throw AppError.notFound('Cambio critico', 'CRITICAL_CHANGE_NOT_FOUND');
+      }
+      if (current.status === 'applied') return;
+      if (!['assessment_ready', 'confirmed'].includes(String(current.status))) {
+        throw AppError.conflict('El cambio critico no esta listo para confirmar transicion.', 'CRITICAL_CHANGE_NOT_CONFIRMABLE');
+      }
+
+      const sourceCycle = await tx.initiativeCycle.findUnique({ where: { id: current.sourceCycleId } });
+      if (!sourceCycle || sourceCycle.projectId !== projectId) {
+        throw AppError.conflict('El ciclo fuente no pertenece a la iniciativa.', 'CRITICAL_CHANGE_SOURCE_CYCLE_INVALID');
+      }
+      const operationalCycle = await this.cycles.getOperationalCycle(projectId, tx);
+      if (operationalCycle.id !== sourceCycle.id) {
+        throw AppError.conflict('El ciclo fuente ya no es el ciclo operativo.', 'CRITICAL_CHANGE_SOURCE_NOT_OPERATIONAL');
+      }
+
+      await tx.criticalChange.update({
+        where: { id: current.id },
+        data: {
+          status: 'confirmed',
+          confirmedById: userId,
+          confirmedAt,
+          confirmedReentryStep: reentryStep,
+          basedOnCycleId,
+        },
+      });
+      await this.recordEventTx(tx, projectId, 'critical_change_transition_confirmed', 'Transicion de cambio critico confirmada por el usuario.', {
+        criticalChangeId: current.id,
+        sourceCycleId: sourceCycle.id,
+        resultingCycleId: null,
+        basedOnCycleId,
+        transition: impact.transition,
+        reentryStep,
+      }, userId, `critical-change-transition-confirmed:${input.idempotencyKey}`);
+
+      const resultingCycle = impact.transition === 'new_cycle'
+        ? await this.applyCriticalChangeNewCycleTx(tx, projectId, userId, current, sourceCycle, impact, reentryStep, appliedAt)
+        : impact.transition === 'return_to_prior_direction'
+          ? await this.applyCriticalChangeReturnToPriorDirectionTx(tx, projectId, userId, current, sourceCycle, impact, reentryStep, basedOnCycleId, appliedAt)
+          : await this.applyCriticalChangeSameCycleTx(tx, projectId, current, sourceCycle, impact, reentryStep, appliedAt);
+
+      await tx.criticalChange.update({
+        where: { id: current.id },
+        data: {
+          status: 'applied',
+          confirmedById: userId,
+          confirmedAt,
+          confirmedReentryStep: reentryStep,
+          resultingCycleId: resultingCycle?.id ?? null,
+          basedOnCycleId,
+          appliedAt,
+        },
+      });
+      await this.recordEventTx(tx, projectId, 'critical_change_applied', 'Transicion de cambio critico aplicada.', {
+        criticalChangeId: current.id,
+        sourceCycleId: sourceCycle.id,
+        resultingCycleId: resultingCycle?.id ?? null,
+        basedOnCycleId,
+        transition: impact.transition,
+        reentryStep,
+      }, userId, `critical-change-applied:${input.idempotencyKey}`);
+    });
+
+    return this.getState(projectId, userId, role);
+  }
+
+  private async resolveDecisionAuthority(project: any, cycle: any, userId: string, decisionType: DecisionType, client?: any, authorityPurpose?: 'methodological_decision' | 'portfolio_review'): Promise<DecisionAuthorityResult> {
+    const db = client ?? this.prisma as any;
+    const governance = await db.initiativeGovernance.findUnique({ where: { projectId: project.id } });
+    const ownerId = project.ownerId ?? null;
+    const portfolioLeadUserId = governance?.portfolioLeadUserId ?? null;
+    return this.decisionAuthority.evaluate({
+      projectId: project.id,
+      cycleId: cycle.id,
+      decisionType,
+      authorityPurpose,
+      governanceMode: governance?.mode ?? null,
+      initiativeOwnerId: ownerId,
+      portfolioLeadUserId,
+      currentUserId: userId,
+      currentUserIsInitiativeOwner: ownerId === userId,
+      currentUserIsAssignedPortfolioLead: Boolean(portfolioLeadUserId && portfolioLeadUserId === userId),
+      currentUserIsActiveTeamMember: (project.teamMembers ?? []).some((member: any) => member.userId === userId && (member.status === 'ACTIVE' || member.status === 'active')),
+      hasExplicitGovernanceConfig: Boolean(governance),
+    });
+  }
+
+  private async buildDecisionReadinessSnapshot(project: any, cycle: any, client?: any) {
+    const decisionTypes: DecisionType[] = ['continue_experimenting', 'implement', 'scale', 'pause', 'close_with_learning'];
+    const assessments = [];
+    for (const decisionType of decisionTypes) {
+      const input = await this.loadDecisionReadinessInput(project, cycle, decisionType, client);
+      assessments.push(this.decisionReadiness.evaluate(input));
+    }
+    return {
+      assessmentVersion: 1,
+      assessments,
+      capturedAt: new Date().toISOString(),
+    };
+  }
+
+  private async assertDecisionRequestNotStaleTx(tx: any, project: any, request: any, sourceCycle: any) {
+    if (sourceCycle.status !== 'completed' || !sourceCycle.completedAt) {
+      throw AppError.conflict('La DecisionRequest ya no apunta a una presentacion completada vigente.', 'DECISION_REQUEST_STALE');
+    }
+    const newerCycle = await tx.initiativeCycle.findFirst({
+      where: { projectId: project.id, cycleNumber: { gt: sourceCycle.cycleNumber } },
+      orderBy: { cycleNumber: 'desc' },
+    });
+    if (newerCycle) {
+      throw AppError.conflict('Existe un ciclo metodologico posterior a esta solicitud.', 'DECISION_REQUEST_STALE');
+    }
+    const activeCycle = await tx.initiativeCycle.findFirst({ where: { projectId: project.id, status: 'active' } });
+    if (activeCycle) {
+      throw AppError.conflict('La iniciativa reentro a trabajo metodologico activo.', 'DECISION_REQUEST_STALE');
+    }
+    const alignment = await this.resolveInitiativeAlignment(project, tx);
+    const methodologicalCompletion = await this.hasMethodologicalCompletion(project.id, sourceCycle.id, tx);
+    const routing = this.initiativeCompletion.routeCompletion({
+      projectId: project.id,
+      cycleId: sourceCycle.id,
+      methodologicalCompletion,
+      alignment,
+    });
+    if (routing.route !== 'portfolio_presented' || !routing.portfolioReviewRequired) {
+      throw AppError.conflict('La presentacion de portafolio ya no coincide con la solicitud.', 'DECISION_REQUEST_STALE');
+    }
+    const presentation = this.recordFrom(request.presentationSnapshotJson);
+    const requestCycle = this.recordFrom(presentation.sourceCycle);
+    if (requestCycle.id && requestCycle.id !== sourceCycle.id) {
+      throw AppError.conflict('La solicitud no coincide con su ciclo fuente presentado.', 'DECISION_REQUEST_STALE');
+    }
+  }
+
+  private validateDecisionReadinessForDecision(readiness: DecisionReadinessAssessment, input: OrganizationalDecisionInput) {
+    if (readiness.overallStatus === 'not_ready') {
+      throw AppError.conflict('El resultado seleccionado no esta listo para decision normal.', 'DECISION_READINESS_NOT_READY');
+    }
+    if (readiness.overallStatus === 'ready') return [];
+    const requiredCodes = readiness.conditions.map((condition) => condition.code);
+    const accepted = new Set(input.acceptedConditionCodes ?? []);
+    const missing = requiredCodes.filter((code) => !accepted.has(code));
+    if (missing.length > 0) {
+      throw AppError.conflict('La decision condicional requiere aceptar condiciones explicitas.', 'DECISION_CONDITIONS_REQUIRED', {
+        details: missing.map((code) => ({ field: 'acceptedConditionCodes', code, message: `Falta aceptar condicion ${code}.` })),
+      });
+    }
+    return readiness.conditions.map((condition) => ({
+      code: condition.code,
+      dimension: condition.dimension,
+      message: condition.message,
+      accepted: true,
+    }));
+  }
+
+  private buildDecisionRequestRecommendationSnapshot(step4OutputJson: unknown, readinessSnapshot: unknown) {
+    const output = this.recordFrom(step4OutputJson);
+    return {
+      recommendation: output.recommendation ?? output.narrative?.recommendation ?? null,
+      requestedDecision: output.audienceBrief?.requestedDecision ?? output.transferOrClosure?.finalDecision ?? null,
+      readinessSummary: readinessSnapshot,
+    };
+  }
+
+  private recommendedOutcomeFromSnapshot(snapshot: unknown): DecisionOutcome | null {
+    const record = this.recordFrom(snapshot);
+    const value = String(record.recommendedOutcome ?? record.requestedDecision ?? '').trim();
+    return this.toDecisionOutcome(value);
+  }
+
+  private toDecisionOutcome(value: string): DecisionOutcome | null {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'continue_experimenting' || normalized === 'implement' || normalized === 'scale' || normalized === 'pause' || normalized === 'close_with_learning') {
+      return normalized;
+    }
+    return null;
+  }
+
+  private routeTypeForDecision(outcome: DecisionOutcome): ContinuationRouteType {
+    if (outcome === 'continue_experimenting') return 'new_cycle';
+    if (outcome === 'implement') return 'implementation_handoff';
+    if (outcome === 'scale') return 'scaling_handoff';
+    if (outcome === 'pause') return 'paused';
+    return 'closed';
+  }
+
+  private async assertDecisionEffectsSourceValidTx(tx: any, projectId: string, decision: any) {
+    const request = await tx.decisionRequest.findFirst({ where: { id: decision.decisionRequestId, projectId } });
+    if (!request || request.status !== 'resolved') {
+      throw AppError.conflict('La decision no proviene de una solicitud resuelta valida.', 'DECISION_REQUEST_NOT_RESOLVED');
+    }
+    if (request.sourceCycleId !== decision.sourceCycleId) {
+      throw AppError.conflict('La decision no coincide con el ciclo fuente de la solicitud.', 'DECISION_SOURCE_CYCLE_INVALID');
+    }
+    const sourceCycle = await tx.initiativeCycle.findUnique({ where: { id: decision.sourceCycleId } });
+    if (!sourceCycle || sourceCycle.projectId !== projectId || sourceCycle.status !== 'completed' || !sourceCycle.completedAt) {
+      throw AppError.conflict('La decision no apunta a un ciclo fuente completado valido.', 'DECISION_SOURCE_CYCLE_INVALID');
+    }
+  }
+
+  private async applyContinueExperimentingEffectTx(tx: any, projectId: string, decision: any, idempotencyKey: string) {
+    const sourceCycle = await tx.initiativeCycle.findUnique({ where: { id: decision.sourceCycleId } });
+    if (!sourceCycle || sourceCycle.projectId !== projectId || sourceCycle.status !== 'completed') {
+      throw AppError.conflict('La decision no apunta a un ciclo fuente completado valido.', 'DECISION_SOURCE_CYCLE_INVALID');
+    }
+    const existingNewer = await tx.initiativeCycle.findFirst({
+      where: { projectId, cycleNumber: { gt: sourceCycle.cycleNumber } },
+      orderBy: { cycleNumber: 'desc' },
+    }).catch(() => null);
+    if (existingNewer) {
+      throw AppError.conflict('La iniciativa ya continuo despues de esta decision.', 'DECISION_EFFECTS_ALREADY_ADVANCED');
+    }
+    const reentryStep = this.resolveDecisionReentryStep(decision);
+    const maxCycle = await tx.initiativeCycle.findFirst({ where: { projectId }, orderBy: { cycleNumber: 'desc' } });
+    const nextCycle = await tx.initiativeCycle.create({
+      data: {
+        projectId,
+        cycleNumber: (maxCycle?.cycleNumber ?? sourceCycle.cycleNumber ?? 0) + 1,
+        parentCycleId: sourceCycle.id,
+        basedOnCycleId: null,
+        triggerType: 'decision',
+        triggerRefId: decision.id,
+        startStep: reentryStep,
+        currentStep: reentryStep,
+        status: 'active',
+      },
+    });
+    await this.createDecisionReentryStepStatesTx(tx, sourceCycle.id, nextCycle.id, reentryStep);
+    const fallbackConfig = await this.findFallbackConfigurationTx(tx, projectId, sourceCycle.id, reentryStep);
+    const version = await this.nextConfigVersionTx(tx, projectId, nextCycle.id, reentryStep);
+    const sourceContext = {
+      ...(fallbackConfig?.sourceContextJson ?? {}),
+      decisionReentry: {
+        decisionId: decision.id,
+        sourceCycleId: sourceCycle.id,
+        outcome: decision.outcome,
+        reentryStep,
+        rationale: decision.rationale,
+      },
+    };
+    const configurationJson = this.buildStepConfiguration(reentryStep, version, sourceContext, sourceContext);
+    const nextConfig = await tx.adaptiveStepConfiguration.create({
+      data: {
+        projectId,
+        cycleId: nextCycle.id,
+        stepNumber: reentryStep,
+        version,
+        status: 'active',
+        routeType: sourceContext.routeType ?? fallbackConfig?.routeType ?? 'explore_validate',
+        depthLevel: sourceContext.depthLevel ?? fallbackConfig?.depthLevel ?? 'standard',
+        configurationJson,
+        sourceContextJson: sourceContext,
+      },
+    });
+    await this.materializeCheckpointTx(tx, projectId, nextConfig, this.firstCheckpointForStep(reentryStep), [], decision.decidedById, `decision-reentry-checkpoint:${decision.id}:${nextCycle.id}:${reentryStep}`);
+    await tx.project.update({
+      where: { id: projectId },
+      data: { status: 'IN_PROGRESS', currentStep: reentryStep, lastModified: new Date() },
+    });
+    await tx.initiativePortfolioMeta.updateMany({
+      where: { projectId },
+      data: { status: `en_step_${reentryStep}`, currentStep: `Step ${reentryStep}`, readyForDecision: false } as any,
+    });
+    await this.upsertProgressSignalTx(tx, projectId, {
+      step: reentryStep,
+      checkpointCode: this.firstCheckpointForStep(reentryStep),
+      checkpointTitle: `Reentrada Step ${reentryStep}`,
+      health: 'healthy',
+      hypothesis: 'Nueva iteracion autorizada por Decision.',
+      evidence: 'Se conserva la evidencia historica como referencia; no se copia output.',
+      blocker: '',
+      actorRequired: 'Owner de iniciativa',
+      nextAction: `Continuar la iniciativa desde Step ${reentryStep}.`,
+      upcomingDecision: 'Completar la nueva iteracion metodologica.',
+      updatedAt: new Date().toISOString(),
+    });
+    const route = await tx.continuationRoute.create({
+      data: {
+        projectId,
+        decisionId: decision.id,
+        routeType: 'new_cycle',
+        resultingCycleId: nextCycle.id,
+        idempotencyKey,
+      },
+    });
+    await this.recordEventTx(tx, projectId, 'decision_effects_applied', 'Efectos de decision aplicados: nueva iteracion.', {
+      decisionId: decision.id,
+      routeType: 'new_cycle',
+      resultingCycleId: nextCycle.id,
+      reentryStep,
+    }, decision.decidedById, `decision-effects-applied:${decision.id}`);
+    await this.recordEventTx(tx, projectId, 'initiative_reentered', 'La iniciativa continua en un nuevo ciclo.', {
+      decisionId: decision.id,
+      sourceCycleId: sourceCycle.id,
+      resultingCycleId: nextCycle.id,
+      reentryStep,
+    }, decision.decidedById, `initiative-reentered:${decision.id}`);
+    return route;
+  }
+
+  private async applyImplementationHandoffEffectTx(tx: any, projectId: string, decision: any, idempotencyKey: string) {
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    const handoff = await tx.implementationHandoff.create({
+      data: {
+        projectId,
+        decisionId: decision.id,
+        approvedScopeJson: packageSnapshot.decisionPackage ?? packageSnapshot.package ?? packageSnapshot,
+        conditionsJson: decision.conditionsJson ?? null,
+        metricsJson: this.extractMetricsSnapshot(decision),
+        evidenceSnapshotJson: this.extractEvidenceSnapshot(decision),
+        risksJson: this.extractRisksSnapshot(decision),
+      },
+    });
+    await this.updateDecisionLifecycleProjectionTx(tx, projectId, 'IMPLEMENTATION_APPROVED', 'implementation_approved', 'Implementation approved');
+    const route = await tx.continuationRoute.create({
+      data: { projectId, decisionId: decision.id, routeType: 'implementation_handoff', handoffId: handoff.id, idempotencyKey },
+    });
+    await this.recordEventTx(tx, projectId, 'decision_effects_applied', 'Efectos de decision aplicados: handoff de implementacion.', { decisionId: decision.id, routeType: 'implementation_handoff', handoffId: handoff.id }, decision.decidedById, `decision-effects-applied:${decision.id}`);
+    await this.recordEventTx(tx, projectId, 'implementation_handoff_created', 'Handoff liviano de implementacion creado.', { decisionId: decision.id, handoffId: handoff.id }, decision.decidedById, `implementation-handoff-created:${decision.id}`);
+    return route;
+  }
+
+  private async applyScalingHandoffEffectTx(tx: any, projectId: string, decision: any, idempotencyKey: string) {
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    const handoff = await tx.scalingHandoff.create({
+      data: {
+        projectId,
+        decisionId: decision.id,
+        validatedScopeJson: packageSnapshot.validatedScope ?? packageSnapshot.decisionPackage ?? packageSnapshot,
+        scaleConditionsJson: decision.conditionsJson ?? null,
+        impactSnapshotJson: this.extractImpactSnapshot(decision),
+        dependenciesJson: packageSnapshot.dependencies ?? [],
+        risksJson: this.extractRisksSnapshot(decision),
+        unvalidatedSegmentsJson: packageSnapshot.unvalidatedSegments ?? { note: 'Scale requiere distinguir validacion real de extrapolacion.' },
+      },
+    });
+    await this.updateDecisionLifecycleProjectionTx(tx, projectId, 'SCALING_APPROVED', 'scaling_approved', 'Scaling approved');
+    const route = await tx.continuationRoute.create({
+      data: { projectId, decisionId: decision.id, routeType: 'scaling_handoff', handoffId: handoff.id, idempotencyKey },
+    });
+    await this.recordEventTx(tx, projectId, 'decision_effects_applied', 'Efectos de decision aplicados: handoff de escalamiento.', { decisionId: decision.id, routeType: 'scaling_handoff', handoffId: handoff.id }, decision.decidedById, `decision-effects-applied:${decision.id}`);
+    await this.recordEventTx(tx, projectId, 'scaling_handoff_created', 'Handoff liviano de escalamiento creado.', { decisionId: decision.id, handoffId: handoff.id }, decision.decidedById, `scaling-handoff-created:${decision.id}`);
+    return route;
+  }
+
+  private async applyPauseEffectTx(tx: any, projectId: string, decision: any, idempotencyKey: string) {
+    await this.updateDecisionLifecycleProjectionTx(tx, projectId, 'PAUSED', 'paused', 'Paused');
+    const route = await tx.continuationRoute.create({
+      data: {
+        projectId,
+        decisionId: decision.id,
+        routeType: 'paused',
+        idempotencyKey,
+        handoffId: null,
+      },
+    });
+    await this.recordEventTx(tx, projectId, 'decision_effects_applied', 'Efectos de decision aplicados: iniciativa pausada.', { decisionId: decision.id, routeType: 'paused', reason: decision.rationale, conditions: decision.conditionsJson ?? null }, decision.decidedById, `decision-effects-applied:${decision.id}`);
+    await this.recordEventTx(tx, projectId, 'initiative_paused', 'La iniciativa quedo pausada sin borrar historial.', { decisionId: decision.id, pausedAt: route.appliedAt }, decision.decidedById, `initiative-paused:${decision.id}`);
+    return route;
+  }
+
+  private async applyCloseWithLearningEffectTx(tx: any, projectId: string, decision: any, idempotencyKey: string) {
+    const closure = await tx.closureSummary.create({
+      data: {
+        projectId,
+        decisionId: decision.id,
+        closureReason: decision.rationale,
+        learningSummaryJson: this.extractLearningSnapshot(decision),
+        validatedClaimsJson: this.extractValidatedClaimsSnapshot(decision),
+        evidenceReferencesJson: this.extractEvidenceSnapshot(decision),
+        reusableLearningJson: this.extractReusableLearningSnapshot(decision),
+        futureConsiderationsJson: this.recordFrom(decision.presentationSnapshotJson).futureConsiderations ?? [],
+      },
+    });
+    await this.updateDecisionLifecycleProjectionTx(tx, projectId, 'CLOSED', 'closed', 'Closed');
+    const route = await tx.continuationRoute.create({
+      data: { projectId, decisionId: decision.id, routeType: 'closed', handoffId: closure.id, idempotencyKey },
+    });
+    await this.recordEventTx(tx, projectId, 'decision_effects_applied', 'Efectos de decision aplicados: cierre con aprendizaje.', { decisionId: decision.id, routeType: 'closed', closureSummaryId: closure.id }, decision.decidedById, `decision-effects-applied:${decision.id}`);
+    await this.recordEventTx(tx, projectId, 'initiative_closed', 'La iniciativa se cerro preservando aprendizaje e historial.', { decisionId: decision.id, closureSummaryId: closure.id }, decision.decidedById, `initiative-closed:${decision.id}`);
+    return route;
+  }
+
+  private async updateDecisionLifecycleProjectionTx(tx: any, projectId: string, projectStatus: string, portfolioStatus: string, portfolioStep: string) {
+    await tx.project.update({
+      where: { id: projectId },
+      data: { status: projectStatus, lastModified: new Date() } as any,
+    });
+    await tx.initiativePortfolioMeta.updateMany({
+      where: { projectId },
+      data: { status: portfolioStatus, currentStep: portfolioStep, readyForDecision: false } as any,
+    });
+  }
+
+  private async createDecisionReentryStepStatesTx(tx: any, sourceCycleId: string, nextCycleId: string, reentryStep: StepNumber) {
+    for (const stepNumber of [0, 1, 2, 3, 4] as StepNumber[]) {
+      const confirmedOutput = await tx.adaptiveStepOutput.findFirst({
+        where: { cycleId: sourceCycleId, stepNumber, status: 'confirmed' },
+        orderBy: { version: 'desc' },
+      }).catch(() => null);
+      const state = stepNumber < reentryStep && confirmedOutput
+        ? 'inherited'
+        : stepNumber === reentryStep
+          ? 'active'
+          : 'pending';
+      await tx.cycleStepState.create({
+        data: {
+          cycleId: nextCycleId,
+          stepNumber,
+          state,
+          inheritedFromCycleId: state === 'inherited' ? sourceCycleId : null,
+          inheritedFromOutputId: state === 'inherited' ? confirmedOutput?.id ?? null : null,
+        },
+      });
+    }
+  }
+
+  private async findFallbackConfigurationTx(tx: any, projectId: string, sourceCycleId: string, reentryStep: StepNumber) {
+    return tx.adaptiveStepConfiguration.findFirst({
+      where: { projectId, cycleId: sourceCycleId, stepNumber: reentryStep },
+      orderBy: { version: 'desc' },
+    }).catch(() => null);
+  }
+
+  private resolveDecisionReentryStep(decision: any): StepNumber {
+    const readiness = this.recordFrom(decision.readinessSnapshotJson);
+    const issues = [
+      ...(Array.isArray(readiness.hardBlockers) ? readiness.hardBlockers : []),
+      ...(Array.isArray(readiness.conditions) ? readiness.conditions : []),
+      ...(Array.isArray(readiness.unresolvedQuestions) ? readiness.unresolvedQuestions : []),
+    ];
+    const mapped = issues
+      .map((issue: any) => this.stepForReadinessDimension(String(issue?.dimension ?? '')))
+      .filter((step): step is StepNumber => step != null);
+    if (mapped.length > 0) return Math.min(...mapped) as StepNumber;
+    return 3;
+  }
+
+  private stepForReadinessDimension(dimension: string): StepNumber | null {
+    if (dimension === 'evidence' || dimension === 'impact') return 2;
+    if (dimension === 'execution' || dimension === 'risk') return 3;
+    if (dimension === 'governance') return 4;
+    return null;
+  }
+
+  private extractMetricsSnapshot(decision: any) {
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    const presentation = this.recordFrom(decision.presentationSnapshotJson);
+    return packageSnapshot.metrics ?? presentation.metrics ?? packageSnapshot.successMetrics ?? null;
+  }
+
+  private extractEvidenceSnapshot(decision: any) {
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    const presentation = this.recordFrom(decision.presentationSnapshotJson);
+    return packageSnapshot.evidenceReferences ?? presentation.evidence ?? presentation.evidenceReferences ?? null;
+  }
+
+  private extractRisksSnapshot(decision: any) {
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    const presentation = this.recordFrom(decision.presentationSnapshotJson);
+    return packageSnapshot.risks ?? presentation.risks ?? null;
+  }
+
+  private extractImpactSnapshot(decision: any) {
+    const readiness = this.recordFrom(decision.readinessSnapshotJson);
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    return packageSnapshot.impact ?? readiness.dimensions?.impact ?? null;
+  }
+
+  private extractLearningSnapshot(decision: any) {
+    const presentation = this.recordFrom(decision.presentationSnapshotJson);
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    return presentation.learning ?? presentation.step4Output ?? packageSnapshot.learning ?? packageSnapshot;
+  }
+
+  private extractValidatedClaimsSnapshot(decision: any) {
+    const presentation = this.recordFrom(decision.presentationSnapshotJson);
+    return presentation.validatedClaims ?? presentation.truthClaims ?? null;
+  }
+
+  private extractReusableLearningSnapshot(decision: any) {
+    const presentation = this.recordFrom(decision.presentationSnapshotJson);
+    const packageSnapshot = this.recordFrom(decision.packageSnapshotJson);
+    return presentation.reusableLearning ?? packageSnapshot.reusableLearning ?? null;
+  }
+
+  private async buildDecisionEffectsResult(db: any, projectId: string, decisionId: string, route: any): Promise<DecisionEffectsResult> {
+    const decision = await db.decision.findFirst({ where: { id: decisionId, projectId } });
+    if (!decision) throw AppError.notFound('Decision', 'DECISION_NOT_FOUND');
+    const [implementationHandoff, scalingHandoff, closureSummary] = await Promise.all([
+      db.implementationHandoff?.findFirst ? db.implementationHandoff.findFirst({ where: { decisionId } }) : null,
+      db.scalingHandoff?.findFirst ? db.scalingHandoff.findFirst({ where: { decisionId } }) : null,
+      db.closureSummary?.findFirst ? db.closureSummary.findFirst({ where: { decisionId } }) : null,
+    ]);
+    return {
+      decision: this.mapDecision(decision),
+      route: this.mapContinuationRoute(route),
+      lifecycleProjection: this.lifecycleProjectionForRoute(route.routeType),
+      resultingCycleId: route.resultingCycleId ?? null,
+      handoff: implementationHandoff ?? scalingHandoff ?? null,
+      closureSummary: closureSummary ?? null,
+    };
+  }
+
+  private lifecycleProjectionForRoute(routeType: ContinuationRouteType | string) {
+    if (routeType === 'new_cycle') return 'active';
+    if (routeType === 'implementation_handoff') return 'implementation_approved';
+    if (routeType === 'scaling_handoff') return 'scaling_approved';
+    if (routeType === 'paused') return 'paused';
+    return 'closed';
+  }
+
+  private mapDecisionRequest(row: any): DecisionRequestResult {
+    return {
+      id: row.id,
+      projectId: row.projectId,
+      sourceCycleId: row.sourceCycleId,
+      requestedById: row.requestedById,
+      requestedAt: row.requestedAt,
+      status: row.status,
+      authorityType: row.authorityType,
+      authorityUserId: row.authorityUserId ?? null,
+      readinessSnapshotJson: row.readinessSnapshotJson,
+      authoritySnapshotJson: row.authoritySnapshotJson,
+      decisionPackageSnapshotJson: row.decisionPackageSnapshotJson,
+      recommendationSnapshotJson: row.recommendationSnapshotJson ?? null,
+      presentationSnapshotJson: row.presentationSnapshotJson ?? null,
+      requestVersion: row.requestVersion,
+      idempotencyKey: row.idempotencyKey,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  private mapDecision(row: any): DecisionResult {
+    return {
+      id: row.id,
+      projectId: row.projectId,
+      sourceCycleId: row.sourceCycleId,
+      decisionRequestId: row.decisionRequestId,
+      outcome: row.outcome,
+      decidedById: row.decidedById,
+      decidedAt: row.decidedAt,
+      rationale: row.rationale,
+      conditionsJson: row.conditionsJson ?? null,
+      authoritySnapshotJson: row.authoritySnapshotJson,
+      readinessSnapshotJson: row.readinessSnapshotJson,
+      recommendationSnapshotJson: row.recommendationSnapshotJson ?? null,
+      packageSnapshotJson: row.packageSnapshotJson,
+      presentationSnapshotJson: row.presentationSnapshotJson,
+      idempotencyKey: row.idempotencyKey,
+      createdAt: row.createdAt,
+    };
+  }
+
+  private mapContinuationRoute(row: any): ContinuationRouteResult {
+    return {
+      id: row.id,
+      projectId: row.projectId,
+      decisionId: row.decisionId,
+      routeType: row.routeType,
+      resultingCycleId: row.resultingCycleId ?? null,
+      handoffId: row.handoffId ?? null,
+      appliedAt: row.appliedAt,
+      idempotencyKey: row.idempotencyKey ?? null,
+      createdAt: row.createdAt,
+    };
+  }
+
+  private async getOperationalCycleReadOnly(projectId: string, client?: any) {
+    const db = client ?? this.prisma as any;
+    const active = await db.initiativeCycle.findFirst({
+      where: { projectId, status: 'active' },
+      orderBy: { cycleNumber: 'desc' },
+    });
+    if (active) return active;
+    const latest = await db.initiativeCycle.findFirst({
+      where: { projectId },
+      orderBy: { cycleNumber: 'desc' },
+    });
+    if (latest) return latest;
+    throw AppError.conflict('La iniciativa no tiene un ciclo operativo inicializado.', 'NO_OPERATIONAL_CYCLE');
+  }
+
+  private assertCycleMutable(cycle: any) {
+    if (cycle?.status === 'completed' || cycle?.status === 'superseded') {
+      throw AppError.conflict('El contenido confirmado de un ciclo historico es de solo lectura. Continua la iniciativa mediante un nuevo ciclo.', 'HISTORICAL_CYCLE_READ_ONLY');
+    }
+  }
+
+  private async resolveInitiativeAlignment(project: any, client?: any): Promise<InitiativeAlignmentResult> {
+    const db = client ?? this.prisma as any;
+    const governance = db.initiativeGovernance?.findUnique
+      ? await db.initiativeGovernance.findUnique({ where: { projectId: project.id } })
+        ?? (db.initiativeGovernance?.findFirst ? await db.initiativeGovernance.findFirst({ where: { projectId: project.id } }) : null)
+      : db.initiativeGovernance?.findFirst
+        ? await db.initiativeGovernance.findFirst({ where: { projectId: project.id } })
+        : null;
+    const portfolioMeta = (project.portfolioMeta ?? [])[0] ?? (db.initiativePortfolioMeta?.findFirst ? await db.initiativePortfolioMeta.findFirst({
+      where: { projectId: project.id },
+      orderBy: { createdAt: 'asc' },
+    }) : null);
+    return this.initiativeCompletion.resolveAlignment({
+      projectId: project.id,
+      governanceMode: governance?.mode ?? null,
+      hasExplicitGovernanceConfig: Boolean(governance),
+      challengeId: portfolioMeta?.challengeId ?? null,
+      strategicFrontId: portfolioMeta?.strategicFrontId ?? portfolioMeta?.challenge?.strategicFrontId ?? null,
+    });
+  }
+
+  private async hasMethodologicalCompletion(projectId: string, cycleId: string, client?: any): Promise<boolean> {
+    const db = client ?? this.prisma as any;
+    const cycle = await db.initiativeCycle.findUnique({ where: { id: cycleId } });
+    if (cycle?.projectId !== projectId || cycle.status !== 'completed' || !cycle.completedAt) return false;
+    const step4Output = await db.adaptiveStepOutput.findFirst({
+      where: { projectId, cycleId, stepNumber: 4, status: 'confirmed' },
+      orderBy: { version: 'desc' },
+    });
+    return Boolean(step4Output?.confirmedAt);
+  }
+
+  private async loadDecisionReadinessInput(project: any, cycle: any, decisionType: DecisionType, client?: any): Promise<DecisionReadinessInput> {
+    const db = client ?? this.prisma as any;
+    const [claims, evidence, validations, impacts, attentionItems, outputs] = await Promise.all([
+      db.truthClaim.findMany({ where: { projectId: project.id } }),
+      db.evidence.findMany({ where: { projectId: project.id } }),
+      db.truthValidation.findMany({ where: { projectId: project.id } }),
+      db.impactAssertion.findMany({ where: { projectId: project.id } }),
+      db.attentionItem.findMany({ where: { projectId: project.id, status: 'open' } }),
+      db.adaptiveStepOutput.findMany({ where: { projectId: project.id, cycleId: cycle.id }, orderBy: [{ stepNumber: 'asc' }, { version: 'desc' }] }),
+    ]);
+    const outputJson = outputs.map((item: any) => item.outputJson ?? {});
+    const unresolvedFromOutputs = outputJson.reduce((count: number, output: any) => count + this.countMeaningfulFields(output, [
+      'unresolvedQuestions',
+      'pendingQuestions',
+      'validationQuestions',
+      'learningQuestions',
+      'openQuestions',
+      'hypotheses',
+    ]), 0);
+    const capturedLearningFromOutputs = outputJson.reduce((count: number, output: any) => count + this.countMeaningfulFields(output, [
+      'learning',
+      'learnings',
+      'insights',
+      'resultAnalysis',
+      'evidenceNarrative',
+      'hypothesisResult',
+      'decision',
+    ]), 0);
+    const operationalBlockersFromOutputs = outputJson.reduce((count: number, output: any) => count + this.countMeaningfulFields(output, [
+      'operationalBlockers',
+      'blockers',
+      'dependencies',
+    ]), 0);
+    const risksFromOutputs = outputJson.reduce((count: number, output: any) => count + this.countMeaningfulFields(output, [
+      'risks',
+      'mainRisk',
+      'riskOfBeingWrong',
+      'limitations',
+    ]), 0);
+
+    return {
+      projectId: project.id,
+      cycleId: cycle.id,
+      decisionType,
+      evidenceContext: {
+        claimCount: claims.length,
+        evidenceCount: evidence.length,
+        supportingEvidenceCount: evidence.filter((item: any) => item.truthStatus === 'supports').length,
+        contradictedEvidenceCount: evidence.filter((item: any) => item.truthStatus === 'contradicts').length,
+        insufficientEvidenceCount: evidence.filter((item: any) => item.truthStatus === 'insufficient').length,
+        supportedClaimCount: claims.filter((item: any) => item.verificationState === 'supported').length,
+        contradictedClaimCount: claims.filter((item: any) => item.verificationState === 'contradicted').length,
+        insufficientClaimCount: claims.filter((item: any) => item.verificationState === 'insufficient').length,
+        supportedValidationCount: validations.filter((item: any) => item.result === 'supported').length,
+        contradictedValidationCount: validations.filter((item: any) => item.result === 'contradicted').length,
+        insufficientValidationCount: validations.filter((item: any) => item.result === 'insufficient').length,
+      },
+      impactContext: {
+        declaredCount: impacts.filter((item: any) => item.status === 'declared').length,
+        estimatedCount: impacts.filter((item: any) => item.status === 'estimated').length,
+        validatedCount: impacts.filter((item: any) => item.status === 'validated').length,
+        realizedCount: impacts.filter((item: any) => item.status === 'realized').length,
+      },
+      executionContext: {
+        currentStep: this.toStepNumber(cycle.currentStep ?? project.currentStep ?? 0),
+        hasExecutionSignal: outputJson.some((output: any) => this.hasAnyMeaningfulField(output, ['executionPlan', 'executionDesign', 'selectedBet', 'experimentPlan', 'pilotPlan'])),
+        hasOperationalReadinessSignal: outputJson.some((output: any) => this.hasAnyMeaningfulField(output, ['operationalReadiness', 'operationalReadinessChecklist', 'readiness', 'transferOrClosure'])),
+        hasProvenExecutionReadiness: false,
+        openOperationalBlockerCount: attentionItems.filter((item: any) => this.isOperationalAttention(item)).length + operationalBlockersFromOutputs,
+      },
+      riskContext: {
+        hasRiskSignal: attentionItems.some((item: any) => this.isRiskAttention(item)) || risksFromOutputs > 0 || this.hasValue(project.step0Data?.mainRisk),
+        hasProvenRiskReadiness: false,
+        knownRiskCount: attentionItems.filter((item: any) => this.isRiskAttention(item)).length + risksFromOutputs + (this.hasValue(project.step0Data?.mainRisk) ? 1 : 0),
+        openHighRiskCount: attentionItems.filter((item: any) => this.isRiskAttention(item) && item.severity === 'high').length,
+        openCriticalRiskCount: attentionItems.filter((item: any) => this.isRiskAttention(item) && item.severity === 'critical').length,
+      },
+      governanceContext: {
+        hasProjectOwner: this.hasValue(project.ownerId),
+        hasActiveTeamMember: (project.teamMembers ?? []).some((member: any) => member.status === 'ACTIVE' || member.status === 'active'),
+        hasPortfolioContext: (project.portfolioMeta ?? []).length > 0,
+      },
+      learningContext: {
+        unresolvedQuestionCount: unresolvedFromOutputs + this.countMeaningfulFields(project.step0Data ?? {}, ['pendingQuestions', 'validationQuestions']),
+        capturedLearningCount: capturedLearningFromOutputs,
+      },
+    };
+  }
+
+  private isOperationalAttention(item: any) {
+    const text = `${item.category ?? ''} ${item.reason ?? ''} ${item.exitCondition ?? ''}`.toLowerCase();
+    return /operat|ejec|bloque|depend|aprob/.test(text);
+  }
+
+  private isRiskAttention(item: any) {
+    const text = `${item.category ?? ''} ${item.reason ?? ''} ${item.exitCondition ?? ''}`.toLowerCase();
+    return /risk|riesgo|legal|regulator|datos|seguridad|bloque/.test(text);
+  }
+
+  private hasAnyMeaningfulField(source: any, fields: string[]) {
+    return fields.some((field) => this.countMeaningfulFields(source, [field]) > 0);
+  }
+
+  private countMeaningfulFields(source: any, fields: string[]): number {
+    if (!source || typeof source !== 'object') return 0;
+    let count = 0;
+    for (const field of fields) count += this.countMeaningfulValue(source[field]);
+    return count;
+  }
+
+  private countMeaningfulValue(value: unknown): number {
+    if (Array.isArray(value)) return value.filter((item) => this.hasValue(item)).length;
+    if (value && typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0 ? 1 : 0;
+    return this.hasValue(value) ? 1 : 0;
+  }
+
+  private toStepNumber(value: unknown): StepNumber {
+    const numeric = Number(value);
+    if (numeric === 1 || numeric === 2 || numeric === 3 || numeric === 4) return numeric;
+    return 0;
   }
 
   private async getAccessibleProject(projectId: string, userId: string, role: Role) {
@@ -850,6 +2123,383 @@ export class AdaptiveCoreService {
       if (!isMember) throw AppError.forbidden('No tienes acceso a este proyecto.', 'PROJECT_ACCESS_DENIED');
     }
     return project as any;
+  }
+
+  private parseCriticalChangeImpact(raw: unknown): ChangeImpactResult {
+    const impact = raw as Partial<ChangeImpactResult> | null;
+    if (!impact || impact.assessmentVersion !== 1 || !impact.transition || !impact.sourceCycleId) {
+      throw AppError.badRequest('El cambio critico no tiene una evaluacion aplicable.', 'CRITICAL_CHANGE_IMPACT_MISSING');
+    }
+    return impact as ChangeImpactResult;
+  }
+
+  private async lockCriticalChangeTx(tx: any, criticalChangeId: string) {
+    if (typeof tx.$queryRawUnsafe !== 'function') return;
+    await tx.$queryRawUnsafe('SELECT id FROM "CriticalChange" WHERE id = $1 FOR UPDATE', criticalChangeId);
+  }
+
+  private async validateReturnBasedOnCycleTx(tx: any, projectId: string, sourceCycle: any, basedOnCycleId: string) {
+    const basedOnCycle = await tx.initiativeCycle.findUnique({ where: { id: basedOnCycleId } });
+    if (!basedOnCycle || basedOnCycle.projectId !== projectId) {
+      throw AppError.badRequest('El ciclo historico base no pertenece a la iniciativa.', 'CRITICAL_CHANGE_BASED_ON_INVALID');
+    }
+    if (basedOnCycle.id === sourceCycle.id) {
+      throw AppError.badRequest('El ciclo base debe ser historico y distinto del ciclo actual.', 'CRITICAL_CHANGE_BASED_ON_CURRENT');
+    }
+    if (basedOnCycle.status === 'active') {
+      throw AppError.badRequest('El ciclo base debe ser historico, no activo.', 'CRITICAL_CHANGE_BASED_ON_ACTIVE');
+    }
+    if (Number(basedOnCycle.cycleNumber ?? 0) >= Number(sourceCycle.cycleNumber ?? 0)) {
+      throw AppError.badRequest('El ciclo base debe anteceder al ciclo operativo actual.', 'CRITICAL_CHANGE_BASED_ON_ORDER_INVALID');
+    }
+    return basedOnCycle;
+  }
+
+  private resolveConfirmedReentryStep(impact: ChangeImpactResult, requested?: StepNumber | null): StepNumber | null {
+    if (impact.transition === 'same_cycle') {
+      if (impact.reentryStep === null || impact.reentryStep === undefined) {
+        if (requested !== undefined && requested !== null) {
+          throw AppError.badRequest('El assessment same-cycle no define reentrada; no confirmes un paso artificial.', 'CRITICAL_CHANGE_REENTRY_MISMATCH');
+        }
+        return null;
+      }
+      if (requested !== undefined && requested !== null && requested !== impact.reentryStep) {
+        throw AppError.badRequest('El punto de reentrada confirmado no coincide con la evaluacion.', 'CRITICAL_CHANGE_REENTRY_MISMATCH');
+      }
+      return impact.reentryStep;
+    }
+
+    const assessed = impact.reentryStep;
+    if (assessed === null || assessed === undefined) {
+      throw AppError.badRequest('La evaluacion no define un punto de reentrada.', 'CRITICAL_CHANGE_REENTRY_MISSING');
+    }
+    if (requested !== undefined && requested !== null && requested !== assessed) {
+      throw AppError.badRequest('El punto de reentrada confirmado no coincide con la evaluacion.', 'CRITICAL_CHANGE_REENTRY_MISMATCH');
+    }
+    return assessed as StepNumber;
+  }
+
+  private resolveConfirmedBasedOnCycleId(impact: ChangeImpactResult, assessed?: string | null, requested?: string | null): string | null {
+    if (impact.transition !== 'return_to_prior_direction') return null;
+    const basedOnCycleId = requested ?? assessed ?? impact.basedOnCycleId ?? null;
+    if (!basedOnCycleId) {
+      throw AppError.badRequest('Retomar una direccion anterior requiere basedOnCycleId.', 'CRITICAL_CHANGE_BASED_ON_REQUIRED');
+    }
+    if (assessed && requested && assessed !== requested) {
+      throw AppError.badRequest('El ciclo base confirmado no coincide con la evaluacion.', 'CRITICAL_CHANGE_BASED_ON_MISMATCH');
+    }
+    return basedOnCycleId;
+  }
+
+  private async applyCriticalChangeSameCycleTx(
+    tx: any,
+    projectId: string,
+    criticalChange: any,
+    sourceCycle: any,
+    impact: ChangeImpactResult,
+    reentryStep: StepNumber | null,
+    appliedAt: Date,
+  ) {
+    await this.upsertProgressSignalTx(tx, projectId, {
+      step: sourceCycle.currentStep ?? reentryStep,
+      checkpointCode: 'critical-change-applied',
+      checkpointTitle: 'Cambio critico aplicado',
+      health: impact.materialChange ? 'attention' : 'healthy',
+      hypothesis: String(criticalChange.nextValueJson ?? ''),
+      evidence: String(criticalChange.reason ?? 'Cambio critico aplicado sin crear nuevo ciclo.'),
+      evidenceStrength: 'weak',
+      blocker: '',
+      actorRequired: 'Owner de iniciativa',
+      nextAction: 'Continuar en el ciclo actual con la transicion confirmada.',
+      upcomingDecision: 'Seguimiento del cambio critico aplicado.',
+      updatedAt: appliedAt.toISOString(),
+      criticalChangeId: criticalChange.id,
+      criticalChangeTransition: impact.transition,
+    });
+    return null;
+  }
+
+  private async applyCriticalChangeNewCycleTx(
+    tx: any,
+    projectId: string,
+    userId: string,
+    criticalChange: any,
+    sourceCycle: any,
+    impact: ChangeImpactResult,
+    reentryStep: StepNumber | null,
+    appliedAt: Date,
+  ) {
+    if (impact.transition !== 'new_cycle') {
+      throw AppError.badRequest('La evaluacion no recomienda nuevo ciclo.', 'CRITICAL_CHANGE_TRANSITION_INVALID');
+    }
+    if (reentryStep === null) {
+      throw AppError.badRequest('La evaluacion new-cycle requiere reentrada.', 'CRITICAL_CHANGE_REENTRY_MISSING');
+    }
+    const activeCycles = await tx.initiativeCycle.findMany({ where: { projectId, status: 'active' } });
+    const activeOutsideSource = activeCycles.filter((cycle: any) => cycle.id !== sourceCycle.id);
+    if (activeOutsideSource.length > 0 || sourceCycle.status !== 'active') {
+      throw AppError.conflict('La iniciativa ya tiene otro ciclo activo.', 'ACTIVE_CYCLE_CONFLICT');
+    }
+
+    await tx.initiativeCycle.update({
+      where: { id: sourceCycle.id },
+      data: { status: 'superseded', completedAt: appliedAt, currentStep: sourceCycle.currentStep ?? reentryStep },
+    });
+
+    const latestCycle = await tx.initiativeCycle.findFirst({
+      where: { projectId },
+      orderBy: { cycleNumber: 'desc' },
+    });
+    const nextCycle = await tx.initiativeCycle.create({
+      data: {
+        projectId,
+        cycleNumber: Number(latestCycle?.cycleNumber ?? sourceCycle.cycleNumber ?? 0) + 1,
+        parentCycleId: sourceCycle.id,
+        basedOnCycleId: null,
+        triggerType: 'critical_change',
+        triggerRefId: criticalChange.id,
+        startStep: reentryStep,
+        currentStep: reentryStep,
+        status: 'active',
+      },
+    });
+
+    await this.createCriticalChangeCycleStepStatesTx(tx, sourceCycle.id, nextCycle.id, impact, reentryStep);
+
+    const sourceConfig = await tx.adaptiveStepConfiguration.findFirst({
+      where: { projectId, cycleId: sourceCycle.id, stepNumber: reentryStep },
+      orderBy: { version: 'desc' },
+    });
+    const fallbackConfig = sourceConfig ?? await tx.adaptiveStepConfiguration.findFirst({
+      where: { projectId, cycleId: sourceCycle.id, status: 'active' },
+      orderBy: [{ stepNumber: 'desc' }, { version: 'desc' }],
+    });
+    if (!fallbackConfig) {
+      throw AppError.badRequest('No existe configuracion fuente para reentrada.', 'REENTRY_CONFIGURATION_MISSING');
+    }
+
+    const nextVersion = await this.nextConfigVersionTx(tx, projectId, nextCycle.id, reentryStep);
+    const nextContext = this.applyCriticalChange(fallbackConfig.sourceContextJson ?? {}, {
+      idempotencyKey: criticalChange.idempotencyKey,
+      field: criticalChange.field,
+      previousValue: criticalChange.previousValueJson,
+      nextValue: criticalChange.nextValueJson,
+      reason: criticalChange.reason ?? undefined,
+      confirmed: true,
+      action: 'update_route',
+    } as CriticalChangeInput);
+    const nextConfigJson = this.buildStepConfiguration(reentryStep, nextVersion, nextContext);
+    const nextConfig = await tx.adaptiveStepConfiguration.create({
+      data: {
+        projectId,
+        cycleId: nextCycle.id,
+        stepNumber: reentryStep,
+        version: nextVersion,
+        status: 'active',
+        routeType: nextContext.routeType ?? fallbackConfig.routeType ?? 'explore_validate',
+        depthLevel: nextContext.depthLevel ?? fallbackConfig.depthLevel ?? 'standard',
+        maturity: nextContext.maturity ?? fallbackConfig.maturity ?? 'problem',
+        configurationJson: nextConfigJson,
+        sourceContextJson: nextContext,
+      },
+    });
+    await this.materializeCheckpointTx(tx, projectId, nextConfig, this.firstCheckpointForStep(reentryStep), [], userId, `critical-change-reentry-checkpoint:${criticalChange.id}:${nextCycle.id}:${reentryStep}`);
+
+    await tx.project.update({
+      where: { id: projectId },
+      data: { currentStep: reentryStep, lastModified: appliedAt },
+    });
+    await this.upsertProgressSignalTx(tx, projectId, {
+      step: reentryStep,
+      checkpointCode: 'critical-change-reentry',
+      checkpointTitle: `Reentrada Step ${reentryStep}`,
+      health: 'attention',
+      hypothesis: String(criticalChange.nextValueJson ?? ''),
+      evidence: String(criticalChange.reason ?? 'Nuevo ciclo creado por cambio critico confirmado.'),
+      evidenceStrength: 'weak',
+      blocker: '',
+      actorRequired: 'Owner de iniciativa',
+      nextAction: `Retomar desde Step ${reentryStep} con el cambio critico aplicado.`,
+      upcomingDecision: 'Completar la reentrada antes de avanzar.',
+      updatedAt: appliedAt.toISOString(),
+      criticalChangeId: criticalChange.id,
+      sourceCycleId: sourceCycle.id,
+      resultingCycleId: nextCycle.id,
+      criticalChangeTransition: impact.transition,
+    });
+    return nextCycle;
+  }
+
+  private async applyCriticalChangeReturnToPriorDirectionTx(
+    tx: any,
+    projectId: string,
+    userId: string,
+    criticalChange: any,
+    sourceCycle: any,
+    impact: ChangeImpactResult,
+    reentryStep: StepNumber | null,
+    basedOnCycleId: string | null,
+    appliedAt: Date,
+  ) {
+    if (impact.transition !== 'return_to_prior_direction') {
+      throw AppError.badRequest('La evaluacion no recomienda retomar direccion anterior.', 'CRITICAL_CHANGE_TRANSITION_INVALID');
+    }
+    if (reentryStep === null) {
+      throw AppError.badRequest('Retomar direccion anterior requiere reentrada.', 'CRITICAL_CHANGE_REENTRY_MISSING');
+    }
+    if (!basedOnCycleId) {
+      throw AppError.badRequest('Retomar direccion anterior requiere basedOnCycleId.', 'CRITICAL_CHANGE_BASED_ON_REQUIRED');
+    }
+    const basedOnCycle = await tx.initiativeCycle.findUnique({ where: { id: basedOnCycleId } });
+    if (!basedOnCycle || basedOnCycle.projectId !== projectId) {
+      throw AppError.badRequest('El ciclo historico base no pertenece a la iniciativa.', 'CRITICAL_CHANGE_BASED_ON_INVALID');
+    }
+    if (basedOnCycle.id === sourceCycle.id) {
+      throw AppError.badRequest('El ciclo base debe ser historico y distinto del ciclo actual.', 'CRITICAL_CHANGE_BASED_ON_CURRENT');
+    }
+    if (basedOnCycle.status === 'active') {
+      throw AppError.badRequest('El ciclo base debe ser historico, no activo.', 'CRITICAL_CHANGE_BASED_ON_ACTIVE');
+    }
+    if (Number(basedOnCycle.cycleNumber ?? 0) >= Number(sourceCycle.cycleNumber ?? 0)) {
+      throw AppError.badRequest('El ciclo base debe anteceder al ciclo operativo actual.', 'CRITICAL_CHANGE_BASED_ON_ORDER_INVALID');
+    }
+
+    const activeCycles = await tx.initiativeCycle.findMany({ where: { projectId, status: 'active' } });
+    const activeOutsideSource = activeCycles.filter((cycle: any) => cycle.id !== sourceCycle.id);
+    if (activeOutsideSource.length > 0 || sourceCycle.status !== 'active') {
+      throw AppError.conflict('La iniciativa ya tiene otro ciclo activo.', 'ACTIVE_CYCLE_CONFLICT');
+    }
+
+    await tx.initiativeCycle.update({
+      where: { id: sourceCycle.id },
+      data: { status: 'superseded', completedAt: appliedAt, currentStep: sourceCycle.currentStep ?? reentryStep },
+    });
+    const latestCycle = await tx.initiativeCycle.findFirst({
+      where: { projectId },
+      orderBy: { cycleNumber: 'desc' },
+    });
+    const nextCycle = await tx.initiativeCycle.create({
+      data: {
+        projectId,
+        cycleNumber: Number(latestCycle?.cycleNumber ?? sourceCycle.cycleNumber ?? 0) + 1,
+        parentCycleId: sourceCycle.id,
+        basedOnCycleId: basedOnCycle.id,
+        triggerType: 'return_to_prior_direction',
+        triggerRefId: criticalChange.id,
+        startStep: reentryStep,
+        currentStep: reentryStep,
+        status: 'active',
+      },
+    });
+
+    await this.createCriticalChangeCycleStepStatesTx(tx, sourceCycle.id, nextCycle.id, impact, reentryStep);
+    const fallbackConfig = await tx.adaptiveStepConfiguration.findFirst({
+      where: { projectId, cycleId: basedOnCycle.id, stepNumber: reentryStep },
+      orderBy: { version: 'desc' },
+    }) ?? await tx.adaptiveStepConfiguration.findFirst({
+      where: { projectId, cycleId: sourceCycle.id, stepNumber: reentryStep },
+      orderBy: { version: 'desc' },
+    });
+    if (!fallbackConfig) {
+      throw AppError.badRequest('No existe configuracion historica para reentrada.', 'REENTRY_CONFIGURATION_MISSING');
+    }
+
+    const historicalContext = fallbackConfig.sourceContextJson ?? {};
+    const changedHistoricalContext = this.applyCriticalChange(historicalContext, {
+      idempotencyKey: `critical-change-return-context:${criticalChange.id}`,
+      field: criticalChange.field,
+      previousValue: criticalChange.previousValueJson,
+      nextValue: criticalChange.nextValueJson,
+      reason: criticalChange.reason ?? undefined,
+      confirmed: true,
+    } as CriticalChangeInput);
+    const nextVersion = await this.nextConfigVersionTx(tx, projectId, nextCycle.id, reentryStep);
+    const nextContext = {
+      ...changedHistoricalContext,
+      returnToPriorDirection: {
+        basedOnCycleId: basedOnCycle.id,
+        sourceCycleId: sourceCycle.id,
+        criticalChangeId: criticalChange.id,
+        note: 'Nueva iteracion basada en una direccion anterior; no es rollback.',
+      },
+    };
+    const nextConfigJson = this.buildStepConfiguration(reentryStep, nextVersion, nextContext);
+    const nextConfig = await tx.adaptiveStepConfiguration.create({
+      data: {
+        projectId,
+        cycleId: nextCycle.id,
+        stepNumber: reentryStep,
+        version: nextVersion,
+        status: 'active',
+        routeType: fallbackConfig.routeType ?? 'explore_validate',
+        depthLevel: fallbackConfig.depthLevel ?? 'standard',
+        maturity: fallbackConfig.maturity ?? 'problem',
+        configurationJson: nextConfigJson,
+        sourceContextJson: nextContext,
+      },
+    });
+    await this.materializeCheckpointTx(tx, projectId, nextConfig, this.firstCheckpointForStep(reentryStep), [], userId, `critical-change-return-checkpoint:${criticalChange.id}:${nextCycle.id}:${reentryStep}`);
+
+    await tx.project.update({
+      where: { id: projectId },
+      data: { currentStep: reentryStep, lastModified: appliedAt },
+    });
+    await this.upsertProgressSignalTx(tx, projectId, {
+      step: reentryStep,
+      checkpointCode: 'critical-change-return-reentry',
+      checkpointTitle: `Retomar direccion anterior desde Step ${reentryStep}`,
+      health: 'attention',
+      hypothesis: String(criticalChange.nextValueJson ?? ''),
+      evidence: String(criticalChange.reason ?? 'Nueva iteracion basada en direccion anterior confirmada.'),
+      evidenceStrength: 'weak',
+      blocker: '',
+      actorRequired: 'Owner de iniciativa',
+      nextAction: `Retomar desde Step ${reentryStep} conservando el aprendizaje posterior.`,
+      upcomingDecision: 'Completar la reentrada antes de avanzar.',
+      updatedAt: appliedAt.toISOString(),
+      criticalChangeId: criticalChange.id,
+      sourceCycleId: sourceCycle.id,
+      resultingCycleId: nextCycle.id,
+      basedOnCycleId: basedOnCycle.id,
+      criticalChangeTransition: impact.transition,
+    });
+    return nextCycle;
+  }
+
+  private async createCriticalChangeCycleStepStatesTx(tx: any, sourceCycleId: string, nextCycleId: string, impact: ChangeImpactResult, reentryStep: StepNumber) {
+    const inherited = new Set(impact.inheritedSteps);
+    const reopened = new Set(impact.reopenedSteps);
+    for (const stepNumber of [0, 1, 2, 3, 4] as StepNumber[]) {
+      const sourceOutput = await tx.adaptiveStepOutput.findFirst({
+        where: { cycleId: sourceCycleId, stepNumber, status: 'confirmed' },
+        orderBy: { version: 'desc' },
+      });
+      const sourceState = await tx.cycleStepState.findFirst({ where: { cycleId: sourceCycleId, stepNumber } });
+      const state = stepNumber < reentryStep && inherited.has(stepNumber)
+        ? 'inherited'
+        : stepNumber === reentryStep
+          ? 'active'
+          : stepNumber > reentryStep && reopened.has(stepNumber) && (sourceOutput || sourceState?.state === 'confirmed')
+            ? 'reopened'
+            : 'pending';
+      await tx.cycleStepState.create({
+        data: {
+          cycleId: nextCycleId,
+          stepNumber,
+          state,
+          inheritedFromCycleId: state === 'inherited' ? sourceState?.state === 'inherited' ? sourceState.inheritedFromCycleId ?? sourceCycleId : sourceCycleId : null,
+          inheritedFromOutputId: state === 'inherited' ? sourceOutput?.id ?? sourceState?.inheritedFromOutputId ?? null : null,
+        },
+      });
+    }
+  }
+
+  private firstCheckpointForStep(stepNumber: StepNumber) {
+    return stepNumber === 0 ? 'CP-0.1'
+      : stepNumber === 1 ? 'CP-1.1'
+        : stepNumber === 2 ? 'CP-2.1'
+          : stepNumber === 3 ? 'CP-3.1'
+            : 'CP-4.1';
   }
 
   private buildMasterContext(project: any) {
@@ -953,6 +2603,10 @@ export class AdaptiveCoreService {
       transferredFromStep1: step === 2 ? masterContext.step1Output ?? null : null,
       transferredFromStep2: step === 3 ? masterContext.step2Output ?? null : null,
       transferredFromStep3: step === 4 ? masterContext.step3Output ?? null : null,
+      returnToPriorDirection: masterContext.returnToPriorDirection ?? null,
+      returnedDirectionContext: masterContext.returnToPriorDirection ? {
+        step2Output: masterContext.step2Output ?? null,
+      } : null,
       checkpoints,
     };
   }
@@ -1112,12 +2766,15 @@ export class AdaptiveCoreService {
   private async materializeCheckpointTx(tx: any, projectId: string, config: any, checkpointKey: string, previousAnswers: Record<string, unknown>[], userId?: string, idempotencyKey?: string) {
     const spec = [...STEP0_CHECKPOINTS, ...STEP1_CHECKPOINTS, ...STEP2_CHECKPOINTS, ...STEP3_CHECKPOINTS, ...STEP4_CHECKPOINTS].find((cp) => cp.key === checkpointKey);
     if (!spec) throw new Error(`Unsupported checkpoint ${checkpointKey}`);
-    const exists = await tx.adaptiveCheckpointInstance.findFirst({ where: { projectId, stepConfigurationId: config.id, checkpointKey } });
+    if (!config?.cycleId) throw AppError.badRequest('La configuracion activa no tiene ciclo.', 'CONFIGURATION_CYCLE_MISSING');
+    if (config.projectId && config.projectId !== projectId) throw AppError.badRequest('La configuracion no pertenece a la iniciativa.', 'CONFIG_PROJECT_MISMATCH');
+    const exists = await tx.adaptiveCheckpointInstance.findFirst({ where: { projectId, cycleId: config.cycleId, stepConfigurationId: config.id, checkpointKey } });
     if (exists) return exists;
     const questions = this.buildQuestions(checkpointKey, config.version, config.sourceContextJson ?? {}, previousAnswers);
     const created = await tx.adaptiveCheckpointInstance.create({
       data: {
         projectId,
+        cycleId: config.cycleId,
         stepConfigurationId: config.id,
         stepNumber: checkpointKey.startsWith('CP-4') ? 4 : checkpointKey.startsWith('CP-3') ? 3 : checkpointKey.startsWith('CP-2') ? 2 : checkpointKey.startsWith('CP-1') ? 1 : 0,
         checkpointKey,
@@ -2006,6 +3663,33 @@ export class AdaptiveCoreService {
     };
   }
 
+  private portfolioMetaCompletionUpdate(step4Output: Record<string, any>, routing: InitiativeCompletionRoutingResult) {
+    return {
+      status: routing.route === 'portfolio_presented' ? 'lista_para_decision' : 'cerrada',
+      currentStep: 'Step 4',
+      readyForDecision: routing.portfolioReviewRequired,
+      signalSummary: String(step4Output.recommendation ?? step4Output.narrative?.recommendation ?? ''),
+      nextActionRecommended: routing.portfolioReviewRequired
+        ? 'Esperar revision posterior de Portfolio Lead.'
+        : 'Iniciativa completada; historial disponible en modo lectura.',
+      mainBlocker: '',
+      hypothesisCovered: String(step4Output.hypothesis ?? ''),
+      contributionType: this.portfolioContributionType(step4Output.finalChallengeContribution?.contributionType),
+      estimatedContribution: this.estimatedContribution(step4Output.finalChallengeContribution?.evidenceStrength),
+      partialSignal: ['mixed_signal', 'partially_supported'].includes(String(step4Output.finalChallengeContribution?.result ?? '')),
+      resolvedCorePart: routing.route === 'portfolio_presented',
+      executiveSummary: String(step4Output.narrative?.recommendation ?? step4Output.recommendation ?? ''),
+      experimentSummary: String(step4Output.narrative?.results?.text ?? ''),
+      decisionRecommendationReason: routing.portfolioReviewRequired ? 'Lista para revision de portafolio; DecisionRequest aun no existe en C2B.' : '',
+      deliverables: step4Output.decisionPackage?.artifacts ?? [],
+      stepsTimeline: step4Output.nextHorizon?.milestones ?? [],
+      coverageScore: this.coverageScore(step4Output.challengeCoverage?.status),
+      alignmentNotes: String(step4Output.challengeCoverage?.rationale ?? ''),
+      decisionNotes: '',
+      lastActivity: new Date().toISOString(),
+    };
+  }
+
   private prismaCoverageStatus(status: unknown) {
     const value = String(status ?? '');
     if (value === 'resolved') return 'resuelto';
@@ -2338,17 +4022,27 @@ export class AdaptiveCoreService {
   }
 
   private async upsertStepOutputTx(tx: any, projectId: string, stepNumber: number, sourceConfigurationId: string, outputKey: string, outputJson: Record<string, unknown>, status: string) {
-    const latest = await tx.adaptiveStepOutput.findFirst({ where: { projectId, stepNumber }, orderBy: { version: 'desc' } });
+    const sourceConfiguration = await tx.adaptiveStepConfiguration.findUnique({ where: { id: sourceConfigurationId } });
+    if (!sourceConfiguration?.cycleId) throw AppError.badRequest('La configuracion fuente no tiene ciclo.', 'OUTPUT_CYCLE_MISSING');
+    if (sourceConfiguration.projectId !== projectId) throw AppError.badRequest('La configuracion fuente no pertenece a la iniciativa.', 'OUTPUT_PROJECT_MISMATCH');
+    const latest = await tx.adaptiveStepOutput.findFirst({ where: { projectId, cycleId: sourceConfiguration.cycleId, stepNumber }, orderBy: { version: 'desc' } });
     const version = latest ? latest.version + 1 : 1;
-    return tx.adaptiveStepOutput.create({ data: { projectId, stepNumber, version, sourceConfigurationId, outputKey, outputJson, status } });
+    return tx.adaptiveStepOutput.create({ data: { projectId, cycleId: sourceConfiguration.cycleId, stepNumber, version, sourceConfigurationId, outputKey, outputJson, status } });
   }
 
   private async upsertProgressSignalTx(tx: any, projectId: string, signal: Record<string, any>) {
+    const cycle = await this.cycles.getOperationalCycle(projectId, tx);
     await tx.adaptiveProgressSignal.upsert({
       where: { projectId },
-      create: { projectId, stepNumber: signal.step, checkpointKey: signal.checkpointCode, health: signal.health, signalJson: signal },
-      update: { stepNumber: signal.step, checkpointKey: signal.checkpointCode, health: signal.health, signalJson: signal },
+      create: { projectId, cycleId: cycle.id, stepNumber: signal.step, checkpointKey: signal.checkpointCode, health: signal.health, signalJson: signal },
+      update: { cycleId: cycle.id, stepNumber: signal.step, checkpointKey: signal.checkpointCode, health: signal.health, signalJson: signal },
     });
+    if (cycle.status === 'active') {
+      await tx.initiativeCycle.update({
+        where: { id: cycle.id },
+        data: { currentStep: signal.step },
+      });
+    }
     await tx.initiativePortfolioMeta.updateMany({
       where: { projectId },
       data: {
@@ -2387,8 +4081,8 @@ export class AdaptiveCoreService {
     return tx.adaptiveAdaptationEvent.create({ data: { projectId, eventType, summary, payloadJson: payload as any, createdById: userId, idempotencyKey } });
   }
 
-  private async nextConfigVersionTx(tx: any, projectId: string, stepNumber: number): Promise<number> {
-    const latest = await tx.adaptiveStepConfiguration.findFirst({ where: { projectId, stepNumber }, orderBy: { version: 'desc' } });
+  private async nextConfigVersionTx(tx: any, projectId: string, cycleId: string, stepNumber: number): Promise<number> {
+    const latest = await tx.adaptiveStepConfiguration.findFirst({ where: { projectId, cycleId, stepNumber }, orderBy: { version: 'desc' } });
     return latest ? latest.version + 1 : 1;
   }
 
@@ -2431,7 +4125,17 @@ export class AdaptiveCoreService {
     if (input.field === 'critical_restriction') next.risks = [String(input.nextValue), ...(context.risks ?? [])];
     if (input.field === 'company_or_area') next.companySnapshot = { ...(context.companySnapshot ?? {}), changedTo: input.nextValue, confirmationRequired: true };
     if (input.field === 'target_date') next.targetDate = input.nextValue;
-    if (input.field === 'selected_bet') next.step2Output = { ...(context.step2Output ?? {}), selectedBet: input.nextValue, requiresReview: true };
+    if (input.field === 'selected_bet') {
+      const selectedBetPatch = input.nextValue && typeof input.nextValue === 'object' && !Array.isArray(input.nextValue)
+        ? input.nextValue as Record<string, unknown>
+        : { selectedBet: input.nextValue };
+      next.step2Output = {
+        ...(context.step2Output ?? {}),
+        ...selectedBetPatch,
+        selectedBet: selectedBetPatch.selectedBet ?? input.nextValue,
+        requiresReview: true,
+      };
+    }
     return next;
   }
 
