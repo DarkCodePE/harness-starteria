@@ -29,6 +29,13 @@ import { test, expect, request as pwRequest, APIRequestContext, Page } from '@pl
 const __dirname_ = path.dirname(fileURLToPath(import.meta.url));
 const TEST_PDF = path.resolve(__dirname_, '../../docs/Test - iniciativa.pdf');
 
+// El MISMO origen que usa el navegador (playwright.config lee esta env). Estaba
+// hardcodeado a `http://localhost`: el contexto de API registraba al usuario contra lo
+// que hubiera en el puerto 80 mientras el navegador hablaba con el stack e2e, así que el
+// login por UI fallaba con credenciales que en ESE backend no existían. Split-brain, no
+// flakiness de timing.
+const BASE = process.env.E2E_BASE_URL || 'http://localhost';
+
 interface Session {
   email: string;
   password: string;
@@ -151,7 +158,7 @@ async function uiLogin(page: Page, session: Session) {
 
 test.describe('PDF auto-fill end-to-end (API-driven setup + UI verification)', () => {
   test('register → login → create project → upload + extract via API → assert UI on Step 0', async ({ page, browser }) => {
-    const api = await pwRequest.newContext({ baseURL: 'http://localhost' });
+    const api = await pwRequest.newContext({ baseURL: BASE });
 
     // ─── 1. auth via API ──────────────────────────────────────────────────────
     const session = await test.step('register + API login', () => apiRegisterAndLogin(api));

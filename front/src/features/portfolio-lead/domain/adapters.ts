@@ -58,6 +58,20 @@ export function adaptStrategicFront(raw: Raw): StrategicFront {
   };
 }
 
+// `activationInputs` viaja en una columna Json, asi que lo que vuelve del backend es
+// `unknown`: se comprueba antes de adoptarlo. Basta con que sea un objeto con los 9 ejes
+// presentes — zod ya valido los VALORES al escribir (portfolio.schemas.ts); aqui solo se
+// evita adoptar null/basura y quedarse sin selects que pintar.
+const ACTIVATION_INPUT_KEYS = [
+  'urgency', 'timeAvailable', 'estimatedEffort', 'challengeClarity', 'informationSensitivity',
+  'internalCapacity', 'technicalNeed', 'sponsorStatus', 'dependency',
+] as const;
+
+function isActivationInputs(value: unknown): value is Challenge['activationInputs'] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  return ACTIVATION_INPUT_KEYS.every((k) => typeof (value as Record<string, unknown>)[k] === 'string');
+}
+
 export function adaptChallenge(raw: Raw): Challenge {
   const sponsorStatus = raw.sponsorStatus ?? 'definido';
   return {
@@ -93,9 +107,19 @@ export function adaptChallenge(raw: Raw): Challenge {
     visibleToParticipants: raw.visibleToParticipants ?? false,
     publicationNotes: raw.publicationNotes ?? '',
     lastPublishedAt: isoDate(raw.lastPublishedAt) || undefined,
-    activationInputs: buildDefaultActivationInputs(sponsorStatus),
-    activationRecommendationNote: '',
-    activationMessageDraft: '',
+    // MVP-P0-02: los 3 campos de autoria de la activacion YA se persisten (Challenge.*).
+    // Antes se rellenaban siempre con defaults, asi que lo escrito por el usuario moria en
+    // la primera lectura; por eso reconcileChallenge tenia que preservarlos a mano. Ahora se
+    // leen del backend y el default solo cubre la fila que nunca los guardo (columna null).
+    activationInputs: isActivationInputs(raw.activationInputs)
+      ? raw.activationInputs
+      : buildDefaultActivationInputs(sponsorStatus),
+    activationRecommendationNote: typeof raw.activationRecommendationNote === 'string'
+      ? raw.activationRecommendationNote
+      : '',
+    activationMessageDraft: typeof raw.activationMessageDraft === 'string'
+      ? raw.activationMessageDraft
+      : '',
   };
 }
 
@@ -158,6 +182,12 @@ export function toBackendChallenge(input: Raw): Raw {
   if (has(input.status)) { const s = CHALLENGE_STATUS_TO_BACKEND[input.status]; if (s) out.status = s; }
   if (input.activationMode && CHALLENGE_ACTIVATION_BACKEND.has(input.activationMode)) out.activationMode = input.activationMode;
   if (input.coverageStatus && CHALLENGE_COVERAGE_BACKEND.has(input.coverageStatus)) out.coverageStatus = input.coverageStatus;
+  // MVP-P0-02: los 3 campos de autoria de la activacion ya tienen columna, asi que dejan de
+  // ser front-only y viajan. Se mandan aunque vengan vacios ('' es un borrado legitimo del
+  // usuario), por eso NO pasan por `has()`, que descarta la cadena vacia.
+  if (isActivationInputs(input.activationInputs)) out.activationInputs = input.activationInputs;
+  if (typeof input.activationRecommendationNote === 'string') out.activationRecommendationNote = input.activationRecommendationNote;
+  if (typeof input.activationMessageDraft === 'string') out.activationMessageDraft = input.activationMessageDraft;
   return out;
 }
 

@@ -26,18 +26,28 @@ function extractAccessToken(body: any): string {
 async function registerOwner(page: Page): Promise<string> {
   const stamp = Date.now() + Math.floor(Math.random() * 100000);
   const email = `e2e-prd-ir-${stamp}@starteria.test`;
+  const password = 'E2eTest!1234';
   const res = await page.request.post(apiPath('/api/v1/auth/register'), {
     data: {
       email,
-      password: 'E2eTest!1234',
+      password,
       name: `E2E PRD IR ${stamp}`,
       role: 'participante',
     },
     failOnStatusCode: false,
   });
   expect(res.status(), `register: ${await res.text()}`).toBe(201);
-  const token = extractAccessToken(await res.json());
-  expect(token).toBeTruthy();
+
+  // `register` NO devuelve tokens desde que las altas pasan por waitlist (7d84752):
+  // responde `{ waitlisted: true }` y el token se obtiene con un login posterior.
+  // En el stack e2e, AUTH_DISABLE_WAITLIST deja al usuario activo para que ese login pase.
+  const login = await page.request.post(apiPath('/api/v1/auth/login'), {
+    data: { email, password },
+    failOnStatusCode: false,
+  });
+  expect(login.status(), `login ${email}: ${await login.text()}`).toBe(200);
+  const token = extractAccessToken(await login.json());
+  expect(token, `sin access token para ${email}`).toBeTruthy();
   return token;
 }
 
@@ -76,7 +86,10 @@ test.describe('PRD initial-review guided flow audit', () => {
     const input = page.getByLabel(/Describe tu iniciativa/i);
     await expect(input).toBeVisible();
     await expect(page.getByText(/información sensible|confidencial/i)).toBeVisible();
-    const submit = page.getByRole('button', { name: /Revisar mi propuesta/i });
+    // El botón vivo (features/initiative-review) dice "Revisar propuesta". "Revisar mi
+    // propuesta" era el copy del scaffold legacy `features/initial-review`, deprecado en
+    // IRC-07 y pendiente de borrado (#136): esta spec auditaba una pantalla muerta.
+    const submit = page.getByRole('button', { name: /Revisar propuesta/i });
     await expect(submit).toBeDisabled();
 
     await input.fill('Quiero mejorar');

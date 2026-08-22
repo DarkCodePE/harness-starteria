@@ -20,12 +20,16 @@
  *   6. The iniciativa is tracked under its reto for the portfolio dashboard
  *      (GET /portfolio/challenges/:id/initiatives).
  *
- * Requires: docker compose up + `prisma db push` + `prisma db seed` (seeds admin@starteria.io).
- *   docker compose up -d && npm run db:push && npm run db:seed && npm run test:e2e -- portfolio-steps-integration
+ * Requires: `npm run test:e2e`, que levanta el stack aislado y siembra su propio admin
+ * (`prisma/seed.e2e.ts` → E2E_ADMIN_EMAIL). Antes esta spec pedía `admin@starteria.io`,
+ * usuario del seed de DESARROLLO que no existe en ese stack: el login devolvía 401 y la
+ * spec moría en el primer paso.
  */
 import { test, expect, request as pwRequest, APIRequestContext } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost';
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'portfolio-admin.e2e@starteria.test';
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || process.env.E2E_USER_PASSWORD || 'demo123';
 
 /** Decode the `sub` (user id) claim from a JWT without verifying it. */
 function jwtSub(token: string): string {
@@ -79,7 +83,7 @@ test.describe('portfolio-lead → participant steps integration (milestone #7, r
   });
 
   test('iniciativa from a reto is a navigable steps project sharing team + meta without re-capture', async () => {
-    const admin = await login(api, 'admin@starteria.io', 'demo123');
+    const admin = await login(api, ADMIN_EMAIL, ADMIN_PASSWORD);
     const creator = await registerAndLogin(api, 'creator');
     const member = await registerAndLogin(api, 'member');
     const stamp = Date.now();

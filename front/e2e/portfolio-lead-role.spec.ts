@@ -114,6 +114,87 @@ test.describe('portfolio_lead autoriza en el servidor (ADR-028, real stack)', ()
     expect(res.status()).toBe(403);
   });
 
+  // MVP-P0-02: la autoría de la activación (los 9 ejes, la nota y el borrador) se editaba
+  // en /portfolio y se PERDÍA al recargar, porque no existía columna donde guardarla. Esta
+  // prueba es la versión de contrato de "sobrevive a una recarga": se escribe con PATCH y
+  // se vuelve a LEER en una petición nueva, que es lo que hace el navegador al recargar.
+  test('la autoría de la activación del reto sobrevive a una lectura nueva', async () => {
+    const stamp = Date.now();
+    const front = await api.post('/api/v1/portfolio/strategic-fronts', {
+      headers: auth(leadToken),
+      data: { name: `Frente activacion ${stamp}` },
+      failOnStatusCode: false,
+    });
+    expect(front.status(), `crear frente: ${await front.text()}`).toBeLessThan(300);
+    const frontId = (await front.json())?.data?.id;
+
+    const challenge = await api.post(`/api/v1/portfolio/strategic-fronts/${frontId}/challenges`, {
+      headers: auth(leadToken),
+      data: { title: `Reto activacion ${stamp}` },
+      failOnStatusCode: false,
+    });
+    expect(challenge.status(), `crear reto: ${await challenge.text()}`).toBeLessThan(300);
+    const challengeId = (await challenge.json())?.data?.id;
+
+    const activationInputs = {
+      urgency: 'alta',
+      timeAvailable: 'acotado',
+      estimatedEffort: 'medio',
+      challengeClarity: 'baja',
+      informationSensitivity: 'alta',
+      internalCapacity: 'media',
+      technicalNeed: 'alta',
+      sponsorStatus: 'confirmado',
+      dependency: 'legal',
+    };
+    const patch = await api.patch(`/api/v1/portfolio/challenges/${challengeId}`, {
+      headers: auth(leadToken),
+      data: {
+        activationInputs,
+        activationRecommendationNote: `Squad asignado ${stamp}`,
+        activationMessageDraft: `Equipo, abrimos el reto ${stamp}`,
+      },
+      failOnStatusCode: false,
+    });
+    expect(patch.status(), `guardar activacion: ${await patch.text()}`).toBeLessThan(300);
+
+    // Lectura NUEVA: es aquí donde antes reaparecían los defaults.
+    const reread = await api.get(`/api/v1/portfolio/strategic-fronts/${frontId}/challenges`, {
+      headers: auth(leadToken),
+      failOnStatusCode: false,
+    });
+    expect(reread.status()).toBe(200);
+    const saved = ((await reread.json())?.data ?? []).find((c: any) => c.id === challengeId);
+    expect(saved, 'el reto no volvio en la lectura').toBeTruthy();
+    expect(saved.activationInputs).toEqual(activationInputs);
+    expect(saved.activationRecommendationNote).toBe(`Squad asignado ${stamp}`);
+    expect(saved.activationMessageDraft).toBe(`Equipo, abrimos el reto ${stamp}`);
+  });
+
+  test('un activationInputs incompleto es rechazado en el borde', async () => {
+    // La columna es Json y Postgres no la valida: si zod se relajara, el front acabaría
+    // leyendo un objeto sin ejes y pintando selects vacíos sin que nada hubiera fallado.
+    const front = await api.post('/api/v1/portfolio/strategic-fronts', {
+      headers: auth(leadToken),
+      data: { name: `Frente validacion ${Date.now()}` },
+      failOnStatusCode: false,
+    });
+    const frontId = (await front.json())?.data?.id;
+    const challenge = await api.post(`/api/v1/portfolio/strategic-fronts/${frontId}/challenges`, {
+      headers: auth(leadToken),
+      data: { title: `Reto validacion ${Date.now()}` },
+      failOnStatusCode: false,
+    });
+    const challengeId = (await challenge.json())?.data?.id;
+
+    const bad = await api.patch(`/api/v1/portfolio/challenges/${challengeId}`, {
+      headers: auth(leadToken),
+      data: { activationInputs: { urgency: 'alta' } },
+      failOnStatusCode: false,
+    });
+    expect(bad.status()).toBe(400);
+  });
+
   test('las lecturas siguen abiertas a cualquier autenticado', async () => {
     // Deuda declarada: AppLayout consulta portafolio para TODO usuario autenticado.
     const participantToken = await registerParticipant(api);

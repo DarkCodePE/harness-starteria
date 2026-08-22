@@ -22,6 +22,22 @@ export const updateStrategicFrontSchema = createStrategicFrontSchema.partial();
 
 // ─── Challenge ───────────────────────────────────────────────────────────────
 
+// Los 9 ejes con los que el portfolio lead decide COMO activar un reto. Se guardan en la
+// columna Json `Challenge.activationInputs`, que Postgres no valida: este enum es la unica
+// barrera, por eso es estricto y no un z.record laxo. Debe seguir a
+// ChallengeActivationInputs (front/src/features/portfolio-lead/domain/types.ts).
+const challengeActivationInputsSchema = z.object({
+  urgency: z.enum(['alta', 'media', 'baja']),
+  timeAvailable: z.enum(['muy_poco', 'acotado', 'suficiente']),
+  estimatedEffort: z.enum(['alto', 'medio', 'bajo']),
+  challengeClarity: z.enum(['alta', 'media', 'baja']),
+  informationSensitivity: z.enum(['alta', 'media', 'baja']),
+  internalCapacity: z.enum(['alta', 'media', 'baja']),
+  technicalNeed: z.enum(['alta', 'media', 'baja']),
+  sponsorStatus: z.enum(['definido', 'notificado', 'confirmado']),
+  dependency: z.enum(['ninguna', 'ti', 'legal', 'data', 'operaciones', 'comercial']),
+});
+
 export const createChallengeSchema = z.object({
   title: z.string().min(2).max(300),
   name: z.string().max(300).optional(),
@@ -65,6 +81,12 @@ export const createChallengeSchema = z.object({
     .optional(),
   sponsorId: z.string().optional(),
   ownerId: z.string().optional(),
+  // Autoria de la activacion del reto (MVP-P0-02). Antes se editaba en /portfolio y se
+  // perdia al recargar: no habia columna donde guardarlo. `activationInputs` se persiste
+  // como Json, asi que la forma se fija AQUI — es el unico borde que la valida.
+  activationInputs: challengeActivationInputsSchema.optional(),
+  activationRecommendationNote: z.string().max(2000).optional(),
+  activationMessageDraft: z.string().max(4000).optional(),
 });
 
 export const updateChallengeSchema = createChallengeSchema.partial();

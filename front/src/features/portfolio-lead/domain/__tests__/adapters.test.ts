@@ -106,13 +106,15 @@ describe('toBackendChallenge (write path #104)', () => {
       status: 'ready_to_activate',      // canonical → legacy
       whatWeWantToMove: 'algo',
       challengeOwnerStatus: 'confirmado',
-      activationInputs: { urgency: 'alta' }, // front-only → dropped
+      activationInputs: { urgency: 'alta' }, // INCOMPLETO (1 de 9 ejes) → se descarta
     });
     expect(out.title).toBe('Reducir esperas'); // backend REQUIRES title
     expect(out.name).toBe('Reducir esperas');
     expect(out.type).toBe('crecimiento');
     expect(out.status).toBe('listo_para_activar');
     expect(out.challengeOwnerStatus).toBe('confirmado');
+    // Un objeto parcial NO viaja: la columna Json se reemplaza entera y zod exige los 9 ejes,
+    // asi que mandar un trozo dejaria el reto con una activacion a medio describir.
     expect(out).not.toHaveProperty('activationInputs');
   });
 
@@ -169,5 +171,83 @@ describe('toBackendInitiativeMeta (write path #114 / ADR-024)', () => {
     });
     expect(out).not.toHaveProperty('estimatedContribution');
     expect(out).not.toHaveProperty('contributionType');
+  });
+});
+
+// ── MVP-P0-02: la autoria de la activacion deja de ser front-only ────────────────────
+// Estos 3 campos se editaban en /portfolio y se perdian al recargar porque no habia columna
+// donde guardarlos. Los casos de abajo fijan el round-trip completo en los dos sentidos.
+
+const FULL_ACTIVATION_INPUTS = {
+  urgency: 'alta',
+  timeAvailable: 'acotado',
+  estimatedEffort: 'medio',
+  challengeClarity: 'baja',
+  informationSensitivity: 'alta',
+  internalCapacity: 'media',
+  technicalNeed: 'alta',
+  sponsorStatus: 'confirmado',
+  dependency: 'legal',
+} as const;
+
+describe('adaptChallenge — autoria de la activacion (MVP-P0-02)', () => {
+  it('LEE los 3 campos persistidos en vez de rellenarlos con defaults', () => {
+    const challenge = adaptChallenge({
+      id: 'c1',
+      title: 'Reducir esperas',
+      strategicFrontId: 'f1',
+      activationInputs: { ...FULL_ACTIVATION_INPUTS },
+      activationRecommendationNote: 'Conviene squad asignado: el reto toca datos sensibles.',
+      activationMessageDraft: 'Equipo, abrimos este reto la proxima semana.',
+    });
+    // Sin esto el usuario veria sus defaults de vuelta tras recargar — el bug que cierra P0-02.
+    expect(challenge.activationInputs).toEqual(FULL_ACTIVATION_INPUTS);
+    expect(challenge.activationRecommendationNote).toBe('Conviene squad asignado: el reto toca datos sensibles.');
+    expect(challenge.activationMessageDraft).toBe('Equipo, abrimos este reto la proxima semana.');
+  });
+
+  it('cae a los defaults en una fila que nunca los guardo (columnas null)', () => {
+    const challenge = adaptChallenge({
+      id: 'c1', title: 'X', strategicFrontId: 'f1', sponsorStatus: 'notificado',
+      activationInputs: null,
+      activationRecommendationNote: null,
+      activationMessageDraft: null,
+    });
+    // Las columnas son nullable y SIN default (ADR-029): una fila previa al cambio llega en
+    // null y la UI debe seguir teniendo 9 selects que pintar.
+    expect(challenge.activationInputs.urgency).toBeTruthy();
+    expect(challenge.activationInputs.sponsorStatus).toBe('notificado');
+    expect(challenge.activationRecommendationNote).toBe('');
+    expect(challenge.activationMessageDraft).toBe('');
+  });
+
+  it('no adopta basura del Json: un objeto al que le faltan ejes cae al default', () => {
+    const challenge = adaptChallenge({
+      id: 'c1', title: 'X', strategicFrontId: 'f1',
+      activationInputs: { urgency: 'alta' },
+    });
+    expect(challenge.activationInputs.dependency).toBeTruthy();
+  });
+});
+
+describe('toBackendChallenge — autoria de la activacion (MVP-P0-02)', () => {
+  it('envia los 3 campos cuando activationInputs esta completo', () => {
+    const out = toBackendChallenge({
+      name: 'X',
+      activationInputs: { ...FULL_ACTIVATION_INPUTS },
+      activationRecommendationNote: 'nota',
+      activationMessageDraft: 'borrador',
+    });
+    expect(out.activationInputs).toEqual(FULL_ACTIVATION_INPUTS);
+    expect(out.activationRecommendationNote).toBe('nota');
+    expect(out.activationMessageDraft).toBe('borrador');
+  });
+
+  it('envia la cadena vacia: borrar la nota es una edicion, no una omision', () => {
+    const out = toBackendChallenge({ name: 'X', activationRecommendationNote: '', activationMessageDraft: '' });
+    // Si pasaran por el filtro `has()` (que descarta ''), el borrado nunca llegaria al backend
+    // y el texto viejo reaparecaria al recargar.
+    expect(out.activationRecommendationNote).toBe('');
+    expect(out.activationMessageDraft).toBe('');
   });
 });

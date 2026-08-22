@@ -9,12 +9,15 @@
  *   3. Initiative tracking-field edits persist via PUT .../meta, and client-sent DERIVED
  *      team-cache fields are ignored (#113/#114).
  *
- * Requires: docker compose up + `prisma db push` + `prisma db seed` (seeds admin@starteria.io).
- *   docker compose up -d && npm run db:push && npm run db:seed && npm run test:e2e -- team-inheritance
+ * Requires: `npm run test:e2e`, que levanta el stack aislado y siembra su propio admin
+ * (`prisma/seed.e2e.ts` → E2E_ADMIN_EMAIL). Antes esta spec pedía `admin@starteria.io`,
+ * usuario del seed de DESARROLLO que no existe en ese stack.
  */
 import { test, expect, request as pwRequest, APIRequestContext } from '@playwright/test';
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost';
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'portfolio-admin.e2e@starteria.test';
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || process.env.E2E_USER_PASSWORD || 'demo123';
 
 /** Decode the `sub` (user id) claim from a JWT without verifying it. */
 function jwtSub(token: string): string {
@@ -68,7 +71,7 @@ test.describe('ADR-023/024 reto-scoped team (real stack)', () => {
   });
 
   test('reto team materializes into the iniciativa on create (#109/#110/#111)', async () => {
-    const admin = await login(api, 'admin@starteria.io', 'demo123');
+    const admin = await login(api, ADMIN_EMAIL, ADMIN_PASSWORD);
     const creator = await registerAndLogin(api, 'creator');
     const member = await registerAndLogin(api, 'member');
 
@@ -146,7 +149,7 @@ test.describe('ADR-023/024 reto-scoped team (real stack)', () => {
   });
 
   test('initiative meta edit persists; derived team-cache fields are ignored (#113/#114)', async () => {
-    const admin = await login(api, 'admin@starteria.io', 'demo123');
+    const admin = await login(api, ADMIN_EMAIL, ADMIN_PASSWORD);
     const creator = await registerAndLogin(api, 'metacreator');
     const stamp = Date.now();
 
