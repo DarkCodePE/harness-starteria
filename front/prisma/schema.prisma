@@ -43,6 +43,10 @@ enum ProjectStatus {
   EXPERT_SESSION_PENDING
   STEP_APPROVED
   COMPLETED
+  IMPLEMENTATION_APPROVED
+  SCALING_APPROVED
+  PAUSED
+  CLOSED
 }
 
 enum StepStatus {
@@ -92,6 +96,65 @@ enum EvidenceType {
   VIDEO
   LINK
   OTHER
+}
+
+enum SourceRefType {
+  USER_INPUT
+  AI_OUTPUT
+  PDF_PROPOSAL
+  CONTEXT_SOURCE
+  FILE_UPLOAD
+  URL
+  SYSTEM_RULE
+  API
+  OTHER
+}
+
+enum TruthClaimVerificationState {
+  unvalidated
+  supported
+  contradicted
+  insufficient
+}
+
+enum TruthEvidenceStatus {
+  supports
+  contradicts
+  insufficient
+}
+
+enum TruthValidationResult {
+  unvalidated
+  supported
+  contradicted
+  insufficient
+}
+
+enum TruthValidatorType {
+  human
+  system_rule
+  ai
+}
+
+enum AttentionItemStatus {
+  open
+  acknowledged
+  resolved
+  cancelled
+}
+
+enum AttentionItemSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum ImpactStatus {
+  declared
+  estimated
+  validated
+  realized
 }
 
 enum TeamRole {
@@ -200,6 +263,10 @@ enum InitiativePortfolioStatus {
   bloqueada
   esperando_revision
   lista_para_decision
+  implementation_approved
+  scaling_approved
+  paused
+  closed
   cerrada
 }
 
@@ -252,6 +319,73 @@ enum PortfolioDecisionOutcome {
   evaluar_innovacion_abierta
   escalar_piloto
   cerrar_con_aprendizaje
+}
+
+enum CycleStatus {
+  active
+  completed
+  superseded
+}
+
+enum CycleTriggerType {
+  initial
+  critical_change
+  decision
+  return_to_prior_direction
+}
+
+enum CycleStepStateValue {
+  inherited
+  confirmed
+  active
+  reopened
+  pending
+  historical_only
+}
+
+enum CriticalChangeScope {
+  execution
+  experiment
+  solution
+  hypothesis
+  focus
+  challenge
+}
+
+enum CriticalChangeStatus {
+  detected
+  assessment_ready
+  confirmed
+  applied
+  dismissed
+}
+
+enum GovernanceMode {
+  owner_governed
+  portfolio_governed
+}
+
+enum DecisionRequestStatus {
+  pending
+  resolved
+  cancelled
+  superseded
+}
+
+enum DecisionOutcome {
+  continue_experimenting
+  implement
+  scale
+  pause
+  close_with_learning
+}
+
+enum ContinuationRouteType {
+  new_cycle
+  implementation_handoff
+  scaling_handoff
+  paused
+  closed
 }
 
 // ─── PDF Autofill (TASK-006 / SPEC-002 / ADR-007) ────────────────────────────
@@ -444,12 +578,17 @@ model User {
   mentorHelpRequests       HelpRequest[]         @relation("HelpMentor")
   sponsorCheckpoints       SponsorCheckpoint[]   @relation("SponsorCheckpoints")
   initialReviews           InitialReview[] // ADR-025: revisiones iniciales del usuario
+  portfolioLeadGovernance  InitiativeGovernance[] @relation("InitiativePortfolioLeadGovernance")
+  requestedDecisionRequests DecisionRequest[] @relation("DecisionRequestRequester")
+  authorityDecisionRequests DecisionRequest[] @relation("DecisionRequestAuthorityUser")
+  decidedOrganizationalDecisions Decision[] @relation("DecisionDecider")
 
   @@index([email])
   @@index([role])
   @@index([cohortId])
   @@index([googleId])
   @@index([organizationId])
+  copilotConversations     CopilotConversation[]
 }
 
 model Project {
@@ -485,6 +624,11 @@ model Project {
 
   steps                 Step[]
   evidence              Evidence[]
+  sourceRefs            SourceRef[]
+  truthClaims           TruthClaim[]
+  truthValidations      TruthValidation[]
+  attentionItems        AttentionItem[]
+  impactAssertions      ImpactAssertion[]
   teamMembers           TeamMember[]
   mentorSessions        MentorSession[]
   helpRequests          HelpRequest[]
@@ -502,6 +646,15 @@ model Project {
   adaptiveStepOutputs AdaptiveStepOutput[]
   adaptiveProgressSignal AdaptiveProgressSignal?
   adaptiveEvents AdaptiveAdaptationEvent[]
+  initiativeCycles InitiativeCycle[]
+  criticalChanges CriticalChange[]
+  initiativeGovernance InitiativeGovernance?
+  decisionRequests DecisionRequest[]
+  decisions Decision[]
+  continuationRoutes ContinuationRoute[]
+  implementationHandoffs ImplementationHandoff[]
+  scalingHandoffs ScalingHandoff[]
+  closureSummaries ClosureSummary[]
 
   @@index([ownerId])
   @@index([cohortId])
@@ -554,6 +707,8 @@ model AdaptiveStepConfiguration {
   id                String   @id @default(cuid())
   projectId         String
   project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cycleId           String
+  cycle             InitiativeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   stepNumber        Int
   version           Int
   status            String   @default("active")
@@ -570,8 +725,10 @@ model AdaptiveStepConfiguration {
   checkpointInstances AdaptiveCheckpointInstance[]
   stepOutputs         AdaptiveStepOutput[]
 
-  @@unique([projectId, stepNumber, version])
+  @@unique([cycleId, stepNumber, version])
   @@index([projectId])
+  @@index([cycleId])
+  @@index([cycleId, stepNumber])
   @@index([projectId, stepNumber, status])
 }
 
@@ -579,6 +736,8 @@ model AdaptiveCheckpointInstance {
   id                     String   @id @default(cuid())
   projectId              String
   project                Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cycleId                String
+  cycle                  InitiativeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   stepConfigurationId    String
   stepConfiguration      AdaptiveStepConfiguration @relation(fields: [stepConfigurationId], references: [id], onDelete: Cascade)
   stepNumber             Int
@@ -595,8 +754,10 @@ model AdaptiveCheckpointInstance {
 
   responses AdaptiveCheckpointResponse[]
 
-  @@unique([projectId, stepConfigurationId, checkpointKey])
+  @@unique([cycleId, stepConfigurationId, checkpointKey], map: "ACI_cycle_config_checkpoint_key")
   @@index([projectId])
+  @@index([cycleId])
+  @@index([cycleId, stepNumber])
   @@index([projectId, status])
 }
 
@@ -621,6 +782,8 @@ model AdaptiveStepOutput {
   id                    String   @id @default(cuid())
   projectId             String
   project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cycleId               String
+  cycle                 InitiativeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   sourceConfigurationId String?
   sourceConfiguration   AdaptiveStepConfiguration? @relation(fields: [sourceConfigurationId], references: [id], onDelete: SetNull)
   stepNumber            Int
@@ -634,8 +797,10 @@ model AdaptiveStepOutput {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  @@unique([projectId, stepNumber, version])
+  @@unique([cycleId, stepNumber, version])
   @@index([projectId])
+  @@index([cycleId])
+  @@index([cycleId, stepNumber])
   @@index([projectId, stepNumber, status])
 }
 
@@ -643,12 +808,255 @@ model AdaptiveProgressSignal {
   id            String   @id @default(cuid())
   projectId     String   @unique
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cycleId       String?
+  cycle         InitiativeCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
   stepNumber    Int
   checkpointKey String?
   health        String
   signalJson    Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([cycleId])
+}
+
+model InitiativeCycle {
+  id              String           @id @default(cuid())
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cycleNumber     Int
+  parentCycleId   String?
+  parentCycle     InitiativeCycle? @relation("CycleParent", fields: [parentCycleId], references: [id], onDelete: SetNull)
+  childCycles     InitiativeCycle[] @relation("CycleParent")
+  basedOnCycleId  String?
+  basedOnCycle    InitiativeCycle? @relation("CycleBasis", fields: [basedOnCycleId], references: [id], onDelete: SetNull)
+  derivedCycles   InitiativeCycle[] @relation("CycleBasis")
+  triggerType     CycleTriggerType @default(initial)
+  triggerRefId    String?
+  startStep       Int              @default(0)
+  currentStep     Int              @default(0)
+  status          CycleStatus      @default(active)
+  startedAt       DateTime         @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  stepStates              CycleStepState[]
+  stepConfigurations      AdaptiveStepConfiguration[]
+  checkpointInstances     AdaptiveCheckpointInstance[]
+  stepOutputs             AdaptiveStepOutput[]
+  progressSignals         AdaptiveProgressSignal[]
+  sourceCriticalChanges   CriticalChange[] @relation("CriticalChangeSourceCycle")
+  resultingCriticalChanges CriticalChange[]             @relation("CriticalChangeResultingCycle")
+  basedOnCriticalChanges  CriticalChange[] @relation("CriticalChangeBasedOnCycle")
+  decisionRequests        DecisionRequest[]
+  decisions               Decision[]
+  resultingContinuationRoutes ContinuationRoute[]
+
+  @@unique([projectId, cycleNumber])
+  @@index([projectId])
+  @@index([projectId, status])
+}
+
+model CycleStepState {
+  id                    String              @id @default(cuid())
+  cycleId               String
+  cycle                 InitiativeCycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  stepNumber            Int
+  state                 CycleStepStateValue
+  inheritedFromCycleId  String?
+  inheritedFromOutputId String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@unique([cycleId, stepNumber])
+  @@index([cycleId])
+  @@index([cycleId, stepNumber])
+}
+
+model CriticalChange {
+  id                   String               @id @default(cuid())
+  projectId            String
+  project              Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceCycleId        String
+  sourceCycle          InitiativeCycle      @relation("CriticalChangeSourceCycle", fields: [sourceCycleId], references: [id], onDelete: Restrict)
+  resultingCycleId     String?
+  resultingCycle       InitiativeCycle?     @relation("CriticalChangeResultingCycle", fields: [resultingCycleId], references: [id], onDelete: SetNull)
+  basedOnCycleId       String?
+  basedOnCycle         InitiativeCycle?     @relation("CriticalChangeBasedOnCycle", fields: [basedOnCycleId], references: [id], onDelete: SetNull)
+  detectedAtStep       Int
+  changeScope          CriticalChangeScope
+  field                String?
+  status               CriticalChangeStatus @default(detected)
+  proposedById         String
+  confirmedById        String?
+  confirmedAt          DateTime?
+  appliedAt            DateTime?
+  proposedReentryStep  Int?
+  confirmedReentryStep Int?
+  idempotencyKey       String               @unique
+  previousValueJson    Json?
+  nextValueJson        Json
+  impactJson           Json?
+  reason               String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([projectId])
+  @@index([sourceCycleId])
+  @@index([resultingCycleId])
+  @@index([basedOnCycleId])
+  @@index([projectId, status])
+}
+
+model InitiativeGovernance {
+  id                  String         @id @default(cuid())
+  projectId           String         @unique
+  project             Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mode                GovernanceMode @default(owner_governed)
+  portfolioLeadUserId String?
+  portfolioLeadUser   User?          @relation("InitiativePortfolioLeadGovernance", fields: [portfolioLeadUserId], references: [id], onDelete: SetNull)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([mode])
+  @@index([portfolioLeadUserId])
+}
+
+model DecisionRequest {
+  id                          String                @id @default(cuid())
+  projectId                   String
+  project                     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceCycleId               String
+  sourceCycle                 InitiativeCycle       @relation(fields: [sourceCycleId], references: [id], onDelete: Restrict)
+  requestedById               String
+  requestedBy                 User                  @relation("DecisionRequestRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  requestedAt                 DateTime              @default(now())
+  status                      DecisionRequestStatus @default(pending)
+  authorityType               String
+  authorityUserId             String?
+  authorityUser               User?                 @relation("DecisionRequestAuthorityUser", fields: [authorityUserId], references: [id], onDelete: SetNull)
+  readinessSnapshotJson       Json
+  authoritySnapshotJson       Json
+  decisionPackageSnapshotJson Json
+  recommendationSnapshotJson  Json?
+  presentationSnapshotJson    Json?
+  requestVersion              Int                   @default(1)
+  idempotencyKey              String                @unique
+  createdAt                   DateTime              @default(now())
+  updatedAt                   DateTime              @updatedAt
+  decision                    Decision?
+
+  @@index([projectId, sourceCycleId, status])
+  @@index([projectId])
+  @@index([sourceCycleId])
+  @@index([requestedById])
+  @@index([authorityUserId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model Decision {
+  id                         String          @id @default(cuid())
+  projectId                  String
+  project                    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceCycleId              String
+  sourceCycle                InitiativeCycle @relation(fields: [sourceCycleId], references: [id], onDelete: Restrict)
+  decisionRequestId          String          @unique
+  decisionRequest            DecisionRequest @relation(fields: [decisionRequestId], references: [id], onDelete: Restrict)
+  outcome                    DecisionOutcome
+  decidedById                String
+  decidedBy                  User            @relation("DecisionDecider", fields: [decidedById], references: [id], onDelete: Restrict)
+  decidedAt                  DateTime        @default(now())
+  rationale                  String
+  conditionsJson             Json?
+  authoritySnapshotJson      Json
+  readinessSnapshotJson      Json
+  recommendationSnapshotJson Json?
+  packageSnapshotJson        Json
+  presentationSnapshotJson   Json
+  idempotencyKey             String          @unique
+  createdAt                  DateTime        @default(now())
+  continuationRoute          ContinuationRoute?
+  implementationHandoff      ImplementationHandoff?
+  scalingHandoff             ScalingHandoff?
+  closureSummary             ClosureSummary?
+
+  @@index([projectId])
+  @@index([sourceCycleId])
+  @@index([decidedById])
+  @@index([outcome])
+  @@index([decidedAt])
+}
+
+model ContinuationRoute {
+  id               String                @id @default(cuid())
+  projectId        String
+  project          Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  decisionId       String                @unique
+  decision         Decision              @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+  routeType        ContinuationRouteType
+  resultingCycleId String?
+  resultingCycle   InitiativeCycle?      @relation(fields: [resultingCycleId], references: [id], onDelete: SetNull)
+  handoffId        String?
+  appliedAt        DateTime              @default(now())
+  idempotencyKey   String?               @unique
+  createdAt        DateTime              @default(now())
+
+  @@index([projectId])
+  @@index([resultingCycleId])
+  @@index([routeType])
+  @@index([appliedAt])
+}
+
+model ImplementationHandoff {
+  id                   String   @id @default(cuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  decisionId           String   @unique
+  decision             Decision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+  approvedScopeJson    Json
+  conditionsJson       Json?
+  metricsJson          Json?
+  evidenceSnapshotJson Json?
+  risksJson            Json?
+  createdAt            DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model ScalingHandoff {
+  id                        String   @id @default(cuid())
+  projectId                 String
+  project                   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  decisionId                String   @unique
+  decision                  Decision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+  validatedScopeJson        Json
+  scaleConditionsJson       Json?
+  impactSnapshotJson        Json?
+  dependenciesJson          Json?
+  risksJson                 Json?
+  unvalidatedSegmentsJson   Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model ClosureSummary {
+  id                       String   @id @default(cuid())
+  projectId                String
+  project                  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  decisionId               String   @unique
+  decision                 Decision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+  closureReason            String
+  learningSummaryJson      Json
+  validatedClaimsJson      Json?
+  evidenceReferencesJson   Json?
+  reusableLearningJson     Json?
+  futureConsiderationsJson Json?
+  createdAt                DateTime @default(now())
+
+  @@index([projectId])
 }
 
 model AdaptiveAdaptationEvent {
@@ -720,12 +1128,183 @@ model Evidence {
   ownerId    String
   owner      User           @relation(fields: [ownerId], references: [id])
   status     EvidenceStatus @default(UPLOADED)
+  sourceRefId String?
+  sourceRef   SourceRef?    @relation(fields: [sourceRefId], references: [id], onDelete: Restrict)
+  targetClaimId String?
+  targetClaim TruthClaim?   @relation(fields: [targetClaimId], references: [id], onDelete: SetNull)
+  validations TruthValidation[] @relation("EvidenceValidations")
+  truthStatus TruthEvidenceStatus?
+  capturedAt DateTime?
+  excerpt    String?
+  provenance Json?
+  metadataJson Json?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
   @@index([projectId])
   @@index([ownerId])
   @@index([stepRef])
+  @@index([sourceRefId])
+  @@index([targetClaimId])
+  @@index([truthStatus])
+}
+
+model SourceRef {
+  id              String        @id @default(cuid())
+  projectId       String?
+  project         Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceType      SourceRefType
+  reference       String
+  location        String?
+  originActorId   String?
+  originActorType String?
+  contentHash     String?
+  version         String?
+  metadataJson    Json?
+  capturedAt      DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  evidence Evidence[]
+  validations TruthValidation[]
+  attentionItems AttentionItem[]
+  claimLinks TruthClaimSourceRef[]
+  impactAssertions ImpactAssertion[]
+
+  @@index([projectId])
+  @@index([sourceType])
+  @@index([originActorId])
+  @@index([contentHash])
+}
+
+model TruthClaim {
+  id                  String                      @id @default(cuid())
+  projectId           String
+  project             Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subjectType         String
+  subjectId           String?
+  claimType           String
+  statement           String
+  valueJson           Json?
+  createdById         String
+  createdByType       String                      @default("human")
+  verificationState   TruthClaimVerificationState @default(unvalidated)
+  sourceRefsJson      Json?
+  currentValidationId String?
+  currentValidation   TruthValidation?            @relation("CurrentTruthClaimValidation", fields: [currentValidationId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  evidence Evidence[]
+  validations TruthValidation[] @relation("TruthClaimValidations")
+  sourceRefLinks TruthClaimSourceRef[]
+  impactAssertions ImpactAssertion[]
+
+  @@index([projectId])
+  @@index([subjectType, subjectId])
+  @@index([claimType])
+  @@index([verificationState])
+  @@index([createdById])
+  @@index([currentValidationId])
+}
+
+model TruthClaimSourceRef {
+  id          String     @id @default(cuid())
+  claimId     String
+  claim       TruthClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  sourceRefId String
+  sourceRef   SourceRef  @relation(fields: [sourceRefId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+
+  @@unique([claimId, sourceRefId])
+  @@index([sourceRefId])
+}
+
+model TruthValidation {
+  id              String                @id @default(cuid())
+  projectId       String
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  claimId         String?
+  claim           TruthClaim?           @relation("TruthClaimValidations", fields: [claimId], references: [id], onDelete: Cascade)
+  evidenceId      String?
+  evidence        Evidence?             @relation("EvidenceValidations", fields: [evidenceId], references: [id], onDelete: Restrict)
+  sourceRefId     String?
+  sourceRef       SourceRef?            @relation(fields: [sourceRefId], references: [id], onDelete: Restrict)
+  result          TruthValidationResult
+  validatedById   String
+  validatorType   TruthValidatorType
+  validatorRole   String?
+  rationale       String
+  version         Int                   @default(1)
+  validatedAt     DateTime              @default(now())
+  createdAt       DateTime              @default(now())
+
+  currentForClaims TruthClaim[] @relation("CurrentTruthClaimValidation")
+  impactAssertions ImpactAssertion[]
+
+  @@index([projectId])
+  @@index([claimId])
+  @@index([evidenceId])
+  @@index([sourceRefId])
+  @@index([result])
+  @@index([validatedById])
+}
+
+model AttentionItem {
+  id              String                @id @default(cuid())
+  projectId       String
+  project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  objectType      String?
+  objectId        String?
+  category        String
+  reason          String
+  severity        AttentionItemSeverity @default(medium)
+  sourceRefId     String?
+  sourceRef       SourceRef?            @relation(fields: [sourceRefId], references: [id], onDelete: SetNull)
+  ownerId         String?
+  status          AttentionItemStatus   @default(open)
+  exitCondition   String
+  nextAction      String
+  resolutionNote  String?
+  resolvedById    String?
+  resolvedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([severity])
+  @@index([ownerId])
+  @@index([sourceRefId])
+}
+
+model ImpactAssertion {
+  id              String       @id @default(cuid())
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subjectType     String
+  subjectId       String?
+  claimId         String?
+  claim           TruthClaim?  @relation(fields: [claimId], references: [id], onDelete: Restrict)
+  metric          String?
+  valueJson       Json?
+  status          ImpactStatus @default(declared)
+  sourceRefId     String?
+  sourceRef       SourceRef?   @relation(fields: [sourceRefId], references: [id], onDelete: Restrict)
+  validationId    String?
+  validation      TruthValidation? @relation(fields: [validationId], references: [id], onDelete: Restrict)
+  transitionedById String?
+  transitionedAt DateTime?
+  createdById     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([projectId])
+  @@index([subjectType, subjectId])
+  @@index([claimId])
+  @@index([sourceRefId])
+  @@index([validationId])
+  @@index([status])
 }
 
 model TeamMember {
@@ -1738,4 +2317,245 @@ model RouteConfirmation {
 
   @@index([snapshotId])
   @@index([status])
+}
+
+enum ActionExecutionStatus {
+  pending
+  validating
+  executing
+  completed
+  failed
+  idempotent_replay
+  partially_completed
+  manual_review_required
+}
+
+enum ActionPlanStatus {
+  draft
+  awaiting_confirmation
+  partially_approved
+  approved
+  executing
+  partially_completed
+  completed
+  failed
+  cancelled
+  superseded
+}
+
+enum CopilotAdapterType {
+  deterministic
+}
+
+enum CopilotConfidence {
+  low
+  medium
+  high
+  not_evaluable
+}
+
+enum CopilotConversationStatus {
+  collecting_context
+  interpreting
+  asking_clarification
+  proposal_ready
+  awaiting_confirmation
+  executing
+  completed
+  partially_completed
+  blocked
+  cancelled
+}
+
+enum CopilotIntent {
+  create_strategic_front
+  unknown
+}
+
+enum CopilotMessageRole {
+  user
+  assistant
+  system
+}
+
+enum CopilotMessageType {
+  free_text
+  clarification
+  plan_summary
+  approval_request
+  execution_result
+  error
+}
+
+enum CopilotOperation {
+  create
+  unsupported
+}
+
+enum ProposedActionStatus {
+  proposed
+  edited
+  approved
+  rejected
+  executing
+  completed
+  failed
+  blocked
+  cancelled
+}
+
+model CopilotConversation {
+  id                String                    @id @default(cuid())
+  organizationId    String
+  userId            String
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status            CopilotConversationStatus @default(collecting_context)
+  contextObjectType String?
+  contextObjectId   String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  messages          CopilotMessage[]
+  intentAssessments IntentAssessment[]
+  actionPlans       ActionPlan[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([organizationId, status])
+  @@index([userId, status])
+}
+
+model CopilotMessage {
+  id               String              @id @default(cuid())
+  conversationId   String
+  conversation     CopilotConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  role             CopilotMessageRole
+  messageType      CopilotMessageType
+  content          String
+  sourceReferences Json
+  createdAt        DateTime            @default(now())
+
+  intentAssessments IntentAssessment[] @relation("OriginalCopilotMessage")
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([role])
+  @@index([messageType])
+}
+
+model IntentAssessment {
+  id                      String              @id @default(cuid())
+  conversationId          String
+  conversation            CopilotConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  originalMessageId       String
+  originalMessage         CopilotMessage      @relation("OriginalCopilotMessage", fields: [originalMessageId], references: [id], onDelete: Restrict)
+  primaryIntent           CopilotIntent
+  operation               CopilotOperation
+  detectedEntities        Json
+  ambiguousObjects        Json
+  missingInformation      Json
+  recommendedCapabilities Json
+  confidence              CopilotConfidence
+  sourceReferences        Json
+  adapterType             CopilotAdapterType
+  rubricVersion           String
+  createdAt               DateTime            @default(now())
+
+  actionPlans ActionPlan[]
+
+  @@index([conversationId])
+  @@index([originalMessageId])
+  @@index([primaryIntent])
+  @@index([operation])
+  @@index([confidence])
+}
+
+model ActionPlan {
+  id                 String              @id @default(cuid())
+  conversationId     String
+  conversation       CopilotConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  intentAssessmentId String
+  intentAssessment   IntentAssessment    @relation(fields: [intentAssessmentId], references: [id], onDelete: Restrict)
+  summary            String
+  status             ActionPlanStatus    @default(draft)
+  version            Int                 @default(1)
+  createdBy          String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  supersededById     String?
+  supersededBy       ActionPlan?         @relation("ActionPlanSupersession", fields: [supersededById], references: [id], onDelete: SetNull)
+  supersedes         ActionPlan[]        @relation("ActionPlanSupersession")
+
+  proposedActions ProposedAction[]
+
+  @@unique([conversationId, version])
+  @@index([conversationId])
+  @@index([intentAssessmentId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([supersededById])
+}
+
+model ProposedAction {
+  id                   String               @id @default(cuid())
+  actionPlanId         String
+  actionPlan           ActionPlan           @relation(fields: [actionPlanId], references: [id], onDelete: Restrict)
+  capabilityId         String
+  ownerPrd             String
+  operation            String
+  commandType          String
+  title                String
+  explanation          String
+  proposedPayload      Json
+  editableFields       Json
+  requiredPermissions  Json
+  requiresConfirmation Boolean
+  dependencyActionIds  Json
+  status               ProposedActionStatus @default(proposed)
+  version              Int                  @default(1)
+  approvedAt           DateTime?
+  approvedBy           String?
+  rejectedAt           DateTime?
+  rejectedBy           String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  executions ActionExecution[]
+
+  @@index([actionPlanId])
+  @@index([capabilityId])
+  @@index([status])
+  @@index([actionPlanId, status])
+}
+
+model ActionExecution {
+  id                      String                @id @default(cuid())
+  proposedActionId        String
+  proposedAction          ProposedAction        @relation(fields: [proposedActionId], references: [id], onDelete: Restrict)
+  idempotencyKey          String                @unique
+  status                  ActionExecutionStatus @default(pending)
+  attempt                 Int                   @default(1)
+  approvedBy              String
+  executedBy              String?
+  correlationId           String?
+  reconciliationClaimId   String?
+  reconciliationClaimedAt DateTime?
+  commandPayload          Json
+  result                  Json?
+  error                   Json?
+  createdObjectReferences Json
+  updatedObjectReferences Json
+  projectionLinks         Json
+  startedAt               DateTime?
+  completedAt             DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  @@index([proposedActionId])
+  @@index([status])
+  @@index([proposedActionId, status])
+  @@index([status, updatedAt])
+  @@index([correlationId])
+  @@index([reconciliationClaimId])
 }

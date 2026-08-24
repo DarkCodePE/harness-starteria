@@ -26,6 +26,7 @@ import { buildInitialResearchV2State, buildResearchFrontSuggestions, buildResear
 import { ResearchModuleAContext, Step1ResearchModuleV2State } from '../components/step1-research-v2/step1ResearchV2.types';
 import { Step1CaptureLegacyRestrictions, Step1CaptureLegacySynthesis, Step1CaptureLegacyValidation, Step1ModuleId } from '../components/step1-architecture/step1Architecture.types';
 import { confirmAdaptiveCheckpoint, confirmStep1Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
+import { canNavigateToAdaptiveStep } from '../../features/adaptive-core/domain/adaptiveAuthority';
 
 type ModuleId = Step1ModuleId | 'D' | 'S';
 
@@ -737,24 +738,30 @@ export function Step1Page() {
     if (!projectId || !project) return;
 
     updateProject(projectId, {
-      currentStep: stepStatus === 'Aprobado' ? Math.max(project.currentStep, 2) : project.currentStep,
-      status: stepStatus === 'Aprobado' ? 'Paso aprobado' : 'Sesión experto pendiente',
+      currentStep: project.currentStep,
+      status: 'Sesión experto pendiente',
       steps: project.steps.map(item => {
         if (item.number === 1) {
           return {
             ...item,
-            status: stepStatus,
+            status: stepStatus === 'Aprobado' ? 'Sesión experto pendiente' : stepStatus,
             mentorSession: updates,
           };
         }
 
-        if (item.number === 2 && stepStatus === 'Aprobado') {
-          return {
-            ...item,
-            status: item.status === 'Bloqueado' ? 'En progreso' : item.status,
-          };
-        }
+        return item;
+      }),
+    });
+  };
 
+  const mirrorStep1AdaptiveSuccess = () => {
+    if (!projectId || !project) return;
+    updateProject(projectId, {
+      currentStep: Math.max(project.currentStep, 2),
+      status: 'Paso aprobado',
+      steps: project.steps.map(item => {
+        if (item.number === 1) return { ...item, status: 'Aprobado' as const, progress: 100 };
+        if (item.number === 2) return { ...item, status: item.status === 'Bloqueado' ? 'En progreso' as const : item.status };
         return item;
       }),
     });
@@ -848,7 +855,12 @@ export function Step1Page() {
           confirmed: true,
         });
       }
-      await getAdaptiveCore(projectId);
+      const refreshedCore = await getAdaptiveCore(projectId);
+      if (canNavigateToAdaptiveStep(refreshedCore, 2)) {
+        mirrorStep1AdaptiveSuccess();
+      } else {
+        setAdaptiveStep1Error('El backend confirmó el Step 1, pero Step 2 todavía no aparece activo en el estado adaptativo persistido.');
+      }
     } catch (err: any) {
       setAdaptiveStep1Error(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el Step 1 adaptativo.');
     } finally {

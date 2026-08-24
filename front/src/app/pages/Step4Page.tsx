@@ -35,6 +35,7 @@ import * as stepService from '../services/stepService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
 import { confirmAdaptiveCheckpoint, confirmStep4Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
+import { canNavigateToAdaptiveStep } from '../../features/adaptive-core/domain/adaptiveAuthority';
 
 type ModuleId = 'overview' | 'A' | 'B' | 'C';
 type Audiencia =
@@ -447,12 +448,6 @@ export function Step4Page() {
   const navigate = useNavigate();
   const { projects, updateProject } = useApp();
   const project = projects.find((item) => item.id === projectId);
-  const step3Status = project?.steps.find((step) => step.number === 3)?.status;
-  const step4Status = project?.steps.find((step) => step.number === 4)?.status;
-  const isUnlocked =
-    step3Status === 'Aprobado' ||
-    step4Status === 'En progreso' ||
-    step4Status === 'Aprobado';
 
   const [activeModule, setActiveModule] = useState<ModuleId>('overview');
   const [audience, setAudience] = useState<Audiencia>('Sponsor');
@@ -691,7 +686,23 @@ export function Step4Page() {
     );
   }
 
-  if (!isUnlocked) {
+  if (adaptiveCoreLoading) {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <Lock size={24} className="text-slate-400" />
+        </div>
+        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>
+          Cargando estado adaptativo
+        </h2>
+        <p className="text-sm text-slate-500">
+          Validando con backend si Step 4 esta disponible.
+        </p>
+      </div>
+    );
+  }
+
+  if (adaptiveCoreError || !canNavigateToAdaptiveStep(adaptiveCore, 4)) {
     return (
       <div className="p-8 max-w-lg mx-auto text-center">
         <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
@@ -701,16 +712,34 @@ export function Step4Page() {
           Step 4 bloqueado
         </h2>
         <p className="text-sm text-slate-500 mb-4">
-          Para entrar al cierre ejecutivo, primero necesitas la aprobacion del
-          mentor en el Step 3.
+          {adaptiveCoreError || 'El backend Adaptive Core todavia no habilita Step 4.'}
         </p>
-        <button
-          onClick={() => navigate(`/projects/${projectId}/step/3`)}
-          className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors"
-          style={{ fontWeight: 500 }}
-        >
-          Ir al Step 3
-        </button>
+        <div className="flex justify-center gap-2">
+          {adaptiveCoreError ? (
+            <button
+              onClick={() => {
+                if (!projectId) return;
+                setAdaptiveCoreLoading(true);
+                setAdaptiveCoreError('');
+                getAdaptiveCore(projectId)
+                  .then(core => setAdaptiveCore(core))
+                  .catch(() => setAdaptiveCoreError('No pudimos cargar el cierre adaptativo desde backend.'))
+                  .finally(() => setAdaptiveCoreLoading(false));
+              }}
+              className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors"
+              style={{ fontWeight: 500 }}
+            >
+              Reintentar
+            </button>
+          ) : null}
+          <button
+            onClick={() => navigate(`/projects/${projectId}/step/3`)}
+            className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors"
+            style={{ fontWeight: 500 }}
+          >
+            Ir al Step 3
+          </button>
+        </div>
       </div>
     );
   }
@@ -1144,6 +1173,8 @@ ${meetingOwner} / ${meetingRole}
         confirmed: true,
       });
       setAdaptiveCore(nextCore);
+      const refreshedCore = await getAdaptiveCore(projectId);
+      setAdaptiveCore(refreshedCore);
       setStepFinalized(true);
       setExecutiveDecisionReady(true);
       toast.success('Output adaptativo de Step 4 confirmado.');
@@ -2832,6 +2863,10 @@ ${meetingOwner} / ${meetingRole}
                     </button>
                     <button
                       onClick={() => {
+                        if (!adaptiveAlreadyConfirmed) {
+                          toast.error('Primero confirma el output de Step 4 en Adaptive Core.');
+                          return;
+                        }
                         if (!stepCanBeFinalized) {
                           toast.error('Todavia faltan minimos reales para finalizar Step 4.');
                           return;
@@ -2842,9 +2877,9 @@ ${meetingOwner} / ${meetingRole}
                         }
                         toast.success('Step 4 finalizado y siguiente paso definido.');
                       }}
-                      disabled={!stepCanBeFinalized}
+                      disabled={!stepCanBeFinalized || !adaptiveAlreadyConfirmed}
                       className={`text-xs rounded-xl px-3 py-2 transition-colors ${
-                        stepCanBeFinalized
+                        stepCanBeFinalized && adaptiveAlreadyConfirmed
                           ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                       }`}
@@ -2978,6 +3013,10 @@ ${meetingOwner} / ${meetingRole}
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => {
+                        if (!adaptiveAlreadyConfirmed) {
+                          toast.error('Primero confirma el output de Step 4 en Adaptive Core.');
+                          return;
+                        }
                         if (!stepFinalized) {
                           toast.error('Primero finaliza Step 4 y deja el siguiente paso definido.');
                           return;
@@ -2985,9 +3024,9 @@ ${meetingOwner} / ${meetingRole}
                         setExecutiveDecisionReady(true);
                         toast.success('Iniciativa marcada como lista para decision ejecutiva.');
                       }}
-                      disabled={!stepFinalized}
+                      disabled={!stepFinalized || !adaptiveAlreadyConfirmed}
                       className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors ${
-                        stepFinalized
+                        stepFinalized && adaptiveAlreadyConfirmed
                           ? 'bg-slate-900 hover:bg-slate-800 text-white'
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                       }`}
@@ -2997,15 +3036,19 @@ ${meetingOwner} / ${meetingRole}
                     </button>
                     <button
                       onClick={() => {
+                        if (!adaptiveAlreadyConfirmed) {
+                          toast.error('Primero confirma el output de Step 4 en Adaptive Core.');
+                          return;
+                        }
                         if (!initiativeCanBeFinalized) {
                           toast.error('Primero deja la iniciativa lista para decision ejecutiva antes de finalizarla.');
                           return;
                         }
                         setShowFinalizeInitiativeConfirm(true);
                       }}
-                      disabled={!initiativeCanBeFinalized || isProjectClosed}
+                      disabled={!initiativeCanBeFinalized || !adaptiveAlreadyConfirmed || isProjectClosed}
                       className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors ${
-                        initiativeCanBeFinalized && !isProjectClosed
+                        initiativeCanBeFinalized && adaptiveAlreadyConfirmed && !isProjectClosed
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                           : 'bg-emerald-50 text-emerald-300 border border-emerald-100 cursor-not-allowed'
                       }`}
@@ -3100,6 +3143,10 @@ ${meetingOwner} / ${meetingRole}
                       <button
                         onClick={() => {
                           if (!projectId) return;
+                          if (!adaptiveAlreadyConfirmed) {
+                            toast.error('Primero confirma el output de Step 4 en Adaptive Core.');
+                            return;
+                          }
                           const updatedSteps = project.steps.map((step) =>
                             step.number === 4
                               ? { ...step, status: 'Aprobado' as const, progress: 100 }

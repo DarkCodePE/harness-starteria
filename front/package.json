@@ -39,7 +39,24 @@
     "test:e2e": "tsx scripts/run-e2e.ts",
     "test:e2e:headed": "npm run test:e2e -- --headed",
     "test:e2e:debug": "npm run test:e2e -- --debug",
-    "test:portfolio-steps": "tsx scripts/verify-portfolio-steps-integration.ts"
+    "test:portfolio-steps": "tsx scripts/verify-portfolio-steps-integration.ts",
+    "db:pilot:provision": "tsx scripts/database/provision-pilot-dry-run-database.ts",
+    "db:pilot:migrate": "tsx scripts/database/run-prisma-for-disposable-db.ts pilot migrate deploy",
+    "db:pilot:status": "tsx scripts/database/run-prisma-for-disposable-db.ts pilot migrate status",
+    "db:pilot:seed": "tsx prisma/seed.pilot-dry-run.ts",
+    "test:e2e:copilot": "npm run test:e2e -- e2e/portfolio-copilot-create-front.spec.ts",
+    "test:e2e:portfolio": "npm run test:e2e -- e2e/portfolio-copilot-create-front.spec.ts e2e/portfolio-steps-integration.spec.ts",
+    "test:e2e:steps": "npm run test:e2e -- e2e/portfolio-steps-integration.spec.ts",
+    "test:e2e:pdf": "npm run test:e2e -- e2e/pdf-autofill.spec.ts",
+    "test:e2e:all": "npm run test:e2e",
+    "smoke:copilot": "tsx scripts/copilot-smoke.ts",
+    "pilot:dry-run:start": "tsx scripts/run-pilot-dry-run.ts",
+    "pilot:dry-run:functional": "tsx scripts/run-pilot-dry-run.ts --functional",
+    "pilot:dry-run:functional:api": "tsx scripts/copilot-dry-run-functional.ts",
+    "pilot:dry-run:resilience": "tsx scripts/copilot-dry-run-resilience.ts",
+    "load:copilot": "tsx scripts/copilot-load-baseline.ts",
+    "pilot:report:preflight": "tsx scripts/pilot/generate-copilot-pilot-report.ts --preflight",
+    "pilot:report": "tsx scripts/pilot/generate-copilot-pilot-report.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

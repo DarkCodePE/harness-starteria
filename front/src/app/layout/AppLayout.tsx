@@ -10,7 +10,6 @@ import { can } from '../authz/permissions';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
 import * as portfolioService from '../services/portfolioService';
 import type { InitiativeMeta } from '../services/portfolioService';
-import { buildAdaptiveJourney, resolveAdaptiveCoreForProject } from '../../features/adaptive-core/domain/adaptiveJourney';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Participante',
@@ -99,59 +98,84 @@ export function AppLayout() {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
   const canOpenProjectSteps = user?.role !== 'sponsor';
-  const sidebarJourney = currentProject
-    ? buildAdaptiveJourney(
-      currentProject,
-      resolveAdaptiveCoreForProject(currentProject),
-      (stepNumber) => {
-        if (!canOpenProjectSteps) return false;
-        if (stepNumber === 0) return true;
-        const previousStep = currentProject.steps.find(step => step.number === stepNumber - 1);
-        return previousStep?.status === 'Aprobado';
-      },
-    )
-    : [];
+// ADR-029: el menú se compone por permisos, no por el rol primario.
+// El rol primario solo afecta copy/presentación; los accesos reales salen
+// de los permisos efectivos del usuario.
+const etiquetaDashboard =
+  user?.role === 'sponsor'
+    ? 'Iniciativas patrocinadas'
+    : user?.role === 'mentor' || user?.role === 'admin'
+      ? 'Todos los proyectos'
+      : 'Mis iniciativas';
 
-  // ADR-029: el menú se COMPONE POR PERMISOS, no por el rol primario.
-  //
-  // Antes se elegía una lista entera según `user.role === 'admin' | 'mentor' | ...`.
-  // Con roles múltiples eso reintroducía el defecto que el ADR vino a erradicar:
-  // alguien con `{participante, admin}` y participante de primario tenía el permiso
-  // y NO veía el menú — autorizado por API, invisible por pantalla, que es
-  // exactamente lo que el parche #156 describía como el bug a eliminar.
-  //
-  // La ETIQUETA del dashboard sí sigue el rol primario: eso es presentación, que es
-  // el único papel que ADR-029 le deja a `role`.
-  const etiquetaDashboard =
-    user?.role === 'sponsor'
-      ? 'Iniciativas patrocinadas'
-      : user?.role === 'mentor' || user?.role === 'admin'
-        ? 'Todos los proyectos'
-        : 'Mis iniciativas';
+const links = [
+  {
+    icon: LayoutDashboard,
+    label: etiquetaDashboard,
+    path: '/dashboard',
+  },
 
-  const links = [
-    { icon: LayoutDashboard, label: etiquetaDashboard, path: '/dashboard' },
-    ...(can(user, 'mentor:panel')
-      ? [{ icon: Users, label: 'Revisiones pendientes', path: '/mentor' }]
-      : []),
-    ...(can(user, 'cohort:manage')
-      ? [
-        { icon: BarChart3, label: 'Panel cohorte', path: '/admin' },
-        { icon: Users, label: 'Mentores', path: '/admin#mentores' },
+  ...(can(user, 'mentor:panel')
+    ? [
+        {
+          icon: Users,
+          label: 'Revisiones pendientes',
+          path: '/mentor',
+        },
       ]
-      : []),
-    ...(can(user, 'users:assign-roles')
-      ? [{ icon: ShieldCheck, label: 'Roles de plataforma', path: '/admin/roles' }]
-      : []),
-    // Sin este enlace la capa estratégica sólo se alcanza escribiendo la URL a mano.
-    ...(can(user, 'portfolio:read')
-      ? [{ icon: Target, label: 'Portafolio', path: '/portfolio/inicio' }]
-      : []),
-    ...(can(user, 'project:own')
-      ? [{ icon: FolderOpen, label: 'Evidencias', path: '/evidencias' }]
-      : []),
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
+    : []),
+
+  ...(can(user, 'cohort:manage')
+    ? [
+        {
+          icon: BarChart3,
+          label: 'Panel cohorte',
+          path: '/admin',
+        },
+        {
+          icon: Users,
+          label: 'Mentores',
+          path: '/admin#mentores',
+        },
+      ]
+    : []),
+
+  ...(can(user, 'users:assign-roles')
+    ? [
+        {
+          icon: ShieldCheck,
+          label: 'Roles de plataforma',
+          path: '/admin/roles',
+        },
+      ]
+    : []),
+
+  ...(can(user, 'portfolio:read')
+    ? [
+        {
+          icon: Target,
+          label: 'Portafolio',
+          path: '/portfolio/inicio',
+        },
+      ]
+    : []),
+
+  ...(can(user, 'project:own')
+    ? [
+        {
+          icon: FolderOpen,
+          label: 'Evidencias',
+          path: '/evidencias',
+        },
+      ]
+    : []),
+
+  {
+    icon: User,
+    label: 'Mi perfil',
+    path: '/perfil',
+  },
+];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -228,18 +252,17 @@ export function AppLayout() {
                 'bg-slate-200'
               } ${!canOpenProjectSteps ? 'cursor-not-allowed opacity-60' : ''}`}
             />
-            {sidebarJourney.filter(item => item.step > 0).map(s => (
+            {currentProject.steps.map(s => (
               <button
-                key={s.step}
+                key={s.number}
                 onClick={() => {
                   if (!canOpenProjectSteps) return;
-                  navigate(`/projects/${currentProject.id}/step/${s.step}`);
+                  navigate(`/projects/${currentProject.id}/step/${s.number}`);
                 }}
-                title={`Step ${s.step}: ${s.title} - ${s.nextAction}`}
+                title={`Step ${s.number}: ${s.name}`}
                 disabled={!canOpenProjectSteps}
                 className={`flex-1 h-1.5 rounded-full transition-colors ${
-                  s.status === 'completed' ? 'bg-emerald-500' :
-                  s.status === 'current' || s.status === 'review_pending' ? 'bg-indigo-500' :
+                  s.status === 'Aprobado' ? 'bg-emerald-500' :
                   s.status === 'En progreso' || s.status === 'Enviado' || s.status === 'Feedback IA' || s.status === 'Ajustado' || s.status === 'Sesión experto pendiente' ? 'bg-indigo-500' :
                   'bg-slate-200'
                 } ${!canOpenProjectSteps ? 'cursor-not-allowed opacity-60' : ''}`}

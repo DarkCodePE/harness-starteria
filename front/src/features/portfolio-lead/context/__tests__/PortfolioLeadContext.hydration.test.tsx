@@ -18,15 +18,29 @@ vi.mock('../../../../app/context/AppContext', () => ({
 
 import * as portfolioService from '../../../../app/services/portfolioService';
 import { useApp } from '../../../../app/context/AppContext';
-import { PortfolioLeadProvider } from '../PortfolioLeadContext';
+import { PortfolioLeadProvider, usePortfolioLead } from '../PortfolioLeadContext';
 
 const listStrategicFronts = portfolioService.listStrategicFronts as ReturnType<typeof vi.fn>;
+const listChallenges = portfolioService.listChallenges as ReturnType<typeof vi.fn>;
+const listInitiatives = portfolioService.listInitiatives as ReturnType<typeof vi.fn>;
 const mockedUseApp = useApp as unknown as ReturnType<typeof vi.fn>;
+
+function Counts() {
+  const { strategicFronts, challenges, initiatives } = usePortfolioLead();
+  return (
+    <div
+      data-testid="counts"
+      data-fronts={strategicFronts.length}
+      data-challenges={challenges.length}
+      data-initiatives={initiatives.length}
+    />
+  );
+}
 
 function renderProvider() {
   return render(
     <PortfolioLeadProvider>
-      <div data-testid="child" />
+      <Counts />
     </PortfolioLeadProvider>,
   );
 }
@@ -34,6 +48,8 @@ function renderProvider() {
 describe('PortfolioLeadProvider — hidratación gateada por sesión', () => {
   beforeEach(() => {
     listStrategicFronts.mockReset();
+    listChallenges.mockReset();
+    listInitiatives.mockReset();
     mockedUseApp.mockReset();
   });
 
@@ -57,5 +73,19 @@ describe('PortfolioLeadProvider — hidratación gateada por sesión', () => {
     listStrategicFronts.mockResolvedValue([]);
     renderProvider();
     await waitFor(() => expect(listStrategicFronts).toHaveBeenCalledTimes(1));
+  });
+
+  it('no sustituye con mocks cuando falla la hidratacion primaria del portfolio', async () => {
+    mockedUseApp.mockReturnValue({ isAuthenticated: true, authLoading: false });
+    listStrategicFronts.mockResolvedValue([{ id: 'front-1', name: 'Frente real' }]);
+    listChallenges.mockRejectedValue(new Error('backend down'));
+    const { getByTestId } = renderProvider();
+
+    await waitFor(() => expect(listChallenges).toHaveBeenCalledTimes(1));
+    const counts = getByTestId('counts');
+    expect(counts.getAttribute('data-fronts')).toBe('0');
+    expect(counts.getAttribute('data-challenges')).toBe('0');
+    expect(counts.getAttribute('data-initiatives')).toBe('0');
+    expect(listInitiatives).not.toHaveBeenCalled();
   });
 });

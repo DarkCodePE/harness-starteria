@@ -25,14 +25,24 @@ import {
 import type { Project, Step0Data } from '../context/AppContext';
 import { getStep0Prefill, hasStep0Prefill } from '../../features/public-start/services/publicStep0PrefillService';
 import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
-import { ensureAdaptiveCoreForProject, getActiveStepConfiguration, materializeQuestionsForCheckpoint } from '../../features/adaptive-core/domain/adaptiveCore';
-import { mergeCheckpointResponses, projectCheckpointResponsesToFields } from '../../features/adaptive-core/domain/checkpointResponses';
+import {
+  getActiveStepConfiguration,
+  materializeQuestionsForCheckpoint,
+} from '../../features/adaptive-core/domain/adaptiveCore';
+
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
+
+import {
+  mergeCheckpointResponses,
+  projectCheckpointResponsesToFields,
+} from '../../features/adaptive-core/domain/checkpointResponses';
 import { confirmAdaptiveCheckpoint, confirmStep0Brief, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 import { AutofillField } from '../components/autofill/AutofillField';
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
 import { getById } from '../services/projectService';
 
 type ModuleId = 'start' | 'impact' | 'decision';
+type AdaptiveCoreLoadState = 'loading' | 'loaded' | 'error';
 type ModuleState = 'No iniciado' | 'En progreso' | 'Listo' | 'Necesita ajuste';
 
 const MODULE_ORDER: ModuleId[] = ['start', 'impact', 'decision'];
@@ -492,7 +502,8 @@ export function Step0Page() {
   const [recoveredFromPublicDraft, setRecoveredFromPublicDraft] = useState(false);
   const [publicDraftCardDismissed, setPublicDraftCardDismissed] = useState(false);
   const [showInitialReviewOnePager, setShowInitialReviewOnePager] = useState(false);
-  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<ReturnType<typeof ensureAdaptiveCoreForProject> | null>(null);
+  const [serverAdaptiveCore, setServerAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<AdaptiveCoreLoadState>('loading');
   const [checkpointSaving, setCheckpointSaving] = useState(false);
   const [checkpointError, setCheckpointError] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<ModuleId>('start');
@@ -542,15 +553,25 @@ export function Step0Page() {
     setForm(normalizeStep0Data(project.step0Data, project, user?.name ?? '', user?.email ?? ''));
   }, [project, user?.email, user?.name]);
 
-  useEffect(() => {
+  const loadAdaptiveCore = React.useCallback(() => {
     let cancelled = false;
-    if (!project?.id) return;
+    setServerAdaptiveCore(null);
+    setAdaptiveCoreStatus('loading');
+    setCheckpointError(null);
+    if (!project?.id) return () => { cancelled = true; };
     getAdaptiveCore(project.id)
       .then(core => {
-        if (!cancelled) setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+        if (!cancelled) {
+          setServerAdaptiveCore(core);
+          setAdaptiveCoreStatus('loaded');
+        }
       })
       .catch(() => {
-        if (!cancelled) setServerAdaptiveCore(null);
+        if (!cancelled) {
+          setServerAdaptiveCore(null);
+          setAdaptiveCoreStatus('error');
+          setCheckpointError('Estado adaptativo no disponible. Reintenta para cargar checkpoints y habilitar confirmaciones.');
+        }
       });
     return () => {
       cancelled = true;
@@ -585,6 +606,15 @@ export function Step0Page() {
     // sin esto la proyeccion del checkpoint quedaba pisada. Al declararse despues, React
     // lo ejecuta despues del reset y el checkpoint vuelve a ganar.
   }, [serverAdaptiveCore, project]);
+
+  useEffect(() => {
+    const cleanup = loadAdaptiveCore();
+    return cleanup;
+  }, [loadAdaptiveCore]);
+
+  const retryAdaptiveCore = () => {
+    void loadAdaptiveCore();
+  };
 
   useEffect(() => {
     if (!projectId || !project) return;
@@ -674,64 +704,106 @@ export function Step0Page() {
       : undefined
   );
   const initialReviewArtifact = initialReviewMeta?.artifact ?? null;
-  const adaptiveCore = serverAdaptiveCore ?? ensureAdaptiveCoreForProject(project);
-  const activeConfiguration = getActiveStepConfiguration(adaptiveCore);
-  // PRD-03 §5/§11: el nombre visible del Step y su output principal salen de la matriz
-  // ruta × Step, no de copy fijo. El copy legacy ("propuesta para lider") describia un
-  // solo caso de uso y quedaba mal en las otras cuatro rutas.
-  //
-  // Ojo: `activeStepConfigurationId` apunta al Step MAS ALTO activo (el backend lo
-  // resuelve 4→3→2→1→0), asi que en una iniciativa que ya avanzo a Step 2 devolveria la
-  // configuracion de Step 2. Esta pagina siempre debe rotular con la de Step 0.
-  const step0Configuration = adaptiveCore.stepConfigurations
-    .filter(config => config.step === 0)
-    .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0] ?? activeConfiguration;
-  const stepOutputLabel = step0Configuration.expectedOutput;
-  const stepVisibleName = step0Configuration.visibleName;
+const adaptiveCore =
+  adaptiveCoreStatus === 'loaded'
+    ? serverAdaptiveCore
+    : null;
 
-  const activeCheckpointFromServer = adaptiveCore.activeCheckpoint;
+const activeConfiguration = adaptiveCore
+  ? getActiveStepConfiguration(adaptiveCore)
+  : null;
+
+// La configuración visible de esta página siempre debe corresponder a Step 0.
+// No usamos activeStepConfigurationId porque puede apuntar a un Step posterior
+// si la iniciativa ya avanzó.
+const step0Configuration = adaptiveCore
+  ? (
+      adaptiveCore.stepConfigurations
+        .filter(config => config.step === 0)
+        .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0]
+      ?? activeConfiguration
+    )
+  : null;
+
+const stepOutputLabel =
+  step0Configuration?.expectedOutput ?? 'output del Step 0';
+
+const stepVisibleName =
+  step0Configuration?.visibleName ?? 'Step 0';
+
+const activeCheckpointFromServer =
+  adaptiveCore?.activeCheckpoint ?? null;
   const configuredServerCheckpoint = activeCheckpointFromServer
-    ? activeConfiguration.checkpoints.find(checkpoint => checkpoint.code === activeCheckpointFromServer.checkpointKey)
+    ? activeConfiguration?.checkpoints.find(checkpoint => checkpoint.code === activeCheckpointFromServer.checkpointKey)
     : null;
   const activeCheckpoint = activeCheckpointFromServer
     ? {
-        ...(configuredServerCheckpoint ?? activeConfiguration.checkpoints[0]),
+        ...(configuredServerCheckpoint ?? activeConfiguration?.checkpoints[0]),
         id: activeCheckpointFromServer.id,
         step: activeCheckpointFromServer.step,
         code: activeCheckpointFromServer.checkpointKey,
         status: activeCheckpointFromServer.status,
         questions: activeCheckpointFromServer.questions,
       }
-    : activeConfiguration.checkpoints.find(checkpoint => checkpoint.status === 'ready' || checkpoint.status === 'in_progress') ?? activeConfiguration.checkpoints[0];
-  const activeCheckpointQuestions = activeCheckpointFromServer?.questions ?? materializeQuestionsForCheckpoint(adaptiveCore, activeCheckpoint.code);
+    : null;
 
-  // Estado real de cada checkpoint: manda la instancia persistida; la configuracion solo
-  // aporta el valor por defecto cuando el backend todavia no materializo la instancia.
-  // Va despues de `activeCheckpoint` porque depende de el.
-  const checkpointSections = (step0Configuration.checkpoints ?? []).map((checkpoint, index) => {
-    const instance = (adaptiveCore.checkpointInstances ?? []).find(
-      (item: any) => item.checkpointKey === checkpoint.code && item.step === 0,
-    ) as { status?: string } | undefined;
-    return {
-      code: checkpoint.code,
-      title: checkpoint.title,
-      sequence: index + 1,
-      status: instance?.status ?? checkpoint.status ?? 'locked',
-      moduleId: CHECKPOINT_TO_MODULE[checkpoint.code],
-      isActive: checkpoint.code === activeCheckpoint.code,
-    };
-  });
-  const completedCheckpoints = checkpointSections.filter(section => section.status === 'completed').length;
-  // El output del Step se elabora cuando el recorrido esta cerrado, no cuando el
-  // formulario tiene sus campos llenos (PRD-03 §8: se desbloquea por criterios de cierre).
-  const canSave = missing.length === 0
-    && checkpointSections.length > 0
-    && completedCheckpoints === checkpointSections.length;
-  // El avance del Step es el de su recorrido, no el de un formulario.
-  const progress = checkpointSections.length
-    ? Math.round((completedCheckpoints / checkpointSections.length) * 100)
-    : 0;
-  const draftStep0Brief = (adaptiveCore.stepOutputs ?? []).find((output: any) => output.step === 0 && output.status === 'draft') as { id?: string; output?: Record<string, unknown> } | undefined;
+const activeCheckpointQuestions =
+  adaptiveCore && activeCheckpoint
+    ? (
+        activeCheckpointFromServer?.questions
+        ?? materializeQuestionsForCheckpoint(
+          adaptiveCore,
+          activeCheckpoint.code,
+        )
+      )
+    : [];
+
+// La UI puede proyectar el estado de todos los checkpoints,
+// pero únicamente desde las instancias persistidas recibidas del backend.
+const checkpointSections =
+  adaptiveCore && step0Configuration
+    ? (step0Configuration.checkpoints ?? []).map((checkpoint, index) => {
+        const instance = (adaptiveCore.checkpointInstances ?? []).find(
+          (item: any) =>
+            item.checkpointKey === checkpoint.code &&
+            item.step === 0,
+        ) as { status?: string } | undefined;
+
+        return {
+          code: checkpoint.code,
+          title: checkpoint.title,
+          sequence: index + 1,
+          status: instance?.status ?? 'locked',
+          moduleId: CHECKPOINT_TO_MODULE[checkpoint.code],
+          isActive: checkpoint.code === activeCheckpoint?.code,
+        };
+      })
+    : [];
+
+const completedCheckpoints =
+  checkpointSections.filter(
+    section => section.status === 'completed',
+  ).length;
+
+// El output solo se habilita cuando el recorrido persistido está cerrado.
+const canSave =
+  missing.length === 0 &&
+  checkpointSections.length > 0 &&
+  completedCheckpoints === checkpointSections.length;
+
+const progress = checkpointSections.length
+  ? Math.round(
+      (completedCheckpoints / checkpointSections.length) * 100,
+    )
+  : 0;
+
+const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
+  (output: any) =>
+    output.step === 0 &&
+    output.status === 'draft',
+) as
+  | { id?: string; output?: Record<string, unknown> }
+  | undefined;
   const leaderMessage = buildLeaderMessage(form);
   const pptPrompt = buildPptPrompt(form);
 
@@ -762,7 +834,7 @@ export function Step0Page() {
   };
 
   const persistStep0 = async (overrides: Partial<Step0Data> = {}) => {
-    const nextForm = { ...form, adaptiveCore, ...overrides };
+    const nextForm = { ...form, ...(adaptiveCore ? { adaptiveCore } : {}), ...overrides };
     const syncedBase = syncLegacyFields({ ...nextForm, mode });
     const synced = initialReviewMeta
       ? ({ ...syncedBase, initialReview: initialReviewMeta } as Step0Data)
@@ -845,7 +917,7 @@ export function Step0Page() {
     currentEvidence: form.currentEvidence,
     adoption: form.sponsorInterestReason,
     outcome: form.impactWho,
-    missingInformation: activeCheckpointQuestions.filter(question => question.allowsUnknown).map(question => question.prompt).join('\n'),
+    missingInformation: (activeCheckpointQuestions ?? []).filter(question => question.allowsUnknown).map(question => question.prompt).join('\n'),
   });
 
   /**
@@ -854,7 +926,7 @@ export function Step0Page() {
    * activo van encima por ser las mas recientes.
    */
   const confirmedCheckpointResponses: Record<string, unknown> = {
-    ...(adaptiveCore.confirmedResponses ?? {}),
+    ...(adaptiveCore?.confirmedResponses ?? {}),
     ...(activeCheckpointFromServer?.responses ?? {}),
   };
 
@@ -863,11 +935,16 @@ export function Step0Page() {
    * que el recorrido todavia no respondio. Antes era al reves —se raspaba el formulario
    * en cada render— y por eso el mismo dato quedaba capturado dos veces.
    */
-  const buildCheckpointResponses = (): Record<string, unknown> =>
-    mergeCheckpointResponses(confirmedCheckpointResponses, legacyStep0Seed());
+  const buildCheckpointResponses = (): Record<string, unknown> => {
+    if (!adaptiveCore || !activeCheckpoint) return {};
+    return mergeCheckpointResponses(confirmedCheckpointResponses, legacyStep0Seed());
+  };
 
   const confirmActiveCheckpoint = async (workspaceResponses?: Record<string, unknown>) => {
-    if (!projectId) return;
+    if (!projectId || !adaptiveCore || !activeCheckpoint) {
+      setCheckpointError('Estado adaptativo no disponible. Reintenta antes de confirmar checkpoints.');
+      return;
+    }
     setCheckpointSaving(true);
     setCheckpointError(null);
     try {
@@ -876,7 +953,8 @@ export function Step0Page() {
         checkpointKey: activeCheckpoint.code,
         responses: { ...buildCheckpointResponses(), ...(workspaceResponses ?? {}) },
       });
-      setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+      setServerAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
     } catch (err: any) {
       setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el checkpoint.');
     } finally {
@@ -885,7 +963,10 @@ export function Step0Page() {
   };
 
   const confirmBriefAndGoToStep1 = async () => {
-    if (!projectId || !draftStep0Brief?.output) return;
+    if (!projectId || !adaptiveCore || !draftStep0Brief?.output) {
+      setCheckpointError('Estado adaptativo no disponible. Reintenta antes de confirmar el Brief.');
+      return;
+    }
     setCheckpointSaving(true);
     setCheckpointError(null);
     try {
@@ -894,7 +975,8 @@ export function Step0Page() {
         brief: draftStep0Brief.output,
         confirmed: true,
       });
-      setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>);
+      setServerAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
       navigate(`/projects/${projectId}/step/1`);
     } catch (err: any) {
       setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el Brief.');
@@ -948,8 +1030,19 @@ export function Step0Page() {
       onRefresh={() => {
         if (!projectId) return;
         getAdaptiveCore(projectId)
-          .then(core => setServerAdaptiveCore(core as ReturnType<typeof ensureAdaptiveCoreForProject>))
-          .catch((err: any) => setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos recargar el checkpoint.'));
+          .then(core => {
+  setServerAdaptiveCore(core as AdaptiveInitiativeCore);
+  setAdaptiveCoreStatus('loaded');
+})
+          .catch((err: any) => {
+  setServerAdaptiveCore(null);
+  setAdaptiveCoreStatus('error');
+  setCheckpointError(
+    err?.response?.data?.error?.message
+      ?? err?.message
+      ?? 'No pudimos recargar el checkpoint.',
+  );
+})
       }}
     />
   );
@@ -1096,6 +1189,40 @@ export function Step0Page() {
           </div>
         )}
 
+{!adaptiveCore && (
+  <div className="border-b border-slate-200 bg-white px-5 py-5">
+    <div className="mx-auto max-w-[1480px]">
+      <div
+        role={adaptiveCoreStatus === 'error' ? 'alert' : 'status'}
+        className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+      >
+        <p className="font-semibold">
+          Estado adaptativo no disponible
+        </p>
+
+        <p className="mt-1">
+          {adaptiveCoreStatus === 'loading'
+            ? 'Cargando checkpoints persistidos desde backend. Las confirmaciones quedan bloqueadas mientras carga.'
+            : checkpointError
+              ?? 'No pudimos cargar checkpoints persistidos. Las confirmaciones quedan bloqueadas.'}
+        </p>
+
+        {adaptiveCoreStatus === 'error' && (
+          <button
+            type="button"
+            onClick={retryAdaptiveCore}
+            className="mt-3 rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm text-amber-900 hover:bg-amber-100"
+            style={{ fontWeight: 800 }}
+          >
+            Reintentar
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+{adaptiveCore && activeCheckpoint && (
         <div className="hidden">
           <div className="mx-auto max-w-[1480px] rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1168,6 +1295,7 @@ export function Step0Page() {
             )}
           </div>
         </div>
+        )}
 
         <div className="mx-auto grid max-w-[1480px] items-start gap-6 px-5 py-6 min-[1280px]:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
@@ -1441,10 +1569,16 @@ export function Step0Page() {
           {/* PRD-03 §6 (Zona 4): un unico CTA contextual. El aviso "Te falta 1 campo clave"
               era un cuarto contador de faltantes; el que manda es el del checkpoint. */}
           <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            <span style={{ fontWeight: 800 }}>{activeCheckpoint.code}</span>
-            <span>{activeCheckpoint.title ?? ''}</span>
-            <span className="text-slate-400">·</span>
-            <span>{completedCheckpoints}/{checkpointSections.length} cerrados</span>
+            {activeCheckpoint ? (
+              <>
+                <span style={{ fontWeight: 800 }}>{activeCheckpoint.code}</span>
+                <span>{activeCheckpoint.title ?? ''}</span>
+                <span className="text-slate-400">·</span>
+                <span>{completedCheckpoints}/{checkpointSections.length} cerrados</span>
+              </>
+            ) : (
+              <span style={{ fontWeight: 800 }}>Checkpoint bloqueado hasta cargar Adaptive Core</span>
+            )}
           </div>
           <div className="ml-auto hidden items-center gap-3 sm:flex">
             {project.mentorCredits !== undefined && <div className="flex items-center gap-1.5 text-xs text-slate-400"><CreditCard size={12} /><span>{project.mentorCredits} créditos disponibles</span></div>}

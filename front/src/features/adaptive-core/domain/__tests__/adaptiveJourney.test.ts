@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '../../../../app/context/AppContext';
 import type { AdaptiveInitiativeCore } from '../types';
-import { buildAdaptiveJourney, getCurrentAdaptiveJourneyStep } from '../adaptiveJourney';
+import {
+  buildAdaptiveJourney,
+  getCurrentAdaptiveJourneyStep,
+  resolveAuthoritativeAdaptiveCore,
+  resolveLegacyAdaptivePreview,
+} from '../adaptiveJourney';
 
 const project = {
   id: 'p1',
@@ -138,5 +143,18 @@ describe('adaptiveJourney', () => {
     expect(current.depthLevel).toBe('extended');
     expect(current.questionsCount).toBe(1);
     expect(current.title).not.toBe('Claridad estatica');
+  });
+
+  it('keeps authoritative Adaptive Core null when backend state is unavailable', () => {
+    expect(resolveAuthoritativeAdaptiveCore(null)).toBeNull();
+    expect(resolveAuthoritativeAdaptiveCore(undefined)).toBeNull();
+  });
+
+  it('keeps legacy builders available only through the explicit non-authoritative preview wrapper', () => {
+    const preview = resolveLegacyAdaptivePreview(project);
+
+    expect(preview.schemaVersion).toBe('PRD-03-v0.4');
+    expect(preview.masterContext.id).toContain(project.id);
+    expect(resolveAuthoritativeAdaptiveCore(preview)).toBe(preview);
   });
 });

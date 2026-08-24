@@ -2,6 +2,10 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../shared/types/auth.types';
 import { PortfolioService } from './portfolio.service';
 import { ApiResponse } from '../../shared/types/api.types';
+import {
+  dryRunProjectionReadFailure,
+  shouldFailStrategicFrontProjectionRead,
+} from '../copilot/application/copilot-dry-run-failure-injection';
 
 export class PortfolioController {
   constructor(private service: PortfolioService) {}
@@ -14,6 +18,9 @@ export class PortfolioController {
     next: NextFunction,
   ) => {
     try {
+      if (shouldFailStrategicFrontProjectionRead()) {
+        throw dryRunProjectionReadFailure();
+      }
       const data = await this.service.listStrategicFronts();
       res.json({ success: true, data });
     } catch (err) {

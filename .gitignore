@@ -27,6 +27,7 @@ client_secret_*.json
 front/coverage/
 **/coverage.xml
 .nyc_output/
+front/.pilot-dry-run/
 
 # Claude / Swarm tooling
 .claude/
