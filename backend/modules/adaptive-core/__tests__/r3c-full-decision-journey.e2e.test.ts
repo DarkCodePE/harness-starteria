@@ -394,7 +394,7 @@ describeR3CFinalE2E('R3-C final portfolio decision journey PostgreSQL E2E', () =
     await expect(service.confirmStep4Output(selfProjectId, ownerId, 'participante', {
       confirmed: true,
       idempotencyKey: 'r3c-final-self-rewrite',
-      answers: { rewritten: true },
+      brief: { rewritten: true },
     })).rejects.toMatchObject({ code: 'HISTORICAL_CYCLE_READ_ONLY' });
     expect(await sourceSnapshot(selfProjectId, seeded.cycle.id)).toBe(before);
   });

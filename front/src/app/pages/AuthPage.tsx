@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Zap, Eye, EyeOff, AlertCircle, ArrowRight, Clock3, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { can } from '../authz/permissions';
+import { resolveInitialWorkspace } from '../authz/workspaces';
 import type { AuthError } from '../services/api';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { getPendingPilotClaim } from '../../features/public-start/services/publicPilotLeadService';
@@ -106,7 +108,7 @@ export function AuthPage() {
     }
 
     const pendingDraftId = readPendingPublicDraftId();
-    if (pendingDraftId && user?.role !== 'portfolio_lead') {
+    if (pendingDraftId && !can(user, 'portfolio:write')) {
       (async () => {
         try {
           const project = await createProjectFromPublicDraft(pendingDraftId);
@@ -120,8 +122,12 @@ export function AuthPage() {
       return;
     }
 
-    navigate(user?.role === 'portfolio_lead' ? '/portfolio/inicio' : '/dashboard', { replace: true });
-  }, [createProjectFromPublicDraft, isAuthenticated, navigate, user?.role]);
+    // ADR-029: se vuelve a la ÚLTIMA zona usada, no a la que dicte el rol primario.
+    // Un doble rol ya no aterriza siempre en portafolio sólo por tenerlo.
+    // `resolveInitialWorkspace` degrada a una zona permitida si la guardada ya no
+    // lo está, así que esto nunca deja a nadie fuera.
+    navigate(resolveInitialWorkspace(user).path, { replace: true });
+  }, [createProjectFromPublicDraft, isAuthenticated, navigate, user]);
 
   // Focus management on submit failure: prioriza el primer campo inválido,
   // si no hay errores de campo enfoca el banner (que tiene tabIndex -1).
@@ -473,7 +479,12 @@ export function AuthPage() {
                   }}
                   placeholder="••••••••"
                   required
-                  minLength={8}
+                  // La longitud mínima es una regla de REGISTRO, no de login. Aplicarla
+                  // al login impedía entrar a cualquier cuenta cuya contraseña se creara
+                  // antes de la regla — incluidas las cuentas demo que esta misma página
+                  // ofrece como atajo (`demo123`, 7 caracteres). El backend acepta
+                  // cualquier longitud al iniciar sesión (`loginSchema`: password.min(1)).
+                  minLength={mode === 'register' ? 8 : undefined}
                   aria-invalid={!!fieldErrors.password}
                   aria-describedby={[
                     fieldErrors.password ? 'auth-password-error' : null,

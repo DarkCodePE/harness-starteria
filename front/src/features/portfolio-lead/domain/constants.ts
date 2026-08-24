@@ -5,7 +5,6 @@ import type {
   ExecutiveOutputStatus,
   ImportedItemStatus,
   InitiativePortfolioStatus,
-  PortfolioRole,
   StatusVisualConfig,
   StepContentStatus,
   StepValidationStatus,
@@ -16,9 +15,11 @@ import type {
 
 export const PORTFOLIO_LEAD_ROUTE_BASE = '/portfolio';
 export const PORTFOLIO_LEAD_HOME_PATH = '/portfolio/inicio';
-export const PORTFOLIO_LEAD_DEMO_EMAIL = 'portfolio@starteria.io';
 
-export const PORTFOLIO_LEAD_ALLOWED_ROLES: PortfolioRole[] = ['portfolio_lead'];
+// ADR-028: aquí vivían PORTFOLIO_LEAD_DEMO_EMAIL y PORTFOLIO_LEAD_ALLOWED_ROLES, los
+// dos muertos (nadie los importaba nunca). Eran el vestigio de una centralización que
+// los layouts no llegaron a adoptar; con el rol en el token ya no hay nada que
+// centralizar aquí.
 
 export const ACTIVE_FRONT_STATUSES: StrategicFrontStatus[] = [
   'active',

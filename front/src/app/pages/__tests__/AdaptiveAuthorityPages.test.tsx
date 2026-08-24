@@ -145,7 +145,7 @@ const serverCore = {
   activeCheckpoint: {
     id: 'cp-server',
     step: 0,
-    checkpointKey: 'CP-SERVER',
+    checkpointKey: 'CP-0.1',
     status: 'ready',
     sequence: 1,
     questions: [],
@@ -154,7 +154,7 @@ const serverCore = {
   progressSignal: {
     id: 'sig1',
     step: 0,
-    checkpointCode: 'CP-SERVER',
+    checkpointCode: 'CP-0.1',
     checkpointTitle: 'Server checkpoint',
     health: 'healthy',
     hypothesis: '',
@@ -181,7 +181,7 @@ const serverCore = {
       generatedBy: 'backend',
       closureCriteria: [],
       checkpoints: [
-        { id: 'cp-server', step: 0, code: 'CP-SERVER', title: 'Server checkpoint', purpose: 'Server only', status: 'ready', outputKey: 'Brief', completionCriteria: [], questions: [], gates: [] },
+        { id: 'cp-server', step: 0, code: 'CP-0.1', title: 'Server checkpoint', purpose: 'Server only', status: 'ready', outputKey: 'Brief', completionCriteria: [], questions: [], gates: [] },
       ],
     },
   ],
@@ -282,7 +282,7 @@ describe('Adaptive authority in pages', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Reintentar/i }));
 
     await waitFor(() => expect(screen.getByTestId('adaptive-workspace')).toBeInTheDocument());
-    expect(screen.getByText('CP-SERVER')).toBeInTheDocument();
+    expect(screen.getAllByText('CP-0.1').length).toBeGreaterThan(0);
   });
 
   it('ProjectHome does not allow Step 2 access from legacy approval when server core is still Step 1', async () => {

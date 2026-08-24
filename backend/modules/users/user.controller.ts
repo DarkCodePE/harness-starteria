@@ -6,6 +6,15 @@ import { ApiResponse } from '../../shared/types/api.types';
 export class UserController {
   constructor(private service: UserService) {}
 
+  /** ADR-029: lista de usuarios para la pantalla de administración de roles. */
+  listUsers = async (_req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
+    try {
+      res.json({ success: true, data: await this.service.listUsers() });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   getProfile = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
     try {
       const user = req.user!;
@@ -21,6 +30,23 @@ export class UserController {
       const user = req.user!;
       const profile = await this.service.updateProfile(user.id, req.body);
       res.json({ success: true, data: profile });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // ADR-028: rol de PLATAFORMA. `updateMemberRole` (más abajo) es el rol de PROYECTO.
+  updatePlatformRole = async (req: AuthenticatedRequest, res: Response<ApiResponse>, next: NextFunction) => {
+    try {
+      const actor = req.user!;
+      // ADR-029: `roles` (conjunto) gana; `role` se acepta como el conjunto de un
+      // elemento para no romper a los clientes que ya usan el endpoint.
+      const updated = await this.service.updatePlatformRoles(
+        actor.id,
+        req.params.userId,
+        req.body.roles ?? [req.body.role],
+      );
+      res.json({ success: true, data: updated });
     } catch (err) {
       next(err);
     }

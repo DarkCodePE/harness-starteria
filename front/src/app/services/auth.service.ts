@@ -5,7 +5,11 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'participante' | 'mentor' | 'admin' | 'sponsor' | 'colaborador' | 'viewer';
+  role: 'participante' | 'mentor' | 'admin' | 'sponsor' | 'colaborador' | 'viewer' | 'portfolio_lead';
+  /** ADR-029: el conjunto de roles del backend. `role` es sólo el primario. */
+  roles?: string[];
+  /** ADR-029: permisos ya derivados en el servidor. Es lo que decide qué se pinta. */
+  permissions?: string[];
   initials: string;
   cohort?: string | null;
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authService, AuthUser } from '../services/auth.service';
+import { PERMISSIONS, type Permission } from '../authz/permissions';
 import { initAuth, getAccessToken, parseApiError, AuthError } from '../services/api';
 import * as projectService from '../services/projectService';
 import { mapPublicDraftToStep0Data } from '../../features/public-start/domain/mappers';
@@ -280,7 +281,15 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  /**
+   * ADR-029: rol de PRESENTACIÓN (etiqueta del sidebar, badge de perfil).
+   * NO decide acceso — para eso está `permissions` / `can()`. Un usuario con dos
+   * roles tiene un solo `role` primario, así que compararlo para decidir a qué
+   * zona entra es justo el bug que ADR-029 arregla.
+   */
   role: Role;
+  /** ADR-029: permisos derivados en el servidor. La base de toda decisión de acceso. */
+  permissions: Permission[];
   initials: string;
   skills: string[];
   cohort?: string;
@@ -492,6 +501,10 @@ function createLocalProjectDraft(
   };
 }
 
+// ADR-028: `portfolio_lead` viaja en el token como los demás roles. Antes se sintetizaba
+// aquí comparando el correo del usuario contra un Set (con override por
+// VITE_PORTFOLIO_LEAD_EMAIL), lo que hacía que el backend nunca supiera quién era un
+// portfolio lead — su JWT decía `viewer` y las escrituras de portafolio devolvían 403.
 const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
   participante: 'owner',
   colaborador: 'owner',
@@ -499,25 +512,25 @@ const BACKEND_TO_FRONTEND_ROLE: Record<string, Role> = {
   mentor: 'mentor',
   admin: 'admin',
   sponsor: 'sponsor',
+  portfolio_lead: 'portfolio_lead',
 };
 
-function mapBackendUser(raw: AuthUser): User {
+// Exportada para test: es la función que decide el rol, y era la única pieza de esta
+// cadena sin cobertura (ADR-028).
+export function mapBackendUser(raw: AuthUser): User {
   const rawAny = raw as AuthUser & { cohortCode?: string | null };
-  const portfolioLeadEmails = new Set([
-    (import.meta.env.VITE_PORTFOLIO_LEAD_EMAIL || 'portfolio@starteria.io').toLowerCase(),
-  ]);
-  if (import.meta.env.MODE !== 'production') {
-    portfolioLeadEmails.add('pilot.portfolio@starteria.test');
-  }
-  const role = portfolioLeadEmails.has(raw.email.toLowerCase())
-    ? 'portfolio_lead'
-    : BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner';
+  const role = BACKEND_TO_FRONTEND_ROLE[raw.role] ?? 'owner';
 
   return {
     id: raw.id,
     name: raw.name,
     email: raw.email,
     role,
+    // ADR-029: se filtran a los permisos conocidos por este cliente. Un permiso que
+    // el backend conozca y el front no simplemente no se usa — falla cerrado.
+    permissions: ((raw.permissions ?? []) as Permission[]).filter((p) =>
+      (PERMISSIONS as readonly string[]).includes(p),
+    ),
     initials: raw.initials || inferInitials(raw.name),
     skills: [],
     cohort: rawAny.cohortCode ?? raw.cohort ?? '',

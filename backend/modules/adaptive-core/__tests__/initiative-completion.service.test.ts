@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { AdaptiveCoreService } from '../adaptive-core.service';
 import { createCycleStore, makeCyclePrisma, seedCycleProject } from './cycle-test-utils';
 

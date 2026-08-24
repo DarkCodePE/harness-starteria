@@ -7,7 +7,26 @@ import { Role } from '../../shared/types/user.types';
 
 export interface TokenPayload {
   sub: string;
+  /**
+   * Rol PRIMARIO. Sigue siendo obligatorio: es la etiqueta de presentación, el eje
+   * que usa `resolveProjectAccess`, y el respaldo que mantiene válidos los tokens
+   * emitidos ANTES de ADR-029 (que no traen `roles`).
+   */
   role: Role;
+  /**
+   * ADR-029: el conjunto de roles, del que se derivan los permisos en el servidor.
+   *
+   * Opcional a propósito: un token emitido antes de este cambio no lo trae, y debe
+   * seguir siendo válido hasta expirar en vez de echar al usuario a mitad de sesión.
+   * `authenticate` cae a `[role]` cuando falta.
+   *
+   * El token lleva ROLES, no permisos ya derivados: meterlos aquí congelaría la
+   * tabla de derivación dentro de cada sesión viva, y corregirla exigiría esperar
+   * a que expiren todas. Derivando en servidor, un cambio aplica en la siguiente
+   * petición. El precio es el desfase de 15 min ante un cambio de ASIGNACIÓN,
+   * que ya existía y se mitiga revocando los refresh tokens (ADR-028).
+   */
+  roles?: Role[];
   email: string;
   cohort?: string;
 }

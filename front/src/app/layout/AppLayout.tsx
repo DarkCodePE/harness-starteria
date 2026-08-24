@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, matchPath } from 'react-router';
 import {
   LayoutDashboard, FolderOpen, Users, BarChart3, User, HelpCircle,
-  LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard
+  LogOut, Menu, X, ChevronRight, Bell, Settings, Zap, CreditCard, Target, ShieldCheck
 } from 'lucide-react';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useApp } from '../context/AppContext';
+import { can } from '../authz/permissions';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
 import * as portfolioService from '../services/portfolioService';
 import type { InitiativeMeta } from '../services/portfolioService';
@@ -51,10 +53,11 @@ export function AppLayout() {
       return;
     }
 
-    if (user?.role === 'portfolio_lead') {
-      navigate('/portfolio/inicio', { replace: true });
-      return;
-    }
+    // ADR-029: AQUÍ vivía el redirect que encerraba al portfolio lead en /portfolio.
+    // Comparaba el rol PRIMARIO, así que quien fuera participante Y portfolio lead
+    // perdía su dashboard, sus iniciativas y el flujo Step 0-4 — no por una decisión
+    // de producto, sino porque `role` era un escalar y no sabía decir "las dos cosas".
+    // Ahora la zona se ELIGE (WorkspaceSwitcher) en vez de imponerse.
 
     if (user?.role !== 'sponsor') return;
 
@@ -95,31 +98,84 @@ export function AppLayout() {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
   const canOpenProjectSteps = user?.role !== 'sponsor';
-  const ownerLinks = [
-    { icon: LayoutDashboard, label: 'Mis iniciativas', path: '/dashboard' },
-    { icon: FolderOpen, label: 'Evidencias', path: '/evidencias' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
+// ADR-029: el menú se compone por permisos, no por el rol primario.
+// El rol primario solo afecta copy/presentación; los accesos reales salen
+// de los permisos efectivos del usuario.
+const etiquetaDashboard =
+  user?.role === 'sponsor'
+    ? 'Iniciativas patrocinadas'
+    : user?.role === 'mentor' || user?.role === 'admin'
+      ? 'Todos los proyectos'
+      : 'Mis iniciativas';
 
-  const mentorLinks = [
-    { icon: Users, label: 'Revisiones pendientes', path: '/mentor' },
-    { icon: LayoutDashboard, label: 'Todos los proyectos', path: '/dashboard' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
+const links = [
+  {
+    icon: LayoutDashboard,
+    label: etiquetaDashboard,
+    path: '/dashboard',
+  },
 
-  const adminLinks = [
-    { icon: BarChart3, label: 'Panel cohorte', path: '/admin' },
-    { icon: LayoutDashboard, label: 'Todos los proyectos', path: '/dashboard' },
-    { icon: Users, label: 'Mentores', path: '/admin#mentores' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
+  ...(can(user, 'mentor:panel')
+    ? [
+        {
+          icon: Users,
+          label: 'Revisiones pendientes',
+          path: '/mentor',
+        },
+      ]
+    : []),
 
-  const sponsorLinks = [
-    { icon: FolderOpen, label: 'Iniciativas patrocinadas', path: '/dashboard' },
-    { icon: User, label: 'Mi perfil', path: '/perfil' },
-  ];
+  ...(can(user, 'cohort:manage')
+    ? [
+        {
+          icon: BarChart3,
+          label: 'Panel cohorte',
+          path: '/admin',
+        },
+        {
+          icon: Users,
+          label: 'Mentores',
+          path: '/admin#mentores',
+        },
+      ]
+    : []),
 
-  const links = user?.role === 'mentor' ? mentorLinks : user?.role === 'admin' ? adminLinks : user?.role === 'sponsor' ? sponsorLinks : ownerLinks;
+  ...(can(user, 'users:assign-roles')
+    ? [
+        {
+          icon: ShieldCheck,
+          label: 'Roles de plataforma',
+          path: '/admin/roles',
+        },
+      ]
+    : []),
+
+  ...(can(user, 'portfolio:read')
+    ? [
+        {
+          icon: Target,
+          label: 'Portafolio',
+          path: '/portfolio/inicio',
+        },
+      ]
+    : []),
+
+  ...(can(user, 'project:own')
+    ? [
+        {
+          icon: FolderOpen,
+          label: 'Evidencias',
+          path: '/evidencias',
+        },
+      ]
+    : []),
+
+  {
+    icon: User,
+    label: 'Mi perfil',
+    path: '/perfil',
+  },
+];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -132,6 +188,10 @@ export function AppLayout() {
           <span className="text-base text-slate-900" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Startería</span>
         </div>
       </div>
+
+      {/* ADR-029: elegir zona en vez de que se imponga por rol. Invisible para
+          quien pertenece a una sola superficie. */}
+      <WorkspaceSwitcher activa="iniciativas" />
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">

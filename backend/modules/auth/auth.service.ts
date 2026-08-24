@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { AppError } from '../../shared/errors/AppError';
 import { logger } from '../../shared/utils/logger';
 import { hashPassword, verifyPassword } from './password.service';
+import { rolesForUser, permissionsForRoles, type Permission } from '../../shared/authz/permissions';
+import type { Role } from '../../shared/types/user.types';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -26,7 +28,8 @@ const DUMMY_PASSWORD_HASH =
   '$2b$12$bYvQg0n/JmnjjzZw9Vvj7uqQfL5WvB5kEcc0iH6m8YwJ4gI8xT0Xm';
 
 const DEMO_PASSWORD = 'demo123';
-const DEMO_USERS: Record<string, SafeUser> = {
+const DEMO_USERS: Record<string, SafeUser> = Object.fromEntries(
+  Object.entries({
   'participante@starteria.io': {
     id: 'demo-participante',
     name: 'Ana Rodriguez',
@@ -52,7 +55,7 @@ const DEMO_USERS: Record<string, SafeUser> = {
     id: 'demo-portfolio',
     name: 'Valeria Castro',
     email: 'portfolio@starteria.io',
-    role: 'viewer',
+    role: 'portfolio_lead',
     initials: 'VC',
   },
   'sponsor@starteria.io': {
@@ -62,7 +65,10 @@ const DEMO_USERS: Record<string, SafeUser> = {
     role: 'sponsor',
     initials: 'RJ',
   },
-};
+  // ADR-029: los usuarios demo pasan por la MISMA derivación que los reales, para
+  // que el modo demo no sea un universo con otras reglas de autorización.
+  }).map(([email, u]) => [email, toSafeUser(u)]),
+) as Record<string, SafeUser>;
 
 interface AuthTokens {
   accessToken: string;
@@ -73,9 +79,49 @@ interface SafeUser {
   id: string;
   name: string;
   email: string;
+  /** Rol PRIMARIO. El frontend lo usa como ETIQUETA, nunca para decidir acceso (ADR-029). */
   role: string;
+  /** ADR-029: el conjunto de roles. Es lo que permite pertenecer a las dos superficies. */
+  roles: Role[];
+  /**
+   * ADR-029: permisos YA DERIVADOS en el servidor.
+   *
+   * El frontend recibe permisos, no la tabla de derivación: esa tabla es superficie
+   * de seguridad y vive en un solo sitio. Duplicarla en el cliente repetiría el
+   * defecto que ADR-028 denunció (la misma regla en dos archivos que no se enteran
+   * el uno del otro).
+   */
+  permissions: Permission[];
   initials: string;
   cohort?: string | null;
+}
+
+/**
+ * Serializa un usuario para la respuesta HTTP, derivando roles y permisos.
+ * Punto ÚNICO: antes había cuatro literales idénticos y cualquiera podía quedarse
+ * sin un campo nuevo sin que nada fallara.
+ */
+function toSafeUser(user: {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  roles?: Role[] | null;
+  initials: string;
+  cohortId?: string | null;
+}): SafeUser {
+  const roles = [...rolesForUser({ role: user.role as Role, roles: user.roles })];
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    roles,
+    permissions: [...permissionsForRoles(roles)],
+    initials: user.initials,
+    cohort: user.cohortId,
+  };
 }
 
 type AuthenticatedResult = { user: SafeUser; tokens: AuthTokens; waitlisted?: false };
@@ -149,13 +195,13 @@ export class AuthService {
       }
     } catch (err) {
       if (isDevelopment() && isLikelyDatabaseConnectionError(err)) {
-        const user: SafeUser = {
+        const user: SafeUser = toSafeUser({
           id: `demo-${data.email.toLowerCase()}`,
           name: data.name,
           email: data.email.toLowerCase(),
           role: data.role,
           initials: computeInitials(data.name),
-        };
+        });
 
         logger.warn({ email: user.email }, 'Database unavailable; using development auth fallback for registration');
 
@@ -179,7 +225,10 @@ export class AuthService {
         name: data.name,
         email: data.email.toLowerCase(),
         passwordHash,
+        // ADR-029: se escriben las DOS columnas de la fase 1 en el mismo create,
+        // para que ninguna fila nueva nazca sin `roles`.
         role: data.role,
+        roles: [data.role],
         initials,
         isActive: waitlistDisabled,
       },
@@ -192,14 +241,7 @@ export class AuthService {
     }
 
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        initials: user.initials,
-        cohort: user.cohortId,
-      },
+      user: toSafeUser(user),
       waitlisted: true,
     };
   }
@@ -307,19 +349,12 @@ export class AuthService {
       });
     }
 
-    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);
+    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.roles, user.cohortId);
 
     logger.info({ userId: user.id }, 'User logged in');
 
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        initials: user.initials,
-        cohort: user.cohortId,
-      },
+      user: toSafeUser(user),
       tokens,
     };
   }
@@ -374,6 +409,7 @@ export class AuthService {
       user.id,
       user.email,
       user.role,
+      user.roles,
       user.cohortId,
       storedToken.family,
     );
@@ -459,7 +495,9 @@ export class AuthService {
             passwordHash: null,
             googleId: payload.googleId,
             avatarUrl: payload.picture ?? null,
+            // ADR-029: las dos columnas, igual que en el registro con contraseña.
             role: 'participante',
+            roles: ['participante'],
             initials,
             isActive: false,
           },
@@ -490,29 +528,15 @@ export class AuthService {
 
     if (!user.isActive) {
       return {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          initials: user.initials,
-          cohort: user.cohortId,
-        },
+        user: toSafeUser(user),
         waitlisted: true,
       };
     }
 
-    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.cohortId);
+    const tokens = await this.issueTokenPair(user.id, user.email, user.role, user.roles, user.cohortId);
 
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        initials: user.initials,
-        cohort: user.cohortId,
-      },
+      user: toSafeUser(user),
       tokens,
     };
   }
@@ -531,14 +555,7 @@ export class AuthService {
 
     if (!user) return null;
 
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      initials: user.initials,
-      cohort: user.cohortId,
-    };
+    return toSafeUser(user);
   }
 
   // --- Private helpers ---
@@ -547,12 +564,17 @@ export class AuthService {
     userId: string,
     email: string,
     role: string,
+    // ADR-029: el conjunto va al token para que el servidor derive los permisos.
+    // Opcional porque las filas sin migrar aún no lo tienen; `authenticate` cae
+    // a `[role]` en ese caso.
+    roles: TokenPayload['roles'],
     cohort?: string | null,
     existingFamily?: string,
   ): Promise<AuthTokens> {
     const payload: TokenPayload = {
       sub: userId,
       role: role as TokenPayload['role'],
+      ...(roles && roles.length > 0 ? { roles } : {}),
       email,
       ...(cohort ? { cohort } : {}),
     };

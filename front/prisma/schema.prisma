@@ -9,6 +9,8 @@ datasource db {
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
+// ADR-028: séptimo rol. Añadir un valor es `ALTER TYPE ... ADD VALUE`, aditivo, y pasa
+// el guard de `prisma db push` sin `--accept-data-loss` que impone el CD (ADR-018).
 enum Role {
   participante
   mentor
@@ -16,6 +18,7 @@ enum Role {
   sponsor
   colaborador
   viewer
+  portfolio_lead
 }
 
 enum SponsorCheckpointStatus {
@@ -527,7 +530,27 @@ model User {
   name                String
   passwordHash        String?
   googleId            String?   @unique
+  // ADR-029: `roles` es la fuente de autorización; un usuario puede pertenecer a
+  // varias superficies a la vez (participante Y portfolio_lead), que es lo que un
+  // escalar no sabe expresar. Los permisos efectivos son la UNIÓN de los roles.
+  //
+  // `role` SOBREVIVE durante la fase 1 y se sigue escribiendo en paralelo: el CD
+  // corre `prisma db push` SIN `--accept-data-loss` (ADR-018), así que eliminar la
+  // columna necesita ventana y comando propios. Hasta entonces es la red de
+  // seguridad para revertir sin restaurar backups. Fase 2: issue #160.
+  //
+  // Array = aditivo, pasa el guard del CD. Lo prohibido por ADR-018/020/023/026
+  // es el @@unique sobre tabla poblada; aquí no aparece.
+  //
+  // SIN @default A PROPÓSITO. Verificado contra Postgres: con `@default([participante])`
+  // el ALTER TABLE rellena TODAS las filas existentes con ese valor, así que un admin
+  // pasaba a `{participante}` y quedaba indistinguible de un participante real — si un
+  // lector de `roles` llegase a producción antes del backfill, sería una purga silenciosa
+  // de privilegios. Sin default, las filas viejas quedan en `{}`, que es una señal
+  // INEQUÍVOCA de "aún no migrada" y permite caer a `role` (ver rolesForUser).
+  // Así el orden de despliegue deja de ser una condición de corrección.
   role                Role
+  roles               Role[]
   initials            String
   skills              String[]
   bio                 String?

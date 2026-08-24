@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '../auth/auth.middleware';
+import { authenticate, requirePermission } from '../auth/auth.middleware';
 import { validate } from '../../shared/middleware/validate';
 import { createCheckpointSchema, respondCheckpointSchema } from './sponsor.schemas';
 import {
@@ -18,7 +18,7 @@ router.use(authenticate);
 // Create checkpoint (admin only)
 router.post(
   '/checkpoints',
-  requireRole('admin'),
+  requirePermission('sponsor:manage'),
   validate(createCheckpointSchema),
   createCheckpoint,
 );
@@ -29,7 +29,7 @@ router.get('/checkpoints/:id', getCheckpoint);
 // Sponsor responds to checkpoint
 router.patch(
   '/checkpoints/:id/respond',
-  requireRole('sponsor'),
+  requirePermission('sponsor:decide'),
   validate(respondCheckpointSchema),
   respondToCheckpoint,
 );
@@ -37,7 +37,7 @@ router.patch(
 // Admin skips checkpoint
 router.patch(
   '/checkpoints/:id/skip',
-  requireRole('admin'),
+  requirePermission('sponsor:manage'),
   skipCheckpoint,
 );
 

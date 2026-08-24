@@ -14,6 +14,11 @@ export interface AdaptiveCheckpointWorkspaceProps {
   outputConfirmed?: boolean;
   saving?: boolean;
   error?: string | null;
+  /**
+   * El workspace se monta dentro de una seccion que ya declara codigo, titulo y proposito
+   * del checkpoint (Step 0). En ese caso su propia cabecera seria una repeticion.
+   */
+  embedded?: boolean;
   onConfirmCheckpoint?: (responses: Record<string, unknown>) => void | Promise<void>;
   onConfirmOutput?: () => void | Promise<void>;
   onRefresh?: () => void;
@@ -85,6 +90,7 @@ export function AdaptiveCheckpointWorkspace({
   outputConfirmed,
   saving = false,
   error,
+  embedded = false,
   onConfirmCheckpoint,
   onConfirmOutput,
   onRefresh,
@@ -104,6 +110,10 @@ export function AdaptiveCheckpointWorkspace({
   const criteria = checkpointCriteria(checkpoint).length ? checkpointCriteria(checkpoint) : configuredCheckpoint?.completionCriteria ?? [];
   const gates = checkpointGates(checkpoint).length ? checkpointGates(checkpoint) : configuredCheckpoint?.gates ?? [];
   const canConfirmCheckpoint = Boolean(onConfirmCheckpoint && checkpoint && missing.length === 0 && !saving);
+  // Si el contexto ya subido resuelve todas las variables del checkpoint, no tiene sentido
+  // pedir de nuevo lo mismo: se presenta como resuelto, con lo usado a la vista, para que
+  // la persona valide en vez de rellenar.
+  const resolvedByContext = questions.length > 0 && questions.every(question => Boolean(question.prefilledFrom));
   const outputReady = Boolean(outputPreview);
 
   const payload = () => questions.reduce<Record<string, unknown>>((acc, question) => {
@@ -113,14 +123,20 @@ export function AdaptiveCheckpointWorkspace({
   }, {});
 
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm" aria-label="Workspace adaptativo del checkpoint">
-      <div className="border-b border-indigo-100 bg-indigo-50 px-5 py-5">
+    <section
+      className={embedded ? 'overflow-hidden rounded-2xl border border-indigo-100 bg-white' : 'mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm'}
+      aria-label="Workspace adaptativo del checkpoint"
+    >
+      <div className={embedded ? 'border-b border-indigo-100 bg-indigo-50/50 px-5 py-4' : 'border-b border-indigo-100 bg-indigo-50 px-5 py-5'}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-4xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs text-white" style={{ fontWeight: 800 }}>
-                {code}
-              </span>
+              {/* Embebido, el codigo ya lo declara la cabecera de la seccion. */}
+              {!embedded && (
+                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs text-white" style={{ fontWeight: 800 }}>
+                  {code}
+                </span>
+              )}
               <span className="rounded-full bg-white px-3 py-1 text-xs text-indigo-700 ring-1 ring-indigo-100" style={{ fontWeight: 700 }}>
                 {config?.routeType.replaceAll('_', ' ') ?? core.masterContext?.routeType?.replaceAll('_', ' ') ?? 'ruta adaptativa'}
               </span>
@@ -128,9 +144,11 @@ export function AdaptiveCheckpointWorkspace({
                 {config?.depthLevel ?? core.masterContext?.depthLevel ?? 'standard'}
               </span>
             </div>
-            <h2 className="mt-3 text-xl text-slate-950" style={{ fontWeight: 850 }}>
-              {checkpointTitle(checkpoint, configuredCheckpoint?.title)}
-            </h2>
+            {!embedded && (
+              <h2 className="mt-3 text-xl text-slate-950" style={{ fontWeight: 850 }}>
+                {checkpointTitle(checkpoint, configuredCheckpoint?.title)}
+              </h2>
+            )}
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">{purpose}</p>
             <p className="mt-2 text-sm text-indigo-900" style={{ fontWeight: 700 }}>
               Output que estas construyendo: {checkpointOutputKey(checkpoint, configuredCheckpoint?.outputKey ?? config?.expectedOutput ?? 'output adaptativo')}
@@ -153,15 +171,26 @@ export function AdaptiveCheckpointWorkspace({
 
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>Preguntas minimas para avanzar</p>
-              <p className="mt-1 text-xs text-slate-500">Responde solo lo necesario para este checkpoint. Si falta informacion permitida, dejala trazada.</p>
+          {resolvedByContext ? (
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm text-emerald-900" style={{ fontWeight: 800 }}>
+                Este checkpoint ya queda resuelto con la informacion que subiste
+              </p>
+              <p className="mt-1 text-xs text-emerald-800">
+                No hace falta responder nada nuevo. Revisa abajo lo que usamos y confirma si es correcto.
+              </p>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600" style={{ fontWeight: 700 }}>
-              {questions.length} preguntas / {missing.length} pendientes
-            </span>
-          </div>
+          ) : (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-950" style={{ fontWeight: 800 }}>Preguntas minimas para avanzar</p>
+                <p className="mt-1 text-xs text-slate-500">Responde solo lo necesario para este checkpoint. Si falta informacion permitida, dejala trazada.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600" style={{ fontWeight: 700 }}>
+                {questions.length} preguntas / {missing.length} pendientes
+              </span>
+            </div>
+          )}
 
           {questions.length > 0 ? (
             <div className="space-y-3">
@@ -234,7 +263,7 @@ export function AdaptiveCheckpointWorkspace({
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 style={{ fontWeight: 800 }}
               >
-                <CheckCircle2 size={16} /> {saving ? 'Confirmando...' : 'Confirmar checkpoint'}
+                <CheckCircle2 size={16} /> {saving ? 'Confirmando...' : resolvedByContext ? 'Validar y cerrar este checkpoint' : 'Confirmar checkpoint'}
               </button>
             )}
             {onConfirmOutput && (

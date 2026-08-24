@@ -7,8 +7,8 @@
 - Ruta de inicio estándar: `npm run dev:all`
 - Ruta de verificación estándar: `npm test`
 - Ruta de verificación de referencia (e2e): `cd front && npm run docker:up && npm run test:e2e` — escenario register → login → create project → PDF upload+extract → assert UI en Step 0 (`front/e2e/pdf-autofill.spec.ts`).
-- Característica inacabada de mayor prioridad actual: `portfolio-steps-integration` (milestone #7 — integrar portfolio-lead con el flujo de steps del participante).
-- Bloqueador actual: ninguno registrado.
+- Característica inacabada de mayor prioridad actual: `PBA-07-e2e-dual-role` (blocked por entorno).
+- Bloqueador actual: el puerto 5433 tiene un docker-proxy huérfano que retiene el bind pero rechaza conexiones → el stack e2e no levanta. Ver sesión 017.
 
 ## Registro de Sesiones
 
@@ -207,3 +207,22 @@
 - Propagado a `docs/templates/` (feature_list + init.sh) para que el próximo proyecto herede la primitiva; el template pasa su propio check. Rúbrica v2 y `CLAUDE.md` actualizados.
 - Estado final: **26 passing, 3 blocked, 1 in_progress** (`MAH-03-ab-eval`). Check verde en repo y template.
 - **Próximo**: atacar el gap de `MAH-03` — la clasificación multidimensional con LLM real. No tocar el orquestador baseline: es el brazo de control del A/B.
+
+### Sesión 017 — ADR-029: autorización por permisos y roles múltiples (2026-08-12)
+
+- **Problema del usuario**: "le damos acceso a una plataforma y pierde en otra". Un solo login sirve dos superficies (workspace de iniciativas y capa estratégica) pero la pertenencia se decidía con un ESCALAR `User.role`. Un escalar no expresa pertenencia a dos conjuntos, así que conceder una plataforma revocaba la otra. El síntoma vivía en `AppLayout.tsx:55`: un `portfolio_lead` quedaba ENCERRADO en /portfolio y perdía dashboard, iniciativas y Step 0-4. El commit #156 fue el parche del caso inverso para el admin. ADR-028 ya había anotado la deuda.
+- **ADR-029 escrito y ejecutado con SPARC** (`backend/docs/adr/ADR-029-permission-based-authorization.md`, Propuesto). Decisiones del usuario: permisos explícitos + switcher de workspace.
+- **PBA-01..06 passing · PBA-07 blocked por entorno.**
+    - PBA-01: catálogo de 8 permisos + tabla de derivación; permisos efectivos = UNIÓN de los roles (26 tests, incl. monotonía: sumar un rol nunca quita un permiso).
+    - PBA-02: `User.roles` array + backfill idempotente + escritura dual desde un solo punto. Verificado contra Postgres 16 real.
+    - PBA-03: JWT lleva roles (no permisos derivados); `requirePermission`; `buildRequestUser` compartido con los tests.
+    - PBA-04: los 30 guards migrados (20 eran la misma línea en portfolio.router).
+    - PBA-05: BORRADO el redirect-cárcel; `PortfolioLeadLayout` por permiso; el borde de #156 sigue verde.
+    - PBA-06: switcher de zona con degradación segura; invisible para quien tiene una sola superficie.
+- **DOS hallazgos que corrigieron el propio ADR** (ambos anotados en el documento):
+    1. `roles Role[] @default([participante])` es INSEGURO: el ALTER TABLE rellena todas las filas existentes, dejando al admin en `{participante}` e indistinguible de un participante real. Un lector desplegado antes del backfill habría purgado privilegios en silencio. Se quitó el default → filas viejas en NULL (señal inequívoca) + `rolesForUser` cae a `role`. El orden de despliegue deja de ser condición de corrección.
+    2. `admin → todos` NO era fiel al comportamiento de hoy: `PATCH /sponsor/checkpoints/:id/respond` usa `requireRole('sponsor')` y excluye al admin a propósito. El comodín habría colado un cambio de política. El admin ahora enumera sus permisos y NO tiene `sponsor:decide`.
+- **Verificación**: backend 534/534 (baseline 492) · front 311/311 (baseline 294) · `npm run build` y `build:backend` exit 0 · `prisma db push` SIN `--accept-data-loss` contra base POBLADA ✅ · backfill migrated=5 → 0 en la 2ª corrida.
+- **Defecto latente encontrado (no arreglado, fuera de alcance)**: `backend/scripts/backfill-challenge-team.ts` no corre — no hay `node_modules` en la raíz, así que no resuelve `@prisma/client`. Su uso documentado nunca funcionó desde ahí. El backfill nuevo se puso en `front/scripts/` por eso.
+- **Issues abiertos**: #160 (fase 2: eliminar la columna `role`), #161 (cerrar las 7 lecturas de portfolio hoy sin gate).
+- **Pendiente**: PBA-07 (e2e de doble rol + smoke de referencia) — bloqueado por el puerto 5433. Ver `status_note` en feature_list.

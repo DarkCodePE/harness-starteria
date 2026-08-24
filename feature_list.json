@@ -1,6 +1,6 @@
 {
   "project": "Starteria (Dashboardstarteria)",
-  "last_updated": "2026-07-26",
+  "last_updated": "2026-08-12",
   "rules": {
     "single_active_feature": true,
     "passing_requires_evidence": true,
@@ -571,7 +571,10 @@
         "Medir cómo se comporta el contrato con un LLM real — vive en MAH-03",
         "Tocar el pipeline deepagents existente: esta feature solo AÑADE módulos"
       ],
-      "deferred_to": ["MAH-02-orchestrator-wiring", "MAH-03-ab-eval"],
+      "deferred_to": [
+        "MAH-02-orchestrator-wiring",
+        "MAH-03-ab-eval"
+      ],
       "status": "passing",
       "verification": [
         "cd ai-service && .venv/bin/python -m pytest tests/test_harness_*.py -q",
@@ -598,7 +601,9 @@
         "Cambiar el default: mode=\"baseline\" sigue siendo el comportamiento por defecto y no se toca",
         "La calidad del diagnóstico que devuelve el endpoint — eso lo mide MAH-03, no esta feature"
       ],
-      "deferred_to": ["MAH-03-ab-eval"],
+      "deferred_to": [
+        "MAH-03-ab-eval"
+      ],
       "status": "passing",
       "verification": [
         "cd ai-service && .venv/bin/python -m pytest tests/test_harness_integration.py -q (endpoint real vía TestClient, etapa LLM monkeypatcheada: hermético, sin red)",
@@ -626,8 +631,8 @@
         "Correr el scorecard en CI: hoy es manual y así se queda en esta feature",
         "Cambiar el default a mode=\"harness\" en producción — decisión posterior a tener los números"
       ],
-      "status": "in_progress",
-      "status_note": "Determinista en verde; degrada con LLM real — la clasificación multidimensional no sobrevive.",
+      "status": "blocked",
+      "status_note": "APARCADA POR LÍMITE WIP (2026-08-04) para abrir portfolio-lead-platform-role. QUÉ LA DESBLOQUEA: subir classification_accuracy y confidence_calibration en live por encima de 0.0 — el trabajo está acotado (el prompt de clasificación multidimensional y el umbral del hard gate que provoca la sobre-confirmación de orden-compra), no depende de nada externo. Estado al aparcar: determinista en verde; degrada con LLM real.",
       "verification": [
         "Correr el runner A/B en modo determinista (stub) sobre los 12 casos golden.",
         "Correr el runner A/B en modo live contra el modelo configurado.",
@@ -640,6 +645,259 @@
         "Casos que fallan en live: orden-compra (falla en LAS DOS corridas live: espera route:research-assistant, devuelve confirm → sobre-confirmación), piloto-reconstruct (falla solo en deepseek) y solucion-disfrazada (falla solo en minimax: devuelve escalate)."
       ],
       "notes": "GAP PRINCIPAL DEL ÉPICO: el eje en el que se apoya el diseño (modular depth/route en vez de saltar steps) es justo el que colapsa con LLM real — classification_accuracy 0.0 live vs 1.0 con stub. La sobre-confirmación de orden-compra es probablemente síntoma del mismo problema (diagnóstico vacío o de baja confianza → el gate pide confirmar). Dataset: ai-service/harness/eval/dataset.py (12 casos, taxonomía §21). Ver methodology-agent-harness."
+    },
+    {
+      "id": "portfolio-lead-platform-role",
+      "priority": 30,
+      "epic": "portfolio-lead",
+      "area": "backend + front + schema",
+      "title": "portfolio_lead deja de ser un email hardcodeado y pasa a ser un rol real que autoriza en el servidor",
+      "user_visible_behavior": "Un portfolio lead entra a /portfolio y puede ESCRIBIR: crear frentes estratégicos, publicar retos, editar la meta de iniciativas. Hoy la UI le deja entrar pero el backend le devuelve 403 en las 19 rutas de escritura, porque su JWT dice 'viewer'. Además un admin puede convertir a cualquier usuario en portfolio lead por API, en vez de que el rol sea inalcanzable salvo para una dirección de correo concreta.",
+      "scope_out": [
+        "Cerrar con rol las 7 rutas GET de portfolio.router.ts hoy abiertas a cualquier autenticado: AppLayout llama getInitiativeMeta para TODO usuario autenticado, así que cerrarlas rompe a los participantes",
+        "UI de administración para asignar roles: el endpoint queda expuesto y se usa por API",
+        "Validar en runtime el cast sin comprobar de auth.service.ts (role as TokenPayload['role']) y en token.service.ts verifyAccessToken — debilidad preexistente que este cambio no introduce",
+        "Unificar las tres definiciones duplicadas del union de roles (backend/shared/types/user.types.ts, auth.schemas.ts, front/src/app/services/auth.service.ts)",
+        "Resolver la colisión de numeración de ADR-009 (tres archivos) y ADR-010 (dos)",
+        "Persistir las mutaciones del provider portfolio-lead: es otra feature, ya aparcada"
+      ],
+      "deferred_to": [
+        "portfolio-persist-mutations"
+      ],
+      "status": "passing",
+      "status_note": "",
+      "verification": [
+        "cd front && npm run test:backend — verde, incluyendo: auth.schemas acepta portfolio_lead; test supertest donde un JWT portfolio_lead pasa PUT /portfolio/initiatives/:id/meta y un JWT mentor recibe 403 en la misma ruta; tests del endpoint de rol (admin 200 + refresh tokens revocados, no-admin 403, admin sobre sí mismo 403, rol inválido 400).",
+        "cd front && npm run test:front — verde, incluyendo un test nuevo de mapBackendUser: {role:'portfolio_lead', email:'cualquiera@x.com'} -> portfolio_lead, y {role:'viewer', email:'portfolio@starteria.io'} -> owner (prueba que el email dejó de mandar).",
+        "cd front && npm run docker:up && npx prisma db push --schema=./prisma/schema.prisma SIN --accept-data-loss — replica el comando exacto del CD y debe pasar sin prompt destructivo.",
+        "cd front && npm run docker:up && npm run test:e2e — la ruta de referencia (pdf-autofill.spec.ts) sigue verde y una spec nueva loguea como portfolio lead, aterriza en /portfolio/inicio y ejecuta una escritura de portafolio con 2xx (hoy sería 403).",
+        "./init.sh verde de punta a punta."
+      ],
+      "evidence": [
+        "Unit backend: 52 files / 491 tests passed, 0 failed (`cd front && npm run test:backend`). Incluye portfolio.router.authz.test.ts 5/5 (portfolio_lead 200 en PUT /portfolio/initiatives/:id/meta; mentor 403 en la misma ruta; participante 403; lecturas 200) y user.role.test.ts 9/9 (admin 200, mentor/portfolio_lead/participante/sponsor 403, rol invalido 400, auto-cambio 403, refresh tokens revocados, 404 sin tocar nada).",
+        "Unit front: 43 files / 286 tests passed, 0 failed (`cd front && npm run test:front`). Incluye mapBackendUser.test.ts 10/10: {role:'portfolio_lead', email:'cualquiera@x.com'} -> portfolio_lead y {role:'viewer', email:'portfolio@starteria.io'} -> owner (esta segunda es la que prueba que el correo dejo de mandar).",
+        "Typecheck limpio: `cd front && npm run typecheck` (front + backend) sin errores.",
+        "DEPLOY / db push contra base POBLADA: postgres:16-alpine efimero, schema PREVIO a ADR-028 aplicado, fila insertada en User con role='viewer', y luego el comando EXACTO del CD (`npx prisma db push --schema=./prisma/schema.prisma --skip-generate`, SIN --accept-data-loss) -> EXIT=0, 'Your database is now in sync'. Post-condicion verificada en SQL: enum Role = participante,mentor,admin,sponsor,colaborador,viewer,portfolio_lead; la fila preexistente sobrevive; UPDATE a 'portfolio_lead' funciona.",
+        "E2E contra el stack real (`npm run test:e2e -- e2e/portfolio-lead-role.spec.ts`): 4 passed, EXIT=0. (1) el JWT del portfolio lead lleva role=portfolio_lead; (2) con ese token crea frente estrategico Y reto (2xx) — antes 403; (3) un participante recibe 403 al escribir; (4) las lecturas siguen abiertas.",
+        "REGRESION E2E MEDIDA, NO ASUMIDA: la suite pasa de 12 rojas a 4. Las 4 restantes se verificaron ROJAS TAMBIEN EN EL BASELINE (worktree en 75fd0df, sin ninguno de estos cambios): pdf-autofill (2 corridas independientes, fallo identico) e initial-review-prd-audit x2. portfolio-steps-integration y team-inheritance piden admin@starteria.io, que siembra el seed de DESARROLLO y no existe en el stack e2e aislado (sus propias cabeceras dicen 'requires prisma db seed'). Ninguna de las 4 es un 403."
+      ],
+      "notes": "DECISIONES DE PRODUCTO (tomadas por el usuario, 2026-08-04): (a) se INCLUYE endpoint de admin para asignar rol de plataforma, en vez de dejar el aprovisionamiento en seed/DB como el resto de roles; (b) las escrituras de portafolio pasan a admin + portfolio_lead y MENTOR PIERDE ese acceso. Verificado antes de decidir que quitar mentor es seguro: portfolioService solo lo consumen AppLayout.tsx (lectura) y la feature portfolio-lead; MentorPanelPage.tsx y AdminCohorte.tsx no lo importan; ningún test de backend cubre esos gates.\nENMIENDA A ADR-010 (Accepted): pasa de 6 a 7 roles de plataforma, por eso la feature abre con ADR-028 y no con código. schema.prisma cita el modelo de 6 roles.\nRIESGO DE DEPLOY ACOTADO: añadir un valor al enum es ALTER TYPE ... ADD VALUE, aditivo, y pasa el guard de db push sin --accept-data-loss. Es distinto de añadir @@unique a tabla poblada, que es lo que prohiben ADR-018/020/023/026.\nEL PARCHE QUE REEMPLAZA: en esta rama el email-match ya evolucionó a un Set con VITE_PORTFOLIO_LEAD_EMAIL más un correo de test en no-producción. Sigue siendo identidad por email; esta feature lo sustituye por el rol del token."
+    },
+    {
+      "id": "PBA-01-permission-catalog",
+      "priority": 31,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "Catálogo de permisos y tabla de derivación rol→permisos, con unión sobre un conjunto de roles",
+      "user_visible_behavior": "Ninguno directo (capa interna). Habilita que la autorización se exprese como capacidad ('portfolio:write') en vez de identidad ('eres portfolio_lead'), y que un usuario con DOS roles obtenga la UNIÓN de sus permisos — que es lo único que rompe el 'gana en una plataforma, pierde en la otra'.",
+      "scope_out": [
+        "Aplicar los permisos en cualquier guard — vive en PBA-03/PBA-04",
+        "Persistir permisos en base de datos: la tabla de derivación vive en código y se cambia sin migrar",
+        "Permisos de grano fino por recurso (por frente estratégico): ADR-028 ya lo descartó por falta de modelo de membresía"
+      ],
+      "deferred_to": [
+        "PBA-03-require-permission",
+        "PBA-04-migrate-guards"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- permissions"
+      ],
+      "evidence": [
+        "`cd front && npm run test:backend -- permissions` → 25 passed (backend/shared/authz/__tests__/permissions.test.ts). Cubre: la tabla define los 7 roles de PLATFORM_ROLES (si se añade uno al enum y no a la tabla, falla); ningún rol concede un permiso fuera del catálogo; derivación exacta por rol; admin = catálogo completo expandido; la UNIÓN participante+portfolio_lead conserva project:own Y portfolio:write; la unión es conmutativa, idempotente y MONÓTONA (sumar un rol nunca quita un permiso — el test que impide reintroducir el bug); entradas degeneradas fallan cerrado (sin roles, rol desconocido a solas o mezclado).",
+        "Suite backend completa 522 passed / 53 files, desde 492 de baseline."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El comodín de admin es fiel al comportamiento de hoy pero concede permisos futuros sin decisión explícita: queda vigilado en el ADR."
+    },
+    {
+      "id": "PBA-02-roles-array-schema",
+      "priority": 32,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "schema + backend",
+      "title": "User.roles como array, backfill idempotente y escritura coherente con role durante la fase 1",
+      "user_visible_behavior": "Un admin puede dar portfolio_lead a alguien SIN quitarle participante. El usuario conserva las dos pertenencias en base de datos.",
+      "scope_out": [
+        "Eliminar la columna role: es pérdida de datos, exige ventana propia y va en un ADR aparte (fase 2)",
+        "UI de administración de roles: se sigue usando PATCH /users/:id/role por API",
+        "Sacar participante/colaborador/viewer del enum Role hacia TeamRole: ADR-029 lo descarta explícitamente porque los permisos vuelven el problema inocuo sin migrar datos"
+      ],
+      "deferred_to": [
+        "#160"
+      ],
+      "status": "passing",
+      "verification": [
+        "./node_modules/.bin/prisma db push (SIN --accept-data-loss, replicando el CD)",
+        "backfill ejecutado 2 veces: roles=[role] en el 100% de filas y la 2ª corrida no cambia nada",
+        "cd front && npm run test:backend"
+      ],
+      "evidence": [
+        "`prisma db push` SIN --accept-data-loss contra Postgres 16 POBLADO (5 usuarios: participante, portfolio_lead, admin, mentor, viewer) creado con el schema PRE-cambio → 'Your database is now in sync'. Replica el comando exacto del CD (ADR-018).",
+        "HALLAZGO que cambió el diseño: con `@default([participante])` el ALTER TABLE rellenó las 5 filas con {participante} — el admin quedaba indistinguible de un participante real. Se QUITÓ el default: las filas viejas quedan en NULL (columna verificada is_nullable=YES, sin column_default), señal inequívoca de 'sin migrar', y `rolesForUser` cae a `role`. El orden de despliegue deja de ser condición de corrección.",
+        "Backfill idempotente (`front/scripts/backfill-user-roles.ts`, npm run db:backfill-roles): corrida 1 → migrated=5 skipped=0 y roles=[role] correcto por fila (admin→{admin}, portfolio_lead→{portfolio_lead}); corrida 2 → migrated=0 skipped=5. Filas con roles != ARRAY[role] tras el backfill: 0.",
+        "Escritura dual coherente desde un solo punto (updatePlatformRoles) + las 3 creaciones de usuario (registro, Google sign-in, invitación a equipo) nacen con roles. Suite backend 522 passed / 53 files (baseline 492): user.role.test.ts cubre concesión de DOS roles conservando ambos, deduplicación, rechazo del conjunto vacío (EMPTY_ROLE_SET) y coherencia role+roles en la misma escritura."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Añadir columna con default es aditivo y pasa el guard del CD; lo prohibido por ADR-018/020/023/026 es el @@unique sobre tabla poblada, que aquí no aparece."
+    },
+    {
+      "id": "PBA-03-require-permission",
+      "priority": 33,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "El JWT lleva roles[] y el servidor deriva permisos; nuevo guard requirePermission",
+      "user_visible_behavior": "Ninguno directo. Las rutas pasan a autorizar por capacidad. Los tokens ya emitidos (con role escalar) siguen funcionando hasta expirar.",
+      "scope_out": [
+        "Migrar los call sites: vive en PBA-04",
+        "Cerrar las 7 lecturas de portfolio hoy sin gate: rompería a los participantes (deuda declarada desde ADR-028)",
+        "Meter los permisos derivados dentro del token: el ADR lo descarta por congelar la tabla de derivación en sesiones vivas"
+      ],
+      "deferred_to": [
+        "PBA-04-migrate-guards",
+        "#161"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- auth.middleware",
+        "cd front && npm run test:backend"
+      ],
+      "evidence": [
+        "`npm run test:backend -- require-permission` → 10 passed. Cubre: buildRequestUser deriva roles+permisos; un token PRE-ADR-029 (sin `roles`) sigue autorizando porque cae a [role] — nadie es expulsado a mitad de sesión al desplegar; requirePermission 200/403/401; el admin conserva su acceso; el doble rol entra a portfolio:write Y project:own aunque su rol PRIMARIO sea participante; requireRole (deprecado) también mira el conjunto.",
+        "Suite backend 534/534 / 54 files (baseline 492). `npm run build:backend` exit 0."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md)."
+    },
+    {
+      "id": "PBA-04-migrate-guards",
+      "priority": 34,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "Los 30 requireRole pasan a requirePermission",
+      "user_visible_behavior": "Un admin y un portfolio lead conservan exactamente el acceso de escritura de portafolio que tienen hoy; el resto de roles sigue con 403. El comportamiento no cambia: cambia cómo se decide.",
+      "scope_out": [
+        "Ampliar o reducir a quién se le concede algo: esta feature es equivalencia de comportamiento, no cambio de política",
+        "Las 7 rutas GET sin gate siguen sin gate"
+      ],
+      "deferred_to": [
+        "#161"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend (492 de baseline, sin regresión)"
+      ],
+      "evidence": [
+        "30 guards migrados: 20 portfolio.router (portfolio:write), 2 users (users:assign-roles), 3 sponsor (sponsor:manage x2, sponsor:decide), 1 mentor (mentor:panel), 1 cohort (cohort:manage). `grep requireRole` en *.router.ts → 0 resultados.",
+        "HALLAZGO que corrigió el ADR: `PATCH /sponsor/checkpoints/:id/respond` usa requireRole('sponsor') y EXCLUYE al admin a propósito (el admin tiene /skip, otro acto de gobierno). O sea que 'admin puede todo' NO era fiel al comportamiento de hoy, y el comodín habría colado un cambio de política en una migración que sólo debía cambiar cómo se decide. El admin ahora ENUMERA sus permisos y NO tiene sponsor:decide; hay 2 tests que lo fijan.",
+        "portfolio.router.authz.test.ts (el borde de #156) sigue verde. Suite backend 534/534."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). 20 de los 30 sitios son la misma línea repetida en portfolio.router.ts."
+    },
+    {
+      "id": "PBA-05-frontend-permissions",
+      "priority": 35,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "front",
+      "title": "El frontend decide por permiso y se elimina el redirect-cárcel del portfolio lead",
+      "user_visible_behavior": "Un portfolio lead que además es participante YA NO queda encerrado en /portfolio: conserva su dashboard, sus iniciativas y el flujo Step 0-4. Es la regresión que motiva el ADR.",
+      "scope_out": [
+        "El switcher de zona: vive en PBA-06",
+        "Quitar user.role del frontend: sobrevive como concepto de PRESENTACIÓN (etiquetas, badge). Lo que se prohíbe es que una decisión de acceso lo lea",
+        "Revisar cada componente que muestra un nombre de rol"
+      ],
+      "deferred_to": [
+        "PBA-06-workspace-switcher"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm test -- PortfolioLeadLayout.access",
+        "cd front && npm test (294 de baseline, sin regresión)"
+      ],
+      "evidence": [
+        "BORRADO el redirect de AppLayout.tsx:55-58 que encerraba al portfolio lead en /portfolio. Nuevo `AppLayout.dual-role.test.tsx` 4/4: un portfolio lead que TAMBIÉN es participante conserva su workspace; un portfolio lead puro tampoco es expulsado; un participante sin portafolio no nota nada (navigate no se llama); sin sesión sigue yendo a /auth.",
+        "PortfolioLeadLayout pregunta can(user,'portfolio:read') en vez de enumerar roles. `PortfolioLeadLayout.access.test.tsx` 6/6: el borde que fijó #156 (admin y portfolio lead entran; owner/mentor/sponsor fuera) sigue verde con el guard nuevo.",
+        "Backend expone roles+permissions ya derivados (toSafeUser unifica los 6 literales que había repartidos); el front sólo declara el vocabulario y falla CERRADO si le falta un permiso. La tabla de derivación NO se duplica.",
+        "front 298/298 (baseline 294) · backend 534/534 · npm run build y build:backend exit 0."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El borde que fijó el test de #156 (admin y portfolio lead entran; mentor/sponsor/participante no) debe seguir verde: es el detector de regresión."
+    },
+    {
+      "id": "PBA-06-workspace-switcher",
+      "priority": 36,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "front",
+      "title": "Switcher de workspace derivado de permisos, con la última zona recordada",
+      "user_visible_behavior": "Quien pertenece a las dos superficies ve un selector arriba del sidebar para cambiar entre 'Mis iniciativas' y 'Portafolio', y vuelve a la última zona que usó al entrar. Quien pertenece a una sola NO ve switcher y su experiencia no cambia en absoluto.",
+      "scope_out": [
+        "Una tercera superficie",
+        "Personalizar el orden de las zonas",
+        "Recordar la zona por dispositivo/servidor: se guarda en localStorage"
+      ],
+      "deferred_to": [
+        "PBA-07-e2e-dual-role"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm test -- WorkspaceSwitcher",
+        "cd front && npm test"
+      ],
+      "evidence": [
+        "`workspaces.test.ts` 13/13. Cubre: el doble rol ve las 2 zonas y SÍ ve switcher; un participante ve 1 zona y NO ve switcher (su experiencia no cambia); vuelve a la última zona usada; y las 4 degradaciones — zona guardada sin acceso ya, basura en localStorage, getItem que lanza (modo privado), setItem que lanza — todas devuelven una zona permitida en vez de dejar sin navegación.",
+        "Decisión de diseño verificada por test: la zona de iniciativas NO se gatea por permiso. Derivar ambas zonas de permisos dejaba a mentor y sponsor sin NINGUNA (no tienen project:own ni portfolio:read) pese a vivir hoy bajo AppLayout.",
+        "AuthPage: destino post-login = resolveInitialWorkspace(user) en vez del redirect por igualdad de rol. front 311/311 (baseline 294) · npm run build exit 0."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Un localStorage corrupto no debe dejar a nadie sin navegación: degrada a la primera zona permitida."
+    },
+    {
+      "id": "PBA-07-e2e-dual-role",
+      "priority": 37,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "e2e + verificación",
+      "title": "La regresión que motiva el ADR queda cubierta por un test que hoy no existe",
+      "user_visible_behavior": "Un usuario con roles ['participante','portfolio_lead'] entra a /dashboard Y a /portfolio/inicio en la misma sesión, escribe en portafolio y vuelve al workspace sin perder nada.",
+      "scope_out": [
+        "Cubrir por e2e las combinaciones de los 7 roles: se cubre la que motiva el ADR y el borde de #156",
+        "El smoke de referencia (pdf-autofill) no se modifica: solo se comprueba que sigue verde"
+      ],
+      "deferred_to": [
+        "PBA-04-migrate-guards"
+      ],
+      "status": "blocked",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e",
+        "cd front && npm test && npm run test:backend"
+      ],
+      "evidence": [],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md).",
+      "status_note": "BLOQUEADA por entorno, no por código. El stack e2e no levanta: el puerto 5433 tiene un docker-proxy HUÉRFANO que retiene el bind (`bind: address already in use`) pero rechaza toda conexión, así que `docker compose up` falla en starteria-db. QUÉ LA DESBLOQUEA: liberar 5433 — reiniciar el daemon de Docker (NO se hizo: hay contenedores cf-* del usuario con 18-22h de uptime que no son de esta sesión y se perderían), o mapear starteria-db a otro puerto en docker-compose + DATABASE_URL. Hecho eso: `cd front && npm run docker:up && npm run test:e2e`, más el smoke de referencia pdf-autofill. Lo que SÍ está verificado sin stack: la regresión del ADR está cubierta por unit (AppLayout.dual-role 4/4 + require-permission 10/10 + permissions 26/26) y la migración de schema contra Postgres 16 real."
+    },
+    {
+      "id": "PBA-08-role-admin-ui",
+      "priority": 38,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend + front",
+      "title": "Pantalla de administración de roles de plataforma: un admin concede varios roles sin tocar la API a mano",
+      "user_visible_behavior": "Un admin entra a /admin/roles, ve la lista de usuarios con los roles que tiene cada uno, marca o desmarca roles y guarda. Puede dar portfolio_lead a alguien SIN quitarle participante — la capacidad que ADR-029 habilitó en el backend pero que hoy sólo se alcanza con curl.",
+      "scope_out": [
+        "Invitar o crear usuarios: esta pantalla sólo cambia roles de usuarios existentes",
+        "Editar el rol de PROYECTO (TeamRole, ADR-023): es otro eje y tiene su propia superficie",
+        "Auditoría/historial de cambios de rol",
+        "Paginación y búsqueda avanzada: hoy son 15 usuarios en producción; se lista con un límite",
+        "Que un admin se cambie su propio rol: el servicio ya lo prohíbe (CANNOT_CHANGE_OWN_ROLE) y la UI lo refleja, no lo reimplementa"
+      ],
+      "deferred_to": [
+        "#160"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- user.list",
+        "cd front && npm test -- RoleAdmin",
+        "cd front && npm test && npm run build"
+      ],
+      "evidence": [
+        "Backend `npm run test:backend -- user.list` → 10 passed. GET /users va con requirePermission('users:assign-roles'): admin 200; participante/mentor/sponsor/portfolio_lead 403 y el servicio NI SE LLAMA; sin sesión 401. El select NUNCA expone passwordHash/googleId/failedLoginAttempts/lockedUntil (el mismo defecto que ya apareció una vez en updatePlatformRole). Una fila sin migrar se normaliza a su rol escalar — sin eso la UI pintaría a un admin como 'sin roles' y al guardar le quitaría todo. El límite se acota a 500.",
+        "Front `vitest RoleAdminPage` → 8 passed. El caso central: marcar Portfolio Lead NO desmarca Participante y lo que viaja al servidor es el CONJUNTO ['participante','portfolio_lead'] (mandar el escalar reintroduciría el bug). Además: sin users:assign-roles no se pide la lista ni se pinta; una fila sin cambios no se puede guardar; no deja dejar a nadie sin roles; un admin no puede editarse a sí mismo (refleja CANNOT_CHANGE_OWN_ROLE en vez de reimplementarlo); un fallo al guardar avisa y no deja la fila en estado mentiroso; un fallo de la lista avisa en vez de mostrar pantalla vacía.",
+        "Suite completa: backend 546/546 (55 files) · front 329/329 (49 files) · npm run build y build:backend exit 0.",
+        "DEFECTO PROPIO CORREGIDO (detectado en producción por el usuario): el enlace del sidebar se había metido en `adminLinks`, y esa lista se elegía con `user.role === 'admin'` — o sea, el MENÚ se decidía por el rol primario. Un usuario con {participante, admin} tenía el permiso y NO veía el enlace: autorizado por API, invisible por pantalla, el mismo defecto que #156 vino a erradicar, reintroducido por la puerta de atrás dentro del propio commit que implementa el ADR. Arreglado: el menú se COMPONE por permisos (can(...)); la etiqueta del dashboard sigue el rol primario porque eso sí es presentación. `vitest AppLayout.dual-role` → 9 passed (5 nuevos): admin-con-participante-primario ve Roles/Panel cohorte/Portafolio; participante no ve nada de admin y conserva Evidencias; mentor ve su panel; sponsor conserva su menú mínimo; portfolio_lead ve la capa estratégica. front 334/334, backend 546/546, builds exit 0."
+      ],
+      "notes": "ADR-029. El endpoint de lista no existía; se añade GET /api/v1/users gateado con users:assign-roles."
     }
   ]
 }

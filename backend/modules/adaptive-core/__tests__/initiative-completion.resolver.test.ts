@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { InitiativeCompletionResolver } from '../initiative-completion.resolver';
 import type { InitiativeAlignmentInput } from '../adaptive-core.types';
 

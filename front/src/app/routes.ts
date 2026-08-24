@@ -21,6 +21,7 @@ import { Step4Page } from './pages/Step4Page';
 import { EvidenciasPage } from './pages/EvidenciasPage';
 import { MentorPanelPage } from './pages/MentorPanelPage';
 import { AdminCohorte } from './pages/AdminCohorte';
+import { RoleAdminPage } from './pages/RoleAdminPage';
 import { PerfilPage } from './pages/PerfilPage';
 import { ParticipantChallengeDetailPage } from './pages/ParticipantChallengeDetailPage';
 import { PortfolioLeadIntroPage } from './pages/PortfolioLeadIntroPage';
@@ -100,6 +101,9 @@ export const router = createBrowserRouter([
           { path: '/companies', Component: CompaniesPage },
           { path: '/mentor', Component: MentorPanelPage },
           { path: '/admin', Component: AdminCohorte },
+          // ADR-029: administración de roles de plataforma. El gate real está en el
+          // servidor; la página misma se degrada si el usuario no puede asignar.
+          { path: '/admin/roles', Component: RoleAdminPage },
           { path: '/perfil', Component: PerfilPage },
         ],
       },

@@ -14,6 +14,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { can } from '../authz/permissions';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
 
 const ROLE_LABELS = {
@@ -60,18 +62,29 @@ function PortfolioLeadLayoutContent() {
     },
   ];
 
+  // ADR-029: se pregunta por CAPACIDAD, no por identidad.
+  //
+  // Antes esto enumeraba roles (`role === 'portfolio_lead' || role === 'admin'`), y esa
+  // lista tenía que ampliarse a mano cada vez que otro rol necesitaba entrar — el parche
+  // #156 fue exactamente eso. Ahora quien tenga el permiso entra, y añadir un rol nuevo
+  // con acceso al portafolio no toca este archivo.
+  //
+  // Ya nadie queda encerrado aquí: el redirect-cárcel de AppLayout desapareció, así que
+  // un portfolio lead que además es participante conserva su dashboard.
+  const canViewPortfolio = can(user, 'portfolio:read');
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/auth', { replace: true });
       return;
     }
 
-    if (user?.role !== 'portfolio_lead') {
+    if (!canViewPortfolio) {
       navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate, user?.role]);
+  }, [isAuthenticated, navigate, canViewPortfolio]);
 
-  if (!isAuthenticated || user?.role !== 'portfolio_lead') return null;
+  if (!isAuthenticated || !canViewPortfolio) return null;
 
   const isActive = (path: string) => {
     if (path === '/portfolio/decisiones') {
@@ -93,6 +106,9 @@ function PortfolioLeadLayoutContent() {
           </div>
         </div>
       </div>
+
+      {/* ADR-029: desde aquí se vuelve al workspace sin perder la sesión ni la zona. */}
+      <WorkspaceSwitcher activa="portafolio" />
 
       <div className="mx-3 mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
         <p className="text-xs text-amber-800" style={{ fontWeight: 700 }}>CAPA ESTRATÉGICA</p>

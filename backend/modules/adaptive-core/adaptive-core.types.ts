@@ -386,6 +386,11 @@ export interface MaterializedQuestion {
   allowsUnknown: boolean;
   contextDerived?: boolean;
   confirmationRequired?: boolean;
+  /** El front usa esto para ordenar y para decidir que bloquea el cierre. */
+  priority?: 'must' | 'should' | 'could';
+  optional?: boolean;
+  /** De donde salio el valor ya conocido (revision inicial, contexto de empresa, etc.). */
+  prefilledFrom?: string;
 }
 
 export interface Step0AlignmentBrief {
@@ -418,6 +423,8 @@ export interface AdaptiveCoreState {
   stepConfigurations: Record<string, unknown>[];
   activeCheckpoint: Record<string, unknown> | null;
   checkpointInstances: Record<string, unknown>[];
+  /** Respuestas confirmadas de todos los checkpoints, fusionadas en orden cronologico. */
+  confirmedResponses: Record<string, unknown>;
   stepOutputs: Record<string, unknown>[];
   progressSignal: Record<string, unknown> | null;
   events: Record<string, unknown>[];

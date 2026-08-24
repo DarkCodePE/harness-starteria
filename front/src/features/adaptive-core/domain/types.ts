@@ -153,9 +153,17 @@ export interface AdaptiveInitiativeCore {
     sequence: number;
     questions: AdaptiveQuestion[];
     sufficiency?: unknown;
+    /** Respuestas ya confirmadas para este checkpoint (vacio si aun no se confirmo). */
+    responses?: Record<string, unknown>;
     configurationId: string;
   } | null;
   checkpointInstances?: Array<Record<string, unknown>>;
+  /**
+   * Respuestas confirmadas de todos los checkpoints, fusionadas en orden cronologico por
+   * el backend. Es la fuente de verdad del recorrido: la UI lee de aqui en vez de
+   * reconstruir las variables desde el formulario legacy de cada Step.
+   */
+  confirmedResponses?: Record<string, unknown>;
   stepOutputs?: Array<Record<string, unknown>>;
   auditEvents: Array<{
     id: string;
