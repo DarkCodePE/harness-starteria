@@ -10,7 +10,7 @@
  *
  * El fallo era invisible desde la API: por curl el login funcionaba.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AuthPage } from '../AuthPage';
 
@@ -52,6 +52,10 @@ describe('AuthPage — minLength del campo de contraseña', () => {
     window.sessionStorage.clear();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   // Se afirma sobre `minLength`, no sobre `checkValidity()`: jsdom sólo aplica la
   // restricción de longitud cuando el valor está "sucio" por edición real del usuario,
   // así que `checkValidity()` aquí devuelve true en ambos modos y no distinguiría nada.
@@ -73,5 +77,34 @@ describe('AuthPage — minLength del campo de contraseña', () => {
 
     const input = passwordInput();
     expect(input!.minLength).toBe(8);
+  });
+  it('abre el flujo de registro desde el login', () => {
+    render(<AuthPage />);
+
+    switchToRegister();
+
+    expect(screen.getByRole('heading', { name: /crea tu cuenta/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Ana/i)).toBeInTheDocument();
+  });
+
+  it('oculta cuentas demo en produccion aunque exista override local persistido', () => {
+    vi.stubEnv('PROD', true);
+    vi.stubEnv('VITE_ENABLE_DEMO_DATA', 'false');
+    window.localStorage.setItem('starteria.demo.enabled', 'true');
+
+    render(<AuthPage />);
+
+    expect(screen.queryByText(/CUENTAS DEMO/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/demo123/i)).not.toBeInTheDocument();
+  });
+
+  it('muestra cuentas demo solo con el flag explicito de entorno', () => {
+    vi.stubEnv('PROD', true);
+    vi.stubEnv('VITE_ENABLE_DEMO_DATA', 'true');
+
+    render(<AuthPage />);
+
+    expect(screen.getByText(/CUENTAS DEMO/i)).toBeInTheDocument();
+    expect(screen.getByText(/participante@starteria\.io/i)).toBeInTheDocument();
   });
 });

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useApp } from '../context/AppContext';
+import { isDemoDataEnabled } from '../featureFlags';
 import { can } from '../authz/permissions';
 import { AutofillHydrator } from '../components/autofill/AutofillHydrator';
 import * as portfolioService from '../services/portfolioService';
@@ -19,11 +20,6 @@ const ROLE_LABELS: Record<string, string> = {
   portfolio_lead: 'Portfolio Lead',
 };
 
-function isExplicitDemoEnabled() {
-  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem('starteria.demo.enabled') === 'true';
-}
 
 export function AppLayout() {
   const { user, logout, setUserRole, currentProject, isAuthenticated, canAccessProject } = useApp();
@@ -293,7 +289,7 @@ const links = [
       )}
 
       {/* Role switcher (demo) */}
-      {isExplicitDemoEnabled() ? (
+      {isDemoDataEnabled() ? (
       <div className="px-3 py-3 border-t border-slate-100">
         <p className="text-xs text-slate-400 px-1 mb-1.5" style={{ fontWeight: 600 }}>VER COMO (demo)</p>
         <div className="grid grid-cols-2 gap-1">

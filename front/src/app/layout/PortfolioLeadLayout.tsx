@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { isDemoDataEnabled } from '../featureFlags';
 import { can } from '../authz/permissions';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
@@ -26,11 +27,6 @@ const ROLE_LABELS = {
   portfolio_lead: 'Portfolio Lead',
 } as const;
 
-function isExplicitDemoEnabled() {
-  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem('starteria.demo.enabled') === 'true';
-}
 
 export function PortfolioLeadLayout() {
   return <PortfolioLeadLayoutContent />;
@@ -145,7 +141,7 @@ function PortfolioLeadLayoutContent() {
         ))}
       </nav>
 
-      {isExplicitDemoEnabled() ? (
+      {isDemoDataEnabled() ? (
       <div className="border-t border-slate-100 px-3 py-3">
         <p className="mb-1.5 px-1 text-xs text-slate-400" style={{ fontWeight: 600 }}>VER COMO (demo)</p>
         <div className="grid grid-cols-2 gap-1">

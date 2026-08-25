@@ -7,6 +7,7 @@ import { resolveInitialWorkspace } from '../authz/workspaces';
 import type { AuthError } from '../services/api';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { getPendingPilotClaim } from '../../features/public-start/services/publicPilotLeadService';
+import { isDemoDataEnabled } from '../featureFlags';
 
 /** When a pilot code is pending, route post-auth to the claim-consume page (ADR-018). */
 const claimRedirect = (): string | null => (getPendingPilotClaim() ? '/continuar-piloto' : null);
@@ -21,11 +22,6 @@ const KNOWN_FIELDS: Array<keyof FieldErrors> = ['email', 'password', 'name'];
 const PENDING_PUBLIC_DRAFT_ID_KEY = 'starteria.pendingPublicDraftId';
 const PENDING_CONVERSION_KEY = 'starteria.publicStart.pendingConversion';
 
-function isExplicitDemoEnabled() {
-  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
-  if (typeof window === 'undefined') return false;
-  return window.localStorage.getItem('starteria.demo.enabled') === 'true';
-}
 
 function readPendingPublicDraftId() {
   if (typeof window === 'undefined') return null;
@@ -611,7 +607,7 @@ export function AuthPage() {
         </div>
 
         {/* Demo accounts */}
-        {isExplicitDemoEnabled() ? (
+        {isDemoDataEnabled() ? (
         <div className="mt-6 bg-white rounded-2xl border border-slate-200 p-5">
           <p className="text-xs text-slate-500 mb-3" style={{ fontWeight: 600 }}>CUENTAS DEMO · contraseña: demo123</p>
           <div className="grid grid-cols-2 gap-2">
