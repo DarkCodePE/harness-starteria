@@ -42,7 +42,7 @@ import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePag
 import { ContinuePilotPage } from './pages/ContinuePilotPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 
-export const router = createBrowserRouter([
+export const appRoutes = [
   {
     // RootLayout provides AppProvider for every route in the tree,
     // keeping context inside the React Router rendering context.
@@ -126,4 +126,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+];
+
+export const router = createBrowserRouter(appRoutes);

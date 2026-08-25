@@ -1,3 +1,17 @@
+export function isDemoDataEnabled(): boolean {
+  if (import.meta.env.VITE_ENABLE_DEMO_DATA === 'true') return true;
+  if (import.meta.env.PROD) return false;
+
+  if (typeof window !== 'undefined') {
+    try {
+      return window.localStorage.getItem('starteria.demo.enabled') === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
 export function isInitialReviewEnabled(): boolean {
   const envValue = import.meta.env.VITE_ENABLE_INITIAL_REVIEW;
   const envEnabled = envValue === 'true';
