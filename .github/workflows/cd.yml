@@ -284,17 +284,17 @@ jobs:
             -f k8s/cloudflared-service.yaml
 
       # Sync the DB schema BEFORE rolling out new app code, using a one-off Job
-      # built from the NEW backend image (carries the latest schema + the prisma
-      # CLI now shipped in `dependencies`). Runs inside the cluster to reach the
-      # in-cluster Postgres.
+      # Sync the DB schema BEFORE rolling out new app code, using a one-off Job
+      # built from the NEW backend image (carries the latest schema + Prisma CLI).
+      # Runs inside the cluster to reach the in-cluster Postgres.
       #
-      # We use `prisma db push` (NOT `migrate deploy`): this prod DB was always
-      # managed with `db push` and has no `_prisma_migrations` history, so
-      # `migrate deploy` fails with P3005 (non-empty schema, no baseline).
-      # `db push` is additive and idempotent; without `--accept-data-loss` it
-      # refuses destructive changes, so it only ever ADDs the new PilotLead table.
-      # If it fails the deploy stops here — the old app keeps serving (no rollout).
-      - name: Sync DB schema (prisma db push)
+      # Production was historically managed with `prisma db push` and is not yet
+      # baselined for `_prisma_migrations`; switching this job directly to
+      # `migrate deploy` would fail with P3005. Adaptive Core R3 needs a data
+      # backfill before Prisma can enforce cycleId NOT NULL, so this job first
+      # runs a checked-in, idempotent SQL hotfix and then lets db push reconcile
+      # the final schema. No --accept-data-loss, no reset, no truncation.
+      - name: Sync DB schema (adaptive cycle backfill + prisma db push)
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
@@ -320,17 +320,17 @@ jobs:
                 containers:
                 - name: migrate
                   image: ${DOCKERHUB_NAMESPACE}/starteria-backend:${TAG}
-                  command: ["npx", "prisma", "db", "push", "--schema=./prisma/schema.prisma", "--skip-generate"]
+                  command: ["sh", "-c", "npx prisma db execute --schema=./prisma/schema.prisma --file=./prisma/production-hotfixes/20260825_adaptive_cycle_backfill_before_db_push.sql && npx prisma db push --schema=./prisma/schema.prisma --skip-generate"]
                   envFrom:
                   - secretRef:
                       name: starteria-backend-secrets
           EOF
           if ! kubectl -n "$NAMESPACE" wait --for=condition=complete "job/${JOB}" --timeout=180s; then
-            echo "::error::Prisma db push did not complete — aborting before rollout."
+            echo "::error::Adaptive cycle backfill or Prisma db push did not complete — aborting before rollout."
             kubectl -n "$NAMESPACE" logs "job/${JOB}" --tail=200 || true
             exit 1
           fi
-          echo "Schema synced."
+          echo "Adaptive cycle backfill applied and schema synced."
           kubectl -n "$NAMESPACE" logs "job/${JOB}" --tail=50 || true
 
       - name: Roll out new image tags
