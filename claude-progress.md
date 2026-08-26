@@ -289,6 +289,16 @@
 - **Además**: la fase D del diagrama (registrar decisión) **no tiene mutación** en el provider; `portfolioDecisions`
   sólo lo escribe el sembrador de demo. Registrado como `portfolio-decisions-persist`.
 - **Fase 0 del plan MVP COMPLETA**: MVP-P0-01 (PBA-07) y MVP-P0-02 ambas `passing` con evidencia ejecutable.
+- **Entregado**: PR **#163** (Fase 0, CI verde 4/4) y PR **#164** (ADR-030, apilado sobre #163).
+- **Fase 1 abierta con ADR-030** (`backend/docs/adr/ADR-030-...md`, **Propuesto**): pausa como ESTADO y no flag;
+  transiciones validadas EN EL SERVIDOR con tabla explícita y 409 — hoy `updateChallenge` hace `data: input as any`
+  y obedece al cliente, así que un `curl` puede llevar un reto de `cerrado` a `draft`; `cerrado` terminal;
+  `pausedFromStatus` para reanudar al estado previo; la decisión de la fase D escribe outcome + estado en la misma
+  transacción. Hallazgo que abarata la Fase 1: `syncInitiativeProgress` ya sólo toca filas `en_step_*`, así que un
+  estado no-progresivo queda exento del auto-avance sin tocar esa función. El ADR acota lo que NO decide
+  (acceso por iniciativa #161 → Fase 3; convocatoria → Fase 4).
+- **Ojo al ramificar**: las features de Fase 1 (`MVP-P1-01/02`, `portfolio-decisions-persist`) sólo existen en la rama
+  de #163. Una rama nueva desde `main` arranca con el `feature_list.json` de 39 features, no el de 44.
 - Baseline al cierre: front 343/343 (50 archivos) · backend 554/554 (56 archivos) · `./init.sh` exit 0.
 - Gotcha para la próxima sesión: los tests de front necesitan `--config vitest.front.config.ts` (el jsdom vive ahí);
   correr `vitest` a secas contra un test de componente falla con "document is not defined".
