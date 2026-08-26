@@ -27,7 +27,9 @@ import { buildInitialResearchV2State, buildResearchFrontSuggestions, buildResear
 import { ResearchModuleAContext, Step1ResearchModuleV2State } from '../components/step1-research-v2/step1ResearchV2.types';
 import { Step1CaptureLegacyRestrictions, Step1CaptureLegacySynthesis, Step1CaptureLegacyValidation, Step1ModuleId } from '../components/step1-architecture/step1Architecture.types';
 import { confirmAdaptiveCheckpoint, confirmStep1Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
-import { canNavigateToAdaptiveStep } from '../../features/adaptive-core/domain/adaptiveAuthority';
+import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
+import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
+import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
 
 type ModuleId = Step1ModuleId | 'D' | 'S';
 
@@ -244,6 +246,8 @@ export function Step1Page() {
   const [showMentorOptions, setShowMentorOptions] = useState(false);
   const [adaptiveStep1Saving, setAdaptiveStep1Saving] = useState(false);
   const [adaptiveStep1Error, setAdaptiveStep1Error] = useState<string | null>(null);
+  const [adaptiveCore, setAdaptiveCore] = useState<AdaptiveInitiativeCore | null>(null);
+  const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
 
   const [iaLoadingB, setIaLoadingB] = useState(false);
   const [expandedTemaId, setExpandedTemaId] = useState<string | null>(null);
@@ -341,6 +345,27 @@ export function Step1Page() {
       });
     return () => { cancelled = true; };
   }, [contextProject, projectId, projectsLoading, user]);
+
+  const loadAdaptiveCore = useCallback(async () => {
+    if (!projectId) return null;
+    setAdaptiveCoreStatus('loading');
+    setAdaptiveStep1Error(null);
+    try {
+      const core = await getAdaptiveCore(projectId);
+      setAdaptiveCore(core);
+      setAdaptiveCoreStatus('loaded');
+      return core;
+    } catch (error: any) {
+      setAdaptiveCore(null);
+      setAdaptiveCoreStatus('error');
+      setAdaptiveStep1Error(error?.response?.data?.error?.message ?? error?.message ?? 'No pudimos cargar el estado adaptativo persistido.');
+      return null;
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadAdaptiveCore();
+  }, [loadAdaptiveCore]);
 
   // ── Módulo A — nuevos estados (rediseño Step1A) ──────────────────────────
   const [step0Collapsed, setStep0Collapsed] = useState(false);
@@ -547,9 +572,84 @@ export function Step1Page() {
     });
   };
 
+  const confirmAdaptiveStep1Checkpoint = async (responses: Record<string, unknown>, truthBindings?: { claimId: string; evidenceIds: string[]; sourceRefIds: string[] }) => {
+    if (!projectId || !adaptiveCore?.activeCheckpoint || adaptiveCore.activeCheckpoint.step !== 1) return;
+    setAdaptiveStep1Saving(true);
+    setAdaptiveStep1Error(null);
+    try {
+      const nextCore = await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${projectId}-${adaptiveCore.activeCheckpoint.checkpointKey}-${Date.now()}-ui-confirm`,
+        checkpointKey: adaptiveCore.activeCheckpoint.checkpointKey,
+        responses,
+        truthBindings,
+      });
+      setAdaptiveCore(nextCore);
+    } catch (error: any) {
+      setAdaptiveStep1Error(error?.response?.data?.error?.message ?? error?.message ?? 'No pudimos confirmar el checkpoint adaptativo.');
+    } finally {
+      setAdaptiveStep1Saving(false);
+    }
+  };
+
+  const confirmAdaptiveStep1Output = async () => {
+    if (!projectId || !adaptiveCore) return;
+    const draft = latestAdaptiveStepOutput(adaptiveCore, 1, 'draft');
+    if (!draft?.output) return;
+    setAdaptiveStep1Saving(true);
+    setAdaptiveStep1Error(null);
+    try {
+      await confirmStep1Output(projectId, {
+        idempotencyKey: `${projectId}-step1-output-${draft.id ?? 'draft'}-confirm`,
+        brief: draft.output,
+        confirmed: true,
+      });
+      const refreshedCore = await loadAdaptiveCore();
+      if (refreshedCore && canNavigateToAdaptiveStep(refreshedCore, 2)) {
+        mirrorStep1AdaptiveSuccess();
+        navigate(`/projects/${projectId}/step/2`);
+      }
+    } catch (error: any) {
+      setAdaptiveStep1Error(error?.response?.data?.error?.message ?? error?.message ?? 'No pudimos confirmar el output de Step 1.');
+    } finally {
+      setAdaptiveStep1Saving(false);
+    }
+  };
+
   if (!project && (projectsLoading || projectFetching)) return <div className="p-6"><p className="text-slate-500">Cargando proyecto...</p></div>;
   if (!project && projectFetchError) return <div className="p-6"><p className="text-slate-500">No pudimos cargar el proyecto.</p></div>;
   if (!project || !step) return <div className="p-6"><p className="text-slate-500">Proyecto o Step no encontrado.</p></div>;
+
+  if (adaptiveCoreStatus === 'loading') {
+    return <div className="p-8 text-center"><p className="text-slate-500">Cargando estado adaptativo...</p></div>;
+  }
+  if (adaptiveCoreStatus === 'error' || !adaptiveCore) {
+    return <div className="p-8 text-center"><p className="text-rose-700">{adaptiveStep1Error ?? 'No pudimos cargar Adaptive Core.'}</p><button type="button" onClick={() => void loadAdaptiveCore()} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">Reintentar</button></div>;
+  }
+
+  const adaptiveStep1Checkpoint = adaptiveCore.activeCheckpoint?.step === 1 ? adaptiveCore.activeCheckpoint : null;
+  const adaptiveStep1Draft = latestAdaptiveStepOutput(adaptiveCore, 1, 'draft');
+  const adaptiveStep1Confirmed = Boolean(latestAdaptiveStepOutput(adaptiveCore, 1, 'confirmed'));
+  return (
+    <main className="min-h-full overflow-y-auto bg-slate-50 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl">
+        <button type="button" onClick={() => navigate(`/projects/${projectId}`)} className="mb-5 text-sm text-slate-500 hover:text-slate-800">Volver al proyecto</button>
+        <AdaptiveCheckpointWorkspace
+          core={adaptiveCore}
+          step={1}
+          checkpoint={adaptiveStep1Checkpoint}
+          questions={adaptiveStep1Checkpoint?.questions ?? []}
+          initialResponses={{ ...adaptiveCore.confirmedResponses, ...(adaptiveCore.activeCheckpoint?.responses ?? {}) }}
+          outputPreview={adaptiveStep1Draft?.output ?? null}
+          outputConfirmed={adaptiveStep1Confirmed}
+          saving={adaptiveStep1Saving}
+          error={adaptiveStep1Error}
+          onConfirmCheckpoint={adaptiveStep1Checkpoint ? confirmAdaptiveStep1Checkpoint : undefined}
+          onConfirmOutput={adaptiveStep1Draft ? confirmAdaptiveStep1Output : undefined}
+          onRefresh={() => void loadAdaptiveCore()}
+        />
+      </div>
+    </main>
+  );
 
   const semaforo = (() => {
     const limitesOk = cData.limitesChips.length > 0 || cData.limitesTexto.trim().length > 0;
@@ -779,7 +879,7 @@ export function Step1Page() {
     });
   };
 
-  const mirrorStep1AdaptiveSuccess = () => {
+  function mirrorStep1AdaptiveSuccess() {
     if (!projectId || !project) return;
     updateProject(projectId, {
       currentStep: Math.max(project.currentStep, 2),
@@ -790,7 +890,7 @@ export function Step1Page() {
         return item;
       }),
     });
-  };
+  }
 
   const startMentorValidation = (mode: 'meeting' | 'async_review') => {
     const baseSession = {

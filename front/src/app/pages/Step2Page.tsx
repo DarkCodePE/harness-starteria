@@ -16,7 +16,8 @@ import { getById } from '../services/projectService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
-import { confirmStep2Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
+import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
+import { confirmAdaptiveCheckpoint, confirmStep2Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 type ModuleId = 'A' | 'B' | 'C' | 'D';
 
@@ -449,6 +450,25 @@ export function Step2Page() {
     }
   };
 
+  const confirmAdaptiveStep2Checkpoint = async (responses: Record<string, unknown>, truthBindings?: { claimId: string; evidenceIds: string[]; sourceRefIds: string[] }) => {
+    if (!projectId || !adaptiveCore?.activeCheckpoint || adaptiveCore.activeCheckpoint.step !== 2) return;
+    setAdaptiveTransitionSaving(true);
+    setAdaptiveAuthorityError(null);
+    try {
+      const nextCore = await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${projectId}-${adaptiveCore.activeCheckpoint.checkpointKey}-${Date.now()}-ui-confirm`,
+        checkpointKey: adaptiveCore.activeCheckpoint.checkpointKey,
+        responses,
+        truthBindings,
+      });
+      setAdaptiveCore(nextCore);
+    } catch (error: any) {
+      setAdaptiveAuthorityError(error?.response?.data?.error?.message ?? error?.message ?? 'No pudimos confirmar el checkpoint adaptativo.');
+    } finally {
+      setAdaptiveTransitionSaving(false);
+    }
+  };
+
   const adaptiveStep2Allowed = adaptiveCoreStatus === 'loaded' && canNavigateToAdaptiveStep(adaptiveCore, 2);
 
   const baseParticipants: Participant[] = (project?.team?.length ?? 0) > 1
@@ -609,6 +629,31 @@ export function Step2Page() {
       </div>
     );
   }
+
+  const adaptiveStep2Checkpoint = adaptiveCore?.activeCheckpoint?.step === 2 ? adaptiveCore.activeCheckpoint : null;
+  const adaptiveStep2Draft = latestAdaptiveStepOutput(adaptiveCore, 2, 'draft');
+  const adaptiveStep2Confirmed = Boolean(latestAdaptiveStepOutput(adaptiveCore, 2, 'confirmed'));
+  return (
+    <main className="min-h-full overflow-y-auto bg-slate-50 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl">
+        <button type="button" onClick={() => navigate(`/projects/${projectId}`)} className="mb-5 text-sm text-slate-500 hover:text-slate-800">Volver al proyecto</button>
+        <AdaptiveCheckpointWorkspace
+          core={adaptiveCore!}
+          step={2}
+          checkpoint={adaptiveStep2Checkpoint}
+          questions={adaptiveStep2Checkpoint?.questions ?? []}
+          initialResponses={{ ...adaptiveCore?.confirmedResponses, ...(adaptiveCore?.activeCheckpoint?.responses ?? {}) }}
+          outputPreview={adaptiveStep2Draft?.output ?? null}
+          outputConfirmed={adaptiveStep2Confirmed}
+          saving={adaptiveTransitionSaving}
+          error={adaptiveAuthorityError}
+          onConfirmCheckpoint={adaptiveStep2Checkpoint ? confirmAdaptiveStep2Checkpoint : undefined}
+          onConfirmOutput={adaptiveStep2Draft ? confirmStep2Transition : undefined}
+          onRefresh={() => void loadAdaptiveCore()}
+        />
+      </div>
+    </main>
+  );
 
   const hmwChecks = {
     starts: /^¿?(c|C)(ó|o)mo podr(í|i)amos/i.test(hmw.trim()),

@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, ClipboardList, HelpCircle, Lock, RefreshCw } from 'lucide-react';
 import type { AdaptiveGate, AdaptiveInitiativeCore, AdaptiveQuestion, StepCheckpoint, StepConfiguration } from '../domain/types';
+import type { TruthBinding } from '../services/adaptiveCoreService';
 
 type ActiveCheckpoint = StepCheckpoint | NonNullable<AdaptiveInitiativeCore['activeCheckpoint']>;
-
 export interface AdaptiveCheckpointWorkspaceProps {
   core: AdaptiveInitiativeCore;
   step: 0 | 1 | 2 | 3 | 4;
@@ -19,9 +19,9 @@ export interface AdaptiveCheckpointWorkspaceProps {
    * del checkpoint (Step 0). En ese caso su propia cabecera seria una repeticion.
    */
   embedded?: boolean;
-  onConfirmCheckpoint?: (responses: Record<string, unknown>) => void | Promise<void>;
+  onConfirmCheckpoint?: (responses: Record<string, unknown>, truthBindings?: TruthBinding) => void | Promise<void>;
   onConfirmOutput?: () => void | Promise<void>;
-  onRefresh?: () => void;
+  onRefresh?: () => void | Promise<void>;
 }
 
 function checkpointCode(checkpoint: ActiveCheckpoint | null | undefined) {
@@ -53,6 +53,10 @@ function checkpointGates(checkpoint: ActiveCheckpoint | null | undefined): Adapt
 }
 
 function activeConfiguration(core: AdaptiveInitiativeCore, step: 0 | 1 | 2 | 3 | 4): StepConfiguration | undefined {
+  const active = core.stepConfigurations.find(config =>
+    config.id === core.activeStepConfigurationId && config.step === step,
+  );
+  if (active) return active;
   return core.stepConfigurations
     .filter(config => config.step === step)
     .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0];
@@ -98,11 +102,22 @@ export function AdaptiveCheckpointWorkspace({
   const config = activeConfiguration(core, step);
   const [responses, setResponses] = useState<Record<string, string>>(() => normalizeInitialResponses(questions, initialResponses));
   const [unknowns, setUnknowns] = useState<Record<string, boolean>>({});
+  const [selectedClaimId, setSelectedClaimId] = useState('');
+  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
+  const [selectedSourceRefIds, setSelectedSourceRefIds] = useState<string[]>([]);
+  const initialResponseSignature = JSON.stringify(initialResponses ?? {});
+  const questionSignature = JSON.stringify(questions.map(question => ({ id: question.id, prompt: question.prompt, prefilledFrom: question.prefilledFrom })));
 
   useEffect(() => {
     setResponses(normalizeInitialResponses(questions, initialResponses));
     setUnknowns({});
-  }, [questions, initialResponses]);
+    setSelectedClaimId('');
+    setSelectedEvidenceIds([]);
+    setSelectedSourceRefIds([]);
+  // El objeto de prefill puede cambiar de identidad en cada render del Step.
+  // Solo reiniciamos las respuestas cuando cambia su contenido real o el checkpoint.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionSignature, initialResponseSignature]);
   const missing = useMemo(() => unansweredRequired(questions, responses, unknowns), [questions, responses, unknowns]);
   const code = checkpointCode(checkpoint);
   const configuredCheckpoint = config?.checkpoints.find(item => item.code === code);
@@ -115,6 +130,31 @@ export function AdaptiveCheckpointWorkspace({
   // la persona valide en vez de rellenar.
   const resolvedByContext = questions.length > 0 && questions.every(question => Boolean(question.prefilledFrom));
   const outputReady = Boolean(outputPreview);
+  // The backend does not expose policy metadata in the Core response yet. CP-1.3
+  // is the only current validated-support policy and is detected from its contract key.
+  const requiresTruthBinding = code === 'CP-1.3';
+  const claims = core.truthClaims ?? [];
+  const evidence = core.evidence ?? [];
+  const sourceRefs = core.sourceRefs ?? [];
+  const selectedClaim = claims.find(claim => claim.id === selectedClaimId);
+  const selectedEvidence = evidence.filter(item => selectedEvidenceIds.includes(item.id));
+  const selectedSources = sourceRefs.filter(item => selectedSourceRefIds.includes(item.id));
+  const binding: TruthBinding | undefined = requiresTruthBinding && selectedClaimId && selectedEvidenceIds.length > 0 && selectedSourceRefIds.length > 0
+    ? { claimId: selectedClaimId, evidenceIds: selectedEvidenceIds, sourceRefIds: selectedSourceRefIds }
+    : undefined;
+  const bindingValid = !requiresTruthBinding || Boolean(
+    binding &&
+    selectedClaim &&
+    selectedEvidence.length === selectedEvidenceIds.length &&
+    selectedSources.length === selectedSourceRefIds.length &&
+    selectedEvidence.every(item => item.targetClaimId === selectedClaimId && item.sourceRefId && selectedSourceRefIds.includes(item.sourceRefId)),
+  );
+  const canConfirm = canConfirmCheckpoint && bindingValid;
+
+  const configuredCheckpoints = config?.checkpoints ?? [];
+  const completedCheckpoints = (core.checkpointInstances ?? []).filter(instance =>
+    instance.step === step && instance.status === 'completed',
+  ).length;
 
   const payload = () => questions.reduce<Record<string, unknown>>((acc, question) => {
     const key = responseKey(question);
@@ -153,6 +193,11 @@ export function AdaptiveCheckpointWorkspace({
             <p className="mt-2 text-sm text-indigo-900" style={{ fontWeight: 700 }}>
               Output que estas construyendo: {checkpointOutputKey(checkpoint, configuredCheckpoint?.outputKey ?? config?.expectedOutput ?? 'output adaptativo')}
             </p>
+            {configuredCheckpoints.length > 0 && (
+              <p className="mt-2 text-xs text-indigo-700" style={{ fontWeight: 700 }}>
+                Progreso Adaptive: {completedCheckpoints}/{configuredCheckpoints.length} checkpoints confirmados
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {onRefresh && (
@@ -258,8 +303,8 @@ export function AdaptiveCheckpointWorkspace({
             {onConfirmCheckpoint && (
               <button
                 type="button"
-                onClick={() => void onConfirmCheckpoint(payload())}
-                disabled={!canConfirmCheckpoint}
+                onClick={() => void onConfirmCheckpoint?.(payload(), binding)}
+                disabled={!canConfirm}
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 style={{ fontWeight: 800 }}
               >
@@ -281,6 +326,48 @@ export function AdaptiveCheckpointWorkspace({
               <p className="text-xs text-slate-500">Completa las preguntas obligatorias o marca "No lo se aun" cuando este permitido.</p>
             )}
           </div>
+
+          {requiresTruthBinding && (
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4" aria-label="Vinculacion de evidencia persistente">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm text-amber-950" style={{ fontWeight: 800 }}>Evidencia vinculada</p>
+                  <p className="mt-1 text-xs leading-5 text-amber-900">Selecciona entidades persistidas. El checkpoint no acepta texto libre como sustituto de Claim, Evidence o SourceRef.</p>
+                </div>
+                <span className="text-xs text-amber-900" style={{ fontWeight: 700 }}>{selectedEvidenceIds.length} evidencias / {selectedSourceRefIds.length} fuentes</span>
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                <label className="text-xs text-slate-700">
+                  Claim
+                  <select value={selectedClaimId} onChange={event => setSelectedClaimId(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm">
+                    <option value="">Selecciona un claim</option>
+                    {claims.map(claim => <option key={claim.id} value={claim.id}>{claim.statement}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-slate-700">
+                  Evidence
+                  <select multiple value={selectedEvidenceIds} onChange={event => setSelectedEvidenceIds(Array.from(event.target.selectedOptions, option => option.value))} className="mt-1 min-h-24 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm">
+                    {evidence.filter(item => !selectedClaimId || item.targetClaimId === selectedClaimId).map(item => <option key={item.id} value={item.id}>{item.name ?? item.id} · {item.truthStatus ?? 'sin estado'}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-slate-700">
+                  SourceRef
+                  <select multiple value={selectedSourceRefIds} onChange={event => setSelectedSourceRefIds(Array.from(event.target.selectedOptions, option => option.value))} className="mt-1 min-h-24 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm">
+                    {sourceRefs.map(source => <option key={source.id} value={source.id}>{source.reference}</option>)}
+                  </select>
+                </label>
+              </div>
+              {(claims.length === 0 || evidence.length === 0 || sourceRefs.length === 0) && (
+                <p className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-amber-900" role="status">
+                  No hay evidencia persistente suficiente para validar este checkpoint.
+                </p>
+              )}
+              {selectedClaim && <p className="mt-3 text-xs text-slate-600">Claim seleccionado: {selectedClaim.statement}</p>}
+              <p className={`mt-3 text-xs ${bindingValid ? 'text-emerald-700' : 'text-amber-900'}`} style={{ fontWeight: 700 }}>
+                {bindingValid ? 'Binding listo para enviar al backend.' : 'Falta un Claim, Evidence y SourceRef compatibles.'}
+              </p>
+            </div>
+          )}
         </div>
 
         <aside className="border-t border-slate-200 bg-slate-50 p-5 lg:border-l lg:border-t-0">
