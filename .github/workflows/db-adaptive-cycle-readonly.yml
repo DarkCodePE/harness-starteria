@@ -1,0 +1,162 @@
+name: DB Adaptive Cycle Readonly Audit
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: db-adaptive-cycle-readonly-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NAMESPACE: starteria
+
+jobs:
+  adaptive-cycle-readonly-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Fetch kubeconfig from Rackspace Spot API
+        env:
+          RACKSPACE_REFRESH_TOKEN: ${{ secrets.RACKSPACE_REFRESH_TOKEN }}
+          RACKSPACE_ORG_NAME: ${{ secrets.RACKSPACE_ORG_NAME }}
+          RACKSPACE_CLOUDSPACE_NAME: ${{ secrets.RACKSPACE_CLOUDSPACE_NAME }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc \
+            --arg org "$RACKSPACE_ORG_NAME" \
+            --arg cs  "$RACKSPACE_CLOUDSPACE_NAME" \
+            --arg rt  "$RACKSPACE_REFRESH_TOKEN" \
+            '{organization_name:$org, cloudspace_name:$cs, refresh_token:$rt}')
+          http_status=$(curl -sS -o /tmp/spot-response.json -w '%{http_code}' \
+            -X POST 'https://spot.rackspace.com/apis/auth.ngpc.rxt.io/v1/generate-kubeconfig' \
+            -H 'Content-Type: application/json' \
+            --data "$payload")
+          if [ "$http_status" != "200" ]; then
+            echo "::error::Rackspace API returned HTTP $http_status. Refresh token may be expired."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/kube"
+          jq -er '.data.kubeconfig' /tmp/spot-response.json > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          rm -f /tmp/spot-response.json
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+
+      - name: Run adaptive cycle readonly queries
+        run: |
+          set -euo pipefail
+          readonly_sql="$RUNNER_TEMP/adaptive-cycle-readonly-audit.sql"
+          cat > "$readonly_sql" <<'SQL'
+          BEGIN TRANSACTION READ ONLY;
+
+          \echo === DUPLICATE GROUPS ===
+          SELECT
+            "cycleId",
+            "stepNumber",
+            COUNT(*)::int AS count
+          FROM "CycleStepState"
+          GROUP BY "cycleId", "stepNumber"
+          HAVING COUNT(*) > 1
+          ORDER BY "cycleId", "stepNumber";
+
+          \echo === DUPLICATE ROWS ===
+          SELECT
+            css."id",
+            css."cycleId",
+            css."stepNumber",
+            css."state",
+            css."createdAt",
+            css."updatedAt",
+            ic."projectId",
+            ic."cycleNumber",
+            ic."status" AS "cycleStatus",
+            ic."currentStep"
+          FROM "CycleStepState" css
+          JOIN "InitiativeCycle" ic
+            ON ic."id" = css."cycleId"
+          WHERE (css."cycleId", css."stepNumber") IN (
+            SELECT "cycleId", "stepNumber"
+            FROM "CycleStepState"
+            GROUP BY "cycleId", "stepNumber"
+            HAVING COUNT(*) > 1
+          )
+          ORDER BY
+            ic."projectId",
+            css."cycleId",
+            css."stepNumber",
+            css."createdAt",
+            css."id";
+
+          \echo === NULL CYCLE IDS ===
+          SELECT 'CycleStepState' AS table_name, COUNT(*)::int AS count
+          FROM "CycleStepState"
+          WHERE "cycleId" IS NULL
+          UNION ALL
+          SELECT 'AdaptiveStepConfiguration', COUNT(*)::int
+          FROM "AdaptiveStepConfiguration"
+          WHERE "cycleId" IS NULL
+          UNION ALL
+          SELECT 'AdaptiveStepOutput', COUNT(*)::int
+          FROM "AdaptiveStepOutput"
+          WHERE "cycleId" IS NULL
+          UNION ALL
+          SELECT 'AdaptiveCheckpointInstance', COUNT(*)::int
+          FROM "AdaptiveCheckpointInstance"
+          WHERE "cycleId" IS NULL
+          UNION ALL
+          SELECT 'AdaptiveProgressSignal', COUNT(*)::int
+          FROM "AdaptiveProgressSignal"
+          WHERE "cycleId" IS NULL;
+
+          \echo === CYCLESTEPSTATE INDEXES ===
+          SELECT indexname, indexdef
+          FROM pg_indexes
+          WHERE tablename = 'CycleStepState'
+          ORDER BY indexname;
+
+          \echo === INVALID CYCLE CARDINALITY ===
+          SELECT
+            ic."id" AS "cycleId",
+            ic."projectId",
+            ic."cycleNumber",
+            COUNT(css."id")::int AS "stepStateCount",
+            ARRAY_AGG(css."stepNumber" ORDER BY css."stepNumber") AS steps
+          FROM "InitiativeCycle" ic
+          LEFT JOIN "CycleStepState" css
+            ON css."cycleId" = ic."id"
+          GROUP BY
+            ic."id",
+            ic."projectId",
+            ic."cycleNumber"
+          HAVING
+            COUNT(css."id") <> 5
+            OR COUNT(DISTINCT css."stepNumber") <> 5
+          ORDER BY
+            ic."projectId",
+            ic."cycleNumber";
+
+          ROLLBACK;
+          SQL
+
+          unsafe_pattern="$(printf '%s|' INS'ERT' UP'DATE' DEL'ETE' AL'TER' DR'OP' CR'EATE' TRUN'CATE')"
+          unsafe_pattern="${unsafe_pattern%|}"
+          if grep -Eiq "\\b(${unsafe_pattern})\\b" "$readonly_sql"; then
+            echo "::error::Readonly audit SQL contains a mutating statement."
+            exit 1
+          fi
+
+          kubectl exec -i -n "$NAMESPACE" statefulset/starteria-db -- \
+            psql -U starteria -d starteria_db -P pager=off -v ON_ERROR_STOP=1 \
+            -f - < "$readonly_sql"
+
+      - name: Cleanup kubeconfig
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -f "$RUNNER_TEMP/kube/config" || true
