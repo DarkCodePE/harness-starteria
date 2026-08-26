@@ -177,6 +177,21 @@ INSERT INTO "AdaptiveProgressSignal" ("id", "projectId", "stepNumber", "checkpoi
   ('signal-a', 'legacy-active', 2, 'CP-2.1', 'healthy', '{}');
 `;
 
+const adaptiveRowCountSql = String.raw`
+  SELECT 'AdaptiveStepConfiguration' AS table_name, COUNT(*)::bigint AS count FROM "AdaptiveStepConfiguration"
+  UNION ALL
+  SELECT 'AdaptiveCheckpointInstance', COUNT(*)::bigint FROM "AdaptiveCheckpointInstance"
+  UNION ALL
+  SELECT 'AdaptiveStepOutput', COUNT(*)::bigint FROM "AdaptiveStepOutput"
+  UNION ALL
+  SELECT 'AdaptiveProgressSignal', COUNT(*)::bigint FROM "AdaptiveProgressSignal"
+  UNION ALL
+  SELECT 'InitiativeCycle', COUNT(*)::bigint FROM "InitiativeCycle"
+  UNION ALL
+  SELECT 'CycleStepState', COUNT(*)::bigint FROM "CycleStepState"
+  ORDER BY table_name
+`;
+
 async function runSqlFile(name: string, sql: string, databaseUrl: string): Promise<void> {
   const file = path.join(os.tmpdir(), name);
   fs.writeFileSync(file, sql, 'utf8');
@@ -187,6 +202,67 @@ async function runSqlFile(name: string, sql: string, databaseUrl: string): Promi
     });
   } finally {
     fs.rmSync(file, { force: true });
+  }
+}
+
+function countsByTable(rows: Array<{ table_name: string; count: bigint }>): Map<string, bigint> {
+  return new Map(rows.map((row) => [row.table_name, row.count]));
+}
+
+function assertCount(rows: Map<string, bigint>, tableName: string, expected: bigint): void {
+  const actual = rows.get(tableName);
+  if (actual !== expected) throw new Error(`Expected ${tableName} count ${expected}, got ${actual}.`);
+}
+
+function assertCountsUnchanged(
+  before: Map<string, bigint>,
+  after: Map<string, bigint>,
+): void {
+  const keys = new Set([...before.keys(), ...after.keys()]);
+  const changes = [...keys].filter((key) => before.get(key) !== after.get(key));
+  if (changes.length > 0) {
+    throw new Error(`Second hotfix run changed row counts: ${changes.map((key) => `${key} ${before.get(key)} -> ${after.get(key)}`).join(', ')}`);
+  }
+}
+
+async function getAdaptiveRowCounts(prisma: PrismaClient): Promise<Map<string, bigint>> {
+  return countsByTable(await prisma.$queryRawUnsafe<Array<{ table_name: string; count: bigint }>>(adaptiveRowCountSql));
+}
+
+async function assertNoCycleStepStateDuplicates(prisma: PrismaClient): Promise<void> {
+  const duplicates = await prisma.$queryRawUnsafe<Array<{ cycleId: string; stepNumber: number; count: bigint }>>(String.raw`
+    SELECT "cycleId", "stepNumber", COUNT(*)::bigint AS count
+    FROM "CycleStepState"
+    GROUP BY "cycleId", "stepNumber"
+    HAVING COUNT(*) > 1
+  `);
+  if (duplicates.length > 0) {
+    throw new Error(`CycleStepState duplicate (cycleId, stepNumber) rows: ${JSON.stringify(duplicates)}`);
+  }
+}
+
+async function assertFiveDistinctStepStatesPerCycle(prisma: PrismaClient): Promise<void> {
+  const invalidCycles = await prisma.$queryRawUnsafe<Array<{
+    cycleId: string;
+    projectId: string;
+    cycleNumber: number;
+    stepStateCount: bigint;
+    distinctStepCount: bigint;
+  }>>(String.raw`
+    SELECT
+      ic."id" AS "cycleId",
+      ic."projectId",
+      ic."cycleNumber",
+      COUNT(css."id")::bigint AS "stepStateCount",
+      COUNT(DISTINCT css."stepNumber")::bigint AS "distinctStepCount"
+    FROM "InitiativeCycle" ic
+    LEFT JOIN "CycleStepState" css ON css."cycleId" = ic."id"
+    GROUP BY ic."id", ic."projectId", ic."cycleNumber"
+    HAVING COUNT(css."id") <> 5
+      OR COUNT(DISTINCT css."stepNumber") <> 5
+  `);
+  if (invalidCycles.length > 0) {
+    throw new Error(`InitiativeCycle rows without exactly five distinct CycleStepState rows: ${JSON.stringify(invalidCycles)}`);
   }
 }
 
@@ -202,14 +278,13 @@ async function main() {
 
   const prisma = new PrismaClient({ datasources: { db: { url: targetUrl } } });
   try {
-    const [configCount, checkpointCount, outputCount] = await Promise.all([
-      prisma.$queryRawUnsafe<Array<{ count: bigint }>>('SELECT COUNT(*)::bigint AS count FROM "AdaptiveStepConfiguration"'),
-      prisma.$queryRawUnsafe<Array<{ count: bigint }>>('SELECT COUNT(*)::bigint AS count FROM "AdaptiveCheckpointInstance"'),
-      prisma.$queryRawUnsafe<Array<{ count: bigint }>>('SELECT COUNT(*)::bigint AS count FROM "AdaptiveStepOutput"'),
-    ]);
-    if (configCount[0].count !== 8n || checkpointCount[0].count !== 11n || outputCount[0].count !== 1n) {
-      throw new Error('Legacy adaptive row counts changed during hotfix.');
-    }
+    const firstRunCounts = await getAdaptiveRowCounts(prisma);
+    assertCount(firstRunCounts, 'AdaptiveStepConfiguration', 8n);
+    assertCount(firstRunCounts, 'AdaptiveCheckpointInstance', 11n);
+    assertCount(firstRunCounts, 'AdaptiveStepOutput', 1n);
+    assertCount(firstRunCounts, 'AdaptiveProgressSignal', 1n);
+    assertCount(firstRunCounts, 'InitiativeCycle', 2n);
+    assertCount(firstRunCounts, 'CycleStepState', 10n);
 
     const nulls = await prisma.$queryRawUnsafe<Array<{ table_name: string; null_count: bigint }>>(String.raw`
       SELECT 'AdaptiveStepConfiguration' AS table_name, COUNT(*)::bigint AS null_count FROM "AdaptiveStepConfiguration" WHERE "cycleId" IS NULL
@@ -217,6 +292,8 @@ async function main() {
       SELECT 'AdaptiveCheckpointInstance', COUNT(*)::bigint FROM "AdaptiveCheckpointInstance" WHERE "cycleId" IS NULL
       UNION ALL
       SELECT 'AdaptiveStepOutput', COUNT(*)::bigint FROM "AdaptiveStepOutput" WHERE "cycleId" IS NULL
+      UNION ALL
+      SELECT 'AdaptiveProgressSignal', COUNT(*)::bigint FROM "AdaptiveProgressSignal" WHERE "cycleId" IS NULL
     `);
     const withNulls = nulls.filter((row) => row.null_count !== 0n);
     if (withNulls.length > 0) throw new Error(`Backfill left null cycleId rows: ${JSON.stringify(withNulls)}`);
@@ -266,8 +343,8 @@ async function main() {
     `);
     if (activeCycleViolations[0].violations !== 0n) throw new Error('More than one active cycle for a project.');
 
-    const states = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>('SELECT COUNT(*)::bigint AS count FROM "CycleStepState"');
-    if (states[0].count !== 10n) throw new Error(`Expected 10 CycleStepState rows, got ${states[0].count}.`);
+    await assertNoCycleStepStateDuplicates(prisma);
+    await assertFiveDistinctStepStatesPerCycle(prisma);
 
     const constraints = await prisma.$queryRawUnsafe<Array<{ conname: string }>>(String.raw`
       SELECT conname
@@ -280,11 +357,21 @@ async function main() {
       )
     `);
     if (constraints.length !== 4) throw new Error(`Missing expected FK constraints: ${JSON.stringify(constraints)}`);
+
+    runChecked('npx', ['prisma', 'db', 'execute', '--schema=prisma/schema.prisma', `--file=${hotfixSql}`], frontRoot, {
+      ...process.env,
+      DATABASE_URL: targetUrl,
+    });
+
+    const secondRunCounts = await getAdaptiveRowCounts(prisma);
+    assertCountsUnchanged(firstRunCounts, secondRunCounts);
+    await assertNoCycleStepStateDuplicates(prisma);
+    await assertFiveDistinctStepStatesPerCycle(prisma);
   } finally {
     await prisma.$disconnect();
   }
 
-  console.log('[adaptive-cycle-hotfix] OK: legacy rows preserved, cycleId backfilled, constraints and NOT NULL verified.');
+  console.log('[adaptive-cycle-hotfix] OK: legacy rows preserved, cycleId backfilled, constraints, NOT NULL, and second-run idempotency verified.');
 }
 
 main().catch((error) => {

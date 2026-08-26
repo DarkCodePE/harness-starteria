@@ -243,7 +243,12 @@ SELECT
   CURRENT_TIMESTAMP
 FROM "InitiativeCycle" ic
 CROSS JOIN (VALUES (0), (1), (2), (3), (4)) AS steps(step)
-ON CONFLICT ("id") DO NOTHING;
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM "CycleStepState" existing
+  WHERE existing."cycleId" = ic."id"
+    AND existing."stepNumber" = steps.step
+);
 
 -- Guardrails before enforcing NOT NULL.
 DO $$
@@ -297,6 +302,14 @@ BEGIN
     HAVING COUNT(*) > 1
   ) THEN
     RAISE EXCEPTION 'More than one active InitiativeCycle for a project';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM "CycleStepState"
+    GROUP BY "cycleId", "stepNumber"
+    HAVING COUNT(*) > 1
+  ) THEN
+    RAISE EXCEPTION 'CycleStepState contains duplicate (cycleId, stepNumber) rows';
   END IF;
 END $$;
 
