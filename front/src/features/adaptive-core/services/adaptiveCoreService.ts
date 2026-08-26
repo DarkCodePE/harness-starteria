@@ -1,6 +1,12 @@
 import api from '../../../app/services/api';
 import type { AdaptiveInitiativeCore } from '../domain/types';
 
+export interface TruthBinding {
+  claimId: string;
+  evidenceIds: string[];
+  sourceRefIds: string[];
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -17,6 +23,7 @@ export async function confirmAdaptiveCheckpoint(
     idempotencyKey: string;
     checkpointKey: string;
     responses: Record<string, unknown>;
+    truthBindings?: TruthBinding;
   },
 ): Promise<AdaptiveInitiativeCore> {
   const { data } = await api.post<ApiResponse<AdaptiveInitiativeCore>>(`/projects/${projectId}/adaptive-core/checkpoints/confirm`, input);

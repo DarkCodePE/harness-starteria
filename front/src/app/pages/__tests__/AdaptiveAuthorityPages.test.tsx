@@ -15,24 +15,29 @@ vi.mock('react-router', () => ({
 }));
 
 const getAdaptiveCore = vi.fn();
+const confirmAdaptiveCheckpoint = vi.fn();
+const confirmStep1Output = vi.fn();
 const confirmStep2Output = vi.fn();
 const confirmStep3Output = vi.fn();
 const confirmStep4Output = vi.fn();
 const getById = vi.fn();
 vi.mock('../../../features/adaptive-core/services/adaptiveCoreService', () => ({
   getAdaptiveCore: (id: string) => getAdaptiveCore(id),
-  confirmAdaptiveCheckpoint: vi.fn(),
+  confirmAdaptiveCheckpoint: (...args: any[]) => confirmAdaptiveCheckpoint(...args),
   confirmStep0Brief: vi.fn(),
+  confirmStep1Output: (...args: any[]) => confirmStep1Output(...args),
   confirmStep2Output: (...args: any[]) => confirmStep2Output(...args),
   confirmStep3Output: (...args: any[]) => confirmStep3Output(...args),
   confirmStep4Output: (...args: any[]) => confirmStep4Output(...args),
 }));
 
 vi.mock('../../../features/adaptive-core/components', () => ({
-  AdaptiveCheckpointWorkspace: ({ checkpoint, onConfirmCheckpoint }: any) => (
+  AdaptiveCheckpointWorkspace: ({ checkpoint, onConfirmCheckpoint, onConfirmOutput, error }: any) => (
     <div data-testid="adaptive-workspace">
       <span>{checkpoint?.checkpointKey ?? checkpoint?.code}</span>
-      <button type="button" onClick={() => onConfirmCheckpoint?.({})}>Confirmar checkpoint</button>
+      {error && <p role="alert">{error}</p>}
+      <button type="button" onClick={() => onConfirmCheckpoint?.({}, checkpoint?.checkpointKey === 'CP-1.3' ? { claimId: 'claim-real', evidenceIds: ['evidence-real'], sourceRefIds: ['source-real'] } : undefined)}>Confirmar checkpoint</button>
+      {onConfirmOutput && <button type="button" onClick={() => onConfirmOutput()}>Confirmar output del Step</button>}
     </div>
   ),
   CriticalChangeReview: () => null,
@@ -246,8 +251,10 @@ describe('Adaptive authority in pages', () => {
     navigate.mockReset();
     appState.projects = [project];
     confirmStep2Output.mockReset();
+    confirmStep1Output.mockReset();
     confirmStep3Output.mockReset();
     confirmStep4Output.mockReset();
+    confirmAdaptiveCheckpoint.mockReset();
     getById.mockReset();
     getById.mockResolvedValue(project);
   });
@@ -300,6 +307,125 @@ describe('Adaptive authority in pages', () => {
     await waitFor(() => expect(getById).toHaveBeenCalledWith('p1'));
     await waitFor(() => expect(screen.queryByText(/Proyecto o Step no encontrado/i)).not.toBeInTheDocument());
     expect(screen.queryByText(/No pudimos cargar el proyecto/i)).not.toBeInTheDocument();
+  });
+
+  it('Step1 renders the Adaptive workspace and active checkpoint instead of legacy modules', async () => {
+    getAdaptiveCore.mockResolvedValue(serverCoreAtStep(1, 'CP-1.1'));
+
+    render(<Step1Page />);
+
+    expect(await screen.findByTestId('adaptive-workspace')).toBeInTheDocument();
+    expect(screen.getByText('CP-1.1')).toBeInTheDocument();
+    expect(screen.queryByText(/Módulo A: Análisis inicial del problema/i)).not.toBeInTheDocument();
+  });
+
+  it('Step1 confirms only the active checkpoint and renders the next one after Core reload', async () => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.1'));
+    confirmAdaptiveCheckpoint.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.2'));
+
+    render(<Step1Page />);
+    fireEvent.click(await screen.findByRole('button', { name: /Confirmar checkpoint/i }));
+
+    await waitFor(() => expect(confirmAdaptiveCheckpoint).toHaveBeenCalledTimes(1));
+    expect(confirmAdaptiveCheckpoint.mock.calls[0][1]).toMatchObject({ checkpointKey: 'CP-1.1' });
+    expect(screen.getByText('CP-1.2')).toBeInTheDocument();
+    expect(confirmAdaptiveCheckpoint).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ checkpointKey: 'CP-1.2' }));
+  });
+
+  it('Step1 completes checkpoints one at a time and confirms output before Step 2', async () => {
+    const cp14Draft = {
+      ...serverCoreAtStep(1, 'CP-1.4'),
+      stepOutputs: [{ id: 'step1-draft', step: 1, status: 'draft', version: 1, output: { synthesis: 'draft' } }],
+    };
+    const step2Core = serverCoreAtStep(2, 'CP-2.1');
+    getAdaptiveCore
+      .mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.1'))
+      .mockResolvedValueOnce(step2Core);
+    confirmAdaptiveCheckpoint
+      .mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.2'))
+      .mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.3'))
+      .mockResolvedValueOnce(cp14Draft)
+      .mockResolvedValueOnce(cp14Draft);
+    confirmStep1Output.mockResolvedValueOnce({});
+
+    render(<Step1Page />);
+    for (const expectedCheckpoint of ['CP-1.1', 'CP-1.2', 'CP-1.3', 'CP-1.4']) {
+      expect(await screen.findByText(expectedCheckpoint)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /Confirmar checkpoint/i }));
+      await waitFor(() => expect(confirmAdaptiveCheckpoint).toHaveBeenCalledTimes(
+        ['CP-1.1', 'CP-1.2', 'CP-1.3', 'CP-1.4'].indexOf(expectedCheckpoint) + 1,
+      ));
+    }
+
+    expect(confirmAdaptiveCheckpoint).toHaveBeenCalledTimes(4);
+    expect(confirmAdaptiveCheckpoint.mock.calls[2][1]).toMatchObject({
+      checkpointKey: 'CP-1.3',
+      truthBindings: {
+        claimId: 'claim-real',
+        evidenceIds: ['evidence-real'],
+        sourceRefIds: ['source-real'],
+      },
+    });
+    expect(screen.getByRole('button', { name: /Confirmar output del Step/i })).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalledWith('/projects/p1/step/2');
+
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar output del Step/i }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/projects/p1/step/2'));
+    expect(confirmStep1Output).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    'Claim sin soporte validado',
+    'Contradiccion abierta',
+    'Evidence o SourceRef incompatible',
+  ])('keeps CP-1.3 active and exposes backend rejection: %s', async (message) => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.3'));
+    confirmAdaptiveCheckpoint.mockRejectedValueOnce({ response: { data: { error: { message } } } });
+
+    render(<Step1Page />);
+    fireEvent.click(await screen.findByRole('button', { name: /Confirmar checkpoint/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByText('CP-1.3')).toBeInTheDocument();
+    expect(confirmAdaptiveCheckpoint).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalledWith('/projects/p1/step/2');
+  });
+
+  it('allows retrying CP-1.3 without creating duplicate truth entities', async () => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.3'));
+    confirmAdaptiveCheckpoint.mockRejectedValueOnce(new Error('retryable gate')).mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.4'));
+
+    render(<Step1Page />);
+    const confirm = await screen.findByRole('button', { name: /Confirmar checkpoint/i });
+    fireEvent.click(confirm);
+    await screen.findByRole('alert');
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(confirmAdaptiveCheckpoint).toHaveBeenCalledTimes(2));
+    expect(confirmAdaptiveCheckpoint.mock.calls[0][1]).toMatchObject({
+      checkpointKey: 'CP-1.3',
+      responses: {},
+      truthBindings: { claimId: 'claim-real', evidenceIds: ['evidence-real'], sourceRefIds: ['source-real'] },
+    });
+    expect(confirmAdaptiveCheckpoint.mock.calls[1][1]).toMatchObject({
+      checkpointKey: confirmAdaptiveCheckpoint.mock.calls[0][1].checkpointKey,
+      responses: confirmAdaptiveCheckpoint.mock.calls[0][1].responses,
+      truthBindings: confirmAdaptiveCheckpoint.mock.calls[0][1].truthBindings,
+    });
+  });
+
+  it('Step2 and Step3 render the Adaptive workspace as their primary surface', async () => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(2, 'CP-2.1'));
+    render(<Step2Page />);
+    expect(await screen.findByTestId('adaptive-workspace')).toBeInTheDocument();
+    expect(screen.getByText('CP-2.1')).toBeInTheDocument();
+    expect(screen.queryByText(/Módulo A · HMW/i)).not.toBeInTheDocument();
+
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(3, 'CP-3.1'));
+    render(<Step3Page />);
+    expect(await screen.findAllByTestId('adaptive-workspace')).not.toHaveLength(0);
+    expect(screen.getByText('CP-3.1')).toBeInTheDocument();
+    expect(screen.queryByText(/SUBMÓDULOS/i)).not.toBeInTheDocument();
   });
 
   it('Step2 fetches the project by route id when AppContext does not have it', async () => {

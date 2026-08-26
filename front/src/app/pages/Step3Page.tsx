@@ -17,7 +17,8 @@ import { getById } from '../services/projectService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
-import { confirmStep3Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
+import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
+import { confirmAdaptiveCheckpoint, confirmStep3Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 
 type ModuleId = 'A' | 'B' | 'C';
 type GoNoGoDecision = 'Go' | 'Iterar' | 'No-Go' | 'Pivote' | null;
@@ -780,6 +781,25 @@ export function Step3Page() {
   if (!project && (projectsLoading || projectFetching)) return <div className="p-6"><p className="text-slate-500">Cargando proyecto...</p></div>;
   if (!project && projectFetchError) return <div className="p-6"><p className="text-slate-500">No pudimos cargar el proyecto.</p></div>;
   if (!project) return <div className="p-6"><p className="text-slate-500">Proyecto no encontrado.</p></div>;
+  const confirmAdaptiveStep3Checkpoint = async (responses: Record<string, unknown>, truthBindings?: { claimId: string; evidenceIds: string[]; sourceRefIds: string[] }) => {
+    if (!projectId || !adaptiveCore?.activeCheckpoint || adaptiveCore.activeCheckpoint.step !== 3) return;
+    setAdaptiveTransitionSaving(true);
+    setAdaptiveAuthorityError(null);
+    try {
+      const nextCore = await confirmAdaptiveCheckpoint(projectId, {
+        idempotencyKey: `${projectId}-${adaptiveCore.activeCheckpoint.checkpointKey}-${Date.now()}-ui-confirm`,
+        checkpointKey: adaptiveCore.activeCheckpoint.checkpointKey,
+        responses,
+        truthBindings,
+      });
+      setAdaptiveCore(nextCore);
+    } catch (error: any) {
+      setAdaptiveAuthorityError(error?.response?.data?.error?.message ?? error?.message ?? 'No pudimos confirmar el checkpoint adaptativo.');
+    } finally {
+      setAdaptiveTransitionSaving(false);
+    }
+  };
+
   const adaptiveStep3Allowed = adaptiveCoreStatus === 'loaded' && canNavigateToAdaptiveStep(adaptiveCore, 3);
   if (adaptiveCoreStatus === 'loading') {
     return (
@@ -811,6 +831,31 @@ export function Step3Page() {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
+  const adaptiveStep3Checkpoint = adaptiveCore?.activeCheckpoint?.step === 3 ? adaptiveCore.activeCheckpoint : null;
+  const adaptiveStep3Draft = latestAdaptiveStepOutput(adaptiveCore, 3, 'draft');
+  const adaptiveStep3Confirmed = Boolean(latestAdaptiveStepOutput(adaptiveCore, 3, 'confirmed'));
+  return (
+    <main className="min-h-full overflow-y-auto bg-slate-50 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl">
+        <button type="button" onClick={() => navigate(`/projects/${projectId}`)} className="mb-5 text-sm text-slate-500 hover:text-slate-800">Volver al proyecto</button>
+        <AdaptiveCheckpointWorkspace
+          core={adaptiveCore!}
+          step={3}
+          checkpoint={adaptiveStep3Checkpoint}
+          questions={adaptiveStep3Checkpoint?.questions ?? []}
+          initialResponses={{ ...adaptiveCore?.confirmedResponses, ...(adaptiveCore?.activeCheckpoint?.responses ?? {}) }}
+          outputPreview={adaptiveStep3Draft?.output ?? null}
+          outputConfirmed={adaptiveStep3Confirmed}
+          saving={adaptiveTransitionSaving}
+          error={adaptiveAuthorityError}
+          onConfirmCheckpoint={adaptiveStep3Checkpoint ? confirmAdaptiveStep3Checkpoint : undefined}
+          onConfirmOutput={adaptiveStep3Draft ? confirmStep3Transition : undefined}
+          onRefresh={() => void loadAdaptiveCore()}
+        />
+      </div>
+    </main>
+  );
+
   const modules: { id: ModuleId; label: string; completed: boolean }[] = [
     { id: 'A', label: 'A · Plan del experimento', completed: moduloACompleto },
     { id: 'B', label: 'B · Ejecutar y capturar', completed: moduleBReady },

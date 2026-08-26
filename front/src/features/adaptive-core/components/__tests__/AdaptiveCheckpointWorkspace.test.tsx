@@ -111,6 +111,69 @@ describe('AdaptiveCheckpointWorkspace', () => {
 
     expect(onConfirmCheckpoint).toHaveBeenCalledWith({
       owner_and_actor_required: 'La directora de operaciones',
+    }, undefined);
+  });
+
+  it('sends the persisted CP-1.3 truth binding shape', () => {
+    const onConfirmCheckpoint = vi.fn();
+    const cp13: StepCheckpoint = {
+      ...checkpoint,
+      id: 'cp-1-3',
+      step: 1,
+      code: 'CP-1.3',
+      title: 'Capturar y analizar evidencia',
+    };
+    const cp13Core: AdaptiveInitiativeCore = {
+      ...core,
+      activeStepConfigurationId: 'cfg-1',
+      stepConfigurations: [{ ...core.stepConfigurations[0], id: 'cfg-1', step: 1, checkpoints: [cp13] }],
+      truthClaims: [{ id: 'claim-real', statement: 'La hipotesis persistida', verificationState: 'supported' }],
+      evidence: [{ id: 'evidence-real', name: 'Entrevista persistida', truthStatus: 'supports', targetClaimId: 'claim-real', sourceRefId: 'source-real' }],
+      sourceRefs: [{ id: 'source-real', sourceType: 'USER_INPUT', reference: 'Entrevista 01' }],
+    };
+
+    render(
+      <AdaptiveCheckpointWorkspace
+        core={cp13Core}
+        step={1}
+        checkpoint={cp13}
+        questions={[]}
+        onConfirmCheckpoint={onConfirmCheckpoint}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Claim'), { target: { value: 'claim-real' } });
+    const evidenceSelect = screen.getByLabelText('Evidence');
+    const sourceSelect = screen.getByLabelText('SourceRef');
+    Object.defineProperty(evidenceSelect, 'selectedOptions', { value: [{ value: 'evidence-real' }] });
+    Object.defineProperty(sourceSelect, 'selectedOptions', { value: [{ value: 'source-real' }] });
+    fireEvent.change(evidenceSelect);
+    fireEvent.change(sourceSelect);
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar checkpoint/i }));
+
+    expect(onConfirmCheckpoint).toHaveBeenCalledWith({}, {
+      claimId: 'claim-real',
+      evidenceIds: ['evidence-real'],
+      sourceRefIds: ['source-real'],
     });
+  });
+
+  it('does not enable CP-1.3 without a real claim, evidence and source reference', () => {
+    const onConfirmCheckpoint = vi.fn();
+    const cp13: StepCheckpoint = { ...checkpoint, step: 1, code: 'CP-1.3' };
+    render(
+      <AdaptiveCheckpointWorkspace
+        core={{ ...core, stepConfigurations: [{ ...core.stepConfigurations[0], step: 1, checkpoints: [cp13] }] }}
+        step={1}
+        checkpoint={cp13}
+        questions={[]}
+        onConfirmCheckpoint={onConfirmCheckpoint}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Confirmar checkpoint/i })).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(/No hay evidencia persistente suficiente/i);
+    expect(screen.queryByRole('button', { name: /Registrar|Guardar|Validar soporte/i })).not.toBeInTheDocument();
+    expect(onConfirmCheckpoint).not.toHaveBeenCalled();
   });
 });

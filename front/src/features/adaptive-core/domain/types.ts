@@ -128,6 +128,26 @@ export interface ProgressSignal {
   updatedAt: string;
 }
 
+export interface AdaptiveTruthClaim {
+  id: string;
+  statement: string;
+  verificationState?: string | null;
+}
+
+export interface AdaptiveEvidence {
+  id: string;
+  name?: string | null;
+  truthStatus?: string | null;
+  sourceRefId?: string | null;
+  targetClaimId?: string | null;
+}
+
+export interface AdaptiveSourceRef {
+  id: string;
+  sourceType: string;
+  reference: string;
+}
+
 export interface ChallengeContribution {
   subproblem: string;
   hypothesis: string;
@@ -164,6 +184,9 @@ export interface AdaptiveInitiativeCore {
    * reconstruir las variables desde el formulario legacy de cada Step.
    */
   confirmedResponses?: Record<string, unknown>;
+  evidence?: AdaptiveEvidence[];
+  sourceRefs?: AdaptiveSourceRef[];
+  truthClaims?: AdaptiveTruthClaim[];
   stepOutputs?: Array<Record<string, unknown>>;
   auditEvents: Array<{
     id: string;
