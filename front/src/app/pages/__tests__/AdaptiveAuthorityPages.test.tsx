@@ -3,7 +3,10 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectHomePage } from '../ProjectHomePage';
 import { Step0Page } from '../Step0Page';
+import { Step1Page } from '../Step1Page';
+import { Step2Page } from '../Step2Page';
 import { Step3Page } from '../Step3Page';
+import { Step4Page } from '../Step4Page';
 
 const navigate = vi.fn();
 vi.mock('react-router', () => ({
@@ -15,6 +18,7 @@ const getAdaptiveCore = vi.fn();
 const confirmStep2Output = vi.fn();
 const confirmStep3Output = vi.fn();
 const confirmStep4Output = vi.fn();
+const getById = vi.fn();
 vi.mock('../../../features/adaptive-core/services/adaptiveCoreService', () => ({
   getAdaptiveCore: (id: string) => getAdaptiveCore(id),
   confirmAdaptiveCheckpoint: vi.fn(),
@@ -60,7 +64,7 @@ vi.mock('../../services/featureFlags', () => ({
 }));
 
 vi.mock('../../services/projectService', () => ({
-  getById: vi.fn(),
+  getById: (...args: any[]) => getById(...args),
 }));
 
 vi.mock('../../step0/step0Config', async () => {
@@ -90,6 +94,7 @@ const appState = {
 
 vi.mock('../../context/AppContext', () => ({
   useApp: () => appState,
+  enrichProject: (raw: any) => raw,
   createTeamMember: (email: string) => ({ id: email, email, name: email, role: 'Sponsor', status: 'Pendiente', initials: 'SP' }),
 }));
 
@@ -243,6 +248,8 @@ describe('Adaptive authority in pages', () => {
     confirmStep2Output.mockReset();
     confirmStep3Output.mockReset();
     confirmStep4Output.mockReset();
+    getById.mockReset();
+    getById.mockResolvedValue(project);
   });
 
   it('ProjectHome blocks operational Adaptive journey when backend core fails', async () => {
@@ -283,6 +290,69 @@ describe('Adaptive authority in pages', () => {
 
     await waitFor(() => expect(screen.getByTestId('adaptive-workspace')).toBeInTheDocument());
     expect(screen.getAllByText('CP-0.1').length).toBeGreaterThan(0);
+  });
+
+  it('Step1 fetches the project by route id when AppContext does not have it', async () => {
+    appState.projects = [];
+
+    render(<Step1Page />);
+
+    await waitFor(() => expect(getById).toHaveBeenCalledWith('p1'));
+    await waitFor(() => expect(screen.queryByText(/Proyecto o Step no encontrado/i)).not.toBeInTheDocument());
+    expect(screen.queryByText(/No pudimos cargar el proyecto/i)).not.toBeInTheDocument();
+  });
+
+  it('Step2 fetches the project by route id when AppContext does not have it', async () => {
+    appState.projects = [];
+    getAdaptiveCore.mockResolvedValue(serverCoreAtStep(2, 'CP-2.1'));
+
+    render(<Step2Page />);
+
+    await waitFor(() => expect(getById).toHaveBeenCalledWith('p1'));
+    await waitFor(() => expect(screen.queryByText(/^Proyecto no encontrado\.$/i)).not.toBeInTheDocument());
+    expect(screen.queryByText(/No pudimos cargar el proyecto/i)).not.toBeInTheDocument();
+  });
+
+  it('Step3 fetches the project by route id when AppContext does not have it', async () => {
+    appState.projects = [];
+    getAdaptiveCore.mockResolvedValue(serverCoreAtStep(3, 'CP-3.1'));
+
+    render(<Step3Page />);
+
+    await waitFor(() => expect(getById).toHaveBeenCalledWith('p1'));
+    await waitFor(() => expect(screen.queryByText(/^Proyecto no encontrado\.$/i)).not.toBeInTheDocument());
+    expect(screen.queryByText(/No pudimos cargar el proyecto/i)).not.toBeInTheDocument();
+  });
+
+  it('Step4 fetches the project by route id when AppContext does not have it', async () => {
+    appState.projects = [];
+    getAdaptiveCore.mockResolvedValue(serverCoreAtStep(4, 'CP-4.1'));
+
+    render(<Step4Page />);
+
+    await waitFor(() => expect(getById).toHaveBeenCalledWith('p1'));
+    await waitFor(() => expect(screen.queryByText(/^Proyecto no encontrado\.$/i)).not.toBeInTheDocument());
+    expect(screen.queryByText(/No pudimos cargar el proyecto/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a real load error once when route project hydration fails', async () => {
+    appState.projects = [];
+    getById.mockRejectedValueOnce(new Error('not found'));
+
+    render(<Step1Page />);
+
+    expect(await screen.findByText(/No pudimos cargar el proyecto/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Proyecto o Step no encontrado/i)).not.toBeInTheDocument();
+    expect(getById).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers the AppContext project and does not fetch redundantly', async () => {
+    appState.projects = [project];
+
+    render(<Step1Page />);
+
+    await waitFor(() => expect(screen.queryByText(/Proyecto o Step no encontrado/i)).not.toBeInTheDocument());
+    expect(getById).not.toHaveBeenCalled();
   });
 
   it('ProjectHome does not allow Step 2 access from legacy approval when server core is still Step 1', async () => {

@@ -7,7 +7,7 @@ import {
   Users, Trash2, BarChart2, HelpCircle, TrendingUp, Upload,
 } from 'lucide-react';
 import { MentorSupportModal } from '../components/MentorSupportModal';
-import { useApp } from '../context/AppContext';
+import { enrichProject, type Project, useApp } from '../context/AppContext';
 import { StatusChip } from '../components/StatusChip';
 import { ProgressBar } from '../components/ProgressBar';
 import { BannerPorDefinir } from '../components/BannerPorDefinir';
@@ -17,6 +17,7 @@ import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard
 import { useAutosave } from '../hooks/useAutosave';
 import { AutofillField } from '../components/autofill/AutofillField';
 import * as stepService from '../services/stepService';
+import { getById } from '../services/projectService';
 import { Step1CaptureSynthesisModule } from '../components/step1-capture-synthesis/Step1CaptureSynthesisModule';
 import { buildCaptureModuleContext, buildStep1ModuleViewModels, calculateStep1Progress, getStep1CaptureMissing } from '../components/step1-architecture/step1Completion';
 import { normalizeCaptureSynthesisState, syncCaptureSynthesisWithResearch } from '../components/step1-architecture/step1Legacy';
@@ -219,10 +220,14 @@ const syncLegacyModuleBFromV2 = (
 
 export function Step1Page() {
   const { projectId } = useParams();
-  const { projects, setCurrentProject, updateProject } = useApp();
+  const { projects, projectsLoading, setCurrentProject, updateProject, user } = useApp();
   const navigate = useNavigate();
 
-  const project = projects.find(p => p.id === projectId);
+  const contextProject = projects.find(p => p.id === projectId);
+  const [fetchedProject, setFetchedProject] = useState<Project | null>(null);
+  const [projectFetching, setProjectFetching] = useState(false);
+  const [projectFetchError, setProjectFetchError] = useState(false);
+  const project = contextProject ?? fetchedProject;
   const step = project?.steps.find(s => s.number === 1);
   const step0 = project?.step0Data;
 
@@ -318,6 +323,24 @@ export function Step1Page() {
     legacySynthesis: sintesisData,
   }));
   const [moduleAdjustments, setModuleAdjustments] = useState({ research: false, capture: false });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!projectId || contextProject || projectsLoading) return;
+    setProjectFetching(true);
+    setProjectFetchError(false);
+    getById(projectId)
+      .then(loaded => {
+        if (!cancelled) setFetchedProject(enrichProject(loaded, user));
+      })
+      .catch(() => {
+        if (!cancelled) setProjectFetchError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectFetching(false);
+      });
+    return () => { cancelled = true; };
+  }, [contextProject, projectId, projectsLoading, user]);
 
   // ── Módulo A — nuevos estados (rediseño Step1A) ──────────────────────────
   const [step0Collapsed, setStep0Collapsed] = useState(false);
@@ -524,6 +547,8 @@ export function Step1Page() {
     });
   };
 
+  if (!project && (projectsLoading || projectFetching)) return <div className="p-6"><p className="text-slate-500">Cargando proyecto...</p></div>;
+  if (!project && projectFetchError) return <div className="p-6"><p className="text-slate-500">No pudimos cargar el proyecto.</p></div>;
   if (!project || !step) return <div className="p-6"><p className="text-slate-500">Proyecto o Step no encontrado.</p></div>;
 
   const semaforo = (() => {

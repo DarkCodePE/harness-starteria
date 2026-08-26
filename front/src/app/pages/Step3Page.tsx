@@ -7,12 +7,13 @@ import {
   FileText, Sparkles, Edit2, BookOpen, Layers, FlaskConical,
   TrendingUp, Users, MapPin, Zap, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { enrichProject, type Project, useApp } from '../context/AppContext';
 import { StatusChip } from '../components/StatusChip';
 import { FeedbackIAPanel } from '../components/FeedbackIAPanel';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
 import { useStepData } from '../hooks/useStepData';
 import * as stepService from '../services/stepService';
+import { getById } from '../services/projectService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
@@ -352,9 +353,13 @@ function SectionCard({ title, icon: Icon, children, className = '' }: {
 // ═════════════════════════════════════════════════════════════════════════════
 export function Step3Page() {
   const { projectId } = useParams();
-  const { projects, updateProject } = useApp();
+  const { projects, projectsLoading, updateProject, user } = useApp();
   const navigate = useNavigate();
-  const project = projects.find(p => p.id === projectId);
+  const contextProject = projects.find(p => p.id === projectId);
+  const [fetchedProject, setFetchedProject] = useState<Project | null>(null);
+  const [projectFetching, setProjectFetching] = useState(false);
+  const [projectFetchError, setProjectFetchError] = useState(false);
+  const project = contextProject ?? fetchedProject;
 
   const { data: step2Raw } = useStepData<any>(projectId ?? '', 2);
   const testcard = useMemo(() => ({
@@ -602,6 +607,24 @@ export function Step3Page() {
   const [adaptiveAuthorityError, setAdaptiveAuthorityError] = useState<string | null>(null);
   const [adaptiveTransitionSaving, setAdaptiveTransitionSaving] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!projectId || contextProject || projectsLoading) return;
+    setProjectFetching(true);
+    setProjectFetchError(false);
+    getById(projectId)
+      .then(loaded => {
+        if (!cancelled) setFetchedProject(enrichProject(loaded, user));
+      })
+      .catch(() => {
+        if (!cancelled) setProjectFetchError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectFetching(false);
+      });
+    return () => { cancelled = true; };
+  }, [contextProject, projectId, projectsLoading, user]);
+
   // S3C_DiagnosticoIA
   const [editandoDiag, setEditandoDiag] = useState(false);
   const [diagnostico, setDiagnostico] = useState({
@@ -754,6 +777,8 @@ export function Step3Page() {
   };
 
   // ── Gate ─────────────────────────────────────────────────────────────────────
+  if (!project && (projectsLoading || projectFetching)) return <div className="p-6"><p className="text-slate-500">Cargando proyecto...</p></div>;
+  if (!project && projectFetchError) return <div className="p-6"><p className="text-slate-500">No pudimos cargar el proyecto.</p></div>;
   if (!project) return <div className="p-6"><p className="text-slate-500">Proyecto no encontrado.</p></div>;
   const adaptiveStep3Allowed = adaptiveCoreStatus === 'loaded' && canNavigateToAdaptiveStep(adaptiveCore, 3);
   if (adaptiveCoreStatus === 'loading') {

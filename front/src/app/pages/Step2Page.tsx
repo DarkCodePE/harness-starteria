@@ -5,13 +5,14 @@ import {
   ArrowLeft, ChevronRight, Plus, X, Sparkles, Lock, Send, Calendar,
   CheckCircle2, AlertCircle, Lightbulb, Target, ChevronDown, MessageSquare, HelpCircle, Clock, User,
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { enrichProject, type Project, useApp } from '../context/AppContext';
 import { StatusChip } from '../components/StatusChip';
 import { BannerPorDefinir } from '../components/BannerPorDefinir';
 import { EvidenceUploader } from '../components/EvidenceUploader';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
 import { StepWorkspaceShell } from '../components/layout/StepWorkspaceShell';
 import * as stepService from '../services/stepService';
+import { getById } from '../services/projectService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import type { AdaptiveInitiativeCore } from '../../features/adaptive-core/domain/types';
 import { canNavigateToAdaptiveStep, latestAdaptiveStepOutput } from '../../features/adaptive-core/domain/adaptiveAuthority';
@@ -192,9 +193,13 @@ const getExperimentRoute = (
 
 export function Step2Page() {
   const { projectId } = useParams();
-  const { projects, setCurrentProject, updateProject } = useApp();
+  const { projects, projectsLoading, setCurrentProject, updateProject, user } = useApp();
   const navigate = useNavigate();
-  const project = projects.find(p => p.id === projectId);
+  const contextProject = projects.find(p => p.id === projectId);
+  const [fetchedProject, setFetchedProject] = useState<Project | null>(null);
+  const [projectFetching, setProjectFetching] = useState(false);
+  const [projectFetchError, setProjectFetchError] = useState(false);
+  const project = contextProject ?? fetchedProject;
   const step = project?.steps.find(s => s.number === 2);
 
   const [activeModule, setActiveModule] = useState<ModuleId>('A');
@@ -209,6 +214,24 @@ export function Step2Page() {
   const [adaptiveCoreStatus, setAdaptiveCoreStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [adaptiveAuthorityError, setAdaptiveAuthorityError] = useState<string | null>(null);
   const [adaptiveTransitionSaving, setAdaptiveTransitionSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!projectId || contextProject || projectsLoading) return;
+    setProjectFetching(true);
+    setProjectFetchError(false);
+    getById(projectId)
+      .then(loaded => {
+        if (!cancelled) setFetchedProject(enrichProject(loaded, user));
+      })
+      .catch(() => {
+        if (!cancelled) setProjectFetchError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectFetching(false);
+      });
+    return () => { cancelled = true; };
+  }, [contextProject, projectId, projectsLoading, user]);
 
   // HMW helpers
   const [showHelpA, setShowHelpA] = useState(false);
@@ -426,44 +449,10 @@ export function Step2Page() {
     }
   };
 
-  if (!project || !step) return <div className="p-6"><p className="text-slate-500">Proyecto no encontrado.</p></div>;
-
   const adaptiveStep2Allowed = adaptiveCoreStatus === 'loaded' && canNavigateToAdaptiveStep(adaptiveCore, 2);
-  if (adaptiveCoreStatus === 'loading') {
-    return (
-      <div className="p-8 max-w-lg mx-auto text-center">
-        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
-        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Cargando estado adaptativo</h2>
-        <p className="text-sm text-slate-500">Validando con backend si Step 2 esta disponible.</p>
-      </div>
-    );
-  }
-  if (adaptiveCoreStatus === 'error' || !adaptiveStep2Allowed) {
-    return (
-      <div className="p-8 max-w-lg mx-auto text-center">
-        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
-        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Step 2 bloqueado</h2>
-        <p className="text-sm text-slate-500 mb-4">
-          {adaptiveCoreStatus === 'error'
-            ? adaptiveAuthorityError
-            : 'El backend Adaptive Core todavia no habilita Step 2.'}
-        </p>
-        <div className="flex justify-center gap-2">
-          {adaptiveCoreStatus === 'error' ? (
-            <button onClick={() => void loadAdaptiveCore()} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors" style={{ fontWeight: 500 }}>
-              Reintentar
-            </button>
-          ) : null}
-          <button onClick={() => navigate(`/projects/${projectId}/step/1`)} className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors" style={{ fontWeight: 500 }}>
-            Ir al Step 1
-          </button>
-        </div>
-      </div>
-    );
-  }
 
-  const baseParticipants: Participant[] = project.team.length > 1
-    ? project.team.map(member => ({ id: member.id, name: member.name }))
+  const baseParticipants: Participant[] = (project?.team?.length ?? 0) > 1
+    ? project!.team.map(member => ({ id: member.id, name: member.name }))
     : [{ id: 'self', name: 'Tu' }];
   const teamParticipants: Participant[] = [...baseParticipants, ...extraParticipants];
   const selectionMap = teamParticipants.reduce<Record<string, string[]>>((acc, participant) => {
@@ -523,12 +512,12 @@ export function Step2Page() {
   };
 
   const challengeAnchor = {
-    title: cleanSentence(project.step0Data?.quePasaQueQuieres?.split('.').shift(), 'Problema validado del Step 1'),
-    summary: cleanSentence(project.step0Data?.quePasaQueQuieres, 'Todavia falta una descripcion breve del problema validado.'),
-    impact: cleanSentence(project.step0Data?.impacto3meses?.replace(/_/g, ' '), 'Impacto principal pendiente de precisar'),
-    affected: project.step0Data?.impacta?.length ? project.step0Data.impacta.join(', ') : 'Personas o equipos afectados por confirmar',
-    area: cleanSentence(project.step0Data?.rolArea, 'Area o equipo por confirmar'),
-    redLine: project.step0Data?.respaldo === 'datos'
+    title: cleanSentence(project?.step0Data?.quePasaQueQuieres?.split('.').shift(), 'Problema validado del Step 1'),
+    summary: cleanSentence(project?.step0Data?.quePasaQueQuieres, 'Todavia falta una descripcion breve del problema validado.'),
+    impact: cleanSentence(project?.step0Data?.impacto3meses?.replace(/_/g, ' '), 'Impacto principal pendiente de precisar'),
+    affected: project?.step0Data?.impacta?.length ? project.step0Data.impacta.join(', ') : 'Personas o equipos afectados por confirmar',
+    area: cleanSentence(project?.step0Data?.rolArea, 'Area o equipo por confirmar'),
+    redLine: project?.step0Data?.respaldo === 'datos'
       ? 'No comprometer datos sensibles ni accesos.'
       : 'Respetar la linea roja principal definida en Step 1.',
   };
@@ -563,7 +552,64 @@ export function Step2Page() {
 
   const selectedHmwOption = hmwOptions.find(option => option.id === selectedHmwOptionId) || hmwOptions[0];
 
+  if (!project && (projectsLoading || projectFetching)) {
+    return (
+      <div className="p-6">
+        <p className="text-slate-500">Cargando proyecto...</p>
+      </div>
+    );
+  }
+
+  if (!project && projectFetchError) {
+    return (
+      <div className="p-6">
+        <p className="text-slate-500">No pudimos cargar el proyecto.</p>
+      </div>
+    );
+  }
+
+  if (!project || !step) {
+    return (
+      <div className="p-6">
+        <p className="text-slate-500">Proyecto no encontrado.</p>
+      </div>
+    );
+  }
+
   // ── HMW live checks ──────────────────────────────────────────────────────────
+  if (adaptiveCoreStatus === 'loading') {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
+        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Cargando estado adaptativo</h2>
+        <p className="text-sm text-slate-500">Validando con backend si Step 2 esta disponible.</p>
+      </div>
+    );
+  }
+  if (adaptiveCoreStatus === 'error' || !adaptiveStep2Allowed) {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4"><Lock size={24} className="text-slate-400" /></div>
+        <h2 className="text-slate-900 mb-2" style={{ fontWeight: 600 }}>Step 2 bloqueado</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          {adaptiveCoreStatus === 'error'
+            ? adaptiveAuthorityError
+            : 'El backend Adaptive Core todavia no habilita Step 2.'}
+        </p>
+        <div className="flex justify-center gap-2">
+          {adaptiveCoreStatus === 'error' ? (
+            <button onClick={() => void loadAdaptiveCore()} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-700 transition-colors" style={{ fontWeight: 500 }}>
+              Reintentar
+            </button>
+          ) : null}
+          <button onClick={() => navigate(`/projects/${projectId}/step/1`)} className="border border-slate-200 text-slate-600 px-5 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors" style={{ fontWeight: 500 }}>
+            Ir al Step 1
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const hmwChecks = {
     starts: /^¿?(c|C)(ó|o)mo podr(í|i)amos/i.test(hmw.trim()),
     noSolucion: !/(app\b|chatbot|automatizar|sistema\b|crear\b|plataforma\b|herramienta\b|portal\b|\bbot\b)/i.test(hmw),

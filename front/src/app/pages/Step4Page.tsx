@@ -26,12 +26,13 @@ import {
   Users,
   Video,
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { enrichProject, type Project, useApp } from '../context/AppContext';
 import { StatusChip } from '../components/StatusChip';
 import { AutosaveIndicator, useAutosave } from '../components/AutosaveIndicator';
 import { ApprovalGateBanner } from '../components/autofill/ApprovalGateBanner';
 import { isPdfAutofillEnabled } from '../services/featureFlags';
 import * as stepService from '../services/stepService';
+import { getById } from '../services/projectService';
 import { LeaderFeedbackStatusCard } from '../components/LeaderFeedbackStatusCard';
 import { AdaptiveCheckpointWorkspace } from '../../features/adaptive-core/components';
 import { confirmAdaptiveCheckpoint, confirmStep4Output, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
@@ -446,8 +447,12 @@ function TextArea({
 export function Step4Page() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { projects, updateProject } = useApp();
-  const project = projects.find((item) => item.id === projectId);
+  const { projects, projectsLoading, updateProject, user } = useApp();
+  const contextProject = projects.find((item) => item.id === projectId);
+  const [fetchedProject, setFetchedProject] = useState<Project | null>(null);
+  const [projectFetching, setProjectFetching] = useState(false);
+  const [projectFetchError, setProjectFetchError] = useState(false);
+  const project = contextProject ?? fetchedProject;
 
   const [activeModule, setActiveModule] = useState<ModuleId>('overview');
   const [audience, setAudience] = useState<Audiencia>('Sponsor');
@@ -553,6 +558,24 @@ export function Step4Page() {
   const [adaptiveOutputJson, setAdaptiveOutputJson] = useState('');
   const [adaptiveOutputError, setAdaptiveOutputError] = useState('');
   const [adaptiveConfirming, setAdaptiveConfirming] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!projectId || contextProject || projectsLoading) return;
+    setProjectFetching(true);
+    setProjectFetchError(false);
+    getById(projectId)
+      .then(loaded => {
+        if (!cancelled) setFetchedProject(enrichProject(loaded, user));
+      })
+      .catch(() => {
+        if (!cancelled) setProjectFetchError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectFetching(false);
+      });
+    return () => { cancelled = true; };
+  }, [contextProject, projectId, projectsLoading, user]);
 
   // ── TASK-010: hydrate Step 4 state from backend on mount ─────────────────────
   // Falls back silently to existing defaults when nothing is persisted, so the
@@ -677,6 +700,22 @@ export function Step4Page() {
     delay: 2000,
     enabled: !!projectId,
   });
+
+  if (!project && (projectsLoading || projectFetching)) {
+    return (
+      <div className="p-6">
+        <p className="text-slate-500">Cargando proyecto...</p>
+      </div>
+    );
+  }
+
+  if (!project && projectFetchError) {
+    return (
+      <div className="p-6">
+        <p className="text-slate-500">No pudimos cargar el proyecto.</p>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
