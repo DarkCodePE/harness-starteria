@@ -626,6 +626,28 @@ export function Step1Page() {
     return <div className="p-8 text-center"><p className="text-rose-700">{adaptiveStep1Error ?? 'No pudimos cargar Adaptive Core.'}</p><button type="button" onClick={() => void loadAdaptiveCore()} className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">Reintentar</button></div>;
   }
 
+  if (!canNavigateToAdaptiveStep(adaptiveCore, 1)) {
+    return (
+      <main className="min-h-full overflow-y-auto bg-slate-50 p-4 md:p-8">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-white p-6">
+          <p className="text-sm text-amber-700" style={{ fontWeight: 800 }}>Step 1 bloqueado</p>
+          <h1 className="mt-2 text-xl text-slate-950" style={{ fontWeight: 850 }}>Step 0 aún debe confirmarse antes de iniciar Step 1.</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Confirma el output de Step 0 en Adaptive Core para que Startería configure CP-1.1 y habilite este paso.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(`/projects/${projectId}/step/0`)}
+            className="mt-5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white hover:bg-indigo-700"
+            style={{ fontWeight: 800 }}
+          >
+            Volver a Step 0
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   const adaptiveStep1Checkpoint = adaptiveCore.activeCheckpoint?.step === 1 ? adaptiveCore.activeCheckpoint : null;
   const adaptiveStep1Draft = latestAdaptiveStepOutput(adaptiveCore, 1, 'draft');
   const adaptiveStep1Confirmed = Boolean(latestAdaptiveStepOutput(adaptiveCore, 1, 'confirmed'));

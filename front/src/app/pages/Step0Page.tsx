@@ -36,6 +36,7 @@ import {
   mergeCheckpointResponses,
   projectCheckpointResponsesToFields,
 } from '../../features/adaptive-core/domain/checkpointResponses';
+import { canNavigateToAdaptiveStep } from '../../features/adaptive-core/domain/adaptiveAuthority';
 import { confirmAdaptiveCheckpoint, confirmStep0Brief, getAdaptiveCore } from '../../features/adaptive-core/services/adaptiveCoreService';
 import { AutofillField } from '../components/autofill/AutofillField';
 import { CHALLENGE_TYPE_LABELS, type ChallengeType, type InitialReviewArtifact } from '../../features/initial-review/domain/types';
@@ -153,6 +154,7 @@ const ALIGNMENT_STATUS_OPTIONS = [
 const ALIGNMENT_DECISION_OPTIONS = ['Avanzar a investigación', 'Ajustar enfoque antes de investigar', 'Buscar más respaldo', 'Buscar otro sponsor', 'Pausar por ahora', 'No hubo decisión todavía'];
 const ALIGNMENT_EVIDENCE_OPTIONS = ['Nota', 'Minuta', 'Correo', 'Link', 'Archivo', 'Captura'];
 const IMPORT_ALIGNMENT_OPTIONS = ['Ya fue alineada con líder/sponsor', 'Fue conversada informalmente', 'No fue alineada todavía', 'No aplica', 'Desconocido / por confirmar'];
+const STEP0_ADAPTIVE_CONFIRMATION_ERROR = 'Step 0 aún no está confirmado en Adaptive Core.';
 
 type AlignmentStatus = NonNullable<Step0Data['alignmentStatus']>;
 
@@ -859,10 +861,56 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
     window.setTimeout(() => setAnalysisState('done'), 900);
   };
 
-  const goToStep1 = async (overrides: Partial<Step0Data> = {}) => {
+  const step1IsActiveInAdaptiveCore = (core: AdaptiveInitiativeCore | null | undefined) => (
+    Boolean(
+      core
+      && canNavigateToAdaptiveStep(core, 1)
+      && core.activeCheckpoint?.step === 1
+      && core.activeCheckpoint?.checkpointKey === 'CP-1.1',
+    )
+  );
+
+  const confirmAdaptiveStep0AndNavigate = async (overrides: Partial<Step0Data> = {}) => {
     if (!canSave) return;
-    if (!saved || Object.keys(overrides).length > 0) await persistStep0(overrides);
-    navigate(`/projects/${project.id}/step/1`);
+    setCheckpointError(null);
+    if (!projectId || adaptiveCoreStatus !== 'loaded' || !adaptiveCore) {
+      setCheckpointError(STEP0_ADAPTIVE_CONFIRMATION_ERROR);
+      return;
+    }
+    if (!draftStep0Brief?.output) {
+      setCheckpointError(STEP0_ADAPTIVE_CONFIRMATION_ERROR);
+      return;
+    }
+
+    setCheckpointSaving(true);
+    try {
+      if (!saved || Object.keys(overrides).length > 0) await persistStep0(overrides);
+      const confirmedCore = await confirmStep0Brief(projectId, {
+        idempotencyKey: `step0-brief-${projectId}-${draftStep0Brief.id ?? 'draft'}`,
+        brief: draftStep0Brief.output,
+        confirmed: true,
+      });
+      setServerAdaptiveCore(confirmedCore);
+      setAdaptiveCoreStatus('loaded');
+
+      let authoritativeCore = confirmedCore;
+      if (!step1IsActiveInAdaptiveCore(authoritativeCore)) {
+        authoritativeCore = await getAdaptiveCore(projectId);
+        setServerAdaptiveCore(authoritativeCore);
+        setAdaptiveCoreStatus('loaded');
+      }
+
+      if (!step1IsActiveInAdaptiveCore(authoritativeCore)) {
+        setCheckpointError(STEP0_ADAPTIVE_CONFIRMATION_ERROR);
+        return;
+      }
+
+      navigate(`/projects/${project.id}/step/1`);
+    } catch (err: any) {
+      setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? STEP0_ADAPTIVE_CONFIRMATION_ERROR);
+    } finally {
+      setCheckpointSaving(false);
+    }
   };
 
   const downloadSummary = () => {
@@ -891,12 +939,12 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
     window.setTimeout(() => alignmentCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
 
-  const requestStep1WithPendingAlignment = () => {
+  const requestStep1Advance = () => {
     if (!alignmentHasContext && !alignmentIsReady) {
       setShowPendingWarning(true);
       return;
     }
-    void goToStep1();
+    void confirmAdaptiveStep0AndNavigate();
   };
 
   /**
@@ -963,26 +1011,7 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
   };
 
   const confirmBriefAndGoToStep1 = async () => {
-    if (!projectId || !adaptiveCore || !draftStep0Brief?.output) {
-      setCheckpointError('Estado adaptativo no disponible. Reintenta antes de confirmar el Brief.');
-      return;
-    }
-    setCheckpointSaving(true);
-    setCheckpointError(null);
-    try {
-      const core = await confirmStep0Brief(projectId, {
-        idempotencyKey: `step0-brief-${projectId}-${draftStep0Brief.id ?? 'draft'}`,
-        brief: draftStep0Brief.output,
-        confirmed: true,
-      });
-      setServerAdaptiveCore(core);
-      setAdaptiveCoreStatus('loaded');
-      navigate(`/projects/${projectId}/step/1`);
-    } catch (err: any) {
-      setCheckpointError(err?.response?.data?.error?.message ?? err?.message ?? 'No pudimos confirmar el Brief.');
-    } finally {
-      setCheckpointSaving(false);
-    }
+    await confirmAdaptiveStep0AndNavigate();
   };
 
   const handlePrimaryAction = async () => {
@@ -1350,6 +1379,20 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
               </CheckpointSection>
             </div>
 
+            {checkpointError && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                <p style={{ fontWeight: 800 }}>{checkpointError}</p>
+                <button
+                  type="button"
+                  onClick={retryAdaptiveCore}
+                  className="mt-3 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm text-rose-700 hover:bg-rose-100"
+                  style={{ fontWeight: 700 }}
+                >
+                  Recargar estado adaptativo
+                </button>
+              </div>
+            )}
+
             {analysisState !== 'done' && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h2 className="text-sm text-slate-900" style={{ fontWeight: 700 }}>Output de este paso</h2>
@@ -1403,7 +1446,7 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
 
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button onClick={() => setShowProposalOnePager(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Ver propuesta</button>
-                    <button onClick={requestStep1WithPendingAlignment} className="rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-sm text-indigo-700 hover:bg-indigo-50" style={{ fontWeight: 700 }}>Avanzar a Step 1</button>
+                    <button onClick={requestStep1Advance} disabled={checkpointSaving} className="rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-sm text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60" style={{ fontWeight: 700 }}>Avanzar a Step 1</button>
                     <button onClick={() => setShowPromptPreview(true)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}><Copy size={14} className="mr-2 inline" />Copiar prompt para PPT/Gamma</button>
                     <button onClick={downloadSummary} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}><Download size={14} className="mr-2 inline" />Descargar propuesta</button>
                     <button onClick={() => setShowLeaderMessage(prev => !prev)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Preparar mensaje para líder</button>
@@ -1483,7 +1526,7 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
                     </Field>
                     <div className="flex flex-wrap gap-3">
                       <button onClick={() => persistStep0()} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Guardar alineación</button>
-                      <button onClick={requestStep1WithPendingAlignment} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Ir a Step 1 con este contexto</button>
+                      <button onClick={requestStep1Advance} disabled={checkpointSaving} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600 disabled:cursor-not-allowed disabled:opacity-60" style={{ fontWeight: 600 }}>Ir a Step 1 con este contexto</button>
                     </div>
                   </div>
                 </div>
@@ -1561,7 +1604,7 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
             {saving ? 'Guardando...' : <>{primaryLabel} <ChevronRight size={14} className="ml-1 inline" /></>}
           </button>
           {analysisState === 'done' && (
-            <button onClick={requestStep1WithPendingAlignment} className="rounded-xl border border-indigo-200 px-4 py-2.5 text-sm text-indigo-700 hover:bg-indigo-50" style={{ fontWeight: 700 }}>
+            <button onClick={requestStep1Advance} disabled={checkpointSaving} className="rounded-xl border border-indigo-200 px-4 py-2.5 text-sm text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60" style={{ fontWeight: 700 }}>
               Avanzar a Step 1
             </button>
           )}
@@ -1673,7 +1716,7 @@ const draftStep0Brief = (adaptiveCore?.stepOutputs ?? []).find(
             </div>
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button onClick={() => { setShowPendingWarning(false); openAlignmentCard(); }} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-600" style={{ fontWeight: 600 }}>Registrar feedback ahora</button>
-              <button onClick={() => { setShowPendingWarning(false); void goToStep1({ alignmentStatus: 'pending', alignmentAdvancedPending: true, leaderFeedbackStatus: form.leaderFeedbackStatus ?? 'pending' }); }} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white" style={{ fontWeight: 600 }}>Avanzar a Step 1</button>
+              <button onClick={() => { setShowPendingWarning(false); void confirmAdaptiveStep0AndNavigate({ alignmentStatus: 'pending', alignmentAdvancedPending: true, leaderFeedbackStatus: form.leaderFeedbackStatus ?? 'pending' }); }} disabled={checkpointSaving} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60" style={{ fontWeight: 600 }}>Avanzar a Step 1</button>
             </div>
           </div>
         </div>

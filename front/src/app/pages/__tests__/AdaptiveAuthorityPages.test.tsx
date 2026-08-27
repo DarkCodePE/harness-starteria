@@ -16,6 +16,7 @@ vi.mock('react-router', () => ({
 
 const getAdaptiveCore = vi.fn();
 const confirmAdaptiveCheckpoint = vi.fn();
+const confirmStep0Brief = vi.fn();
 const confirmStep1Output = vi.fn();
 const confirmStep2Output = vi.fn();
 const confirmStep3Output = vi.fn();
@@ -24,7 +25,7 @@ const getById = vi.fn();
 vi.mock('../../../features/adaptive-core/services/adaptiveCoreService', () => ({
   getAdaptiveCore: (id: string) => getAdaptiveCore(id),
   confirmAdaptiveCheckpoint: (...args: any[]) => confirmAdaptiveCheckpoint(...args),
-  confirmStep0Brief: vi.fn(),
+  confirmStep0Brief: (...args: any[]) => confirmStep0Brief(...args),
   confirmStep1Output: (...args: any[]) => confirmStep1Output(...args),
   confirmStep2Output: (...args: any[]) => confirmStep2Output(...args),
   confirmStep3Output: (...args: any[]) => confirmStep3Output(...args),
@@ -245,15 +246,63 @@ const serverCoreAtStep = (step: 0 | 1 | 2 | 3 | 4, checkpointKey = `CP-${step}.1
   })),
 });
 
+const serverCoreStep0ReadyForBrief = (withDraft = true) => ({
+  ...serverCore,
+  activeStepConfigurationId: 'cfg-0',
+  activeCheckpoint: null,
+  progressSignal: {
+    ...serverCore.progressSignal,
+    step: 0,
+    checkpointCode: 'CP-0.3',
+    checkpointTitle: 'Definir que validar o decidir',
+  },
+  stepConfigurations: [
+    {
+      id: 'cfg-0',
+      step: 0,
+      version: 1,
+      visibleName: 'Step 0 server',
+      stablePurpose: 'Server',
+      objective: 'Server objective',
+      expectedOutput: 'Server output',
+      routeType: 'server_route',
+      depthLevel: 'standard',
+      generatedAt: '2026-08-04T00:00:00.000Z',
+      generatedBy: 'backend',
+      closureCriteria: [],
+      checkpoints: [
+        { id: 'cp-01', step: 0, code: 'CP-0.1', title: 'Enmarcar la iniciativa', purpose: 'Server only', status: 'completed', outputKey: 'Brief', completionCriteria: [], questions: [], gates: [] },
+        { id: 'cp-02', step: 0, code: 'CP-0.2', title: 'Aterrizar condiciones reales', purpose: 'Server only', status: 'completed', outputKey: 'Brief', completionCriteria: [], questions: [], gates: [] },
+        { id: 'cp-03', step: 0, code: 'CP-0.3', title: 'Definir que validar o decidir', purpose: 'Server only', status: 'completed', outputKey: 'Brief', completionCriteria: [], questions: [], gates: [] },
+      ],
+    },
+  ],
+  checkpointInstances: [
+    { id: 'cp-01', step: 0, checkpointKey: 'CP-0.1', status: 'completed', sequence: 1, questions: [], configurationId: 'cfg-0' },
+    { id: 'cp-02', step: 0, checkpointKey: 'CP-0.2', status: 'completed', sequence: 2, questions: [], configurationId: 'cfg-0' },
+    { id: 'cp-03', step: 0, checkpointKey: 'CP-0.3', status: 'completed', sequence: 3, questions: [], configurationId: 'cfg-0' },
+  ],
+  stepOutputs: withDraft
+    ? [{ id: 'step0-draft', step: 0, status: 'draft', version: 1, output: { priorityHypothesis: 'H1', availableEvidence: [], actors: ['Owner'], decisionCriteria: 'D1' } }]
+    : [],
+});
+
+async function showStep0AdvanceCta() {
+  fireEvent.click(await screen.findByRole('button', { name: /Elaborar/i }));
+  return screen.findAllByRole('button', { name: /Avanzar a Step 1/i });
+}
+
 describe('Adaptive authority in pages', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     navigate.mockReset();
     appState.projects = [project];
+    getAdaptiveCore.mockReset();
     confirmStep2Output.mockReset();
     confirmStep1Output.mockReset();
     confirmStep3Output.mockReset();
     confirmStep4Output.mockReset();
+    confirmStep0Brief.mockReset();
     confirmAdaptiveCheckpoint.mockReset();
     getById.mockReset();
     getById.mockResolvedValue(project);
@@ -299,8 +348,88 @@ describe('Adaptive authority in pages', () => {
     expect(screen.getAllByText('CP-0.1').length).toBeGreaterThan(0);
   });
 
+  it('Step0 visible advance CTA confirms the Adaptive brief and waits before navigating', async () => {
+    appState.projects = [{ ...project, step0Data: { ...project.step0Data, alignmentStatus: 'aligned' } }];
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreStep0ReadyForBrief());
+    let resolveConfirm!: (core: any) => void;
+    confirmStep0Brief.mockReturnValueOnce(new Promise(resolve => {
+      resolveConfirm = resolve;
+    }));
+
+    render(<Step0Page />);
+    const advanceButtons = await showStep0AdvanceCta();
+    fireEvent.click(advanceButtons[0]);
+
+    await waitFor(() => expect(confirmStep0Brief).toHaveBeenCalledTimes(1));
+    expect(navigate).not.toHaveBeenCalledWith('/projects/p1/step/1');
+
+    resolveConfirm(serverCoreAtStep(1, 'CP-1.1'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/projects/p1/step/1'));
+  });
+
+  it('Step0 does not navigate when the confirmed core does not expose CP-1.1', async () => {
+    appState.projects = [{ ...project, step0Data: { ...project.step0Data, alignmentStatus: 'aligned' } }];
+    getAdaptiveCore
+      .mockResolvedValueOnce(serverCoreStep0ReadyForBrief())
+      .mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.2'));
+    confirmStep0Brief.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.2'));
+
+    render(<Step0Page />);
+    const advanceButtons = await showStep0AdvanceCta();
+    fireEvent.click(advanceButtons[0]);
+
+    await waitFor(() => expect(confirmStep0Brief).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getAllByText('Step 0 aún no está confirmado en Adaptive Core.').length).toBeGreaterThan(0),
+    );
+    expect(navigate).not.toHaveBeenCalledWith('/projects/p1/step/1');
+  });
+
+  it('Step0 does not navigate when there is no Adaptive Step 0 draft output', async () => {
+    appState.projects = [{ ...project, step0Data: { ...project.step0Data, alignmentStatus: 'aligned' } }];
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreStep0ReadyForBrief(false));
+
+    render(<Step0Page />);
+    const advanceButtons = await showStep0AdvanceCta();
+    fireEvent.click(advanceButtons[0]);
+
+    await waitFor(() =>
+      expect(screen.getAllByText('Step 0 aún no está confirmado en Adaptive Core.').length).toBeGreaterThan(0),
+    );
+    expect(confirmStep0Brief).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalledWith('/projects/p1/step/1');
+  });
+
+  it('Step0 keeps pending feedback non-blocking and continues with Adaptive confirmation', async () => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreStep0ReadyForBrief());
+    confirmStep0Brief.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.1'));
+
+    render(<Step0Page />);
+    const advanceButtons = await showStep0AdvanceCta();
+    fireEvent.click(advanceButtons[0]);
+
+    expect(await screen.findByText(/Feedback del sponsor pendiente/i)).toBeInTheDocument();
+    const modalAdvanceButtons = screen.getAllByRole('button', { name: /^Avanzar a Step 1$/i });
+    fireEvent.click(modalAdvanceButtons[modalAdvanceButtons.length - 1]);
+
+    await waitFor(() => expect(confirmStep0Brief).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/projects/p1/step/1'));
+  });
+
+  it('Step0 does not expose direct Step 1 advance when Adaptive Core did not load', async () => {
+    getAdaptiveCore.mockRejectedValueOnce(new Error('down'));
+
+    render(<Step0Page />);
+
+    expect(await screen.findByText(/Estado adaptativo no disponible/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Avanzar a Step 1/i })).not.toBeInTheDocument();
+    expect(confirmStep0Brief).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalledWith('/projects/p1/step/1');
+  });
+
   it('Step1 fetches the project by route id when AppContext does not have it', async () => {
     appState.projects = [];
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.1'));
 
     render(<Step1Page />);
 
@@ -317,6 +446,27 @@ describe('Adaptive authority in pages', () => {
     expect(await screen.findByTestId('adaptive-workspace')).toBeInTheDocument();
     expect(screen.getByText('CP-1.1')).toBeInTheDocument();
     expect(screen.queryByText(/Módulo A: Análisis inicial del problema/i)).not.toBeInTheDocument();
+  });
+
+  it('Step1 direct route shows an explicit Step 0 confirmation guard when core is still Step 0', async () => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCore);
+
+    render(<Step1Page />);
+
+    expect(await screen.findByText('Step 0 aún debe confirmarse antes de iniciar Step 1.')).toBeInTheDocument();
+    expect(screen.queryByTestId('adaptive-workspace')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Volver a Step 0/i }));
+    expect(navigate).toHaveBeenCalledWith('/projects/p1/step/0');
+  });
+
+  it('Step1 with CP-1.1 still renders the Adaptive workspace', async () => {
+    getAdaptiveCore.mockResolvedValueOnce(serverCoreAtStep(1, 'CP-1.1'));
+
+    render(<Step1Page />);
+
+    expect(await screen.findByTestId('adaptive-workspace')).toBeInTheDocument();
+    expect(screen.getByText('CP-1.1')).toBeInTheDocument();
+    expect(screen.queryByText(/Step 0 aún debe confirmarse/i)).not.toBeInTheDocument();
   });
 
   it('Step1 confirms only the active checkpoint and renders the next one after Core reload', async () => {
