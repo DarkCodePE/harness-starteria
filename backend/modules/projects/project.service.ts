@@ -4,6 +4,7 @@ import {
   challengeAdmitsInitiatives,
   type ChallengeStatusValue,
 } from '../portfolio/challenge-state-machine';
+import { initiativeAcceptsStepWrites } from '../portfolio/initiative-state-machine';
 import { Role, Project, Step0Data, Step0Status } from '../../shared/types';
 import { StatusMapper } from '../../shared/utils/status-mapper';
 import { validateTransition } from './state-machine';
@@ -465,6 +466,29 @@ export class ProjectService {
     return (project as any).step0Data ?? null;
   }
 
+  /**
+   * ADR-030: una iniciativa pausada o cerrada es de SOLO LECTURA, y eso se comprueba en el
+   * servidor. Deshabilitar el boton en la UI seria decoracion: el mismo error que ADR-029
+   * erradico en autorizacion. `bloqueada` NO congela — trabajar en ella es como se desbloquea.
+   *
+   * Silencioso cuando la iniciativa no esta vinculada a ningun reto: un proyecto suelto no
+   * tiene ciclo de vida de portafolio que respetar.
+   */
+  private async assertInitiativeAcceptsStepWrites(projectId: string): Promise<void> {
+    const metas = await this.prisma.initiativePortfolioMeta.findMany({
+      where: { projectId },
+      select: { status: true },
+    });
+    const frozen = metas.find(m => !initiativeAcceptsStepWrites(m.status as string));
+    if (frozen) {
+      throw AppError.conflict(
+        `La iniciativa esta en «${frozen.status}» y es de solo lectura.`,
+        'INITIATIVE_READ_ONLY',
+        { hint: 'Reanuda la iniciativa para volver a editarla.' },
+      );
+    }
+  }
+
   async updateStep0(
     projectId: string,
     userId: string,
@@ -473,6 +497,7 @@ export class ProjectService {
     status?: Step0Status
   ): Promise<Project> {
     await this.getProject(projectId, userId, role);
+    await this.assertInitiativeAcceptsStepWrites(projectId);
 
     const updated = await this.prisma.project.update({
       where: { id: projectId },

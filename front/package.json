@@ -18,6 +18,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:backfill-roles": "tsx scripts/backfill-user-roles.ts",
+    "db:backfill-initiative-status": "tsx scripts/backfill-initiative-status.ts",
     "db:seed": "prisma db seed",
     "db:e2e:provision": "tsx scripts/database/provision-e2e-database.ts",
     "db:e2e:migrate": "tsx scripts/database/run-prisma-for-disposable-db.ts e2e migrate deploy",

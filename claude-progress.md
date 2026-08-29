@@ -354,3 +354,37 @@
   (4100) que hacen fallar la siguiente con 20 tests contra puertos muertos: comprobar puertos antes.
 - **Siguiente**: MVP-P1-02 (estado de la iniciativa, reconciliando el drift del enum), luego
   `portfolio-decisions-persist`, y bajar Fase 2/3/4 a `feature_list.json` con `scope_out`.
+
+### Sesión 020 — MVP-P1-02: reconciliación del estado de la iniciativa (2026-08-29)
+
+- **PR #174 (MVP-P1-01) mergeado** (`f03e5da`). ADR-030 pasa a **Implementado (fase 1)**.
+- **MVP-P1-02 resultó ser una RECONCILIACIÓN, no una construcción.** Al abrirla se comprobó que
+  adaptive-core —mergeado DESPUÉS de escribir ADR-030— ya había construido lo que la decisión 3 del
+  ADR daba por inexistente, y con otro vocabulario. Se cambió el alcance de la feature antes de codificar.
+- **Los dos defectos reales que había dejado ese solapamiento:**
+    1. **Dos deletreos del mismo estado.** `portfolioMetaCompletionUpdate` escribía `cerrada` mientras
+       `updateDecisionLifecycleProjectionTx` escribía `closed`. Preguntar "¿está cerrada?" exigía saber qué
+       camino la escribió. **Ningún test cubría `cerrada`** — verificado con grep sobre `adaptive-core/__tests__`:
+       por eso el split sobrevivió sin que nadie lo viera.
+    2. **`paused` mapeado a `bloqueada`** en `portfolioMetaFinalUpdate`. Son conceptos con consecuencias
+       OPUESTAS: `bloqueada` sigue aceptando escrituras de step (trabajar en ella es como se desbloquea),
+       `paused` no. Una iniciativa pausada por ese camino **nunca quedaba en solo lectura** — lo único que
+       la pausa tiene que garantizar.
+    3. Y el zod de `upsertInitiativeMeta` **no aceptaba `paused` ni `closed`**, que adaptive-core ya escribía
+       directo por Prisma: la API del portafolio no sabía nombrar el estado en que la decisión dejaba la iniciativa.
+- **Decisión**: gana el CANÓNICO donde existe (`paused`/`closed`); `cerrada` queda como alias de LECTURA
+  normalizado por `canonicalInitiativeStatus`; `bloqueada` se queda (otro concepto, no congela). Lectura dual
+  + escritura única + backfill idempotente — el patrón que ADR-029 ya probó. ADR-030 lleva la enmienda completa.
+- **Verificación**: backend **882** (baseline 862, +20) · front 398 · e2e `initiative-states` **5/5 exit 0** ·
+  backfill ejercitado contra Postgres real (dry-run → migradas=2 restantes=0 → 2ª corrida sin cambios) ·
+  builds y lint exit 0 · check-feature-list exit 0.
+- **Falsa alarma que conviene no repetir**: el backfill falló primero con
+  `invalid input value for enum "InitiativePortfolioStatus": "closed"` y lo tomé por la misma clase de bug que
+  `User.roles` en #163. **No lo era**: la migración `20260820170000_r3c5_...` SÍ añade los cuatro canónicos, así
+  que e2e y prod los tienen. Lo que estaba desfasada era mi BD de dev local. Comprobar la cadena de migraciones
+  antes de escalar un error de entorno a hallazgo sistémico.
+- **Lección de edición**: `project.service.ts` tiene finales de línea MEZCLADOS (unas líneas CRLF, otras LF).
+  Escribirlo con Python en modo texto normaliza todo y convierte un cambio de 17 líneas en un diff de 321.
+  Usar `open(..., newline='')` y anclar por regex sin asumir el salto de línea.
+- **Siguiente**: `portfolio-decisions-persist` (revisar si sigue teniendo sentido tras la reconciliación: el
+  camino de escritura de la decisión ya existe en adaptive-core), y bajar Fase 2/3/4 a `feature_list.json`.

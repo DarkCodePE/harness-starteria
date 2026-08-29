@@ -994,22 +994,31 @@
       "priority": 42,
       "epic": "mvp-portafolio (plan 2026-08-19)",
       "area": "backend + front",
-      "title": "El estado de la iniciativa refleja el step real y obedece la decisión del portfolio lead",
+      "title": "Estado de la iniciativa: un solo vocabulario y la decision como unico gobernante (reconciliacion con adaptive-core)",
       "user_visible_behavior": "El participante ve si su iniciativa está activa, bloqueada o en pausa; si el lead la pausa o la cierra, la iniciativa queda en solo lectura con un aviso que explica por qué.",
       "scope_out": [
-        "El estado del RETO: es MVP-P1-01",
-        "Registrar la decisión en sí: portfolio-decisions-persist"
+        "El estado del RETO: es MVP-P1-01, ya passing",
+        "Reescribir el sistema de decisiones de adaptive-core (Decision/DecisionRequest): se REUSA, no se duplica",
+        "Migrar `bloqueada` a un canonico: no tiene gemelo y es un concepto distinto de `closed`; se queda",
+        "Backfill de datos en PROD: el script se entrega y se prueba, ejecutarlo es una operacion aparte (ADR-018: prod usa db push, no migrate deploy)",
+        "La convocatoria: Fase 4 del plan"
       ],
       "deferred_to": [
         "portfolio-decisions-persist"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
-        "cd front && npm run test:backend -- portfolio → step N ⇒ status in_step_N; pausar ⇒ solo lectura",
-        "cd front && npm run test:e2e -- portfolio → decisión 'pausar' deja el proyecto en solo lectura"
+        "cd front && npm run test:backend -- initiative → transiciones validas 2xx e invalidas 409; escritura de step sobre iniciativa pausada/cerrada rechazada",
+        "cd front && npm run test:e2e -- initiative-states → decision que pausa deja la iniciativa en solo lectura, y sobrevive recarga"
       ],
-      "evidence": [],
-      "notes": "Gobernada por ADR-030. Regla clave: un estado no-activo GOBIERNA lo que se puede hacer — con la iniciativa `pausada`/`cerrada` las escrituras de sus steps se rechazan con 409 EN EL SERVIDOR, no solo en la UI (aplicarlo solo en el cliente seria el mismo error que ADR-029 erradico en autorizacion). Test que impide la regresion: `syncInitiativeProgress` NO debe tocar una iniciativa pausada. Riesgo declarado en el ADR: toca el borde de escritura de steps, superficie compartida con el flujo del participante (ADR-025); se implementa en un solo punto con el smoke de referencia como red."
+      "evidence": [
+        "backend unit: 882 passed / 34 skipped (baseline 862) — +20 nuevos: initiative-state-machine.test.ts 14/14 (alias cerrada==closed, bloqueada NO congela, closed terminal) e initiative-read-only.test.ts 6/6 (updateStep0 devuelve 409 y NO llega a escribir sobre pausada/cerrada; un proyecto sin meta no se ve afectado).",
+        "front unit: 398 passed, sin cambio.",
+        "e2e real stack: `npm run test:e2e -- initiative-states` → 5 passed (2.1s), exit 0. Pausada rechaza Step 0 con 409 y sigue rechazandolo en peticion nueva; bloqueada SI escribe; en curso escribe; reabrir una cerrada da 409.",
+        "backfill ejercitado contra Postgres real: dry-run anuncia 2 filas -> corrida real 'migradas=2 restantes=0' -> 2a corrida 'nada que migrar' (idempotente). Datos de dev restaurados despues.",
+        "npm run build, build:backend y lint: exit 0. check-feature-list.py exit 0."
+      ],
+      "notes": "RECONCILIACION, no construccion desde cero. Hallazgo al abrirla: adaptive-core (mergeado DESPUES de escribir ADR-030) ya transiciona la iniciativa en la transaccion de la decision via updateDecisionLifecycleProjectionTx -> status 'paused'/'closed' (CANONICOS). Pero portfolioMetaCompletionUpdate escribe 'cerrada' (LEGACY) para el mismo concepto, y el zod de upsertInitiativeMeta NO acepta 'paused' ni 'closed': la API del portafolio no sabe nombrar el estado en que la decision deja la iniciativa. Decision de reconciliacion: gana el CANONICO para los estados que lo tienen (paused/closed), 'bloqueada' se queda (concepto distinto, sin gemelo), lectura dual + escritura unica + script de backfill idempotente (patron ya probado en ADR-029)."
     },
     {
       "id": "portfolio-decisions-persist",

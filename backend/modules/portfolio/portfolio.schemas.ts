@@ -168,6 +168,15 @@ export const upsertInitiativeMetaSchema = z.object({
       'bloqueada',
       'esperando_revision',
       'lista_para_decision',
+      // ADR-030 (reconciliacion): adaptive-core ya ESCRIBE estos canonicos en la
+      // transaccion de la decision. Sin ellos el borde rechazaba el estado en que la
+      // propia decision deja la iniciativa: la API no sabia nombrar lo que la BD tenia.
+      'implementation_approved',
+      'scaling_approved',
+      'paused',
+      'closed',
+      // Alias de lectura de `closed`. Se acepta para no romper clientes viejos; el
+      // servidor ya no lo escribe y el backfill lo unifica.
       'cerrada',
     ])
     .optional(),

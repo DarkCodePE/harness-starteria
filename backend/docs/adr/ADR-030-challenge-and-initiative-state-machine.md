@@ -1,7 +1,6 @@
 # ADR-030: Estados del reto y de la iniciativa, con transiciones decididas en el servidor
 
-- **Estado**: Parcialmente implementado — la mitad del RETO esta en codigo y verificada
-  (MVP-P1-01); la mitad de la INICIATIVA (MVP-P1-02) sigue Propuesta
+- **Estado**: Implementado (fase 1) — reto (MVP-P1-01) e iniciativa (MVP-P1-02), ambos verificados
 - **Fecha**: 2026-08-22
 - **Actualizado**: 2026-08-29 — MVP-P1-01 implementa las decisiones 1, 2 y 4 para el reto:
   `pausado` como estado del enum, `pausedFromStatus`, tabla de transiciones aplicada en el
@@ -23,6 +22,48 @@
 - **Relacionados**: ADR-023 (equipo scoped al reto), ADR-025 (iniciativa ← revisión inicial),
   ADR-029 (autorización por permisos), ADR-018 (restricción de deploy: `prisma db push`)
 - **Plan que lo motiva**: `docs/PLAN-MVP-portafolio-retos-iniciativas.md`, Fase 1
+
+## Enmienda 2026-08-29 — la mitad de la iniciativa se RECONCILIA, no se construye
+
+Al implementar MVP-P1-02 se comprobó que el terreno había cambiado bajo el ADR. El trabajo
+de adaptive-core, mergeado DESPUÉS de escribir este documento, ya había construido buena
+parte de lo que la decisión 3 daba por inexistente — y lo había hecho con otro vocabulario.
+
+**Lo que el ADR daba por cierto y ya no lo era:**
+
+1. *«la decisión de la fase D no tiene efecto sobre la iniciativa»*. Sí lo tiene:
+   `updateDecisionLifecycleProjectionTx` escribe `initiativePortfolioMeta.status` dentro de
+   la misma transacción de la decisión.
+2. *«añadir `pausada` a `InitiativePortfolioStatus` en forma legacy»*. Habría creado una
+   TERCERA forma: `paused` **canónico** ya existía (migración
+   `20260820170000_r3c5_decision_effects_continuation_route`) y ya se escribía.
+
+**Los dos defectos reales que esto dejó, y que MVP-P1-02 corrige:**
+
+- **Dos deletreos del mismo estado.** `portfolioMetaCompletionUpdate` escribía `cerrada`
+  mientras `updateDecisionLifecycleProjectionTx` escribía `closed`. Preguntar «¿está
+  cerrada?» exigía saber qué camino la había escrito. Ningún test cubría `cerrada`: por eso
+  el split sobrevivió sin que nadie lo viera.
+- **`paused` mapeado a `bloqueada`.** Son conceptos con consecuencias opuestas: `bloqueada`
+  sigue aceptando escrituras de step (trabajar en ella es como se desbloquea), `paused` no.
+  Una iniciativa pausada por ese camino **nunca quedaba en solo lectura**, que es justo lo
+  único que la pausa tiene que garantizar.
+
+**Decisión de reconciliación (sustituye a la decisión 1 para la iniciativa):**
+
+- Gana el **canónico** donde existe: `paused` y `closed`. No se inventan gemelos legacy.
+- `cerrada` queda como **alias de lectura** de `closed`, normalizado por
+  `canonicalInitiativeStatus`. Se lee, no se escribe.
+- `bloqueada` **se queda** y no se toca: no es un deletreo alternativo de nada, es otro
+  concepto, y no congela.
+- Lectura dual + escritura única + backfill idempotente
+  (`front/scripts/backfill-initiative-status.ts`), el patrón que ADR-029 ya probó. El
+  backfill **no** es precondición de corrección: los lectores normalizan, así que una fila
+  sin migrar se comporta igual. Prod sincroniza con `db push` (ADR-018), así que el dato no
+  se arregla con el deploy: hay que correr el script explícitamente.
+
+La mitad del **reto** no estaba afectada: allí `pausado` legacy sí era la elección correcta
+(no existía canónico) y es la que se implementó en MVP-P1-01.
 
 ## Contexto
 

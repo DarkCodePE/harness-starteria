@@ -22,6 +22,10 @@ import {
   challengeAdmitsInitiatives,
   type ChallengeStatusValue,
 } from './challenge-state-machine';
+import {
+  checkInitiativeTransition,
+  initiativeAcceptsStepWrites,
+} from './initiative-state-machine';
 
 export class PortfolioService {
   constructor(private prisma: PrismaClient) {}
@@ -490,6 +494,26 @@ export class PortfolioService {
               })),
             },
           );
+        }
+      }
+    }
+
+    // ADR-030: la transicion de la INICIATIVA tambien la decide el servidor. `rest` venia
+    // del cliente y se escribia tal cual, asi que un PATCH podia reabrir una iniciativa
+    // cerrada. Solo se valida cuando el input TRAE status: editar el owner no es transicion.
+    if ((rest as any)?.status !== undefined) {
+      const current = await this.prisma.initiativePortfolioMeta.findUnique({
+        where: { projectId_challengeId: { projectId, challengeId } },
+        select: { status: true },
+      });
+      if (current) {
+        const check = checkInitiativeTransition(current.status as string, (rest as any).status as string);
+        if (check.kind === 'illegal') {
+          throw AppError.conflict(check.reason, 'INITIATIVE_ILLEGAL_TRANSITION', {
+            hint: check.allowed.length
+              ? `Desde «${current.status}» solo se puede pasar a: ${check.allowed.join(', ')}.`
+              : 'Esta iniciativa no admite mas cambios de estado.',
+          });
         }
       }
     }

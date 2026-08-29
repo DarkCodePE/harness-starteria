@@ -3768,7 +3768,13 @@ const sufficiency = this.evaluateCheckpoint(
   private portfolioMetaFinalUpdate(step4Output: Record<string, any>, finalState: string) {
     const closed = ['completed', 'transferred', 'scaled', 'integrated_to_roadmap', 'closed_with_learning'].includes(finalState);
     return {
-      status: closed ? 'cerrada' : finalState === 'paused' ? 'bloqueada' : 'en_step_4',
+      // ADR-030 (reconciliacion): dos arreglos aqui.
+      //  1. 'cerrada' -> 'closed': mismo estado, un solo deletreo.
+      //  2. paused -> 'paused', NO 'bloqueada'. Eran conceptos distintos mapeados al
+      //     mismo valor: `bloqueada` es un impedimento reversible y SIGUE aceptando
+      //     escrituras de step, asi que una iniciativa pausada por aqui no quedaba en
+      //     solo lectura — justo lo que la pausa tiene que garantizar.
+      status: closed ? 'closed' : finalState === 'paused' ? 'paused' : 'en_step_4',
       currentStep: 'Step 4',
       readyForDecision: false,
       signalSummary: String(step4Output.recommendation ?? ''),
@@ -3793,7 +3799,11 @@ const sufficiency = this.evaluateCheckpoint(
 
   private portfolioMetaCompletionUpdate(step4Output: Record<string, any>, routing: InitiativeCompletionRoutingResult) {
     return {
-      status: routing.route === 'portfolio_presented' ? 'lista_para_decision' : 'cerrada',
+      // ADR-030 (reconciliacion): antes escribia 'cerrada' (legacy) mientras
+      // updateDecisionLifecycleProjectionTx escribia 'closed' (canonico) para el MISMO
+      // concepto. Dos deletreos del mismo estado hacian imposible preguntar "esta cerrada?"
+      // sin conocer que camino la escribio. Gana el canonico; el backfill unifica lo viejo.
+      status: routing.route === 'portfolio_presented' ? 'lista_para_decision' : 'closed',
       currentStep: 'Step 4',
       readyForDecision: routing.portfolioReviewRequired,
       signalSummary: String(step4Output.recommendation ?? step4Output.narrative?.recommendation ?? ''),
