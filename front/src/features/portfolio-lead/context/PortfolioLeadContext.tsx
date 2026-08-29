@@ -99,12 +99,11 @@ function persistUpdate<T>(
 function reconcileChallenge(prev: Challenge[], challengeId: string, raw: unknown): Challenge[] {
   return prev.map((c) =>
     c.id === challengeId
-      ? {
-          ...adaptChallenge(raw as Record<string, unknown>),
-          activationInputs: c.activationInputs,
-          activationRecommendationNote: c.activationRecommendationNote,
-          activationMessageDraft: c.activationMessageDraft,
-        }
+      // MVP-P0-02: ya NO se preservan a mano activationInputs/RecommendationNote/MessageDraft.
+      // Ese override existia porque adaptChallenge los pisaba con defaults; ahora los lee del
+      // backend, y mantenerlo haria justo lo contrario de lo que hace falta — ignorar lo que
+      // el servidor acaba de confirmar.
+      ? adaptChallenge(raw as Record<string, unknown>)
       : c,
   );
 }
@@ -360,6 +359,8 @@ export function PortfolioLeadProvider({
       );
     },
     updateChallengeActivationInputs: (challengeId, input) => {
+      const snapshot = challenges;
+      const current = challenges.find(c => c.id === challengeId);
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => {
           const front = getFrontById(strategicFronts, challenge.strategicFrontId);
@@ -379,6 +380,18 @@ export function PortfolioLeadProvider({
           };
         }),
       );
+      // MVP-P0-02: se persiste el objeto COMPLETO (no el parche), porque la columna es un
+      // Json que se reemplaza entero y zod exige los 9 ejes.
+      if (current) {
+        const merged = { ...current.activationInputs, ...input };
+        persistChallengeMutation(
+          challengeId,
+          () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ activationInputs: merged })),
+          snapshot,
+          setChallenges,
+          'updateChallengeActivationInputs',
+        );
+      }
     },
     updateChallengeStakeholderStatus: (challengeId, stakeholder, status) => {
       const snapshot = challenges;
@@ -430,6 +443,7 @@ export function PortfolioLeadProvider({
       }
     },
     updateChallengeActivationRecommendationNote: (challengeId, note) => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
@@ -437,14 +451,29 @@ export function PortfolioLeadProvider({
           lastUpdatedAt: new Date().toISOString().split('T')[0],
         })),
       );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ activationRecommendationNote: note })),
+        snapshot,
+        setChallenges,
+        'updateChallengeActivationRecommendationNote',
+      );
     },
     updateChallengeActivationMessageDraft: (challengeId, draft) => {
+      const snapshot = challenges;
       setChallenges(prev =>
         patchChallenge(prev, challengeId, challenge => ({
           ...challenge,
           activationMessageDraft: draft,
           lastUpdatedAt: new Date().toISOString().split('T')[0],
         })),
+      );
+      persistChallengeMutation(
+        challengeId,
+        () => portfolioService.updateChallenge(challengeId, toBackendChallenge({ activationMessageDraft: draft })),
+        snapshot,
+        setChallenges,
+        'updateChallengeActivationMessageDraft',
       );
     },
     activateOpenCall: challengeId => {

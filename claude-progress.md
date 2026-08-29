@@ -226,3 +226,79 @@
 - **Defecto latente encontrado (no arreglado, fuera de alcance)**: `backend/scripts/backfill-challenge-team.ts` no corre — no hay `node_modules` en la raíz, así que no resuelve `@prisma/client`. Su uso documentado nunca funcionó desde ahí. El backfill nuevo se puso en `front/scripts/` por eso.
 - **Issues abiertos**: #160 (fase 2: eliminar la columna `role`), #161 (cerrar las 7 lecturas de portfolio hoy sin gate).
 - **Pendiente**: PBA-07 (e2e de doble rol + smoke de referencia) — bloqueado por el puerto 5433. Ver `status_note` en feature_list.
+
+### Sesión 018 — Fase 0 del plan MVP: PBA-07 cerrado + el e2e vuelve a correr (2026-08-20)
+
+- **Objetivo (/goal)**: ejecutar la Fase 0 de `docs/PLAN-MVP-portafolio-retos-iniciativas.md` con SPARC:
+  MVP-P0-01 (desbloquear el stack e2e y cerrar PBA-07) y MVP-P0-02 (persistencia real del portafolio).
+- **El bloqueador registrado era el equivocado.** `feature_list.json` decía que PBA-07 estaba bloqueado
+  por un docker-proxy huérfano en el puerto 5433. Comprobado: hoy ese puerto sirve un PostgreSQL 16.14 sano,
+  y sobre todo **`npm run test:e2e` no lo usa**: el runner es autocontenido (`docker-compose.e2e.yml`,
+  puerto 55433, proyecto `starteria-e2e`) y ya exporta `AUTH_DISABLE_WAITLIST`. La `verification` de la
+  feature incluía un `docker:up` innecesario que apuntaba al stack equivocado. Corregido en el tracker.
+- **5 causas raíz arregladas** (la suite pasó de morir en el provisioning —0 tests— a 21 passed):
+    1. `run-e2e.ts` hacía `docker compose up -d` **sin `--wait`**. docker-proxy acepta el TCP apenas se crea
+       el contenedor, así que el gate `waitForTcp` se satisfacía con postgres aún arrancando y el provisioning
+       moría con "Can't reach database server". El healthcheck `pg_isready` ya estaba en el compose y nadie lo
+       esperaba. Fix: `--wait`.
+    2. **Drift de schema de meses.** El provisioner usa `prisma migrate deploy`, pero `User.roles` (PBA-02) y
+       otros cambios se aplicaron sólo con `db push`: no había migración. La BD e2e nacía sin la columna y el
+       seed moría con P2022. Fix: migración `20260820120000_sync_dbpush_drift_roles_pilot_claim` generada con
+       `prisma migrate diff` (además de `roles`: `PilotLead.proposal`, tabla `PilotClaimToken`, índices de
+       `PdfFieldProposal`/`AdaptiveCheckpointInstance`). Drift posterior verificado en CERO. **No afecta prod**:
+       `cd.yml` despliega con `db push`, no con `migrate deploy`. `User.roles` va SIN default, fiel a ADR-029.
+    3. `portfolio-steps-integration` y `team-inheritance` pedían `admin@starteria.io`, usuario del seed de
+       **desarrollo** que no existe en el stack e2e aislado → 401. Ahora usan `E2E_ADMIN_EMAIL`.
+    4. `initial-review-prd-audit` tomaba el token de `register`, que **nunca** lo devuelve desde que las altas
+       pasan por waitlist (commit `7d84752`, 2026-07-12): responde `{waitlisted:true}`. Ahora hace register→login,
+       el mismo patrón de los specs que sí pasan.
+    5. `pdf-autofill.spec.ts` hardcodeaba `baseURL: 'http://localhost'` en vez de `E2E_BASE_URL`. Como el puerto 80
+       sirve otro stack, registraba al usuario en un backend y lo logueaba en otro: **split-brain, no "flakiness de
+       timing SPA"** como se había concluido en la sesión 015. Era el único spec con el origen hardcodeado.
+- **PBA-07 → passing.** Spec NUEVO `front/e2e/dual-role-authz.spec.ts`, 4/4 verde (en la suite y aislado, 3.2s).
+  Usa el endpoint de admin REAL de PBA-08 (`PATCH /users/:id/role`) en vez de sembrar el doble rol, así ejercita
+  la cadena completa. El assert que importa: tras ganar `portfolio:write`, el usuario **conserva** `project:own`
+  — la pérdida silenciosa que motivó el ADR. ADR-029 actualizado: su fase 1 queda completa y verificada.
+- **Rojos restantes (3), todos con causa nombrada y ajenos a ADR-029** — registrados como features:
+    · `initial-review-prd-audit:70` → la spec audita el copy de `features/initial-review`, el scaffold **legacy
+      deprecado** (#136), no la feature viva. Confirmado: el campo "Contexto adicional opcional" se eliminó a
+      propósito y `InitiativeReviewFlow.test.tsx:374` asegura `not.toBeInTheDocument()`. El producto está bien,
+      la spec quedó vieja → feature `e2e-prd-audit-realign`.
+    · `pdf-autofill` → `PDF_EXTRACTION_E2E_MODE` lo exporta `run-e2e.ts:164` pero **el backend nunca lo lee**
+      (variable muerta). Sin ai-service el trigger devuelve 400 `PDF_EXTRACTION_UNAVAILABLE` y la spec muere antes
+      de poder tolerar el fallo → feature `e2e-pdf-extract-stub-mode`. Con los fixes de hoy ya avanza
+      register→login→crear proyecto→subir PDF; sólo falta el disparo.
+    · `team-inheritance` ×2 → **pasa aislado (6 passed / 3.2s)**; sólo falla al final de la suite larga porque cae
+      la conexión a la BD. Ojo con el diagnóstico: el backend lo reporta como `AUTH_LOGIN_NEEDS_ACCOUNT`
+      ("no encontramos una cuenta activa"), pero ese código **sólo** se lanza cuando `isLikelyDatabaseConnectionError`
+      — el mensaje miente y llevaría a buscar un problema de usuarios que no existe.
+- **MVP-P0-02: IMPLEMENTADA Y VERIFICADA (passing).** Auditadas las 23
+  mutaciones del provider: **20 ya persisten** vía `persistUpdate`/`persistCreate`/`persistChallengeMutation`.
+  Sólo 3 no lo hacen —`updateChallengeActivationInputs`, `...RecommendationNote`, `...MessageDraft`— y ninguna
+  tiene columna en Prisma. La prueba de que es deuda conocida: `reconcileChallenge` (PortfolioLeadContext.tsx:99-110)
+  preserva a mano esos 3 campos porque sabe que `adaptChallenge` los pisaría con defaults (adapters.ts:96-98).
+  El round-trip estaba roto en ambos extremos. **Cerrado**: `Challenge` gana 3 columnas nullable y sin default
+  (`activationInputs Json?`, `activationRecommendationNote String?`, `activationMessageDraft String?`), zod valida los
+  9 ejes en el borde —la columna es Json y Postgres no la mira, así que es la única barrera—, `adaptChallenge` los lee
+  y el workaround de `reconcileChallenge` desaparece. Decisión que sobrevive: `activationInputs` se persiste **completo,
+  no como parche**, porque la columna Json se reemplaza entera; el provider mergea contra el estado actual antes de mandar.
+  Verificación: front 343/343 · backend 554/554 (baselines 334/546) · e2e 12/12 incl. el round-trip real
+  (PATCH → GET en petición nueva devuelve los 3 campos) y el rechazo 400 de un `activationInputs` incompleto ·
+  `db push` SIN `--accept-data-loss` contra base POBLADA → exit 0, la fila sobrevive y las columnas quedan NULL ·
+  drift posterior en cero.
+- **Además**: la fase D del diagrama (registrar decisión) **no tiene mutación** en el provider; `portfolioDecisions`
+  sólo lo escribe el sembrador de demo. Registrado como `portfolio-decisions-persist`.
+- **Fase 0 del plan MVP COMPLETA**: MVP-P0-01 (PBA-07) y MVP-P0-02 ambas `passing` con evidencia ejecutable.
+- **Entregado**: PR **#163** (Fase 0, CI verde 4/4) y PR **#164** (ADR-030, apilado sobre #163).
+- **Fase 1 abierta con ADR-030** (`backend/docs/adr/ADR-030-...md`, **Propuesto**): pausa como ESTADO y no flag;
+  transiciones validadas EN EL SERVIDOR con tabla explícita y 409 — hoy `updateChallenge` hace `data: input as any`
+  y obedece al cliente, así que un `curl` puede llevar un reto de `cerrado` a `draft`; `cerrado` terminal;
+  `pausedFromStatus` para reanudar al estado previo; la decisión de la fase D escribe outcome + estado en la misma
+  transacción. Hallazgo que abarata la Fase 1: `syncInitiativeProgress` ya sólo toca filas `en_step_*`, así que un
+  estado no-progresivo queda exento del auto-avance sin tocar esa función. El ADR acota lo que NO decide
+  (acceso por iniciativa #161 → Fase 3; convocatoria → Fase 4).
+- **Ojo al ramificar**: las features de Fase 1 (`MVP-P1-01/02`, `portfolio-decisions-persist`) sólo existen en la rama
+  de #163. Una rama nueva desde `main` arranca con el `feature_list.json` de 39 features, no el de 44.
+- Baseline al cierre: front 343/343 (50 archivos) · backend 554/554 (56 archivos) · `./init.sh` exit 0.
+- Gotcha para la próxima sesión: los tests de front necesitan `--config vitest.front.config.ts` (el jsdom vive ahí);
+  correr `vitest` a secas contra un test de componente falla con "document is not defined".

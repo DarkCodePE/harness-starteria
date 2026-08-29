@@ -133,19 +133,38 @@
       "id": "portfolio-persist-mutations",
       "priority": 5,
       "area": "portfolio-lead",
-      "title": "Persistir mutaciones del provider portfolio-lead al backend",
-      "user_visible_behavior": "Activación, squad y exec-outputs editados en /portfolio sobreviven a recargas y reinicios.",
-      "status": "blocked",
-      "status_note": "Aparcada por límite de WIP (no es la tarea activa). Desbloquea: test unit/e2e que edite activación/squad/exec-outputs en /portfolio, recargue y afirme persistencia; correrlo y pegar la salida en evidence. El PR #104 mergeado NO es evidencia.",
+      "title": "Persistir las 3 mutaciones de activación del reto que hoy sólo viven en React (MVP-P0-02)",
+      "user_visible_behavior": "Lo que el portfolio lead escribe al preparar la activación de un reto —los 9 inputs de activación, la nota de recomendación y el borrador del mensaje— sobrevive a recargar la página y a cerrar sesión. Hoy se pierde en silencio: se ve guardado hasta que recargas.",
+      "status": "passing",
       "verification": [
-        "Editar activación/squad/exec-outputs en /portfolio.",
-        "Recargar y verificar persistencia.",
-        "Registrar evidencia ejecutable (unit/e2e)."
+        "cd front && npm test — unit del provider: cada una de las 3 mutaciones llama a portfolioService.updateChallenge con su campo, y ante fallo revierte al snapshot",
+        "cd front && npm test -- adapters — adaptChallenge LEE los 3 campos del backend (y cae a los defaults sólo si vienen ausentes)",
+        "cd front && npm run test:backend -- portfolio — el PATCH acepta y devuelve los 3 campos",
+        "prisma db push contra Postgres POBLADO sin --accept-data-loss (las 3 columnas son aditivas y nullable)",
+        "cd front && npm run test:e2e -- team-inheritance — el test 'initiative meta edit persists' sigue verde"
       ],
       "evidence": [
-        "PR #104 (feat(portfolio): persistir mutaciones restantes)"
+        "AUDITORIA COMPLETA (el gap era mas chico y mas exacto de lo que decia el tracker): de las 23 mutaciones del provider, 20 YA persistian via persistUpdate/persistCreate/persistChallengeMutation. Solo 3 no lo hacian y NINGUNA tenia columna en Prisma: updateChallengeActivationInputs, updateChallengeActivationRecommendationNote, updateChallengeActivationMessageDraft.",
+        "El round-trip estaba roto en LOS DOS extremos, y el codigo lo delataba: adapters.ts:96-98 rellenaba los 3 campos con buildDefaultActivationInputs()/'' al leer, y por eso reconcileChallenge (PortfolioLeadContext.tsx:99-110) tenia que PRESERVARLOS A MANO del estado local. Ese workaround queda eliminado.",
+        "Unit front: `vitest --config vitest.front.config.ts src/features/portfolio-lead` → 22 passed / 3 files. adapters.test.ts +5 (lee los 3 campos persistidos; cae a defaults en fila null; NO adopta un Json al que le faltan ejes; envia los 3; envia la cadena vacia porque borrar la nota es una edicion y no una omision). PortfolioLeadContext.activation-persist.test.tsx NUEVO 4/4 (cada mutacion llega al backend; activationInputs viaja COMPLETO —9 ejes— y no como parche; ante rechazo del backend el estado REVIERTE en vez de mostrar algo que no se guardo).",
+        "Unit backend: portfolio.schemas.activation.test.ts NUEVO 8/8. La columna es Json y Postgres no la valida, asi que zod es la UNICA barrera: acepta los 3, son opcionales, y RECHAZA objeto incompleto / valor fuera del vocabulario / no-objeto (string, numero, array, null). updateChallengeSchema hereda todo por .partial() y acepta ''.",
+        "Suites completas SIN regresion: backend 554/554 en 56 files (baseline 546) y front 343/343 en 50 files (baseline 334).",
+        "E2E contra stack real: `npm run test:e2e -- portfolio-lead-role team-inheritance dual-role-authz` → 12 passed, EXIT=0. Incluye el test NUEVO 'la autoria de la activacion del reto sobrevive a una lectura nueva' (PATCH y luego GET en peticion nueva —lo que hace el navegador al recargar— devuelve los 9 ejes, la nota y el borrador), 'un activationInputs incompleto es rechazado en el borde' (400), y team-inheritance 'initiative meta edit persists' sigue verde.",
+        "DEPLOY / db push contra base POBLADA: base creada con el schema PREVIO via `migrate deploy`, fila insertada en Challenge, y luego el comando EXACTO del CD (`prisma db push --schema=./prisma/schema.prisma --skip-generate`, SIN --accept-data-loss) → EXIT=0, 'Your database is now in sync' en 204ms. Post-condicion en SQL: la fila preexistente SOBREVIVE y las 3 columnas nuevas quedan en NULL.",
+        "Migracion `20260822130000_challenge_activation_authoring`: ALTER TABLE Challenge ADD COLUMN activationInputs JSONB, activationMessageDraft TEXT, activationRecommendationNote TEXT. Puramente aditiva, nullable y SIN default (leccion de ADR-029: una fila previa al cambio se distingue de una que el usuario dejo vacia). Drift posterior verificado en CERO ('This is an empty migration')."
       ],
-      "notes": "Mergeado; falta capturar verificación ejecutable en este tracker."
+      "notes": "DISEÑO CERRADO en la sesión 018 (auditoría completa del provider). El gap es exacto y pequeño: de 23 mutaciones, SÓLO 3 no persisten —updateChallengeActivationInputs, updateChallengeActivationRecommendationNote, updateChallengeActivationMessageDraft— y además NINGUNA tiene columna en Prisma (verificado contra el modelo Challenge). La prueba de que es deuda conocida: reconcileChallenge (PortfolioLeadContext.tsx:99-110) PRESERVA a mano esos 3 campos del estado local porque sabe que adaptChallenge los pisaría, y adapters.ts:96-98 los rellena con buildDefaultActivationInputs()/''. El round-trip está roto en AMBOS extremos. CAMBIO: (1) schema.prisma → Challenge gana activationInputs Json?, activationRecommendationNote String?, activationMessageDraft String? (nullable, sin default — la lección de ADR-029); (2) portfolio.schemas.ts → los 3 en createChallengeSchema (update lo hereda por .partial()), activationInputs con z.object de los 9 enums para validar en el borde; (3) adapters.ts adaptChallenge → leer del raw con fallback a los defaults actuales; (4) reconcileChallenge → quitar la preservación manual de los 3; (5) las 3 mutaciones → persistChallengeMutation. El service backend NO cambia: updateChallenge hace `data: input as any` y pasa lo que Zod acepte. \nCERRADA en la sesion 018. El service backend NO se toco: updateChallenge hace `data: input as any` y pasa lo que zod acepte. Nota de diseno que sobrevive: activationInputs se persiste como objeto COMPLETO, no como parche — la columna Json se reemplaza entera y zod exige los 9 ejes, asi que el provider mergea contra el estado actual antes de mandar.",
+      "scope_out": [
+        "Las otras 20 mutaciones del provider: YA persisten vía persistUpdate/persistCreate/persistChallengeMutation → portfolioService (auditado en esta sesión). No se tocan.",
+        "loadChallengeCoverageDemo: es un sembrador de demo, no una mutación de usuario. Sigue siendo local a propósito.",
+        "Registrar decisiones de la fase D (continuar/iterar/pivotear/...): NO existe mutación en el provider. Es su propia feature.",
+        "Estados nuevos (paused) y máquina de transiciones: eso es la Fase 1 del plan MVP.",
+        "El enum doble legacy/canonical de status: deuda anotada, no se ataca aquí."
+      ],
+      "deferred_to": [
+        "MVP-P1-01-challenge-state-machine",
+        "portfolio-decisions-persist"
+      ]
     },
     {
       "id": "create-project-validation",
@@ -859,14 +878,19 @@
       "deferred_to": [
         "PBA-04-migrate-guards"
       ],
-      "status": "blocked",
+      "status": "passing",
       "verification": [
-        "cd front && npm run docker:up && npm run test:e2e",
-        "cd front && npm test && npm run test:backend"
+        "cd front && npm run test:e2e  (el runner levanta su propio stack aislado: postgres 55433 + backend 4100 + frontend 5176; NO requiere `docker:up` ni el puerto 5433)",
+        "cd front && npm test  (unit front + backend)"
       ],
-      "evidence": [],
-      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md).",
-      "status_note": "BLOQUEADA por entorno, no por código. El stack e2e no levanta: el puerto 5433 tiene un docker-proxy HUÉRFANO que retiene el bind (`bind: address already in use`) pero rechaza toda conexión, así que `docker compose up` falla en starteria-db. QUÉ LA DESBLOQUEA: liberar 5433 — reiniciar el daemon de Docker (NO se hizo: hay contenedores cf-* del usuario con 18-22h de uptime que no son de esta sesión y se perderían), o mapear starteria-db a otro puerto en docker-compose + DATABASE_URL. Hecho eso: `cd front && npm run docker:up && npm run test:e2e`, más el smoke de referencia pdf-autofill. Lo que SÍ está verificado sin stack: la regresión del ADR está cubierta por unit (AppLayout.dual-role 4/4 + require-permission 10/10 + permissions 26/26) y la migración de schema contra Postgres 16 real."
+      "evidence": [
+        "NUEVO spec `front/e2e/dual-role-authz.spec.ts` — 4/4 passed contra stack real, verificado en la suite completa Y aislado (6 passed / 3.2s junto a team-inheritance). Cubre: (1) participante recien registrado NO escribe en portafolio (403); (2) el admin concede el CONJUNTO ['participante','portfolio_lead'] via el endpoint REAL de PBA-08 (PATCH /api/v1/users/:id/role); (3) el JWT nuevo lleva LOS DOS roles; (4) con doble rol GANA portafolio (frente -> reto); (5) y NO pierde su workspace: sigue creando proyecto. El (5) es el assert de la regresion: antes del ADR ganar una plataforma costaba la otra.",
+        "DIAGNOSTICO CORREGIDO: el bloqueo NO era el puerto 5433. `npm run test:e2e` es autocontenido (docker-compose.e2e.yml, puerto 55433) y ya exporta AUTH_DISABLE_WAITLIST. El 5433 de hecho hoy sirve un Postgres 16.14 sano. La `verification` anterior incluia un `docker:up` innecesario que apuntaba al stack equivocado.",
+        "CAUSA RAIZ 1 (arreglada) — `run-e2e.ts` hacia `docker compose up -d` SIN `--wait`: docker-proxy acepta el TCP apenas se crea el contenedor, asi que el gate `waitForTcp` se satisfacia con postgres aun arrancando y el provisioning moria con 'Can't reach database server'. Fix: `--wait` (el healthcheck pg_isready ya existia en el compose y nadie lo esperaba).",
+        "CAUSA RAIZ 2 (arreglada) — el provisioner usa `prisma migrate deploy`, pero `User.roles` (PBA-02) y otros cambios se aplicaron solo con `db push`: no habia migracion. La BD e2e nacia sin la columna y el seed moria con P2022. Fix: migracion `20260820120000_sync_dbpush_drift_roles_pilot_claim` generada con `prisma migrate diff` (User.roles SIN default, fiel a la decision del ADR; + PilotLead.proposal, tabla PilotClaimToken, indices de PdfFieldProposal/AdaptiveCheckpointInstance). Drift posterior verificado en CERO ('This is an empty migration'). NO afecta prod: cd.yml usa `db push`, no `migrate deploy`.",
+        "Suite e2e: de morir en el provisioning (0 tests) a 21 passed. Baseline unit intacta: ./init.sh exit 0, front 334/334 en 49 archivos."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). PBA-07 cierra el gate E2E que el ADR dejaba anotado. El spec usa el endpoint de admin REAL en vez de sembrar el doble rol, asi ejercita la cadena que entrego PBA-08."
     },
     {
       "id": "PBA-08-role-admin-ui",
@@ -898,6 +922,110 @@
         "DEFECTO PROPIO CORREGIDO (detectado en producción por el usuario): el enlace del sidebar se había metido en `adminLinks`, y esa lista se elegía con `user.role === 'admin'` — o sea, el MENÚ se decidía por el rol primario. Un usuario con {participante, admin} tenía el permiso y NO veía el enlace: autorizado por API, invisible por pantalla, el mismo defecto que #156 vino a erradicar, reintroducido por la puerta de atrás dentro del propio commit que implementa el ADR. Arreglado: el menú se COMPONE por permisos (can(...)); la etiqueta del dashboard sigue el rol primario porque eso sí es presentación. `vitest AppLayout.dual-role` → 9 passed (5 nuevos): admin-con-participante-primario ve Roles/Panel cohorte/Portafolio; participante no ve nada de admin y conserva Evidencias; mentor ve su panel; sponsor conserva su menú mínimo; portfolio_lead ve la capa estratégica. front 334/334, backend 546/546, builds exit 0."
       ],
       "notes": "ADR-029. El endpoint de lista no existía; se añade GET /api/v1/users gateado con users:assign-roles."
+    },
+    {
+      "id": "e2e-prd-audit-realign",
+      "priority": 39,
+      "area": "e2e",
+      "title": "initial-review-prd-audit audita el copy de la pantalla LEGACY deprecada",
+      "user_visible_behavior": "Ninguno directo. La spec vuelve a auditar la pantalla que el usuario usa hoy en vez de una muerta.",
+      "scope_out": [
+        "Borrar físicamente features/initial-review: es el issue #136",
+        "Reescribir el PRD: aquí sólo se realinea la spec con el diseño vigente"
+      ],
+      "deferred_to": [
+        "#136"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:e2e -- initial-review-prd-audit → 2 passed"
+      ],
+      "evidence": [],
+      "notes": "Diagnosticado en la sesión 018. La spec asume la UI de `features/initial-review` (scaffold legacy deprecado en IRC-07, borrado pendiente #136), no la viva `features/initiative-review`. Dos ejemplos confirmados: el botón vivo dice 'Revisar propuesta' y no 'Revisar mi propuesta' (ya realineado); y el campo 'Contexto adicional opcional' fue ELIMINADO a propósito del diseño vivo — InitiativeReviewFlow.test.tsx:374 asegura `not.toBeInTheDocument()`. O sea: el producto está bien y la spec quedó vieja. Realinear el resto del recorrido P0 contra la UI conversacional actual. El test negativo de la misma spec YA pasa."
+    },
+    {
+      "id": "e2e-pdf-extract-stub-mode",
+      "priority": 40,
+      "area": "e2e + backend",
+      "title": "PDF_EXTRACTION_E2E_MODE lo declara el runner pero el backend nunca lo lee",
+      "user_visible_behavior": "Ninguno en producción. Permite que el smoke de referencia (PDF autofill) corra sin levantar el ai-service.",
+      "scope_out": [
+        "Levantar el ai-service dentro del stack e2e: es la alternativa cara, se descarta salvo que se decida lo contrario",
+        "Tocar el camino real de extracción en prod"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:e2e -- pdf-autofill → passed sin ai-service levantado"
+      ],
+      "evidence": [],
+      "notes": "Diagnosticado en la sesión 018. `run-e2e.ts:164` exporta PDF_EXTRACTION_E2E_MODE='terminal-failed', pero un grep en backend/ no encuentra NI UNA lectura: es una variable muerta. Como el stack e2e no levanta el ai-service, el trigger de extracción devuelve 400 PDF_EXTRACTION_UNAVAILABLE (pdf.service.ts:324) y la spec —que sí tolera un run que TERMINA en failed— muere antes, porque lo que falla es el disparo. Implementar el modo en pdf.service (mismo patrón opt-in por env que AUTH_DISABLE_WAITLIST): crear el run y terminarlo como FAILED sin llamar al ai-service, devolviendo 2xx con runId. Nota: con los fixes de la sesión 018 la spec ya avanza register→login→crear proyecto→subir PDF; el trigger es el único eslabón que falta."
+    },
+    {
+      "id": "MVP-P1-01-challenge-state-machine",
+      "priority": 41,
+      "epic": "mvp-portafolio (plan 2026-08-19)",
+      "area": "backend + front",
+      "title": "Máquina de estados del reto: activado / bloqueado / en pausa, con transiciones validadas en el servidor",
+      "user_visible_behavior": "El portfolio lead ve el estado de cada reto y puede activarlo, pausarlo o cerrarlo; el estado sobrevive recarga y gobierna qué se puede hacer (un reto en pausa o cerrado no acepta iniciativas nuevas).",
+      "scope_out": [
+        "El estado de la INICIATIVA: va en MVP-P1-02",
+        "La convocatoria y su publicación: Fase 4 del plan",
+        "Migrar el enum legacy a canónico: deuda anotada, no se ataca aquí"
+      ],
+      "deferred_to": [
+        "MVP-P1-02-initiative-state-sync"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:backend -- portfolio → transiciones válidas 2xx e inválidas 409/422",
+        "cd front && npm run test:e2e -- portfolio → activar → pausar → reactivar con recarga"
+      ],
+      "evidence": [],
+      "notes": "Gobernada por ADR-030 (backend/docs/adr/ADR-030-challenge-and-initiative-state-machine.md, Propuesto). Decisiones que ya toma el ADR y esta feature implementa: `pausado`/`pausada` son ESTADOS del enum (no un flag: una pausa es excluyente con avanzar, y `bloqueada` ya es estado); las transiciones se validan EN EL SERVIDOR con una tabla explicita y un 409 —hoy `PortfolioService.updateChallenge` hace `data: input as any` y obedece al cliente, asi que una pestaña vieja o un curl pueden llevar un reto de `cerrado` a `draft`—; `cerrado` es terminal; la pausa persiste `pausedFromStatus` para reanudar al estado previo en vez de adivinarlo. Los valores nuevos se escriben en la forma LEGACY (español) porque es la que vive en Postgres. Coste bajo por lo ya construido: `syncInitiativeProgress` solo toca filas `en_step_*`, asi que un estado no-progresivo queda exento del auto-avance sin tocar esa funcion, y añadir un valor a un enum es ALTER TYPE ADD VALUE, que pasa el guard de `db push` (ADR-018)."
+    },
+    {
+      "id": "MVP-P1-02-initiative-state-sync",
+      "priority": 42,
+      "epic": "mvp-portafolio (plan 2026-08-19)",
+      "area": "backend + front",
+      "title": "El estado de la iniciativa refleja el step real y obedece la decisión del portfolio lead",
+      "user_visible_behavior": "El participante ve si su iniciativa está activa, bloqueada o en pausa; si el lead la pausa o la cierra, la iniciativa queda en solo lectura con un aviso que explica por qué.",
+      "scope_out": [
+        "El estado del RETO: es MVP-P1-01",
+        "Registrar la decisión en sí: portfolio-decisions-persist"
+      ],
+      "deferred_to": [
+        "portfolio-decisions-persist"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:backend -- portfolio → step N ⇒ status in_step_N; pausar ⇒ solo lectura",
+        "cd front && npm run test:e2e -- portfolio → decisión 'pausar' deja el proyecto en solo lectura"
+      ],
+      "evidence": [],
+      "notes": "Gobernada por ADR-030. Regla clave: un estado no-activo GOBIERNA lo que se puede hacer — con la iniciativa `pausada`/`cerrada` las escrituras de sus steps se rechazan con 409 EN EL SERVIDOR, no solo en la UI (aplicarlo solo en el cliente seria el mismo error que ADR-029 erradico en autorizacion). Test que impide la regresion: `syncInitiativeProgress` NO debe tocar una iniciativa pausada. Riesgo declarado en el ADR: toca el borde de escritura de steps, superficie compartida con el flujo del participante (ADR-025); se implementa en un solo punto con el smoke de referencia como red."
+    },
+    {
+      "id": "portfolio-decisions-persist",
+      "priority": 43,
+      "epic": "mvp-portafolio (plan 2026-08-19)",
+      "area": "portfolio-lead",
+      "title": "Registrar la decisión de la fase D (continuar / iterar / pivotear / escalar / transferir / invertir / pausar / cerrar)",
+      "user_visible_behavior": "En /portfolio/decisiones el lead registra la decisión sobre una iniciativa lista para decidir; la decisión persiste tras recarga y cambia el estado de la iniciativa.",
+      "scope_out": [
+        "La máquina de estados que la decisión dispara: MVP-P1-02",
+        "Notificar al equipo de la iniciativa: fuera del MVP"
+      ],
+      "deferred_to": [
+        "MVP-P1-02-initiative-state-sync"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test -- PortfolioLead → registrar decisión llama al backend y revierte ante fallo",
+        "cd front && npm run test:e2e -- portfolio → registrar decisión → recargar → sigue ahí"
+      ],
+      "evidence": [],
+      "notes": "Del plan (fase D del diagrama). HALLAZGO de la sesión 018: el vocabulario existe en el dominio del front (`PortfolioDecisionOutcome`: iterar_desde_otro_angulo, escalar_piloto, …) pero NO existe ninguna mutación de decisión en PortfolioLeadContext — `portfolioDecisions` sólo lo escribe el sembrador de demo `loadChallengeCoverageDemo`. O sea: hoy la fase D del diagrama no tiene camino de escritura al backend. \nADR-030 lo refina con un hallazgo: el almacenamiento YA existe —`PortfolioDecisionOutcome` es un enum de Prisma y `InitiativePortfolioMeta.decisionOutcome` es una columna real—, asi que lo unico que falta es el camino de escritura. Ademas el ADR decide que la decision ES el disparador del estado: se escriben `decisionOutcome` y el estado en la MISMA transaccion. Y añade `pausar` al enum, que el diagrama pide como opcion de la fase D y hoy no existe."
     }
   ]
 }

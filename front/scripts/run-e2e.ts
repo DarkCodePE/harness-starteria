@@ -168,7 +168,11 @@ async function main() {
 
   if (process.env.E2E_SKIP_DOCKER !== 'true') {
     console.log('[E2E] Start isolated postgres via docker compose');
-    runChecked(dockerCmd, ['compose', '-f', 'docker-compose.e2e.yml', '-p', 'starteria-e2e', 'up', '-d', 'postgres'], repoRoot, env);
+    // --wait blocks until the compose healthcheck (pg_isready) passes. Without it,
+    // docker-proxy accepts the TCP connection the instant the container is created,
+    // so the waitForTcp gate below is satisfied while postgres is still booting and
+    // the next step (prisma provisioning) fails with "Can't reach database server".
+    runChecked(dockerCmd, ['compose', '-f', 'docker-compose.e2e.yml', '-p', 'starteria-e2e', 'up', '-d', '--wait', 'postgres'], repoRoot, env);
   } else {
     console.log('[E2E] E2E_SKIP_DOCKER=true; using existing E2E_DATABASE_URL');
   }

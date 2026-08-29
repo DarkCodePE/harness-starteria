@@ -2,8 +2,10 @@
 
 - **Estado**: Aceptado — fase 1 implementada y desplegada
 - **Fecha**: 2026-08-12
-- **Actualizado**: 2026-08-12 — la fase 1 (permisos + `roles[]` + switcher) está en `main`.
+- **Actualizado**: 2026-08-20 — PBA-07 cerrado: el gate E2E de doble rol está verificado
+  (`front/e2e/dual-role-authz.spec.ts`, 4/4). Con eso **la fase 1 queda completa y verificada**.
   Sigue abierta la fase 2 (retirar la columna `role`, #160) y el gate de `portfolio:read` (#161).
+- **Actualizado**: 2026-08-12 — la fase 1 (permisos + `roles[]` + switcher) está en `main`.
 - **Enmienda a**: ADR-028 (Aceptado) — resuelve la deuda que su sección «Consecuencias» dejó anotada
 - **Relacionados**: ADR-004 (autorización original, 4 roles), ADR-009 (modelo de 6 roles),
   ADR-010 (implementación authz), ADR-023 (`TeamRole`, eje de equipo),
@@ -325,5 +327,11 @@ cuando exista, será una fuente más de permisos, no un rediseño de los guards.
   si el deploy pasa.
 - **E2E**: login de un usuario de doble rol → switcher visible → cambiar de zona → una
   escritura de portafolio 2xx → volver al workspace → Step 0 accesible.
+  **CUMPLIDO (2026-08-20, PBA-07)** con `front/e2e/dual-role-authz.spec.ts`, 4/4 verde contra
+  stack real. Se verifica a nivel de API en vez de por UI: el admin concede el conjunto con
+  el endpoint real (`PATCH /users/:id/role`), el JWT resultante lleva los dos roles, la
+  escritura de portafolio responde 2xx y —el assert de la regresión— el usuario **conserva**
+  `project:own` y sigue creando proyectos. El switcher en sí ya estaba cubierto por unit
+  (PBA-06); lo que faltaba probar de punta a punta era que sumar un rol no resta el otro.
 - **No regresión**: la suite de backend completa (491 tests al cierre de ADR-028) y la de
   front; el smoke de referencia (`pdf-autofill.spec.ts`) verde.

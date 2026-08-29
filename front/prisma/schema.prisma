@@ -1479,6 +1479,16 @@ model Challenge {
   status                ChallengeStatus         @default(draft)
   activationMode        ChallengeActivationMode @default(convocatoria_abierta)
   coverageStatus        ChallengeCoverageStatus @default(sin_cobertura)
+  // Autoria de la activacion del reto. Eran campos SOLO-front: se editaban en /portfolio
+  // y se perdian al recargar porque no habia donde guardarlos (reconcileChallenge los
+  // preservaba a mano del estado local para que adaptChallenge no los pisara con defaults).
+  // Nullable y SIN default a proposito (leccion de ADR-029): una fila previa al cambio se
+  // distingue de una que el usuario dejo vacia, y el orden de despliegue no decide correccion.
+  // activationInputs es Json porque es un objeto fijo de 9 enums de autoria: no se filtra
+  // ni se consulta por sus campos. Se valida en el borde con zod (portfolio.schemas.ts).
+  activationInputs      Json?
+  activationRecommendationNote String?
+  activationMessageDraft       String?
   sponsorId             String?
   ownerId               String?
   createdAt             DateTime                @default(now())
