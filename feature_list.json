@@ -975,12 +975,18 @@
       "deferred_to": [
         "MVP-P1-02-initiative-state-sync"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "cd front && npm run test:backend -- portfolio → transiciones válidas 2xx e inválidas 409/422",
         "cd front && npm run test:e2e -- portfolio → activar → pausar → reactivar con recarga"
       ],
-      "evidence": [],
+      "evidence": [
+        "backend unit: 862 passed / 34 skipped (baseline 838) — `cd front && npm run test:backend`. Incluye 24 tests nuevos: challenge-state-machine.test.ts 16/16 (tabla de transiciones, cerrado terminal, memoria de la pausa, idempotencia) y portfolio.challenge-transitions.test.ts 8/8 (el SERVICIO devuelve 409 y NO llama a update en la transicion ilegal).",
+        "front unit: 398 passed (sin cambio respecto al baseline medido con stash: los cambios de types/adapters no alteran el conteo).",
+        "e2e real stack: `npm run test:e2e -- portfolio-challenge-states` → 4 passed (2.1s), exit 0. Cubre activar→pausar→reanudar con RELECTURA en peticion nueva (persiste y pausedFromStatus se limpia), reanudar-a-otro-estado 409, cerrado→draft 409, y reto pausado rechaza iniciativa nueva con 409.",
+        "prisma migrate diff migraciones → schema: 'No difference detected' (exit 0) con la migracion 20260829120000_adr030_challenge_paused_state incluida.",
+        "npm run build y npm run build:backend: exit 0."
+      ],
       "notes": "Gobernada por ADR-030 (backend/docs/adr/ADR-030-challenge-and-initiative-state-machine.md, Propuesto). Decisiones que ya toma el ADR y esta feature implementa: `pausado`/`pausada` son ESTADOS del enum (no un flag: una pausa es excluyente con avanzar, y `bloqueada` ya es estado); las transiciones se validan EN EL SERVIDOR con una tabla explicita y un 409 —hoy `PortfolioService.updateChallenge` hace `data: input as any` y obedece al cliente, asi que una pestaña vieja o un curl pueden llevar un reto de `cerrado` a `draft`—; `cerrado` es terminal; la pausa persiste `pausedFromStatus` para reanudar al estado previo en vez de adivinarlo. Los valores nuevos se escriben en la forma LEGACY (español) porque es la que vive en Postgres. Coste bajo por lo ya construido: `syncInitiativeProgress` solo toca filas `en_step_*`, asi que un estado no-progresivo queda exento del auto-avance sin tocar esa funcion, y añadir un valor a un enum es ALTER TYPE ADD VALUE, que pasa el guard de `db push` (ADR-018)."
     },
     {

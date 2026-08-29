@@ -63,6 +63,9 @@ export const createChallengeSchema = z.object({
       'recibiendo_iniciativas',
       'con_iniciativas_activas',
       'pendiente_de_decision',
+      // ADR-030: la pausa es un estado. zod solo comprueba que el VALOR existe;
+      // que la transicion sea legal lo decide la maquina en el servicio.
+      'pausado',
       'cerrado',
     ])
     .optional(),

@@ -150,6 +150,9 @@ const CHALLENGE_STATUS_TO_BACKEND: Record<string, string> = {
   recibiendo_iniciativas: 'recibiendo_iniciativas', receiving_initiatives: 'recibiendo_iniciativas',
   con_iniciativas_activas: 'con_iniciativas_activas', in_tracking: 'con_iniciativas_activas',
   pendiente_de_decision: 'pendiente_de_decision', pending_decision: 'pendiente_de_decision',
+  // ADR-030: `paused` se acepta como alias de entrada por simetria con el resto del mapa,
+  // pero SIEMPRE sale `pausado`: lo que se escribe en Postgres es la forma legacy.
+  pausado: 'pausado', paused: 'pausado',
   cerrado: 'cerrado', closed: 'cerrado',
 };
 const CHALLENGE_ACTIVATION_BACKEND = new Set(['convocatoria_abierta', 'personas_seleccionadas', 'squad_asignado']);

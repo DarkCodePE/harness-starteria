@@ -225,6 +225,11 @@ enum ChallengeStatus {
   recibiendo_iniciativas
   con_iniciativas_activas
   pendiente_de_decision
+  // ADR-030: la pausa es un ESTADO, no un flag. Es mutuamente excluyente con avanzar,
+  // y `bloqueada` (en la iniciativa) ya es estado: un flag paralelo crearia dos fuentes
+  // de verdad para "se puede editar?". Valor en forma LEGACY (español) porque es la que
+  // vive en Postgres; introducir uno canonico dejaria el enum mestizo.
+  pausado
   cerrado
 }
 
@@ -1477,6 +1482,10 @@ model Challenge {
   publicationNotes      String?
   lastPublishedAt       DateTime?
   status                ChallengeStatus         @default(draft)
+  // ADR-030: la pausa recuerda de donde vino. Sin esto, reanudar obligaria a adivinar
+  // (vuelve a `activo_interno` o a `recibiendo_iniciativas`?) y se perderia contexto que
+  // el sistema si tenia. Nullable: solo tiene valor mientras el reto esta pausado.
+  pausedFromStatus      ChallengeStatus?
   activationMode        ChallengeActivationMode @default(convocatoria_abierta)
   coverageStatus        ChallengeCoverageStatus @default(sin_cobertura)
   // Autoria de la activacion del reto. Eran campos SOLO-front: se editaban en /portfolio
