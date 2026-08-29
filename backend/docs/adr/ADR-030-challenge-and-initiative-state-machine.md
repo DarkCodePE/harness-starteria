@@ -1,7 +1,23 @@
 # ADR-030: Estados del reto y de la iniciativa, con transiciones decididas en el servidor
 
-- **Estado**: Propuesto
+- **Estado**: Parcialmente implementado — la mitad del RETO esta en codigo y verificada
+  (MVP-P1-01); la mitad de la INICIATIVA (MVP-P1-02) sigue Propuesta
 - **Fecha**: 2026-08-22
+- **Actualizado**: 2026-08-29 — MVP-P1-01 implementa las decisiones 1, 2 y 4 para el reto:
+  `pausado` como estado del enum, `pausedFromStatus`, tabla de transiciones aplicada en el
+  SERVIDOR con 409 (`backend/modules/portfolio/challenge-state-machine.ts`), y el bloqueo de
+  iniciativas nuevas sobre un reto pausado/cerrado. Verificado con 24 tests unitarios y un
+  e2e contra Postgres real (4/4).
+
+  **Correccion al ADR encontrada al implementarlo** (misma clase que los dos hallazgos de
+  ADR-029): este documento dice que hay que "añadir `pausada` a `InitiativePortfolioStatus`
+  en forma legacy". Ya no aplica tal cual — el trabajo de adaptive-core mergeado en main
+  despues de escribir el ADR **ya introdujo `paused` y `closed` CANONICOS** en ese enum,
+  junto con `implementation_approved` y `scaling_approved`. El enum de la iniciativa ya es
+  mestizo (`cerrada` legacy conviviendo con `closed` canonico), que es exactamente lo que
+  la decision 5 queria evitar. MVP-P1-02 tiene que decidir entre reusar los canonicos que
+  ya existen o migrar los datos, no aplicar este parrafo literalmente. El enum del RETO
+  no estaba afectado: ahi `pausado` legacy si era la eleccion correcta y es la que se hizo.
 - **Enmienda a**: ADR-024 (persistencia de mutaciones del portfolio lead) — le añade la regla
   que le faltaba: qué estados existen y quién decide que una transición es legal
 - **Relacionados**: ADR-023 (equipo scoped al reto), ADR-025 (iniciativa ← revisión inicial),

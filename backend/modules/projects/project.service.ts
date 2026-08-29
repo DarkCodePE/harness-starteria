@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
+import {
+  challengeAdmitsInitiatives,
+  type ChallengeStatusValue,
+} from '../portfolio/challenge-state-machine';
 import { Role, Project, Step0Data, Step0Status } from '../../shared/types';
 import { StatusMapper } from '../../shared/utils/status-mapper';
 import { validateTransition } from './state-machine';
@@ -239,6 +243,17 @@ export class ProjectService {
       throw AppError.notFound('Desafio', 'CHALLENGE_NOT_FOUND', {
         hint: 'Verifica el ID del reto antes de crear la iniciativa.',
       });
+    }
+
+    // ADR-030 decision 4: un reto en pausa o cerrado NO acepta iniciativas nuevas.
+    // Se comprueba en el servidor y no solo en la UI: pintar el boton deshabilitado
+    // seria decoracion — es el mismo error que ADR-029 erradico en autorizacion.
+    if (linkedChallenge && !challengeAdmitsInitiatives(linkedChallenge.status as ChallengeStatusValue)) {
+      throw AppError.conflict(
+        `El reto esta en «${linkedChallenge.status}» y no admite iniciativas nuevas.`,
+        'CHALLENGE_NOT_ADMITTING_INITIATIVES',
+        { hint: 'Reanuda el reto para volver a recibir iniciativas.' },
+      );
     }
 
     const inheritedTeam = linkedChallenge?.assignedSquad

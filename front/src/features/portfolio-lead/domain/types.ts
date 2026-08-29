@@ -47,6 +47,9 @@ export type ChallengeStatusLegacy =
   | 'recibiendo_iniciativas'
   | 'con_iniciativas_activas'
   | 'pendiente_de_decision'
+  // ADR-030: sin gemelo canonico a proposito. El valor que vive en Postgres es el
+  // legacy; añadir un `paused` canonico dejaria el enum mestizo sin migrar los datos.
+  | 'pausado'
   | 'cerrado';
 export type ChallengeStatus = ChallengeStatusCanonical | ChallengeStatusLegacy;
 

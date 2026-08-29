@@ -40,6 +40,8 @@ front/.pilot-dry-run/
 .swarm/hnsw.index
 .swarm/state.json
 .swarm/model-router-state.json
+.swarm/agentdb-sessions.jsonl
+.swarm/ruvnet-brain-learn/
 agentdb.rvf
 agentdb.rvf.lock
 ruvector.db

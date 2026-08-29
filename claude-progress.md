@@ -302,3 +302,55 @@
 - Baseline al cierre: front 343/343 (50 archivos) · backend 554/554 (56 archivos) · `./init.sh` exit 0.
 - Gotcha para la próxima sesión: los tests de front necesitan `--config vitest.front.config.ts` (el jsdom vive ahí);
   correr `vitest` a secas contra un test de componente falla con "document is not defined".
+
+### Sesión 019 — Fase 0 mergeada + MVP-P1-01: la máquina de estados del reto (2026-08-29)
+
+- **PR #163 rebaseado y MERGEADO** (`c4c4822`). Llevaba abierto contra un main que había avanzado
+  19 commits. El rebase no dio conflictos textuales pero **rompió la cadena de migraciones en
+  silencio**: la migración de drift terminaba con un `ALTER INDEX ... RENAME` sobre el índice
+  auto-truncado `AdaptiveCheckpointInstance_..._checkp`, que la migración `20260816_r3a_cycle_foundation`
+  de main —que ordena ANTES— dropea y sustituye por `ACI_cycle_config_checkpoint_key`. Resultado: `P1014`
+  y provisioning muerto. Se eliminó ese DDL (el schema ya no declara el nombre viejo) dejando el porqué
+  escrito. Verificado con `migrate diff` → *No difference detected* y `migrate deploy` sobre BD virgen.
+- **Los 4 checks de CI pasaron, pero CI NO cubre el e2e** (`E2E light` está `skipping`, "disabled — Phase 1").
+  La corrida local dio 20 passed / 8 failed. Clasificados uno a uno: **ninguno atribuible a #163**.
+    · 2 ya declarados como features (`e2e-prd-audit-realign`, `e2e-pdf-extract-stub-mode`).
+    · 2 son specs de main fallando en sus propias aserciones (`adaptive-core-prd03` con
+      `CHECKPOINT_TRUTH_BINDING_REQUIRED`; `portfolio-copilot-create-front` con la región nunca visible).
+    · **4 en `portfolio-lead-role` = contaminación cruzada.** `e2e/portfolio-copilot-create-front.spec.ts:11-14`
+      (spec de main) hace `prisma.user.update({ where: { email: E2E_USER_EMAIL }, data: { role: Role.mentor } })`
+      sobre el portfolio lead COMPARTIDO del seed en un `beforeEach`, y nunca lo restaura. Como
+      `portfolio-copilot` ordena antes que `portfolio-lead`, los 4 tests heredan un usuario degradado.
+      Reproducido aislado: degradar el rol a mano da `claim role='mentor'` + 403, idéntico al fallo.
+  **Por qué nadie lo había visto**: main declara `User.roles Role[]` en el schema pero **cero migraciones
+  lo añaden** → en main `migrate deploy` produce una BD sin la columna y el e2e **no puede ni provisionar**.
+  #163 es lo que vuelve la suite ejecutable. Los 2 rojos de `team-inheritance` de la sesión 018 ahora pasan.
+- **MVP-P1-01 → passing** (rama `feat/mvp-p1-01-challenge-state-machine`). ADR-030 pasa de *Propuesto* a
+  *Parcialmente implementado*.
+    · `backend/modules/portfolio/challenge-state-machine.ts`: tabla de transiciones de ADR-030,
+      `cerrado` terminal, `pausedFromStatus` como memoria de la pausa, idempotencia (reescribir el
+      mismo estado no es 409: un doble clic no es un error).
+    · `PortfolioService`: el `data: input as any` sustituido por una puerta ÚNICA
+      (`assertChallengeTransitionOrThrow`) que también gobierna `activateOpenCall` y `publishChallenge`
+      — antes escribían estado directo y se podía "activar" un reto cerrado por la puerta de atrás.
+    · Decisión 4 del ADR aplicada en `createProject` y `upsertInitiativeMeta`: un reto pausado/cerrado
+      no admite iniciativas NUEVAS (las ya vinculadas siguen editables; su ciclo es MVP-P1-02).
+    · Prisma: `pausado` + `pausedFromStatus`, migración siguiendo el precedente de `ALTER TYPE ADD VALUE`.
+- **Verificación**: backend 862/34skip (baseline 838) · front 398 (baseline confirmado con `git stash`:
+  también 398, mis cambios no lo alteran) · e2e `portfolio-challenge-states` **4/4, exit 0** contra
+  Postgres real · `migrate diff` drift 0 · ambos builds exit 0 · `check-feature-list.py` exit 0.
+- **Dos errores propios, para que no se repitan**:
+    1. Un guard mío aterrizó en `addInvitation` en vez de `upsertInitiativeMeta` — mi reemplazo por patrón
+       tomó la primera coincidencia. Lo detectó el BUILD, no yo leyendo. Al reemplazar por patrón, anclar
+       con contexto único o afirmar `count == 1`.
+    2. `if (!check.ok)` no compilaba: `tsconfig.backend.json` tiene `strictNullChecks: false` y en ese modo
+       TS **no estrecha uniones discriminadas por booleano literal**. Se cambió a discriminante de string.
+       Vale para cualquier union nueva en este paquete.
+- **Drift ADR↔código anotado en el propio ADR-030**: dice "añadir `pausada` a `InitiativePortfolioStatus`",
+  pero adaptive-core (main) ya metió `paused`/`closed` CANÓNICOS ahí. El enum de la iniciativa ya es mestizo.
+  MVP-P1-02 debe decidir entre reusar los canónicos o migrar datos, no aplicar el ADR literal.
+- **Gotcha de entorno**: el contexto de Docker apunta a Docker Desktop (caído); el daemon del sistema sí
+  corre → usar `DOCKER_CONTEXT=default`. Y una corrida e2e abortada deja huérfanos vite (5176) y backend
+  (4100) que hacen fallar la siguiente con 20 tests contra puertos muertos: comprobar puertos antes.
+- **Siguiente**: MVP-P1-02 (estado de la iniciativa, reconciliando el drift del enum), luego
+  `portfolio-decisions-persist`, y bajar Fase 2/3/4 a `feature_list.json` con `scope_out`.

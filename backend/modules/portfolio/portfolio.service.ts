@@ -17,6 +17,11 @@ import {
   CreateExecutiveOutputInput,
   UpdateExecutiveOutputInput,
 } from './portfolio.schemas';
+import {
+  checkChallengeTransition,
+  challengeAdmitsInitiatives,
+  type ChallengeStatusValue,
+} from './challenge-state-machine';
 
 export class PortfolioService {
   constructor(private prisma: PrismaClient) {}
@@ -99,13 +104,48 @@ export class PortfolioService {
     });
   }
 
+  /**
+   * ADR-030: puerta unica de transicion. La usan `updateChallenge` (via el input del
+   * cliente) y las rutas que fijan un estado desde el servidor (`activateOpenCall`,
+   * `publishChallenge`), para que no haya dos criterios de legalidad segun el endpoint.
+   */
+  private assertChallengeTransitionOrThrow(
+    existing: { status: string; pausedFromStatus?: string | null },
+    to: ChallengeStatusValue,
+  ): ChallengeStatusValue | null {
+    const check = checkChallengeTransition(
+      existing.status as ChallengeStatusValue,
+      to,
+      (existing.pausedFromStatus ?? null) as ChallengeStatusValue | null,
+    );
+    if (check.kind === 'illegal') {
+      throw AppError.conflict(check.reason, 'CHALLENGE_ILLEGAL_TRANSITION', {
+        hint: check.allowed.length
+          ? `Desde «${existing.status}» solo se puede pasar a: ${check.allowed.join(', ')}.`
+          : 'Este reto no admite mas cambios de estado.',
+      });
+    }
+    return check.pausedFromStatus;
+  }
+
   async updateChallenge(id: string, input: UpdateChallengeInput) {
     const existing = await this.prisma.challenge.findUnique({ where: { id } });
     if (!existing) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
 
+    // ADR-030: la transicion la decide el servidor. Antes esto era `data: input as any`,
+    // asi que el cliente escribia el `status` que quisiera. Solo se valida cuando el
+    // input TRAE status: un PATCH que edita el titulo no es una transicion.
+    const data: Record<string, unknown> = { ...(input as Record<string, unknown>) };
+    if (input.status !== undefined) {
+      data.pausedFromStatus = this.assertChallengeTransitionOrThrow(
+        existing,
+        input.status as ChallengeStatusValue,
+      );
+    }
+
     return this.prisma.challenge.update({
       where: { id },
-      data: input as any,
+      data: data as any,
       include: {
         selectedPeople: true,
         assignedSquad: true,
@@ -118,11 +158,17 @@ export class PortfolioService {
     const existing = await this.prisma.challenge.findUnique({ where: { id } });
     if (!existing) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
 
+    // ADR-030: tambien esta ruta pasa por la maquina. Antes escribia `activo_interno`
+    // directo, asi que se podia "activar" un reto cerrado y resucitarlo por la puerta de
+    // atras — justo la clase de agujero que la tabla de transiciones viene a cerrar.
+    this.assertChallengeTransitionOrThrow(existing, 'activo_interno');
+
     return this.prisma.challenge.update({
       where: { id },
       data: {
         activationMode: 'convocatoria_abierta',
         status: 'activo_interno',
+        pausedFromStatus: null,
       } as any,
     });
   }
@@ -131,9 +177,11 @@ export class PortfolioService {
     const existing = await this.prisma.challenge.findUnique({ where: { id } });
     if (!existing) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
 
+    this.assertChallengeTransitionOrThrow(existing, 'publicado');
+
     return this.prisma.challenge.update({
       where: { id },
-      data: { status: 'publicado' } as any,
+      data: { status: 'publicado', pausedFromStatus: null } as any,
     });
   }
 
@@ -142,6 +190,7 @@ export class PortfolioService {
   async addInvitation(challengeId: string, input: AddInvitationInput) {
     const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
     if (!challenge) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
+
 
     return this.prisma.challengeInvitation.create({
       data: {
@@ -396,6 +445,23 @@ export class PortfolioService {
 
     const challenge = await this.prisma.challenge.findUnique({ where: { id: challengeId } });
     if (!challenge) throw AppError.notFound('Desafío', 'CHALLENGE_NOT_FOUND', { hint: 'Verifica el ID del desafío.' });
+
+    // ADR-030 decision 4: un reto en pausa o cerrado no admite iniciativas NUEVAS.
+    // Solo se bloquea el ALTA: una iniciativa ya vinculada sigue siendo editable
+    // (su propio ciclo de vida lo gobierna MVP-P1-02, no este guard).
+    if (!challengeAdmitsInitiatives(challenge.status as ChallengeStatusValue)) {
+      const alreadyLinked = await this.prisma.initiativePortfolioMeta.findUnique({
+        where: { projectId_challengeId: { projectId, challengeId } },
+        select: { projectId: true },
+      });
+      if (!alreadyLinked) {
+        throw AppError.conflict(
+          `El reto esta en «${challenge.status}» y no admite iniciativas nuevas.`,
+          'CHALLENGE_NOT_ADMITTING_INITIATIVES',
+          { hint: 'Reanuda el reto para volver a recibir iniciativas.' },
+        );
+      }
+    }
 
     // TASK-006 / SPEC-002 US-017 guard:
     // Block the `en_step_4 → esperando_revision` transition while any PDF autofill
