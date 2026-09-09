@@ -1,6 +1,6 @@
 # Starteria — Authority Map
 
-**Documento:** `STARTERIA_AUTHORITY.md`
+**Documento:** `docs/STARTERIA_AUTHORITY.md`
 **Versión:** v0.1
 **Estado:** Base de gobernanza para desarrollo
 **Fecha:** 2026-09-09
@@ -15,7 +15,7 @@ El código actual NO es autoridad de producto.
 
 # 2. Jerarquía de autoridad
 
-1. `STARTERIA_CORE_LOGIC_CONTRACT.md`
+1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
 2. ADRs aprobados
 3. Experience Logic Contracts
 4. Agent Contracts
@@ -35,7 +35,7 @@ Regla:
 
 Para el vertical slice `Pantalla 1 — Portfolio Entry / Landing pública`, el Experience Contract activo es:
 
-`PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+`docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 El desarrollo de este slice NO debe modificar el comportamiento del Adaptive Core / Step 0–4.
 
@@ -45,23 +45,23 @@ El desarrollo de este slice NO debe modificar el comportamiento del Adaptive Cor
 
 ## Core
 
-- `STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
 
 ## Experiencia E2E
 
-- `STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
+- `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
 
 ## Gobernanza de desarrollo
 
-- `STARTERIA_DEVELOPMENT_HARNESS_v0.1.md`
+- `docs/governance/STARTERIA_DEVELOPMENT_HARNESS_v0.1.md`
 
 ## Portfolio Entry
 
-- `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 - futuro: `PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md`
 - futuros: `entry-01` a `entry-04` Skill Contracts
 - futuro: `PORTFOLIO_ENTRY_TECH_SPEC_v0.1.md`
-- `PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`
+- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`
 
 ---
 

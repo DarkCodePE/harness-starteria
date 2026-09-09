@@ -1,7 +1,5 @@
 # Starteria - Instrucciones del proyecto
 
-@C:\Users\User\.codex\RTK.md
-
 ## Comienza aqui
 - La app vive en `front/`.
 - Para iniciar frontend y backend juntos, usa `npm run dev:all` desde `front/`.
@@ -33,13 +31,15 @@ Si un archivo obligatorio no existe en la ruta esperada, localizalo antes de imp
 Antes de modificar comportamiento de producto:
 
 1. Lee `docs/STARTERIA_AUTHORITY.md`.
-2. Lee el Core Contract.
-3. Lee el Experience Logic Contract afectado.
-4. Lee ADRs aprobados relevantes.
-5. Lee Agent Contracts y Skill Contracts si existen.
-6. Lee Tech Specs si existen.
-7. Inspecciona la implementacion actual.
-8. Ejecuta pruebas baseline relevantes.
+2. Lee `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
+3. Lee `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`.
+4. Lee `docs/governance/STARTERIA_DEVELOPMENT_HARNESS_v0.1.md`.
+5. Lee el Experience Logic Contract afectado, por ejemplo `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
+6. Lee ADRs aprobados relevantes.
+7. Lee Agent Contracts y Skill Contracts si existen.
+8. Lee Tech Specs si existen.
+9. Inspecciona la implementacion actual.
+10. Ejecuta pruebas baseline relevantes.
 
 No implementes antes de completar esta secuencia o reportar explicitamente cualquier archivo faltante.
 
@@ -184,6 +184,9 @@ La logica detallada del producto esta en:
 - `docs/starteria-ux-writing.md`
 - `docs/starteria-review-rules.md`
 - `docs/STARTERIA_AUTHORITY.md`
+- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
+- `docs/governance/STARTERIA_DEVELOPMENT_HARNESS_v0.1.md`
 - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`
 
