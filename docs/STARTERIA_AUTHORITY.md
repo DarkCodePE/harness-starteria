@@ -1,8 +1,8 @@
 # Starteria — Authority Map
 
-**Documento:** `STARTERIA_AUTHORITY.md`  
-**Versión:** v0.1  
-**Estado:** Base de gobernanza para desarrollo  
+**Documento:** `STARTERIA_AUTHORITY.md`
+**Versión:** v0.1
+**Estado:** Base de gobernanza para desarrollo
 **Fecha:** 2026-09-09
 
 # 1. Propósito

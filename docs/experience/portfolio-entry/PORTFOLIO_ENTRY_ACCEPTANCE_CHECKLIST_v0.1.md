@@ -1,7 +1,7 @@
 # Portfolio Entry — Acceptance & No-Regression Checklist
 
-**Documento:** `PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`  
-**Versión:** v0.1  
+**Documento:** `PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`
+**Versión:** v0.1
 **Fecha:** 2026-09-09
 
 Use this checklist in audit, implementation review and PR review.

@@ -1,12 +1,12 @@
 # Starteria — Portfolio Entry Logic Contract
 
-**Documento:** `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`  
-**Versión:** v0.1  
-**Estado:** APROBADO COMO BASE DE EXPERIENCIA PARA AUDITORÍA E IMPLEMENTACIÓN  
-**Fecha de baseline:** 2026-09-09  
-**Tipo:** Experience Logic Contract  
-**Vertical slice:** Pantalla 1 — Portfolio Entry / Landing pública  
-**Usuario prioritario:** Portfolio Lead funcional  
+**Documento:** `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+**Versión:** v0.1
+**Estado:** APROBADO COMO BASE DE EXPERIENCIA PARA AUDITORÍA E IMPLEMENTACIÓN
+**Fecha de baseline:** 2026-09-09
+**Tipo:** Experience Logic Contract
+**Vertical slice:** Pantalla 1 — Portfolio Entry / Landing pública
+**Usuario prioritario:** Portfolio Lead funcional
 
 ## 0. Autoridad
 
