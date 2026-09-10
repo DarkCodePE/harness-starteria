@@ -1,0 +1,20 @@
+# Clon de mattpocock/skills: referencia de estilo, no es nuestro (ADR-001)
+skills/
+
+# Configuración de herramientas, no del harness
+.claude-flow/
+.swarm/
+estado/
+
+# De .claude/ solo se versionan las skills del harness
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/starteria/
+!.claude/skills/starteria-afilar/
+!.claude/skills/starteria-autoridad/
+!.claude/skills/starteria-caso/
+!.claude/skills/starteria-cierre/
+!.claude/skills/starteria-decision/
+!.claude/skills/starteria-glosario/
+!.claude/skills/starteria-probar/
