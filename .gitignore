@@ -18,3 +18,6 @@ estado/
 !.claude/skills/starteria-decision/
 !.claude/skills/starteria-glosario/
 !.claude/skills/starteria-probar/
+
+# Config del MCP de ruflo, no del harness
+.mcp.json
