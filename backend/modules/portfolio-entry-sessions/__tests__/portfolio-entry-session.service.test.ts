@@ -28,6 +28,7 @@ describe('PortfolioEntrySessionService', () => {
     expect(session.ownershipState).toBe('ANONYMOUS');
     expect(session.lifecycleStatus).toBe('ENTRY_CAPTURED');
     expect(session.executionStatus).toBe('NOT_STARTED');
+    expect(session.revision).toBe(0);
     expect(publicAccessToken).toHaveLength(64);
   });
 
@@ -114,8 +115,9 @@ describe('PortfolioEntrySessionService', () => {
       entryOrigin: 'public_start',
     });
     await service.markExpired(session.id);
+    const stored = await repository.findSessionById(session.id);
 
-    await expect(repository.touchActivity(session.id, new Date()))
+    await expect(repository.touchActivity(session.id, new Date(), stored?.revision ?? -1))
       .rejects.toMatchObject({ code: 'PORTFOLIO_ENTRY_SESSION_EXPIRED' });
   });
 
@@ -184,6 +186,49 @@ describe('PortfolioEntrySessionService', () => {
     const analyzing = await service.transitionLifecycle(session.id, 'ANALYZING');
 
     expect(analyzing.lifecycleStatus).toBe('ANALYZING');
+    expect(analyzing.revision).toBe(1);
+  });
+
+  it('rejects stale expectedRevision updates', async () => {
+    const { service, repository } = makeService();
+    const { session } = await service.createAnonymousSession({
+      rawEntry: 'Entrada publica',
+      entryOrigin: 'public_start',
+    });
+
+    await expect(repository.saveSessionState({
+      session: {
+        ...session,
+        executionStatus: 'RUNNING',
+        revision: session.revision + 1,
+        updatedAt: new Date(),
+      },
+      expectedRevision: session.revision - 1,
+    })).rejects.toMatchObject({ code: 'PORTFOLIO_ENTRY_SESSION_CONFLICT' });
+  });
+
+  it('rejects duplicate turn indexes without mutating latest semantic state', async () => {
+    const { service, repository } = makeService();
+    const { session } = await createAnalyzingSession(service);
+    await service.appendTurn(makeTurnInput(session.id, 1, 'questions_required'));
+    const current = await repository.findSessionById(session.id);
+    if (!current) throw new Error('Expected session.');
+    const duplicate = makeStoredTurn(current.id, 1);
+
+    await expect(repository.appendTurn(
+      duplicate,
+      {
+        ...current,
+        semanticState: { ...current.semanticState, answeredGaps: ['should-not-persist'] },
+        revision: current.revision + 1,
+        updatedAt: new Date(),
+        lastActivityAt: new Date(),
+      },
+      current.revision,
+    )).rejects.toMatchObject({ code: 'PORTFOLIO_ENTRY_SESSION_CONFLICT' });
+
+    await expect(repository.findSessionById(session.id))
+      .resolves.toMatchObject({ semanticState: { answeredGaps: [] } });
   });
 
   it('rejects invalid lifecycle transitions', async () => {
@@ -361,12 +406,12 @@ async function createAnalyzingSession(service: PortfolioEntrySessionService) {
 
 async function createSessionWithHandoff(service: PortfolioEntrySessionService) {
   const created = await createAnalyzingSession(service);
-  await service.appendTurn(makeTurnInput(created.session.id, 1, 'no_questions_required'));
+  const turn = await service.appendTurn(makeTurnInput(created.session.id, 1, 'no_questions_required'));
   await service.transitionLifecycle(created.session.id, 'HANDOFF_GENERATING');
   const handoff = await service.saveHandoff({
     sessionId: created.session.id,
     handoff: makeHandoff(),
-    sourceTurnId: 'turn-1',
+    sourceTurnId: turn.id,
   });
   return { ...created, handoff };
 }
@@ -455,6 +500,43 @@ function makeRuntimeContext(status: SessionContext['clarification_status']): Ses
     user_exploration_choice: 'not_offered',
     clarification_status: status,
     stop_reason: status === 'ready_for_handoff' ? 'sufficient_context' : null,
+  };
+}
+
+function makeStoredTurn(sessionId: string, turnIndex: number) {
+  const runtimeTurn = makeRuntimeTurn(turnIndex, 'questions_required');
+  return {
+    id: `turn-${turnIndex}-duplicate`,
+    sessionId,
+    turnIndex,
+    userInput: runtimeTurn.user_input,
+    emittedQuestions: runtimeTurn.questions_asked,
+    matchedQuestionIds: [],
+    respondedResolves: [],
+    analysisSnapshot: runtimeTurn.analysis,
+    semanticStateAfter: semanticStateFromAnalysis(runtimeTurn.analysis),
+    budgetBefore: runtimeTurn.available_question_budget,
+    budgetAfter: runtimeTurn.transition.budget_after,
+    transition: runtimeTurn.transition,
+    versioning,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function semanticStateFromAnalysis(analysis: PortfolioEntryAnalysisV2) {
+  return {
+    initialEntryState: analysis.initial_entry_state,
+    currentFrame: analysis.current_frame,
+    primaryIntent: analysis.primary_intent,
+    secondaryIntents: analysis.secondary_intents,
+    extractedContext: analysis.extracted_context,
+    ambiguities: analysis.ambiguities,
+    contradictions: analysis.contradictions,
+    reverseAlignment: analysis.reverse_alignment,
+    provenance: analysis.provenance,
+    previousQuestions: [],
+    answeredGaps: [],
   };
 }
 

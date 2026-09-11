@@ -8,5 +8,7 @@ export * from './application/portfolio-entry-session-guards';
 export * from './application/portfolio-entry-session.repository';
 export * from './application/portfolio-entry-session.service';
 export * from './infrastructure/in-memory-portfolio-entry-session.repository';
+export * from './infrastructure/prisma-portfolio-entry-session.mapper';
+export * from './infrastructure/prisma-portfolio-entry-session.repository';
 export * from './observability/portfolio-entry-execution-metadata';
 export * from './observability/portfolio-entry-session-redaction';

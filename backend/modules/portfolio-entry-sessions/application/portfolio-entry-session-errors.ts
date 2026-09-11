@@ -26,4 +26,8 @@ export class PortfolioEntrySessionError extends Error {
   static invalidOwnershipClaim(): PortfolioEntrySessionError {
     return new PortfolioEntrySessionError('PORTFOLIO_ENTRY_SESSION_INVALID_OWNERSHIP_CLAIM', 'Portfolio Entry session cannot be claimed.');
   }
+
+  static conflict(): PortfolioEntrySessionError {
+    return new PortfolioEntrySessionError('PORTFOLIO_ENTRY_SESSION_CONFLICT', 'Portfolio Entry session was modified concurrently.');
+  }
 }

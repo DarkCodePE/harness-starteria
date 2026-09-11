@@ -117,6 +117,7 @@ export class PortfolioEntrySessionService {
       latestHandoff: null,
       confirmation: null,
       versioning: this.config.versioning,
+      revision: 0,
       createdAt: now,
       updatedAt: now,
       lastActivityAt: now,
@@ -151,7 +152,7 @@ export class PortfolioEntrySessionService {
     const session = await this.repository.findSessionById(sessionId);
     if (!session) throw PortfolioEntrySessionError.notFound();
     assertSessionIsActive(session, now);
-    return this.repository.claimOwnership({ sessionId, ownerUserId, now });
+    return this.repository.claimOwnership({ sessionId, ownerUserId, expectedRevision: session.revision, now });
   }
 
   async transitionLifecycle(
@@ -166,9 +167,11 @@ export class PortfolioEntrySessionService {
       session: {
         ...session,
         lifecycleStatus: nextStatus,
+        revision: session.revision + 1,
         updatedAt: now,
         lastActivityAt: now,
       },
+      expectedRevision: session.revision,
     });
   }
 
@@ -183,8 +186,10 @@ export class PortfolioEntrySessionService {
       session: {
         ...session,
         executionStatus,
+        revision: session.revision + 1,
         updatedAt: now,
       },
+      expectedRevision: session.revision,
     });
   }
 
@@ -205,6 +210,7 @@ export class PortfolioEntrySessionService {
       semanticState,
       questionBudget: budgetFromRuntimeContext(input.runtimeContextAfter),
       latestAnalysis: input.runtimeTurn.analysis,
+      revision: session.revision + 1,
       updatedAt: now,
       lastActivityAt: now,
     };
@@ -229,7 +235,7 @@ export class PortfolioEntrySessionService {
       updatedAt: now,
     };
 
-    return this.repository.appendTurn(turn, updatedSession);
+    return this.repository.appendTurn(turn, updatedSession, session.revision);
   }
 
   async appendModelExecution(input: AppendExecutionInput): Promise<PortfolioEntryModelExecutionRecord> {
@@ -264,10 +270,11 @@ export class PortfolioEntrySessionService {
       ...session,
       lifecycleStatus: 'HANDOFF_READY' as const,
       latestHandoff: handoff,
+      revision: session.revision + 1,
       updatedAt: now,
       lastActivityAt: now,
     };
-    return this.repository.saveHandoff(handoff, updatedSession);
+    return this.repository.saveHandoff(handoff, updatedSession, session.revision);
   }
 
   async saveConfirmation(input: SaveConfirmationInput): Promise<PortfolioEntryConfirmation> {
@@ -296,10 +303,11 @@ export class PortfolioEntrySessionService {
       ...session,
       lifecycleStatus: nextLifecycle,
       confirmation,
+      revision: session.revision + 1,
       updatedAt: now,
       lastActivityAt: now,
     };
-    return this.repository.saveConfirmation(confirmation, updatedSession);
+    return this.repository.saveConfirmation(confirmation, updatedSession, session.revision);
   }
 
   async markConversionEligible(sessionId: string, now = this.now()): Promise<PortfolioEntrySession> {
@@ -313,16 +321,18 @@ export class PortfolioEntrySessionService {
       session: {
         ...session,
         lifecycleStatus: 'CONVERSION_ELIGIBLE',
+        revision: session.revision + 1,
         updatedAt: now,
         lastActivityAt: now,
       },
+      expectedRevision: session.revision,
     });
   }
 
   async markExpired(sessionId: string, now = this.now()): Promise<PortfolioEntrySession> {
     const session = await this.requireSession(sessionId);
     assertLifecycleTransition(session, 'EXPIRED');
-    return this.repository.markExpired(session.id, now);
+    return this.repository.markExpired(session.id, now, session.revision);
   }
 
   private async requireSession(sessionId: string): Promise<PortfolioEntrySession> {

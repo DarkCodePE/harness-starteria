@@ -51,17 +51,25 @@ export class InMemoryPortfolioEntrySessionRepository implements PortfolioEntrySe
   }
 
   async saveSessionState(input: SavePortfolioEntrySessionStateInput): Promise<PortfolioEntrySession> {
-    if (!this.sessions.has(input.session.id)) throw PortfolioEntrySessionError.notFound();
+    const existing = this.sessions.get(input.session.id);
+    if (!existing) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(existing, input.expectedRevision);
     this.sessions.set(input.session.id, cloneSession(input.session));
     return cloneSession(input.session);
   }
 
-  async appendTurn(turn: PortfolioEntryTurn, session: PortfolioEntrySession): Promise<PortfolioEntryTurn> {
+  async appendTurn(
+    turn: PortfolioEntryTurn,
+    session: PortfolioEntrySession,
+    expectedRevision: number,
+  ): Promise<PortfolioEntryTurn> {
     const existing = this.turns.get(turn.sessionId);
-    if (!existing || !this.sessions.has(turn.sessionId)) throw PortfolioEntrySessionError.notFound();
+    const existingSession = this.sessions.get(turn.sessionId);
+    if (!existing || !existingSession) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(existingSession, expectedRevision);
     const expectedIndex = existing.length + 1;
     if (turn.turnIndex !== expectedIndex) {
-      throw new Error(`Portfolio Entry turns must be appended in order. Expected ${expectedIndex}, got ${turn.turnIndex}.`);
+      throw PortfolioEntrySessionError.conflict();
     }
     const stored = cloneTurn(turn);
     existing.push(stored);
@@ -74,17 +82,27 @@ export class InMemoryPortfolioEntrySessionRepository implements PortfolioEntrySe
   ): Promise<PortfolioEntryModelExecutionRecord> {
     const existing = this.executions.get(execution.sessionId);
     if (!existing || !this.sessions.has(execution.sessionId)) throw PortfolioEntrySessionError.notFound();
+    assertExecutionReferencesBelongToSession(execution, this.turns, this.handoffs);
     const stored = cloneExecution(execution);
     existing.push(stored);
     return cloneExecution(stored);
   }
 
-  async saveHandoff(handoff: PortfolioEntryHandoffRecord, session: PortfolioEntrySession): Promise<PortfolioEntryHandoffRecord> {
+  async saveHandoff(
+    handoff: PortfolioEntryHandoffRecord,
+    session: PortfolioEntrySession,
+    expectedRevision: number,
+  ): Promise<PortfolioEntryHandoffRecord> {
     const existing = this.handoffs.get(handoff.sessionId);
-    if (!existing || !this.sessions.has(handoff.sessionId)) throw PortfolioEntrySessionError.notFound();
+    const existingSession = this.sessions.get(handoff.sessionId);
+    if (!existing || !existingSession) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(existingSession, expectedRevision);
+    if (handoff.sourceTurnId && !this.turns.get(handoff.sessionId)?.some((turn) => turn.id === handoff.sourceTurnId)) {
+      throw PortfolioEntrySessionError.conflict();
+    }
     const latestVersion = existing.at(-1)?.version ?? 0;
     if (handoff.version !== latestVersion + 1) {
-      throw new Error(`Portfolio Entry handoff versions must be sequential. Expected ${latestVersion + 1}, got ${handoff.version}.`);
+      throw PortfolioEntrySessionError.conflict();
     }
     const stored = cloneHandoff(handoff);
     existing.push(stored);
@@ -95,12 +113,18 @@ export class InMemoryPortfolioEntrySessionRepository implements PortfolioEntrySe
   async saveConfirmation(
     confirmation: PortfolioEntryConfirmation,
     session: PortfolioEntrySession,
+    expectedRevision: number,
   ): Promise<PortfolioEntryConfirmation> {
     const existing = this.confirmations.get(confirmation.sessionId);
-    if (!existing || !this.sessions.has(confirmation.sessionId)) throw PortfolioEntrySessionError.notFound();
+    const existingSession = this.sessions.get(confirmation.sessionId);
+    if (!existing || !existingSession) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(existingSession, expectedRevision);
+    if (!this.handoffs.get(confirmation.sessionId)?.some((handoff) => handoff.id === confirmation.handoffId)) {
+      throw PortfolioEntrySessionError.conflict();
+    }
     const latestVersion = existing.at(-1)?.version ?? 0;
     if (confirmation.version !== latestVersion + 1) {
-      throw new Error(`Portfolio Entry confirmation versions must be sequential. Expected ${latestVersion + 1}, got ${confirmation.version}.`);
+      throw PortfolioEntrySessionError.conflict();
     }
     const stored = cloneConfirmation(confirmation);
     existing.push(stored);
@@ -111,11 +135,13 @@ export class InMemoryPortfolioEntrySessionRepository implements PortfolioEntrySe
   async claimOwnership(input: ClaimPortfolioEntrySessionOwnershipInput): Promise<PortfolioEntrySession> {
     const session = this.sessions.get(input.sessionId);
     if (!session) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(session, input.expectedRevision);
     if (!canClaimPortfolioEntrySession(session)) throw PortfolioEntrySessionError.invalidOwnershipClaim();
     const claimed: PortfolioEntrySession = {
       ...cloneSession(session),
       ownerUserId: input.ownerUserId,
       ownershipState: 'CLAIMED',
+      revision: session.revision + 1,
       updatedAt: input.now,
       lastActivityAt: input.now,
     };
@@ -123,22 +149,25 @@ export class InMemoryPortfolioEntrySessionRepository implements PortfolioEntrySe
     return cloneSession(claimed);
   }
 
-  async touchActivity(sessionId: string, now: Date): Promise<PortfolioEntrySession> {
+  async touchActivity(sessionId: string, now: Date, expectedRevision: number): Promise<PortfolioEntrySession> {
     const session = this.sessions.get(sessionId);
     if (!session) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(session, expectedRevision);
     if (session.expiredAt || session.lifecycleStatus === 'EXPIRED') throw PortfolioEntrySessionError.expired();
-    const touched = { ...cloneSession(session), updatedAt: now, lastActivityAt: now };
+    const touched = { ...cloneSession(session), revision: session.revision + 1, updatedAt: now, lastActivityAt: now };
     this.sessions.set(sessionId, touched);
     return cloneSession(touched);
   }
 
-  async markExpired(sessionId: string, now: Date): Promise<PortfolioEntrySession> {
+  async markExpired(sessionId: string, now: Date, expectedRevision: number): Promise<PortfolioEntrySession> {
     const session = this.sessions.get(sessionId);
     if (!session) throw PortfolioEntrySessionError.notFound();
+    assertExpectedRevision(session, expectedRevision);
     const expired: PortfolioEntrySession = {
       ...cloneSession(session),
       lifecycleStatus: 'EXPIRED',
       expiredAt: session.expiredAt ?? now,
+      revision: session.revision + 1,
       updatedAt: now,
     };
     this.sessions.set(sessionId, expired);
@@ -221,6 +250,25 @@ function cloneExecution(execution: PortfolioEntryModelExecutionRecord): Portfoli
     schemaErrors: [...execution.schemaErrors],
     createdAt: new Date(execution.createdAt),
   };
+}
+
+function assertExpectedRevision(session: PortfolioEntrySession, expectedRevision: number): void {
+  if (session.revision !== expectedRevision) {
+    throw PortfolioEntrySessionError.conflict();
+  }
+}
+
+function assertExecutionReferencesBelongToSession(
+  execution: PortfolioEntryModelExecutionRecord,
+  turns: Map<string, PortfolioEntryTurn[]>,
+  handoffs: Map<string, PortfolioEntryHandoffRecord[]>,
+): void {
+  if (execution.turnId && !turns.get(execution.sessionId)?.some((turn) => turn.id === execution.turnId)) {
+    throw PortfolioEntrySessionError.conflict();
+  }
+  if (execution.handoffId && !handoffs.get(execution.sessionId)?.some((handoff) => handoff.id === execution.handoffId)) {
+    throw PortfolioEntrySessionError.conflict();
+  }
 }
 
 function cloneJson<T>(value: T): T {

@@ -100,6 +100,7 @@ export type PortfolioEntrySession = {
   latestHandoff?: PortfolioEntryHandoffRecord | null;
   confirmation?: PortfolioEntryConfirmation | null;
   versioning: PortfolioEntryVersioning;
+  revision: number;
   createdAt: Date;
   updatedAt: Date;
   lastActivityAt: Date;

@@ -2243,6 +2243,193 @@ enum InitialReviewChatEventKind {
   confirm // el usuario confirma la ruta desde el chat
 }
 
+// Portfolio Entry Sessions (Phase 6D) — pre-canonical persistence boundary.
+// Persistence here is not Project/Initiative/Step truth.
+enum PortfolioEntryOwnershipState {
+  ANONYMOUS
+  CLAIMED
+  LOCKED
+  ABANDONED
+}
+
+enum PortfolioEntryLifecycleStatus {
+  ENTRY_CAPTURED
+  ANALYZING
+  CLARIFYING
+  HANDOFF_ELIGIBLE
+  HANDOFF_GENERATING
+  HANDOFF_READY
+  AWAITING_CONFIRMATION
+  REVISIONS_REQUESTED
+  CONFIRMED
+  CONVERSION_ELIGIBLE
+  EXPIRED
+  ABANDONED
+}
+
+enum PortfolioEntryExecutionStatus {
+  NOT_STARTED
+  RUNNING
+  SUCCEEDED
+  FAILED_RETRYABLE
+  FAILED_FINAL
+  SCHEMA_ERROR
+  TECHNICAL_ERROR
+}
+
+enum PortfolioEntryConfirmationStatus {
+  UNREVIEWED
+  PARTIALLY_CONFIRMED
+  CONFIRMED
+  REVISIONS_REQUESTED
+}
+
+model PortfolioEntrySession {
+  id                    String                        @id @default(uuid())
+  ownerUserId           String?
+  publicAccessTokenHash String?                       @unique
+  ownershipState        PortfolioEntryOwnershipState  @default(ANONYMOUS)
+  rawEntry              String
+  entryOrigin           String
+  sourceMetadata        Json?
+  lifecycleStatus       PortfolioEntryLifecycleStatus @default(ENTRY_CAPTURED)
+  executionStatus       PortfolioEntryExecutionStatus @default(NOT_STARTED)
+  interactionMode       String
+  semanticState         Json
+  questionBudget        Json
+  latestAnalysis        Json?
+  contractVersion       String
+  runtimeVersion        String
+  schemaVersion         String
+  promptManifestId      String?
+  revision              Int                           @default(0)
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  lastActivityAt        DateTime
+  expiresAt             DateTime
+  expiredAt             DateTime?
+
+  turns           PortfolioEntryTurn[]
+  handoffs        PortfolioEntryHandoff[]
+  confirmations   PortfolioEntryConfirmation[]
+  modelExecutions PortfolioEntryModelExecution[]
+
+  @@index([ownerUserId])
+  @@index([ownershipState])
+  @@index([lifecycleStatus])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+  @@index([lifecycleStatus, expiresAt])
+}
+
+model PortfolioEntryTurn {
+  id                   String   @id @default(cuid())
+  sessionId            String
+  turnIndex            Int
+  userInput            String
+  emittedQuestions     Json
+  matchedQuestionIds   Json
+  respondedResolves    Json
+  analysisSnapshot     Json
+  semanticStateAfter   Json
+  questionBudgetBefore Json
+  questionBudgetAfter  Json
+  transition           Json
+  provenanceDelta      Json?
+  contractVersion      String
+  runtimeVersion       String
+  schemaVersion        String
+  promptManifestId     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  session        PortfolioEntrySession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceHandoffs PortfolioEntryHandoff[]        @relation("PortfolioEntryHandoffSourceTurn")
+  modelExecutions PortfolioEntryModelExecution[] @relation("PortfolioEntryExecutionTurn")
+
+  @@unique([sessionId, turnIndex])
+  @@index([sessionId, createdAt])
+}
+
+model PortfolioEntryHandoff {
+  id               String   @id @default(cuid())
+  sessionId        String
+  version          Int
+  sourceTurnId     String?
+  handoffPayload   Json
+  handoffStatus    String
+  schemaVersion    String
+  runtimeVersion   String
+  promptManifestId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  session        PortfolioEntrySession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceTurn     PortfolioEntryTurn?            @relation("PortfolioEntryHandoffSourceTurn", fields: [sourceTurnId], references: [id], onDelete: SetNull)
+  confirmations  PortfolioEntryConfirmation[]   @relation("PortfolioEntryConfirmationHandoff")
+  modelExecutions PortfolioEntryModelExecution[] @relation("PortfolioEntryExecutionHandoff")
+
+  @@unique([sessionId, version])
+  @@index([sessionId, createdAt])
+  @@index([sourceTurnId])
+  @@index([handoffStatus])
+}
+
+model PortfolioEntryConfirmation {
+  id                String                           @id @default(cuid())
+  sessionId         String
+  handoffId         String
+  version           Int
+  status            PortfolioEntryConfirmationStatus
+  acceptedFields    Json
+  correctedFields   Json
+  rejectedFields    Json
+  notes             String?
+  confirmedByUserId String?
+  confirmedAt       DateTime?
+  createdAt         DateTime                         @default(now())
+  updatedAt         DateTime                         @updatedAt
+
+  session PortfolioEntrySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  handoff PortfolioEntryHandoff @relation("PortfolioEntryConfirmationHandoff", fields: [handoffId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, version])
+  @@index([sessionId, status])
+  @@index([handoffId])
+  @@index([confirmedByUserId])
+}
+
+model PortfolioEntryModelExecution {
+  id                     String   @id @default(cuid())
+  sessionId              String
+  turnId                 String?
+  handoffId              String?
+  purpose                String
+  provider               String
+  requestedModel         String
+  providerReportedModel  String?
+  callId                 String?
+  durationMs             Int
+  retryCount             Int
+  retryReason            String?
+  usage                  Json?
+  technicalError         Json?
+  schemaErrors           Json
+  parsedOutputPresent    Boolean
+  validatedOutputPresent Boolean
+  createdAt              DateTime @default(now())
+
+  session PortfolioEntrySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  turn    PortfolioEntryTurn?   @relation("PortfolioEntryExecutionTurn", fields: [turnId], references: [id], onDelete: SetNull)
+  handoff PortfolioEntryHandoff? @relation("PortfolioEntryExecutionHandoff", fields: [handoffId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, createdAt])
+  @@index([turnId])
+  @@index([handoffId])
+  @@index([purpose, createdAt])
+  @@index([provider, createdAt])
+}
+
 model InitialReview {
   id                      String              @id @default(cuid())
   ownerId                 String

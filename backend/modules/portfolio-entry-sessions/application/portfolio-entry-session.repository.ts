@@ -10,12 +10,13 @@ export type CreatePortfolioEntrySessionInput = PortfolioEntrySession;
 
 export type SavePortfolioEntrySessionStateInput = {
   session: PortfolioEntrySession;
-  expectedUpdatedAt?: Date;
+  expectedRevision: number;
 };
 
 export type ClaimPortfolioEntrySessionOwnershipInput = {
   sessionId: string;
   ownerUserId: string;
+  expectedRevision: number;
   now: Date;
 };
 
@@ -25,13 +26,13 @@ export interface PortfolioEntrySessionRepository {
   findSessionForPublicAccess(sessionId: string, publicAccessTokenHash: string): Promise<PortfolioEntrySession | null>;
   findSessionForOwner(sessionId: string, ownerUserId: string): Promise<PortfolioEntrySession | null>;
   saveSessionState(input: SavePortfolioEntrySessionStateInput): Promise<PortfolioEntrySession>;
-  appendTurn(turn: PortfolioEntryTurn, session: PortfolioEntrySession): Promise<PortfolioEntryTurn>;
+  appendTurn(turn: PortfolioEntryTurn, session: PortfolioEntrySession, expectedRevision: number): Promise<PortfolioEntryTurn>;
   appendModelExecution(execution: PortfolioEntryModelExecutionRecord): Promise<PortfolioEntryModelExecutionRecord>;
-  saveHandoff(handoff: PortfolioEntryHandoffRecord, session: PortfolioEntrySession): Promise<PortfolioEntryHandoffRecord>;
-  saveConfirmation(confirmation: PortfolioEntryConfirmation, session: PortfolioEntrySession): Promise<PortfolioEntryConfirmation>;
+  saveHandoff(handoff: PortfolioEntryHandoffRecord, session: PortfolioEntrySession, expectedRevision: number): Promise<PortfolioEntryHandoffRecord>;
+  saveConfirmation(confirmation: PortfolioEntryConfirmation, session: PortfolioEntrySession, expectedRevision: number): Promise<PortfolioEntryConfirmation>;
   claimOwnership(input: ClaimPortfolioEntrySessionOwnershipInput): Promise<PortfolioEntrySession>;
-  touchActivity(sessionId: string, now: Date): Promise<PortfolioEntrySession>;
-  markExpired(sessionId: string, now: Date): Promise<PortfolioEntrySession>;
+  touchActivity(sessionId: string, now: Date, expectedRevision: number): Promise<PortfolioEntrySession>;
+  markExpired(sessionId: string, now: Date, expectedRevision: number): Promise<PortfolioEntrySession>;
   listTurns(sessionId: string): Promise<PortfolioEntryTurn[]>;
   listModelExecutions(sessionId: string): Promise<PortfolioEntryModelExecutionRecord[]>;
 }
