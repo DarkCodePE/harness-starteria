@@ -1,0 +1,11 @@
+{
+  "prompt_version": "0.2",
+  "files": {
+    "agent": "agent.md",
+    "skill_01": "entry-01-intent-detection.md",
+    "skill_02": "entry-02-context-extraction.md",
+    "skill_03": "entry-03-reverse-alignment.md",
+    "skill_04": "entry-04-question-planner.md",
+    "handoff": "handoff.md"
+  }
+}

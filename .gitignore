@@ -85,3 +85,5 @@ Screencast*.webm
 front/test-results/*
 !front/test-results/.last-run.json
 test-results/.playwright-artifacts-*/
+
+tmp/ai-harness/portfolio-entry/runs/

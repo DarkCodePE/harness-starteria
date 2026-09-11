@@ -41,6 +41,7 @@
     "test:e2e:headed": "npm run test:e2e -- --headed",
     "test:e2e:debug": "npm run test:e2e -- --debug",
     "test:portfolio-steps": "tsx scripts/verify-portfolio-steps-integration.ts",
+    "harness:portfolio-entry": "set NODE_PATH=./node_modules&& tsx ../tests/ai-harness/portfolio-entry/runner.ts",
     "db:pilot:provision": "tsx scripts/database/provision-pilot-dry-run-database.ts",
     "db:pilot:migrate": "tsx scripts/database/run-prisma-for-disposable-db.ts pilot migrate deploy",
     "db:pilot:status": "tsx scripts/database/run-prisma-for-disposable-db.ts pilot migrate status",

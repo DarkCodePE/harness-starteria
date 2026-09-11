@@ -1,0 +1,79 @@
+[
+  {
+    "fixture_version": "0.2",
+    "case_id": "PE2-ST-LIVE-01",
+    "case_type": "single_turn",
+    "name": "Live smoke simple portfolio governance",
+    "suite": "live-smoke",
+    "tags": ["live", "smoke", "contract"],
+    "evidence_role": "contract",
+    "linked_hypotheses": ["HYP-002", "HYP-003"],
+    "human_review_required": true,
+    "input": "Tenemos varias iniciativas internas y necesitamos decidir cuales priorizar este trimestre sin perder de vista la estrategia.",
+    "expected": {
+      "initial_entry_state": ["portfolio_first", "decision_first"],
+      "current_frame": ["portfolio_first", "decision_first"],
+      "primary_intent": ["portfolio_prioritization", "portfolio_governance"],
+      "reverse_alignment_required": false,
+      "max_questions": 3
+    }
+  },
+  {
+    "fixture_version": "0.2",
+    "case_id": "PE2-ST-LIVE-02",
+    "case_type": "single_turn",
+    "name": "Live smoke solution-first reverse alignment",
+    "suite": "live-smoke",
+    "tags": ["live", "smoke", "reverse-alignment"],
+    "evidence_role": "contract",
+    "linked_hypotheses": ["HYP-002"],
+    "human_review_required": true,
+    "input": "Queremos lanzar un chatbot interno para reducir tickets, pero no tenemos claro que problema de negocio deberia justificarlo.",
+    "expected": {
+      "initial_entry_state": ["solution_first"],
+      "current_frame": ["solution_first", "problem_first"],
+      "primary_intent": ["initiative_governance"],
+      "reverse_alignment_required": true,
+      "max_questions": 3
+    }
+  },
+  {
+    "fixture_version": "0.2",
+    "case_id": "PE2-MT-LIVE-01",
+    "case_type": "multi_turn",
+    "name": "Live smoke short scripted multi-turn",
+    "suite": "live-smoke",
+    "tags": ["live", "smoke", "multi-turn"],
+    "evidence_role": "contract",
+    "linked_hypotheses": ["HYP-001", "HYP-002", "HYP-003"],
+    "human_review_required": true,
+    "initial_user_message": "Necesitamos ordenar un programa de innovacion que ya existe, pero hoy cada area reporta distinto.",
+    "session": {
+      "initial_mode": "quick_clarification",
+      "quick_question_budget": 3,
+      "exploration_policy": "reject_if_offered"
+    },
+    "response_rules": [
+      {
+        "id": "decision",
+        "when_resolves_any": ["decision_to_enable", "portfolio_decision", "decision_need", "analysis.extracted_context.decision_need"],
+        "response": "La decision es que iniciativas siguen recibiendo capacidad y cuales deben pausarse.",
+        "once": true
+      },
+      {
+        "id": "context",
+        "when_resolves_any": ["operating_context", "existing_program_or_process", "success_conditions", "reporting_need", "analysis.extracted_context.reporting_need", "analysis.extracted_context.constraints"],
+        "response": "Ya tenemos una aceleradora interna; queremos hacer visible avance, bloqueos y evidencia comparable.",
+        "once": true
+      }
+    ],
+    "expected_session": {
+      "initial_entry_state": ["portfolio_first", "initiative_first"],
+      "max_quick_questions": 3,
+      "min_analysis_turns": 2,
+      "requires_scripted_reanalysis": true,
+      "handoff_required": true,
+      "allowed_handoff_status": ["ready", "ready_with_uncertainty"]
+    }
+  }
+]
