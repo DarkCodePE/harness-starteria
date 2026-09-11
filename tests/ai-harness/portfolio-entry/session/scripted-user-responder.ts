@@ -1,4 +1,11 @@
-import type { ScriptedResponseResult, ScriptedResponseRule, QuestionRecord } from './session-types';
+﻿import type { QuestionRecord, ScriptedResponseResult } from './session-types';
+
+export type ScriptedResponseRule = {
+  id?: string;
+  when_resolves_any: string[];
+  response: string;
+  once?: boolean;
+};
 
 type ResponderState = {
   consumedRuleIds: Set<string>;

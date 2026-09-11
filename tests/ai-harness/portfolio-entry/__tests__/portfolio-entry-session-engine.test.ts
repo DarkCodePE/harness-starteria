@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import type { PortfolioEntryAgentAdapterV2, PortfolioEntryAnalyzeTurnOutputV2 } from '../agent/portfolio-entry-agent-adapter-v0.2';
 import { DeterministicSessionAdapter } from '../agent/deterministic-session-adapter';
 import { questionPlanV2Schema, type PortfolioEntryAnalysisV2, type QuestionPlanV2 } from '../schemas/analysis.schema';
@@ -11,7 +11,7 @@ import { createScriptedResponderState, respondToQuestions } from '../session/scr
 
 describe('portfolio entry session engine', () => {
   it('starts quick clarification with a total budget of 3', () => {
-    const context = createInitialSessionContext(makeFixture());
+    const context = createInitialSessionContext(makeFixture().session);
 
     expect(context.interaction_mode).toBe('quick_clarification');
     expect(context.quick_question_budget).toBe(3);
@@ -32,7 +32,7 @@ describe('portfolio entry session engine', () => {
   });
 
   it('consumes a 2-3 question plan according to emitted questions', () => {
-    const context = createInitialSessionContext(makeFixture());
+    const context = createInitialSessionContext(makeFixture().session);
     const twoQuestions = applyQuestionBudget(context, questions(['decision_to_enable', 'success_conditions']), 1);
     const afterTwo = consumeQuestionBudget(context, twoQuestions.emitted_question_count);
     const oneQuestion = applyQuestionBudget(afterTwo, questions(['operating_context']), 2);
@@ -133,7 +133,7 @@ describe('portfolio entry session engine', () => {
 
   it('uses resolves for scripted responses, respects once, and records unmatched questions', () => {
     const state = createScriptedResponderState();
-    const context = createInitialSessionContext(makeFixture());
+    const context = createInitialSessionContext(makeFixture().session);
     const budget = applyQuestionBudget(context, questions(['decision_to_enable', 'unknown_gap']), 1);
     const first = respondToQuestions(budget.emitted_questions, [
       { id: 'decision', when_resolves_any: ['decision_to_enable'], response: 'Queremos decidir si vale la pena continuar.', once: true },
@@ -196,7 +196,7 @@ describe('portfolio entry session engine', () => {
   it('flags interactive multi-turn fixtures that stop before applicable scripted reanalysis', async () => {
     const fixture = makeFixture({
       response_rules: [
-        { id: 'decision', when_resolves_any: ['decision_to_enable'], response: 'Queremos decidir que iniciativas continúan.', once: true },
+        { id: 'decision', when_resolves_any: ['decision_to_enable'], response: 'Queremos decidir que iniciativas continÃºan.', once: true },
       ],
       expected_session: {
         initial_entry_state: ['initiative_first'],

@@ -1,5 +1,1 @@
-export const SESSION_SAFETY_LIMITS = {
-  MAX_EXPLORATION_ROUNDS: 3,
-  MAX_TOTAL_USER_TURNS: 12,
-  MAX_TOTAL_MODEL_CALLS: 20,
-} as const;
+﻿export * from '../../../../backend/modules/portfolio-entry-runtime/session/session-safety-limits';
