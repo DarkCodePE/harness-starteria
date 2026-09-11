@@ -20,8 +20,9 @@ tags: [harness, portabilidad, runtime]
 Los usuarios de este harness ya tienen un chat abierto, y no siempre el mismo: unos usan Claude
 Code, otros ChatGPT. El pedido fue explícito, "que pueda correr en claude o chatgpt, que ya usan".
 
-Los dos runtimes cargan instrucciones distinto. Claude Code descubre carpetas con `SKILL.md` en
-`.claude/skills/` y las expone como `/comando`. ChatGPT no tiene skills ni carpetas: tiene archivos
+Los dos runtimes cargan instrucciones distinto. Claude Code descubre carpetas con `SKILL.md`
+declaradas por un plugin (antes del 2026-09-11, sueltas en `.claude/skills/`; ver `ADR-008`) y las
+expone como `/comando`. ChatGPT no tiene skills ni carpetas: tiene archivos
 de Proyecto e instrucciones de Proyecto.
 
 ## 2. Decisión
@@ -81,3 +82,5 @@ abaratarlo, aunque sea con un zip preparado.
 
 - 2026-09-10 · proposed · el renombrado apareció al ver que ocho `SKILL.md` en un Proyecto son
   indistinguibles.
+- 2026-09-11 · actualizado · el empaquetado como plugin (`ADR-008`) no cambia esta decisión: sigue
+  siendo un solo cuerpo de markdown. Solo cambió cómo lo carga Claude Code.

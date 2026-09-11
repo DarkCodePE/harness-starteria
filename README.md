@@ -18,14 +18,39 @@ ChatGPT (como Proyecto).
 ```
 
 **Empezá por `/starteria`.** Si estás en ChatGPT, por
-`.claude/skills/starteria/PARA-CHATGPT.md`.
+`comandos/starteria/PARA-CHATGPT.md`.
+
+## Instalar
+
+Es un plugin de Claude Code. Dos caminos, según para qué lo quieras.
+
+**Desde el marketplace**, para usarlo en cualquier repo:
+
+```
+/plugin marketplace add DarkCodePE/harness-starteria
+/plugin install starteria-harness@darkcodepe
+```
+
+**Desde una ruta local**, para probarlo mientras se desarrolla o para usarlo en otro harness de esta
+misma máquina:
+
+```
+/plugin marketplace add /home/orlando/Desktop/harness-starteria
+/plugin install starteria-harness@darkcodepe
+```
+
+Los ocho comandos aparecen escribiendo `/starteria`. Después de instalar, `/plugin` los lista.
+
+**Lo que el plugin NO se lleva:** los contratos de `doc/`. Son de Starteria, no del harness, y un
+plugin instalado en otro repo no debería arrastrarlos. Si instalás el plugin donde no hay `doc/`,
+los comandos van a pedirte que pegues el contrato que necesiten en vez de inventarlo.
 
 ## Cómo está organizado
 
 | Carpeta | Qué hay |
 |---|---|
 | `doc/` | Los contratos de Starteria. La autoridad. El harness no los toca |
-| `.claude/skills/starteria*` | Los ocho comandos |
+| `comandos/starteria*` | Los ocho comandos |
 | `docs/` | Por qué el harness está hecho así: PRD, dominio, arquitectura, ciclos de vida, plan |
 | `docs/adr/` | Las siete decisiones, con sus alternativas y su costo |
 

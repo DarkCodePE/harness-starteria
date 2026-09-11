@@ -13,7 +13,7 @@
 └───────────────────────────┬──────────────────────────────────┘
                             │ ambos leen el mismo markdown
 ┌───────────────────────────▼──────────────────────────────────┐
-│  COMANDOS           8 carpetas en .claude/skills/starteria*  │
+│  COMANDOS           8 carpetas en comandos/starteria*        │
 │                     cada una con su SKILL.md                 │
 │                     el trabajo que hace una persona          │
 └───────────────────────────┬──────────────────────────────────┘
@@ -36,14 +36,18 @@ se puede tirar y volver a escribir sin tocar el producto.
 ## 2. Dónde está cada cosa
 
 ```text
-harness-starteria/
+harness-starteria/                        raíz del plugin
+├── .claude-plugin/
+│   ├── plugin.json                       declara las 8 skills
+│   └── marketplace.json                  para instalar desde GitHub
 ├── doc/                                  contratos, autoridad, no se toca
 ├── docs/                                 documentos DEL harness (este)
 │   ├── PRD.md  DDD.md  ARCHITECTURE.md  LIFECYCLE.md  PLAN.md
-│   └── adr/                              ADR-001..007 + ADR-INDEX.md
-├── skills/                               clon de mattpocock/skills, referencia de estilo
+│   └── adr/                              ADR-001..008 + ADR-INDEX.md
+├── skills/                               clon de mattpocock/skills, ignorado
+├── token-optimizer/                      clon de terceros, ignorado
 ├── estado/BITACORA.md                    lo escribe /starteria-cierre
-└── .claude/skills/
+└── comandos/
     ├── starteria/                        router + los 3 archivos compartidos
     │   ├── SKILL.md                      /starteria
     │   ├── MAPA-DE-DOCUMENTOS.md         cadena de autoridad -> archivos reales
@@ -58,9 +62,10 @@ harness-starteria/
     └── starteria-glosario/SKILL.md
 ```
 
-`.claude/skills/` y no `skills/` porque `skills/` es un clon limpio de `mattpocock/skills`:
-escribir ahí adentro mezcla nuestro trabajo con el suyo y se rompe en el primer `git pull`.
-Está en `ADR-001`.
+`comandos/` y no `skills/` porque `skills/` es un clon de `mattpocock/skills`, de otro proyecto.
+El array `skills` de `plugin.json` acepta rutas arbitrarias, así que el nombre de la carpeta es
+libre y el clon no estorba. Vivieron en `.claude/skills/` hasta el 2026-09-11 (`ADR-001`); pasaron
+acá al empaquetar el harness como plugin (`ADR-008`).
 
 ## 3. Qué lee cada comando
 
@@ -117,7 +122,7 @@ Un solo cuerpo de markdown, dos formas de cargarlo. `ADR-006`.
 
 | | Claude Code | ChatGPT |
 |---|---|---|
-| Cómo se cargan | autodescubiertos desde `.claude/skills/` | archivos subidos a un Proyecto |
+| Cómo se cargan | plugin instalado desde el marketplace o desde una ruta local | archivos subidos a un Proyecto |
 | Cómo se invocan | `/comando` | escribir el nombre del comando |
 | Nombres | la carpeta distingue, todos son `SKILL.md` | hay que renombrar al subir |
 | Enlaces entre archivos | funcionan | rotos, el modelo busca por nombre |
@@ -133,10 +138,9 @@ ChatGPT son indistinguibles. La tabla de renombrado está en `PARA-CHATGPT.md`.
 `GLOSARIO.md` y `MAPA-DE-DOCUMENTOS.md` los usan varios comandos. Podrían estar duplicados en cada
 carpeta, o en una carpeta `_compartido/`.
 
-Están dentro de `starteria/`, la carpeta del router, porque en Claude Code una carpeta de
-`.claude/skills/` que no tiene `SKILL.md` no es una skill: sería una carpeta suelta que el runtime
-ignora y que un mantenedor futuro no sabe si borrar. Ponerlos junto al router los ata a algo que sí
-existe.
+Están dentro de `starteria/`, la carpeta del router, porque una carpeta sin `SKILL.md` no es una
+skill: `plugin.json` no la declara, el runtime la ignora, y un mantenedor futuro no sabe si borrarla.
+Ponerlos junto al router los ata a algo que sí existe y que sí está declarado.
 
 **El costo:** los otros comandos los referencian con `../starteria/GLOSARIO.md`, así que copiar una
 skill sola a otro lado le rompe los enlaces. Es aceptable porque no están pensadas para viajar

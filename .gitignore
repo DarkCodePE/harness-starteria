@@ -1,23 +1,14 @@
-# Clon de mattpocock/skills: referencia de estilo, no es nuestro (ADR-001)
+# Clones de referencia: son de otros proyectos, no de este (ADR-001)
 skills/
+token-optimizer/
 
 # Configuración de herramientas, no del harness
+.claude/
 .claude-flow/
 .swarm/
 estado/
-
-# De .claude/ solo se versionan las skills del harness
-.claude/*
-!.claude/skills/
-.claude/skills/*
-!.claude/skills/starteria/
-!.claude/skills/starteria-afilar/
-!.claude/skills/starteria-autoridad/
-!.claude/skills/starteria-caso/
-!.claude/skills/starteria-cierre/
-!.claude/skills/starteria-decision/
-!.claude/skills/starteria-glosario/
-!.claude/skills/starteria-probar/
-
-# Config del MCP de ruflo, no del harness
 .mcp.json
+
+# Artefactos de herramientas
+ruvector.db
+agentdb.rvf*

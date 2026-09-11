@@ -13,7 +13,7 @@ Hay **dos dominios** y se tocan sin mezclarse:
 | Dominio del producto (Starteria) | Dominio del harness (esta herramienta) |
 |---|---|
 | Organización, Frente Estratégico, Reto, Iniciativa, Step, Evidencia, Decisión | Caso, Corrida, Registro, Fallo, Conflicto, ADR, Sesión, Bitácora |
-| Vive en `doc/`, gobernado por el Core Contract | Vive en `.claude/skills/starteria*` y `docs/` |
+| Vive en `doc/`, gobernado por el Core Contract | Vive en `comandos/starteria*` y `docs/` |
 | Lo cambia una persona con autoridad, vía ADR de producto | Lo cambia quien mantiene el harness, vía ADR de harness |
 
 **El harness nombra los objetos del producto pero nunca los crea ni los modifica.** Un comando
@@ -83,7 +83,7 @@ decidió. Por eso el harness lo escribe y no lo cierra.
 
 ### Nivel de autoridad
 De 1 a 9, del Core Contract hasta la implementación. Cada documento de `doc/` ocupa uno, y el mapa
-está en `.claude/skills/starteria/MAPA-DE-DOCUMENTOS.md`.
+está en `comandos/starteria/MAPA-DE-DOCUMENTOS.md`.
 
 **Cuando dos fuentes chocan, gana el nivel más bajo en número.** Un mockup (8) no cambia un
 invariante (1) por existir.
