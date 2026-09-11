@@ -15,15 +15,5 @@
     "contratos",
     "adr",
     "starteria"
-  ],
-  "skills": [
-    "./comandos/starteria",
-    "./comandos/starteria-afilar",
-    "./comandos/starteria-autoridad",
-    "./comandos/starteria-probar",
-    "./comandos/starteria-caso",
-    "./comandos/starteria-decision",
-    "./comandos/starteria-cierre",
-    "./comandos/starteria-glosario"
   ]
 }

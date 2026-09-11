@@ -1,6 +1,6 @@
 ---
 id: ADR-008
-title: "El harness se empaqueta como plugin de Claude Code; las skills pasan a `comandos/`"
+title: "El harness se empaqueta como plugin de Claude Code, con las skills autodescubiertas en `skills/`"
 status: proposed
 type: standard
 date: 2026-09-11
@@ -13,7 +13,7 @@ review_trigger: "primera instalación del plugin en un repo que no sea este: si 
 tags: [harness, plugin, distribucion, runtime]
 ---
 
-# ADR-008: El harness se empaqueta como plugin de Claude Code; las skills pasan a `comandos/`
+# ADR-008: El harness se empaqueta como plugin de Claude Code, con las skills autodescubiertas en `skills/`
 
 ## 1. Contexto y problema
 
@@ -33,18 +33,23 @@ otro repo". Ese momento llegó.
 
 **El repositorio pasa a ser la raíz de un plugin de Claude Code.**
 
-- `.claude-plugin/plugin.json` declara las ocho skills.
+- `.claude-plugin/plugin.json` identifica el plugin y **no declara las skills**.
 - `.claude-plugin/marketplace.json` lo hace instalable desde GitHub y desde una ruta local.
-- Las ocho carpetas se mudan de `.claude/skills/starteria*` a **`comandos/starteria*`**.
+- Las ocho carpetas se mudan de `.claude/skills/starteria*` a **`skills/starteria*`**, en la raíz.
+- El clon de `mattpocock/skills`, que ocupaba ese nombre, se mueve a **`referencia/`**.
 - El plugin se lleva **solo las skills**. `doc/` y `docs/` quedan en el repo y fuera del plugin.
 
-**Por qué `comandos/` y no `skills/`:** `skills/` es el clon de `mattpocock/skills`, que sigue siendo
-referencia de estilo y no se toca. El array `skills` de `plugin.json` acepta rutas arbitrarias, así
-que el nombre de la carpeta es libre y no hay razón para pelear por ese nombre. La parte central de
-`ADR-001` (no escribir dentro del clon) sobrevive intacta; lo que cambió es el destino.
+**Por qué `skills/` y no otro nombre:** Claude Code autodescubre las skills en `skills/` de la raíz
+del plugin. Con ese nombre, `plugin.json` no necesita enumerarlas; con cualquier otro hay que
+declarar cada carpeta a mano en un array, y entonces **un comando que existe pero que nadie declaró
+no carga, y nada lo avisa**. Ese modo de fallo silencioso es peor que el costo de mover un clon.
 
-**Los clones de terceros se ignoran, todos.** `skills/` y `token-optimizer/` están en `.gitignore`.
-Son repos de otra gente que viven adentro por conveniencia, no contenido de este proyecto.
+La parte central de `ADR-001` (no escribir dentro del clon de Matt) sobrevive intacta: el clon no se
+tocó, se movió entero con su `.git` y sigue siendo la referencia de estilo.
+
+**Los clones de terceros se ignoran, todos.** `referencia/` y `token-optimizer/` están en
+`.gitignore`. Son repos de otra gente que viven adentro por conveniencia, no contenido de este
+proyecto.
 
 ## 3. Alternativas consideradas
 
@@ -53,8 +58,12 @@ Son repos de otra gente que viven adentro por conveniencia, no contenido de este
 - **Plugin en una subcarpeta `plugin/`:** rechazada. El marketplace queda un nivel adentro y la
   instalación desde GitHub se vuelve menos directa, a cambio de una prolijidad que hoy no compra
   nada: el repo no contiene otra cosa que el harness.
-- **Mover el clon de Matt y usar `skills/` para lo nuestro:** rechazada. Es destructivo sobre un
-  repo ajeno y completamente innecesario, porque `plugin.json` no obliga a ese nombre.
+- **Mover el clon de Matt y usar `skills/` para lo nuestro:** rechazada primero, **adoptada
+  después, el mismo día.** El rechazo inicial decía que era destructivo e innecesario "porque
+  `plugin.json` no obliga a ese nombre". Lo segundo resultó verdad a medias: no obliga, pero
+  `skills/` es el nombre que activa el autodescubrimiento, y sin él queda un array manual cuyo modo
+  de fallo es silencioso. Lo primero resultó falso: mover un clon con `mv` conserva su `.git` entero
+  y no destruye nada. Ver el Historial.
 - **Dejar enlaces desde `.claude/skills/` a `comandos/`** para conservar el autodescubrimiento local:
   rechazada. Dos caminos al mismo archivo es cómo alguien edita el equivocado y no entiende por qué
   su cambio no aparece. Instalar desde ruta local cuesta un comando y no tiene esa trampa.
@@ -70,8 +79,8 @@ Son repos de otra gente que viven adentro por conveniencia, no contenido de este
 **Negativas y trade-offs aceptados**
 - **Se perdió el cero-instalación que `ADR-001` había comprado.** En este mismo repo los comandos ya
   no aparecen solos: hay que instalar el plugin. Es el costo directo de la decisión.
-- Agregar un comando ahora exige tres pasos, no uno: la carpeta, el router, y la entrada en
-  `plugin.json`. Un comando que existe y no está declarado no carga, y nada lo avisa.
+- Agregar un comando exige dos pasos: la carpeta y el router. `plugin.json` no hay que tocarlo, y
+  liberar el nombre `skills/` fue exactamente para eso.
 - La tabla de renombrado de `PARA-CHATGPT.md` es una cuarta cosa a mantener sincronizada.
 - **La raíz del repo es la raíz del plugin, así que el plugin ve todo lo que hay en la raíz.** Al
   instalarlo desde ruta local, el inventario reporta `MCP servers (1) claude-flow`: está tomando el
@@ -84,9 +93,9 @@ Son repos de otra gente que viven adentro por conveniencia, no contenido de este
 ## 5. Criterios de aceptación de la decisión
 
 - [x] `plugin.json` y `marketplace.json` son JSON válido.
-- [x] Las 8 rutas del array `skills` tienen su `SKILL.md` en disco.
+- [x] El autodescubrimiento encuentra exactamente 8, sin arrastrar las 25 de `referencia/skills/`.
 - [x] Los enlaces relativos entre skills siguen resolviendo después de la mudanza.
-- [x] `skills/` y `token-optimizer/` están ignorados.
+- [x] `referencia/` y `token-optimizer/` están ignorados.
 - [x] `/plugin marketplace add` + `/plugin install` desde ruta local: instala y el inventario
       reporta `Skills (8)`, ~989 tokens siempre presentes.
 - [ ] Lo mismo desde GitHub.
@@ -101,3 +110,11 @@ el plugin debe llevarse los contratos o un comando de arranque que los pida.
 ## Historial
 
 - 2026-09-11 · proposed · supera a `ADR-001`, cuyo gatillo de revisión era exactamente este caso.
+  Primera forma: skills en `comandos/`, declaradas a mano en un array de `plugin.json`, para no
+  tocar el clon de Matt.
+- 2026-09-11 · revisado el mismo día · se movieron a `skills/` y se eliminó el array. Lo que cambió
+  la decisión fue mirar cómo lo resuelve `token-optimizer`, un plugin que soporta once runtimes: su
+  `.claude-plugin/plugin.json` **no declara skills**, porque Claude Code las autodescubre en
+  `skills/`. Con eso el array manual dejó de ser un detalle de forma y pasó a ser un modo de fallo
+  silencioso que no había razón para aceptar. El clon de Matt se movió a `referencia/` con `mv`,
+  conservando su `.git`. Verificado: el inventario del plugin reporta `Skills (8)`.

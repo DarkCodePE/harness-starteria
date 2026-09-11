@@ -18,7 +18,7 @@ ChatGPT (como Proyecto).
 ```
 
 **Empezá por `/starteria`.** Si estás en ChatGPT, por
-`comandos/starteria/PARA-CHATGPT.md`.
+`skills/starteria/PARA-CHATGPT.md`.
 
 ## Instalar
 
@@ -50,7 +50,7 @@ los comandos van a pedirte que pegues el contrato que necesiten en vez de invent
 | Carpeta | Qué hay |
 |---|---|
 | `doc/` | Los contratos de Starteria. La autoridad. El harness no los toca |
-| `comandos/starteria*` | Los ocho comandos |
+| `skills/starteria*` | Los ocho comandos |
 | `docs/` | Por qué el harness está hecho así: PRD, dominio, arquitectura, ciclos de vida, plan |
 | `docs/adr/` | Las siete decisiones, con sus alternativas y su costo |
 

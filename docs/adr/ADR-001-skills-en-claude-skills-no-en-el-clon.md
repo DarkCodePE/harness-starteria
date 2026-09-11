@@ -84,6 +84,6 @@ prueba.
 
 - 2026-09-10 · proposed · decisión tomada al descubrir que `skills/` era un clon de terceros.
 - 2026-09-11 · superseded por `ADR-008` · el harness se empaquetó como plugin y las skills pasaron
-  a `comandos/`. Lo que este ADR decidió sigue valiendo en su parte central: no escribir dentro del
-  clon de Matt. Lo que cambió es el destino, de `.claude/skills/` a un plugin instalable, y con eso
+  a `skills/` en la raíz del plugin, y el clon de Matt se movió a `referencia/`. Lo que este ADR
+  decidió sigue valiendo en su parte central: no escribir dentro del clon de Matt. Lo que cambió es el destino, de `.claude/skills/` a un plugin instalable, y con eso
   se pagó justamente el costo que la sección 4 anotaba como aceptado: dejaron de autodescubrirse.

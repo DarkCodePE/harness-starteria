@@ -37,7 +37,7 @@ Para firmar uno: `status: accepted`, `aprobado_por: <tu nombre>`, `aprobado_en: 
 | [ADR-005](ADR-005-citar-doc-no-copiarlo.md) | Los comandos citan `doc/`; solo dos archivos derivan contenido | proposed | `RUBRICA.md` puede quedar vieja sin fallar |
 | [ADR-006](ADR-006-un-cuerpo-de-markdown-dos-runtimes.md) | Un cuerpo de markdown para Claude Code y ChatGPT, con el renombrado como precio | proposed | el armado de ChatGPT es manual |
 | [ADR-007](ADR-007-el-harness-no-escribe-en-doc.md) | El harness no escribe en `doc/`, y ningún comando promueve a `aceptado` | proposed | los casos redactados esperan a que alguien los integre |
-| [ADR-008](ADR-008-el-harness-se-empaqueta-como-plugin.md) | El harness se empaqueta como plugin; las skills pasan a `comandos/` | proposed | se perdió el cero-instalación en este repo |
+| [ADR-008](ADR-008-el-harness-se-empaqueta-como-plugin.md) | El harness se empaqueta como plugin, con las skills autodescubiertas en `skills/` | proposed | se perdió el cero-instalación en este repo |
 
 La columna de la derecha existe porque un registro de decisiones que solo cuenta las ventajas no
 sirve para revisarlas después.

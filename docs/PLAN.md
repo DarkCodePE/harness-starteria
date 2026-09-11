@@ -20,7 +20,7 @@ entienda la forma del trabajo.
 
 | Decisión | ADR |
 |---|---|
-| Skills en `comandos/`, empaquetadas como plugin | `ADR-001` (superado por `ADR-008`) |
+| Skills en `skills/`, empaquetadas como plugin autodescubierto | `ADR-001` (superado por `ADR-008`) |
 | `/starteria-probar` separa responder de puntuar | `ADR-002` |
 | Sin gates: nada se verifica solo, y se declara | `ADR-003` |
 | Alcance v0.1: Portfolio Entry | `ADR-004` |
@@ -30,7 +30,7 @@ entienda la forma del trabajo.
 
 ## Fase 1: construir. Hecha
 
-**Los ocho comandos**, en `comandos/starteria*`:
+**Los ocho comandos**, en `skills/starteria*`:
 `/starteria` (router), `/starteria-afilar`, `/starteria-autoridad`, `/starteria-probar`,
 `/starteria-caso`, `/starteria-decision`, `/starteria-cierre`, `/starteria-glosario`.
 
@@ -54,7 +54,7 @@ entienda la forma del trabajo.
 | Los 3 que el mapa declara ausentes, siguen ausentes | confirmado |
 | Los 32 ids de caso coinciden con el AI Harness | OK |
 | Los 9 fallos duros de `RUBRICA.md` coinciden con §3, en orden | OK |
-| El clon de `skills/` quedó intacto | `git status` vacío |
+| El clon de mattpocock quedó intacto, movido a `referencia/` | `git status` vacío |
 
 ## Fase 2: probar. Sin empezar
 
@@ -166,7 +166,7 @@ Las tres van a `/starteria-caso`, que hoy no las tiene.
 | Suites parametrizadas por experiencia | `ADR-004`. Generalizar con un solo caso produce la abstracción equivocada |
 | Empaquetado como plugin instalable | No hace falta mientras el harness viva en este repo |
 | Bundle generado para ChatGPT | `ADR-006`. Es una copia más que envejece |
-| Tocar `skills/`, el clon de mattpocock | `ADR-001`. Es de otro proyecto |
+| Tocar el clon de mattpocock (ahora `referencia/`) | `ADR-001`. Es de otro proyecto |
 | Los ADR de producto | `ADR-007`. Los escribe una persona cuando haya una decisión que registrar |
 
 ## Riesgos vivos

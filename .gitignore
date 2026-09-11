@@ -1,5 +1,5 @@
-# Clones de referencia: son de otros proyectos, no de este (ADR-001)
-skills/
+# Clones de referencia: son de otros proyectos, no de este
+referencia/
 token-optimizer/
 
 # Configuración de herramientas, no del harness

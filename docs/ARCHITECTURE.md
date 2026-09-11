@@ -13,7 +13,7 @@
 └───────────────────────────┬──────────────────────────────────┘
                             │ ambos leen el mismo markdown
 ┌───────────────────────────▼──────────────────────────────────┐
-│  COMANDOS           8 carpetas en comandos/starteria*        │
+│  COMANDOS           8 carpetas en skills/starteria*          │
 │                     cada una con su SKILL.md                 │
 │                     el trabajo que hace una persona          │
 └───────────────────────────┬──────────────────────────────────┘
@@ -44,10 +44,10 @@ harness-starteria/                        raíz del plugin
 ├── docs/                                 documentos DEL harness (este)
 │   ├── PRD.md  DDD.md  ARCHITECTURE.md  LIFECYCLE.md  PLAN.md
 │   └── adr/                              ADR-001..008 + ADR-INDEX.md
-├── skills/                               clon de mattpocock/skills, ignorado
+├── referencia/                           clon de mattpocock/skills, ignorado
 ├── token-optimizer/                      clon de terceros, ignorado
 ├── estado/BITACORA.md                    lo escribe /starteria-cierre
-└── comandos/
+└── skills/                               autodescubiertas por el plugin
     ├── starteria/                        router + los 3 archivos compartidos
     │   ├── SKILL.md                      /starteria
     │   ├── MAPA-DE-DOCUMENTOS.md         cadena de autoridad -> archivos reales
@@ -62,10 +62,12 @@ harness-starteria/                        raíz del plugin
     └── starteria-glosario/SKILL.md
 ```
 
-`comandos/` y no `skills/` porque `skills/` es un clon de `mattpocock/skills`, de otro proyecto.
-El array `skills` de `plugin.json` acepta rutas arbitrarias, así que el nombre de la carpeta es
-libre y el clon no estorba. Vivieron en `.claude/skills/` hasta el 2026-09-11 (`ADR-001`); pasaron
-acá al empaquetar el harness como plugin (`ADR-008`).
+`skills/` porque es el nombre que Claude Code autodescubre en la raíz de un plugin: sin ese nombre
+hay que declarar cada carpeta a mano en `plugin.json`, y un comando que existe pero nadie declaró no
+carga y nada lo avisa. El clon de `mattpocock/skills` ocupaba el nombre y se movió a `referencia/`.
+
+Vivieron en `.claude/skills/` hasta el 2026-09-11 (`ADR-001`), pasaron a `comandos/` al empaquetar
+como plugin, y llegaron acá el mismo día al liberar el nombre (`ADR-008`).
 
 ## 3. Qué lee cada comando
 

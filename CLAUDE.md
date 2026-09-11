@@ -2,7 +2,7 @@
 
 ## Harness de Portfolio Entry
 
-Este repo tiene un harness de producto para gente de lead y de producto, en `comandos/starteria*`, empaquetadas como plugin de Claude Code.
+Este repo tiene un harness de producto para gente de lead y de producto, en `skills/starteria*`, empaquetadas como plugin de Claude Code.
 Son ocho comandos de chat sobre los contratos de `doc/`: `/starteria` es el mapa y explica el resto.
 La rúbrica, el glosario y la cadena de autoridad viven ahí, no acá. Nada de eso corre solo: si nadie
 ejecuta `/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió.
