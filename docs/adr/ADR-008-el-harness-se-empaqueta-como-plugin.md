@@ -73,6 +73,11 @@ Son repos de otra gente que viven adentro por conveniencia, no contenido de este
 - Agregar un comando ahora exige tres pasos, no uno: la carpeta, el router, y la entrada en
   `plugin.json`. Un comando que existe y no está declarado no carga, y nada lo avisa.
 - La tabla de renombrado de `PARA-CHATGPT.md` es una cuarta cosa a mantener sincronizada.
+- **La raíz del repo es la raíz del plugin, así que el plugin ve todo lo que hay en la raíz.** Al
+  instalarlo desde ruta local, el inventario reporta `MCP servers (1) claude-flow`: está tomando el
+  `.mcp.json` de ruflo, que es configuración de este proyecto y no del harness. Desde GitHub no pasa,
+  porque `.mcp.json` está en `.gitignore` y no viaja. Queda anotado porque es la clase de fuga que
+  produce empaquetar en la raíz, y la próxima cosa que alguien deje en la raíz va a viajar igual.
 - Un plugin instalado donde no hay `doc/` no puede leer los contratos. Los comandos degradan bien
   (piden que se peguen) pero es una degradación real, no una ausencia de problema.
 
@@ -82,7 +87,8 @@ Son repos de otra gente que viven adentro por conveniencia, no contenido de este
 - [x] Las 8 rutas del array `skills` tienen su `SKILL.md` en disco.
 - [x] Los enlaces relativos entre skills siguen resolviendo después de la mudanza.
 - [x] `skills/` y `token-optimizer/` están ignorados.
-- [ ] `/plugin marketplace add` + `/plugin install` desde ruta local muestra los ocho comandos.
+- [x] `/plugin marketplace add` + `/plugin install` desde ruta local: instala y el inventario
+      reporta `Skills (8)`, ~989 tokens siempre presentes.
 - [ ] Lo mismo desde GitHub.
 - [ ] Instalado en un repo sin `doc/`, un comando pide el contrato en vez de inventarlo.
 

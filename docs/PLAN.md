@@ -67,7 +67,9 @@ hallazgos cambiaron el plan y están marcados abajo donde aplican.
 
 ### 2.1 Humo: los comandos existen y responden
 
-1. **Sesión nueva de Claude Code.** Escribir `/starteria` y confirmar que aparecen los ocho.
+1. **Instalar el plugin y abrir sesión nueva.** `claude plugin marketplace add <ruta o repo>` y
+   `claude plugin install starteria-harness@darkcodepe`. Después, escribir `/starteria` y confirmar
+   que aparecen los ocho. Verificado el 2026-09-11: el inventario reporta `Skills (8)`.
 2. **`/starteria-autoridad`** con un cambio que contradiga INV-03, por ejemplo "que la IA apruebe el
    frente sola". Tiene que emitir `CONFLICT` y pedir ADR, no elegir una lectura.
 3. **`/starteria-glosario`**: preguntar qué es reverse alignment en medio de otra conversación y ver
