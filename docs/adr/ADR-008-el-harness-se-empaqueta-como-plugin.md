@@ -98,7 +98,8 @@ proyecto.
 - [x] `referencia/` y `token-optimizer/` están ignorados.
 - [x] `/plugin marketplace add` + `/plugin install` desde ruta local: instala y el inventario
       reporta `Skills (8)`, ~989 tokens siempre presentes.
-- [ ] Lo mismo desde GitHub.
+- [x] Lo mismo desde GitHub. Verificado el 2026-09-13: `marketplace add DarkCodePE/harness-starteria`
+      + `install` reporta `Skills (8)`, `Agents (1)`, `MCP servers (0)`.
 - [ ] Instalado en un repo sin `doc/`, un comando pide el contrato en vez de inventarlo.
 
 ## 6. Gatillos de revisión
@@ -118,3 +119,10 @@ el plugin debe llevarse los contratos o un comando de arranque que los pida.
   `skills/`. Con eso el array manual dejó de ser un detalle de forma y pasó a ser un modo de fallo
   silencioso que no había razón para aceptar. El clon de Matt se movió a `referencia/` con `mv`,
   conservando su `.git`. Verificado: el inventario del plugin reporta `Skills (8)`.
+- 2026-09-13 · el plugin dejó de llevar **sólo** skills: ahora también lleva `agents/`, con
+  `portfolio-entry-responder`, que es la fase 1 de `/starteria-probar` aislada por construcción.
+  Eso contradice la letra de §2 y **debe un `ADR-009`** que lo reemplace o lo extienda. Se anota acá
+  para que la contradicción no quede invisible, que es lo que `/starteria-autoridad` prohíbe hacer.
+  De paso, instalar desde GitHub ya no arrastra `.mcp.json`: el inventario reporta
+  `MCP servers (0)`, con lo que la fuga descrita en §4 queda cerrada por el lado de GitHub y sigue
+  viva al instalar desde una ruta local con ese archivo presente.
