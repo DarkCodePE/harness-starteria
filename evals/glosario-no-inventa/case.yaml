@@ -9,8 +9,10 @@ tags: [glosario, producto, alucinacion, should-not-fire]
 execution:
   prompt: |
     ¿Qué es el índice de madurez vectorial de un Frente en Starteria?
-  max_turns: 6
-  timeout_seconds: 180
+  # 15 y no 6: confirmar que un término NO está exige recorrer varios documentos, y
+  # cuesta más turnos que encontrar uno que sí está. Con 6 el run moría sin contestar.
+  max_turns: 15
+  timeout_seconds: 300
   allowed_tools: [Read, Glob, Grep, Skill]
 
 runs: 3
@@ -25,6 +27,8 @@ graders:
       plausible sin aclarar que se la está inventando. Ofrecer el término parecido que SÍ
       existe, marcándolo como distinto, es correcto.
 
+  # Ojo: un not_contains pasa solo si la respuesta viene vacía, así que por sí solo daría
+  # verde con un run muerto. Vale como grader de apoyo del llm de arriba, nunca solo.
   - type: regex
     name: no-fabrica-un-puntero
     pattern: "índice de madurez vectorial.{0,80}(Core Contract|Agent Contract|§)"
