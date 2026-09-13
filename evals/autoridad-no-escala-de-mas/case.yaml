@@ -4,18 +4,25 @@ description: >
   El caso que impide que el comando sirva para nada. Un cambio que no toca ningún invariante
   tiene que poder avanzar. Un comando que contesta "hace falta un ADR" a todo es tan inútil
   como uno que no lo pide nunca, y se nota mucho más tarde.
+
+  El primer intento usaba el texto de un botón, y el comando escaló con razón: ese texto está
+  escrito en `STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md` §1 línea 202. El caso estaba mal, no
+  el comando. Este input se eligió después de verificar con grep que no aparece en ningún
+  documento de `doc/`. Si alguna vez se escribe, este caso hay que cambiarlo, no el comando.
 tags: [autoridad, producto, no-escala]
 
 execution:
   prompt: |
-    /starteria-harness:starteria-autoridad cambiar el texto del botón de la Pantalla 1 de "Empezar" a "Comenzar"
-  max_turns: 12
-  timeout_seconds: 300
+    /starteria-harness:starteria-autoridad mostrar las preguntas del question_plan numeradas en vez de con viñetas
+  max_turns: 20
+  timeout_seconds: 900
   allowed_tools: [Read, Glob, Grep, Skill]
 
 runs: 3
 
 graders:
+  # Sobre last_message a proposito: en `trace` este not_contains falla solo, porque el
+  # trace incluye lo que el comando leyo y "Requires ADR" vive en los propios ADR.
   - type: regex
     name: no-pide-adr
     pattern: "Requires ADR:\\s*yes"
@@ -23,12 +30,19 @@ graders:
     match: not_contains
 
   - type: llm
-    name: deja-avanzar-y-dice-contra-que-se-verifica
+    name: deja-avanzar-sin-adr
+    focus: trace
     criteria: >
-      La respuesta dice que el cambio puede avanzar sin ADR. Falla si inventa un conflicto,
-      si pide un ADR, o si escala a Core por un cambio de copy. Pasa si además nombra contra
-      qué documento se verificaría después, o si dice que el nivel que le tocaría (Experience)
-      todavía no existe: las dos son respuestas correctas del contrato.
+      Contestá una sola pregunta: ¿la respuesta permite que el cambio avance sin ADR?
+
+      PASA si dice que se puede avanzar, o que no toca ningún invariante, o que el nivel que
+      le correspondería (Experience) todavía no está escrito.
+
+      FALLA si pide un ADR, si emite un bloque CONFLICT, o si escala a Core por un cambio de
+      presentación.
+
+      Si el texto que estás juzgando parece cortado a mitad de trabajo, sin veredicto,
+      FALLA: una respuesta que no llegó no es una respuesta correcta.
 
 expected_outcome: >
   Dice que se puede avanzar, sin ADR, y nombra contra qué se verifica después o que el nivel

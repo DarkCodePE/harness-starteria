@@ -80,7 +80,11 @@ Un caso que saca lo mismo en los dos brazos no está midiendo el harness, está 
 
 Corre unos veinte minutos y cuesta del orden de veinte a treinta dólares, así que no es de cada
 commit: es de cuando se toca un contrato, un comando o la rúbrica. Para iterar mientras escribís,
-`--case 'glosario*' --ablation none --runs 1` baja eso a menos de un dólar.
+`--tag glosario --ablation none --runs 1` baja eso a menos de un dólar.
+
+**`--case` no se puede repetir.** Pasar `--case 'a*' --case 'b*'` no selecciona los dos: gana el
+último y el primero se pierde sin avisar. Se ve en el `aggregate-result.json`, que reporta un solo
+`caseFilter`. Para elegir varios, `--tag`, que sí acumula.
 
 **Qué NO prueba, y es a propósito.** Ningún caso puntúa si el agente de Portfolio Entry interpretó
 bien una entrada. Eso es `ADR-003` y lo hace una persona, con las fases de abajo. `probar-aisla-la-fase-1`

@@ -365,7 +365,8 @@ funcionando, no un olvido.
 | Correr `PE-B03` de punta a punta (fase 2.2), con la prueba negativa | sin definir | todo lo demás: hasta que esto pase, el harness no está probado |
 | Firmar los 9 ADR que siguen en `proposed`, o rechazar los que no vayan | una persona con autoridad | que las decisiones dejen de ser propuestas; `ADR-010` ya está firmado |
 | Probar el plugin en un repo **sin** `doc/` | sin definir | criterio abierto de `ADR-008`; puede mover la frontera entre plugin y contratos |
-| Correr la suite de evals entera, con los dos brazos, y mirar el **delta** | sin definir | hoy la suite existe y está validada caso por caso; el número que dice si el harness sirve todavía no se sacó |
+| Correr la suite de evals entera, con los dos brazos, y mirar el **delta** | sin definir | el número que dice si el harness sirve todavía no se sacó |
+| `/starteria-autoridad` lee el Core entero (66 KB) para un cambio de copy | sin definir | midió $1.37 y más de 5 minutos para decir "cambiá el texto del botón, adelante". No tiene camino barato para un cambio trivial, y eso lo va a hacer impagable en el uso diario |
 | Decidir si `doc/` debe ser público en el repo | sin definir | son contratos del cliente y hoy están visibles |
 | Entender por qué una sesión cargó 1 de 8 skills | sin definir | el gate mira el disco; este síntoma era de sesión y sigue sin causa |
 | Pasar `BLUEPRINT.md`, `ARCHITECTURE.md` y `LIFECYCLE.md` a la cita calificada de ADR (`BENCHMARK.md` ya está) | sin definir | que el primer ADR de producto no llegue a un repo ambiguo |
