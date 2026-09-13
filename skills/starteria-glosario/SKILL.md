@@ -9,8 +9,7 @@ allowed-tools: Read Grep Glob
 
 Alguien preguntó qué significa un término. Contestá en tres líneas, no en tres párrafos.
 
-1. **Buscalo en [GLOSARIO.md](../starteria/GLOSARIO.md)** (en ChatGPT: `starteria-GLOSARIO.md`).
-   Si está, usá esa definición.
+1. **Buscalo en [GLOSARIO.md](../starteria/GLOSARIO.md).** Si está, usá esa definición.
 2. **Si no está**, buscá la definición formal en `doc/` y contestá desde ahí, diciendo de qué
    documento y qué sección la sacaste.
 3. **Si tampoco está en `doc/`**, decí que el término no está definido en ningún contrato. Eso es

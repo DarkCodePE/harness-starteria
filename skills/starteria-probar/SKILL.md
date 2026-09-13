@@ -27,8 +27,7 @@ Entonces:
 `EXPECTED`, sin saber que lo están evaluando.
 **Fase 2, puntuar.** Recién ahí aparecen la rúbrica y lo esperado.
 
-En Claude Code la fase 1 va al subagente `portfolio-entry-responder`, que viene con el
-plugin. En ChatGPT va a otro chat.
+La fase 1 va al subagente `portfolio-entry-responder`, que viene con el plugin.
 
 **Si hacés las dos en el mismo hilo**, el comando igual corre, y escribe en el registro
 `CONTAMINADO: respondió y puntuó el mismo hilo, el resultado está inflado`. No lo borres. Un
@@ -80,17 +79,16 @@ Después, la síntesis que le mostrarías a la persona.
 No preguntes nada. Devolvé el análisis y la síntesis, nada más.
 ```
 
-- **En Claude Code:** mandalo al subagente `portfolio-entry-responder`. No ve este hilo, así que
-  no ve la rúbrica ni lo esperado, y además tiene el AI Harness **fuera de su alcance de lectura**:
-  no puede abrir el archivo donde vive el `EXPECTED` aunque se lo pidan. Si usás cualquier otro
-  subagente, esa segunda mitad del aislamiento vuelve a depender de que te acuerdes.
-- **En ChatGPT:** abrí otro chat del mismo Proyecto, pegá el bloque, y traé la respuesta de vuelta.
+Mandalo al subagente `portfolio-entry-responder`. No ve este hilo, así que no ve la rúbrica ni lo
+esperado, y además tiene el AI Harness **fuera de su alcance de lectura**: no puede abrir el archivo
+donde vive el `EXPECTED` aunque se lo pidan. Si usás cualquier otro subagente, esa segunda mitad del
+aislamiento vuelve a depender de que te acuerdes.
 
 Eso que vuelve es el `ACTUAL`. No lo edites, ni lo mejores, ni le completes lo que le falta.
 
 ## Paso 3: puntuar
 
-Con [RUBRICA.md](RUBRICA.md) a la vista (en ChatGPT: `starteria-probar-RUBRICA.md`):
+Con [RUBRICA.md](RUBRICA.md) a la vista:
 
 1. **Primero los fallos duros.** Son nueve, y cualquiera invalida el caso aunque el puntaje sea
    alto. Revisalos uno por uno antes de puntuar nada: si hay uno, el resultado es FAIL y el puntaje
@@ -108,8 +106,13 @@ distinto a lo esperado pero que respeta todas las reglas es un 2, no un 1.
 
 ## Paso 4: registrar
 
-Llená [REGISTRO.md](REGISTRO.md) (en ChatGPT: `starteria-probar-REGISTRO.md`) y devolvelo completo.
-Un caso corrido que no quedó registrado no se corrió: nadie va a poder comparar la próxima vez.
+Llená [REGISTRO.md](REGISTRO.md) y guardalo en
+`$STARTERIA_STATE_ROOT/registros/<CASE_ID>-<fecha>.md`. Si la variable no está puesta, el default es
+`~/.starteria/<nombre-del-repo>/`.
+
+Un caso corrido que no quedó registrado no se corrió: nadie va a poder comparar la próxima vez. Y el
+registro es lo único que `/starteria-patron` va a tener para leer cuando alguien pregunte por qué
+fallan siempre los mismos.
 
 ## Paso 5: qué hacer con el resultado
 
@@ -117,7 +120,8 @@ Un caso corrido que no quedó registrado no se corrió: nadie va a poder compara
 - **REVIEW.** Anotá la causa. Un REVIEW con causa conocida es aceptable según el criterio de salida
   (§19); uno sin causa es un FAIL que todavía no se descubrió.
 - **FAIL.** No toques ningún contrato todavía. Andá a `/starteria-autoridad`, que baja por la
-  escalera y dice qué nivel hay que revisar. **Un caso solo no cambia un contrato**: hace falta un
+  escalera y dice qué nivel hay que revisar. Si ya hay tres o más fallos guardados, `/starteria-patron`
+  primero: un contrato se cambia por un patrón, nunca por una corrida. **Un caso solo no cambia un contrato**: hace falta un
   patrón. Corré el caso tres veces antes de sacar conclusiones, que es lo que dice el protocolo de
   Round 2 (§18).
 

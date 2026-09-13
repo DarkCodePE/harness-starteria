@@ -9,7 +9,7 @@
     {
       "name": "starteria-harness",
       "source": "./",
-      "description": "Ocho comandos de chat para correr el AI Harness de Portfolio Entry, ubicar un cambio en la cadena de autoridad y registrar decisiones. Sin gates: nada se verifica solo, y esta dicho.",
+      "description": "Diez comandos de chat para correr el AI Harness de Portfolio Entry, ubicar un cambio en la cadena de autoridad y registrar decisiones. Sin gates: nada se verifica solo, y esta dicho.",
       "category": "productivity",
       "keywords": [
         "producto",

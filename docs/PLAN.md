@@ -25,12 +25,12 @@ entienda la forma del trabajo.
 | Sin gates: nada se verifica solo, y se declara | `ADR-003` |
 | Alcance v0.1: Portfolio Entry | `ADR-004` |
 | Citar `doc/`, no copiarlo, salvo tres derivados | `ADR-005` |
-| Un cuerpo de markdown para los dos runtimes | `ADR-006` |
+| Un cuerpo de markdown para los dos runtimes | `ADR-006`, superado por `ADR-010` |
 | El harness no escribe en `doc/` | `ADR-007` |
 
 ## Fase 1: construir. Hecha
 
-**Los ocho comandos**, en `skills/starteria*`:
+**Los diez comandos**, en `skills/starteria*`:
 `/starteria` (router), `/starteria-afilar`, `/starteria-autoridad`, `/starteria-probar`,
 `/starteria-caso`, `/starteria-decision`, `/starteria-cierre`, `/starteria-glosario`.
 
@@ -125,7 +125,7 @@ runtime donde más fácil es saltearse el paso.
 
 No se pasa a fase 3 hasta que:
 
-- [ ] los ocho comandos responden en sesión nueva;
+- [ ] los diez comandos responden en sesión nueva;
 - [ ] `PE-B03` produjo un registro `aislado` con las siete dimensiones y la capa de fallo;
 - [ ] la prueba negativa produjo `CONTAMINADO`;
 - [ ] alguien no técnico corrió 2.2 sin ayuda y entendió el veredicto;

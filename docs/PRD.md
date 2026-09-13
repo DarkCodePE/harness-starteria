@@ -41,7 +41,7 @@ harness agrega una capa entre ella y el contrato, y le va a estorbar.
 
 ## 3. Qué hace
 
-Ocho comandos de chat que envuelven los contratos de `doc/` y los vuelven ejecutables por alguien
+Diez comandos de chat que envuelven los contratos de `doc/` y los vuelven ejecutables por alguien
 que no los leyó.
 
 | Trabajo | Comando | Qué produce |
@@ -101,7 +101,7 @@ Los tres últimos no tienen contención mecánica. Decirlo es la contención.
 
 ## 7. Estado
 
-Implementado: los ocho comandos, la rúbrica, las plantillas, el glosario, el mapa de autoridad y
+Implementado: los diez comandos, la rúbrica, las plantillas, el glosario, el mapa de autoridad y
 la guía de ChatGPT. Verificado estructuralmente: nombres, enlaces, ids de caso y fallos duros
 coinciden con `doc/`.
 

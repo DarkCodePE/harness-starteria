@@ -1,6 +1,12 @@
 # Clones de referencia: son de otros proyectos, no de este
 referencia/
 token-optimizer/
+diagram-design/
+next-ai-draw-io/
+hyperresearch/
+gstack/
+gbrain/
+gbrain-evals/
 
 # Configuración de herramientas, no del harness.
 # Excepción: .claude/rules/ sí es del harness y se comparte con el equipo.
@@ -10,8 +16,25 @@ token-optimizer/
 .swarm/
 estado/
 .mcp.json
+.hyperresearch/
 .serena/
 
 # Artefactos de herramientas
 ruvector.db
 agentdb.rvf*
+
+# Bóveda de hyperresearch: caché de páginas ajenas, no entregable del harness.
+# BENCHMARK.md cita las fuentes por URL, que es el registro que sí dura.
+# Los informes finales quedan trackeables a propósito.
+research/index/
+research/raw/
+research/temp/
+research/runs/
+research/notes/*
+!research/notes/final_report_*.md
+
+# Secretos: gbrain init escribe la clave del proveedor acá (ADR-010).
+# Nunca se commitea; CLAUDE.md lo prohibe explicitamente.
+.env
+.env.*
+!.env.example

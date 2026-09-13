@@ -3,7 +3,7 @@
 Harness de producto para **Portfolio Entry** de Starteria, pensado para gente de lead y de producto
 que no es técnica.
 
-Ocho comandos de chat sobre los contratos de `doc/`. Funcionan en Claude Code (`/comando`) y en
+Diez comandos de chat sobre los contratos de `doc/`. Funcionan en Claude Code (`/comando`) y en
 ChatGPT (como Proyecto).
 
 ```text
@@ -39,7 +39,7 @@ misma máquina:
 /plugin install starteria-harness@darkcodepe
 ```
 
-Los ocho comandos aparecen escribiendo `/starteria`. Después de instalar, `/plugin` los lista.
+Los diez comandos aparecen escribiendo `/starteria`. Después de instalar, `/plugin` los lista.
 
 **Lo que el plugin NO se lleva:** los contratos de `doc/`. Son de Starteria, no del harness, y un
 plugin instalado en otro repo no debería arrastrarlos. Si instalás el plugin donde no hay `doc/`,
@@ -50,7 +50,7 @@ los comandos van a pedirte que pegues el contrato que necesiten en vez de invent
 | Carpeta | Qué hay |
 |---|---|
 | `doc/` | Los contratos de Starteria. La autoridad. El harness no los toca |
-| `skills/starteria*` | Los ocho comandos |
+| `skills/starteria*` | Los diez comandos |
 | `docs/` | Por qué el harness está hecho así: PRD, dominio, arquitectura, ciclos de vida, plan |
 | `docs/adr/` | Las siete decisiones, con sus alternativas y su costo |
 

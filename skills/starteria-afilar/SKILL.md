@@ -8,8 +8,8 @@ allowed-tools: Read Grep Glob
 
 # Afilar una idea
 
-Entrevistá a la persona hasta llegar a un entendimiento compartido. Sin escribir nada todavía: la
-salida de esto es claridad, no un documento.
+Entrevistá a la persona hasta llegar a un entendimiento compartido. Sin escribir el cambio todavía:
+lo que sale de acá es claridad, y las cinco líneas donde queda anotada.
 
 ## Cómo se pregunta
 
@@ -49,12 +49,8 @@ mismo entendimiento.
 Preguntarle a alguien de producto algo que está escrito en `doc/` le hace perder tiempo y encima
 suele contestar de memoria, mal. Andá a buscarlo.
 
-**Si estás en ChatGPT y el archivo no está subido**, no lo inventes: pedí que lo peguen, o marcá el
-punto como pendiente y seguí con el resto de la frontera.
-
-**Si estás en Claude Code**, leé `doc/` directamente. Podés mandar la búsqueda a un subagente y
-seguir preguntando el resto de la frontera mientras tanto: solo esperan las preguntas que dependen
-de ese dato.
+Leé `doc/` directamente. Podés mandar la búsqueda a un subagente y seguir preguntando el resto de la
+frontera mientras tanto: solo esperan las preguntas que dependen de ese dato.
 
 ## Lo que no podés hacer
 
@@ -86,3 +82,12 @@ con su dueño, y ofrecé el paso siguiente:
 - ¿Hay que ver si el agente se comporta así? → `/starteria-probar`
 - ¿Salió de una conversación real con un usuario? → `/starteria-caso`
 - ¿Se decidió cambiar una regla? → `/starteria-decision`
+
+## Dónde queda
+
+Guardá esas cinco líneas y las preguntas abiertas en
+`$STARTERIA_STATE_ROOT/entendimiento/<slug>.md`. Si la variable no está puesta, el default es
+`~/.starteria/<nombre-del-repo>/`.
+
+Es lo único que sobrevive de esta conversación. `/starteria-autoridad` lo va a leer para no volver a
+preguntar todo de nuevo, y sin eso la entrevista se repite entera la próxima vez.

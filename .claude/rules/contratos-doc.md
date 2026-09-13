@@ -44,3 +44,10 @@ Ninguno de los dos toca `doc/`.
 `/starteria-probar` no puede verlo**: el subagente `portfolio-entry-responder` lo tiene fuera de su
 alcance de lectura a propósito. Si alguna vez pegás el contenido de ese archivo en un prompt que
 después se va a evaluar, contaminaste la corrida.
+
+## Y `doc/` no entra a la memoria
+
+`ADR-010` puso la frontera de ingesta del brain en `$STARTERIA_STATE_ROOT`. **Los contratos no se
+indexan.** Meterlos en una base crearía justo la copia que envejece en silencio, que es el costo que
+`ADR-005` ya había marcado. Los contratos se citan en vivo desde `doc/`; lo que se indexa es el
+estado del harness.

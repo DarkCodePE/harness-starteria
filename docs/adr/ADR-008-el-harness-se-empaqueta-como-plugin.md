@@ -120,9 +120,13 @@ el plugin debe llevarse los contratos o un comando de arranque que los pida.
   silencioso que no había razón para aceptar. El clon de Matt se movió a `referencia/` con `mv`,
   conservando su `.git`. Verificado: el inventario del plugin reporta `Skills (8)`.
 - 2026-09-13 · el plugin dejó de llevar **sólo** skills: ahora también lleva `agents/`, con
-  `portfolio-entry-responder`, que es la fase 1 de `/starteria-probar` aislada por construcción.
-  Eso contradice la letra de §2 y **debe un `ADR-009`** que lo reemplace o lo extienda. Se anota acá
-  para que la contradicción no quede invisible, que es lo que `/starteria-autoridad` prohíbe hacer.
+  `portfolio-entry-responder`, que es la fase 1 de `/starteria-probar` aislada por construcción. El
+  subagente no ve el hilo que lo invoca, y además tiene `PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md` fuera de
+  su alcance de lectura, así que no puede abrir el archivo donde vive el `EXPECTED`. Eso contradice
+  la letra de §2, que dice que el plugin se lleva las skills. **Debe un ADR que lo extienda**, y el
+  número queda por asignar: `009` y `010` ya están tomados, y el blueprint de integración §8 reservó
+  `011` y `012` para dos decisiones que todavía no se escribieron. Se anota acá para que la
+  contradicción no quede invisible, que es lo que `/starteria-autoridad` prohíbe hacer.
   De paso, instalar desde GitHub ya no arrastra `.mcp.json`: el inventario reporta
   `MCP servers (0)`, con lo que la fuga descrita en §4 queda cerrada por el lado de GitHub y sigue
   viva al instalar desde una ruta local con ese archivo presente.

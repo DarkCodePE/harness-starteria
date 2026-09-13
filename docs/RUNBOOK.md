@@ -5,6 +5,11 @@
 **Qué deja:** los cinco criterios de salida de la fase 2 marcados, con evidencia, y dos criterios
 abiertos de `ADR-008` cerrados.
 
+Son **dos verificaciones que no se mezclan** (`ADR-009`). `scripts/verify.sh` comprueba que el
+plugin cargue, y eso lo puede hacer una máquina. Este runbook comprueba que el agente de Portfolio
+Entry se comporte bien, y eso sólo lo puede hacer una persona. Correr el primero no te exime del
+segundo, y es la confusión que más fácil deja el harness en verde sin haber mirado nada.
+
 `PLAN.md` §fase 2 dice **qué** hay que probar y por qué. Este archivo dice **cómo**, con los
 comandos para copiar y el resultado exacto que tenés que ver. Si los dos se contradicen, gana
 `PLAN.md`: este es el derivado.
@@ -29,7 +34,7 @@ De la última salida, anotá tres cosas:
 
 | Qué mirar | Qué tiene que decir | Si dice otra cosa |
 |---|---|---|
-| `Skills (N)` | el número de carpetas en `skills/` | hay comandos que no cargan, o que cargan de más |
+| `Skills (10)` | diez, y el mismo número que carpetas en `skills/` | hay comandos que no cargan, o que cargan de más |
 | `Agents (1)` | uno: `portfolio-entry-responder` | sin él, la fase 1 de `/starteria-probar` no tiene aislamiento estructural |
 | `MCP servers (0)` | cero | estás empaquetando config ajena de la raíz del repo |
 | `Source:` | el marketplace del que salió | estás probando otra copia de la que creés |
@@ -51,14 +56,17 @@ lado es perder la corrida.
 
 Esto cierra los dos criterios que `ADR-008` §5 dejó abiertos.
 
-### 0.1 Validar el manifiesto
+### 0.1 El gate del productor
 
 ```bash
-claude plugin validate .
+scripts/verify.sh
 ```
 
-Tiene que decir `✔ Validation passed`. Si falla, arreglá el JSON antes de seguir: nada de lo que
-viene después significa algo con un manifiesto roto.
+Sale 0 si los manifiestos son válidos, si están las diez skills con su `SKILL.md` y frontmatter
+completo, y si el plugin instalado reporta lo que tiene que reportar. Si sale 1, arreglá eso antes de
+seguir: nada de lo que viene después significa algo con un plugin que no carga.
+
+Esto **no** prueba el harness, prueba el envase. Es `ADR-009` y la distinción importa.
 
 ### 0.2 Instalar desde ruta local
 
@@ -68,8 +76,7 @@ claude plugin install starteria-harness@darkcodepe
 claude plugin details starteria-harness
 ```
 
-**Pasa si:** el inventario reporta la cantidad de skills que hay en `skills/`, `Agents (1)`,
-`Hooks (0)` y `MCP servers (0)`.
+**Pasa si:** el inventario reporta `Skills (10)`, `Agents (1)`, `Hooks (0)` y `MCP servers (0)`.
 
 ### 0.3 Instalar desde GitHub
 
@@ -113,13 +120,13 @@ entre el plugin y los contratos está mal puesta y `ADR-008` §6 dice qué hacer
 
 ## Fase 1: humo. Que los comandos existan y contesten
 
-Sesión nueva, en el repo del harness.
+Sesión nueva, en el repo del harness. Un solo runtime, Claude Code: `ADR-010` abandonó ChatGPT.
 
 ### 1.1 Los comandos aparecen
 
 Escribí `/starteria` y mirá el menú.
 
-**Pasa si** están todos los que hay en `skills/`, con el prefijo del plugin
+**Pasa si** están los diez, con el prefijo del plugin
 (`/starteria-harness:starteria-probar`).
 
 ### 1.2 `/starteria-autoridad` detecta un conflicto real
@@ -248,16 +255,6 @@ la siguiente.
 
 ---
 
-## Fase 5: el segundo runtime
-
-Montá el Proyecto de ChatGPT siguiendo `PARA-CHATGPT.md` y repetí las fases 1 y 2.
-
-El aislamiento acá es de dos chats en vez de un subagente, o sea que depende de que una persona
-efectivamente abra el otro chat. **La prueba negativa de 2.3 vale doble en este runtime**: es donde
-más fácil es saltearse el paso sin darse cuenta.
-
----
-
 ## Criterio de salida
 
 No se pasa a la fase 3 del plan hasta que estas cinco estén marcadas **con la evidencia al lado**,
@@ -267,7 +264,6 @@ no de memoria:
 - [ ] `PE-B03` produjo un registro `aislado` con las siete dimensiones y la capa de fallo (§2.2)
 - [ ] la prueba negativa produjo `CONTAMINADO` (§2.3)
 - [ ] alguien no técnico corrió la fase 2 sin ayuda y entendió el veredicto (§4)
-- [ ] lo mismo funciona en ChatGPT (§5)
 
 Y de paso, los dos de `ADR-008` §5:
 
@@ -278,3 +274,8 @@ Y de paso, los dos de `ADR-008` §5:
 
 Corré `/starteria-cierre`. Un runbook corrido que no quedó en la bitácora es un runbook que se va a
 volver a correr entero dentro de dos meses porque nadie va a saber que ya se hizo.
+
+La bitácora y los registros viven en `$STARTERIA_STATE_ROOT`, por defecto
+`~/.starteria/<nombre-del-repo>/`, afuera del repo (`ADR-010`). Si corriste todo esto y ese
+directorio sigue vacío, las skills no escribieron nada y la corrida no dejó rastro: eso es un
+hallazgo por sí solo.
