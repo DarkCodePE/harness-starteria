@@ -38,15 +38,24 @@ se puede tirar y volver a escribir sin tocar el producto.
 ```text
 harness-starteria/                        raíz del plugin
 ├── .claude-plugin/
-│   ├── plugin.json                       declara las 8 skills
+│   ├── plugin.json                       identifica el plugin; NO declara skills
 │   └── marketplace.json                  para instalar desde GitHub
+├── AGENTS.md                             contrato del PRODUCTOR, ADR-009. Lo leen
+│                                         los dos runtimes; por eso no es CLAUDE.md
 ├── doc/                                  contratos, autoridad, no se toca
 ├── docs/                                 documentos DEL harness (este)
-│   ├── PRD.md  DDD.md  ARCHITECTURE.md  LIFECYCLE.md  PLAN.md
-│   └── adr/                              ADR-001..008 + ADR-INDEX.md
+│   ├── PRD.md  DDD.md  ARCHITECTURE.md  LIFECYCLE.md  PLAN.md  progress.md
+│   ├── BLUEPRINT.md                      los 4 pasos de entry-0X, y el harness
+│   │                                     leído como el mismo workflow
+│   ├── BENCHMARK.md                      plan de medicion: pass^k, el caso de exito,
+│                                         y la suite J que todavia no existe
+│   └── adr/                              ADR-001..009 + ADR-INDEX.md
 ├── referencia/                           clon de mattpocock/skills, ignorado
 ├── token-optimizer/                      clon de terceros, ignorado
-├── estado/BITACORA.md                    lo escribe /starteria-cierre
+├── scripts/verify.sh                     gate del productor, ADR-009
+├── estado/BITACORA.md                    runtime DEL PRODUCTO: lo escribe
+│                                         /starteria-cierre en el repo de quien
+│                                         usa el plugin. Acá, ignorado
 └── skills/                               autodescubiertas por el plugin
     ├── starteria/                        router + los 3 archivos compartidos
     │   ├── SKILL.md                      /starteria
@@ -118,22 +127,28 @@ quiere. Con ella, el número mide algo.
 obligar a que el registro diga `CONTAMINADO`, para que una corrida inflada no se compare de igual a
 igual con una limpia. Está en `ADR-002`.
 
-## 5. Los dos runtimes
+## 5. Un solo runtime
 
-Un solo cuerpo de markdown, dos formas de cargarlo. `ADR-006`.
+Claude Code, y nada más. `ADR-010`.
 
-| | Claude Code | ChatGPT |
-|---|---|---|
-| Cómo se cargan | plugin instalado desde el marketplace o desde una ruta local | archivos subidos a un Proyecto |
-| Cómo se invocan | `/comando` | escribir el nombre del comando |
-| Nombres | la carpeta distingue, todos son `SKILL.md` | hay que renombrar al subir |
-| Enlaces entre archivos | funcionan | rotos, el modelo busca por nombre |
-| Leer `doc/` | directo del disco | desde los archivos del Proyecto |
-| Fase 1 de `/starteria-probar` | subagente | otro chat |
-| Escribir la bitácora | sí | no, devuelve el bloque |
+| | Claude Code |
+|---|---|
+| Cómo se cargan | plugin instalado desde el marketplace o desde una ruta local |
+| Cómo se invocan | `/comando` |
+| Enlaces entre archivos | funcionan |
+| Leer `doc/` | directo del disco |
+| Fase 1 de `/starteria-probar` | subagente |
+| Dónde queda el estado | `$STARTERIA_STATE_ROOT`, afuera del repo |
 
-La diferencia de nombres es la trampa práctica: ocho archivos llamados `SKILL.md` en un Proyecto de
-ChatGPT son indistinguibles. La tabla de renombrado está en `PARA-CHATGPT.md`.
+Hubo un segundo runtime. `ADR-006` sostuvo ChatGPT con un solo cuerpo de markdown y una tabla de
+renombrado de catorce archivos, y su criterio de aceptación —que alguien de afuera montara el
+Proyecto siguiendo solo `PARA-CHATGPT.md`— nunca se cumplió. `ADR-010` lo abandonó cuando el foco de
+producto se movió a empresas, donde la gente ya trabaja con Claude Code.
+
+Con él se fueron `PARA-CHATGPT.md`, el script que lo mantenía en sync, el chequeo de deriva de
+`verify.sh`, y las bifurcaciones por runtime dentro de cada `SKILL.md`. Lo que ganó el harness a
+cambio es que el estado puede vivir en disco y una memoria puede indexarlo, que es lo que ChatGPT
+nunca iba a poder alcanzar.
 
 ## 6. Por qué el trabajo compartido vive en `starteria/`
 

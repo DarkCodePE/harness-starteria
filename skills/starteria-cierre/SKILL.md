@@ -49,8 +49,10 @@ PE-B05 tres veces cada uno para ver si el fallo de B03 es estable" sí.
 
 ## Dónde se guarda
 
-**En Claude Code:** agregalo al final de `estado/BITACORA.md`, creando el archivo si no existe. Al
-principio de todo va esta línea, una sola vez:
+Agregalo al final de `$STARTERIA_STATE_ROOT/BITACORA.md`, creando el archivo si no existe. Si la variable no está puesta, el default es
+`~/.starteria/<nombre-del-repo>/`.
+
+Al principio de todo va esta línea, una sola vez:
 
 ```markdown
 # Bitácora - harness de Portfolio Entry
@@ -61,9 +63,6 @@ Lo más nuevo abajo. Se llena a mano con `/starteria-cierre`. Nada actualiza est
 Las entradas van **abajo**, en orden cronológico, sin borrar las anteriores. Que una entrada vieja
 esté desactualizada es información: muestra qué se creía en ese momento.
 
-**En ChatGPT:** devolvé el bloque y decile a la persona que lo pegue donde el equipo lleve el
-estado. No tenés dónde guardarlo, y decirlo es mejor que hacer como que quedó guardado.
-
 ## Antes de terminar
 
 Repasá si quedó algo sin registrar que se pierde al cerrar:
@@ -72,5 +71,6 @@ Repasá si quedó algo sin registrar que se pierde al cerrar:
 - ¿Se decidió cambiar una regla y no se escribió el ADR? → `/starteria-decision`.
 - ¿Apareció un input real de usuario que ninguna suite cubre? → `/starteria-caso`.
 - ¿Quedó un conflicto entre documentos sin escribir? → `/starteria-autoridad`.
+- ¿Se acumularon tres o más fallos que nadie miró juntos? → `/starteria-patron`.
 
 Si alguna da que sí, hacelo **antes** de cerrar. Después de cerrar, ya no hay dónde.

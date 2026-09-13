@@ -3,7 +3,7 @@
 **Versión:** v0.1
 **Fecha:** 2026-09-10
 
-Los ocho comandos son un sistema y no ocho prompts sueltos porque comparten estos conceptos. Este
+Los diez comandos son un sistema y no diez prompts sueltos porque comparten estos conceptos. Este
 documento los nombra, dice cómo se relacionan y cuáles son las reglas que no se negocian.
 
 ## 1. La frontera que hay que tener clara

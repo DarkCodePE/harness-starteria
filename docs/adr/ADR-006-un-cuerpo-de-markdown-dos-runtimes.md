@@ -1,12 +1,12 @@
 ---
 id: ADR-006
 title: "Un solo cuerpo de markdown para Claude Code y ChatGPT, con el renombrado como precio"
-status: proposed
+status: superseded
 type: standard
 date: 2026-09-10
 deciders: [producto]
 supersedes: null
-superseded_by: null
+superseded_by: ADR-010
 aprobado_por: null
 aprobado_en: null
 review_trigger: "primer armado real del Proyecto de ChatGPT por alguien que no escribió el harness"
@@ -84,3 +84,22 @@ abaratarlo, aunque sea con un zip preparado.
   indistinguibles.
 - 2026-09-11 · actualizado · el empaquetado como plugin (`ADR-008`) no cambia esta decisión: sigue
   siendo un solo cuerpo de markdown. Solo cambió cómo lo carga Claude Code.
+- 2026-09-11 · actualizado · **el armado sigue siendo manual, pero ya no puede quedar viejo en
+  silencio.** `scripts/sync-para-chatgpt.py` genera los dos bloques derivados de `PARA-CHATGPT.md`
+  —la lista de contratos de `doc/` y la tabla de renombrado de `skills/`— y `scripts/verify.sh`
+  falla si el archivo commiteado no coincide. Eso cierra lo que `ADR-008` §4 anotó como "una cuarta
+  cosa a mantener sincronizada". El gatillo de revisión del §6 **no** se cumple con esto: sigue
+  esperando el primer armado real por alguien de afuera, porque abaratar el renombrado y evitar que
+  la instrucción mienta son dos problemas distintos.
+  El patrón es de `token-optimizer/scripts/check-mirror-sync.sh`: regenerar y diffear en vez de
+  mantener una lista de excepciones. Con una divergencia deliberada: allá el chequeo regenera sobre
+  el working tree, acá no escribe nada, porque `PARA-CHATGPT.md` es un archivo del producto y
+  `ADR-009` §5 sostiene que el gate del productor no toca el producto.
+  El generador **no** genera el bloque de instrucciones del Proyecto ni el orden de los archivos
+  dentro de cada skill: ese orden es de uso, no alfabético (`MAPA` antes que `GLOSARIO`, `RUBRICA`
+  antes que `REGISTRO`), y alfabetizarlo habría perdido esa información.
+- 2026-09-12 · superseded · `ADR-010` abandona ChatGPT y deja un solo runtime. El criterio de
+  aceptación abierto del §5 —que alguien de afuera montara el Proyecto siguiendo solo
+  `PARA-CHATGPT.md`— nunca se cumplió, y el foco de producto se movió a empresas, donde la gente ya
+  trabaja con Claude Code. El cuerpo de este ADR **no se reescribe**: registra lo que se decidió el
+  2026-09-10, con la información que había entonces.

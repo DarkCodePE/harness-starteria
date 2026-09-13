@@ -3,12 +3,16 @@
 ## Harness de Portfolio Entry
 
 Este repo tiene un harness de producto para gente de lead y de producto, en `skills/starteria*`, empaquetadas como plugin de Claude Code.
-Son ocho comandos de chat sobre los contratos de `doc/`: `/starteria` es el mapa y explica el resto.
+Son diez comandos de chat sobre los contratos de `doc/`: `/starteria` es el mapa y explica el resto.
 La rúbrica, el glosario y la cadena de autoridad viven ahí, no acá. Nada de eso corre solo: si nadie
 ejecuta `/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió.
 
+Si vas a **cambiar** el harness, el contrato del trabajo es [`AGENTS.md`](AGENTS.md): las fases, los
+cuatro puntos de control humanos, la tabla de skills y agentes, y las dos verificaciones que no se
+mezclan. Vive en la raíz y no acá porque esa convención la leen también los otros agentes de código.
+
 El porqué está en `docs/`: `PRD.md`, `DDD.md`, `ARCHITECTURE.md`, `LIFECYCLE.md`, `PLAN.md` y los
-siete ADR en `docs/adr/`. Antes de cambiar el harness, leé `docs/adr/ADR-INDEX.md`: varias de sus
+nueve ADR en `docs/adr/`. Antes de cambiar el harness, leé `docs/adr/ADR-INDEX.md`: varias de sus
 rarezas (dos fases para probar, cero verificación automática) son decisiones registradas, no
 descuidos.
 
@@ -191,3 +195,10 @@ npx ruflo@latest doctor --fix
 > by default; `--ttl 0` to disable, `daemon status --all` to audit running daemons).
 
 **Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.
+
+## Research Base (hyperresearch)
+
+Las instrucciones de hyperresearch **no viven acá**. Están en [`AGENTS.md`](AGENTS.md), porque este
+archivo lo lee solo Claude Code, y `AGENTS.md` es la convención que leen también los otros agentes
+de código. `hyperresearch install` las inyecta acá por defecto; si volvés a correrlo, movelas de nuevo.
+

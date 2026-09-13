@@ -1,7 +1,8 @@
 # Plantilla de registro
 
-Una corrida sin registro no se corrió. Copiá el bloque, llenalo entero, y guardalo donde el equipo
-lleve los resultados.
+Una corrida sin registro no se corrió. Copiá el bloque, llenalo entero, y guardalo en
+`$STARTERIA_STATE_ROOT/registros/<CASE_ID>-<fecha>.md`. Si la variable no está puesta, el default es
+`~/.starteria/<nombre-del-repo>/`.
 
 ```text
 CASE_ID:
