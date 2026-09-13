@@ -1,3 +1,5 @@
+> HISTORICAL: ver CURRENT_STATE.md. Configuracion legacy especifica de Claude; reemplazo vigente para agentes: AGENTS.md.
+
 # Ruflo — Claude Code Configuration
 
 ## Harness de Portfolio Entry

@@ -1,13 +1,35 @@
 # harness-starteria
 
-Harness de producto para **Portfolio Entry** de Starteria, pensado para gente de lead y de producto
-que no es técnica.
+Harness público de producto para **Portfolio Entry** de Starteria, pensado para gente de lead y de producto que no es técnica.
 
+Este repositorio contiene contratos, comandos de trabajo, ADRs de harness y estado documental. No contiene ni debe incorporar `backend/`, `front/`, Prisma, runtime ni tests productivos salvo decisión explícita.
+
+## Punto de entrada
+
+- Estado actual: `CURRENT_STATE.md`
+- Instrucciones neutrales para agentes: `AGENTS.md`
+- Mapa de autoridad: `doc/STARTERIA_AUTHORITY.md`
+- Core Contract: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+- Portfolio Entry activo: `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- ADRs del harness: `docs/adr/ADR-INDEX.md`
+- ADRs de producto: `doc/product-adr/ADR-INDEX.md`
+
+## E2E
+
+El E2E de producto fue validado en el checkout productivo/autorizado `Dashboardstarteria`.
+
+Este repositorio conserva el harness y la documentación asociada. No es el entorno que ejecuta la runtime productiva ni debe presentarse como si contuviera una aplicación productiva certificada.
+
+Portfolio Post-Entry Continuation fue observado como `IMPLEMENTED / LOCALLY VALIDATED` en el checkout productivo autorizado, incluyendo backend + DB, browser E2E through Portfolio Home y casos representativos del harness. Esa observación no aprueba por sí misma el contrato propuesto.
+
+## Comandos del harness
+
+Ocho comandos de chat trabajan sobre los contratos de `doc/`:
 Diez comandos de chat sobre los contratos de `doc/`. Funcionan en Claude Code (`/comando`) y en
 ChatGPT (como Proyecto).
 
 ```text
-/starteria             el mapa: qué comando para qué situación
+/starteria             mapa: qué comando usar en cada situación
 /starteria-afilar      entrevista por rondas para afilar una idea
 /starteria-autoridad   qué contrato manda, si hay conflicto, si hace falta ADR
 /starteria-probar      corre un caso del AI Harness y lo puntúa
@@ -26,18 +48,22 @@ Es un plugin de Claude Code. Dos caminos, según para qué lo quieras.
 
 **Desde el marketplace**, para usarlo en cualquier repo:
 
+```text
 ```
+
 /plugin marketplace add DarkCodePE/harness-starteria
 /plugin install starteria-harness@darkcodepe
 ```
 
-**Desde una ruta local**, para probarlo mientras se desarrolla o para usarlo en otro harness de esta
-misma máquina:
 
+**Desde una ruta local**, para probarlo mientras se desarrolla o para usarlo en otro harness de esta misma máquina:
+
+```text
 ```
 /plugin marketplace add /home/orlando/Desktop/harness-starteria
 /plugin install starteria-harness@darkcodepe
 ```
+
 
 Los diez comandos aparecen escribiendo `/starteria`. Después de instalar, `/plugin` los lista.
 
@@ -45,26 +71,22 @@ Los diez comandos aparecen escribiendo `/starteria`. Después de instalar, `/plu
 plugin instalado en otro repo no debería arrastrarlos. Si instalás el plugin donde no hay `doc/`,
 los comandos van a pedirte que pegues el contrato que necesiten en vez de inventarlo.
 
-## Cómo está organizado
+## Organización
 
-| Carpeta | Qué hay |
+| Carpeta | Contenido |
 |---|---|
-| `doc/` | Los contratos de Starteria. La autoridad. El harness no los toca |
-| `skills/starteria*` | Los diez comandos |
-| `docs/` | Por qué el harness está hecho así: PRD, dominio, arquitectura, ciclos de vida, plan |
-| `docs/adr/` | Las siete decisiones, con sus alternativas y su costo |
+| `doc/` | Contratos y autoridad de producto de Starteria |
+| `doc/product-adr/` | ADRs de producto, separados de los ADRs del harness |
+| `skills/starteria*` | Los diez comandos del harness / plugin |
+| `docs/` | PRD, dominio, arquitectura, lifecycle, plan e historial del harness |
+| `docs/adr/` | ADRs y decisiones del harness |
 
 ## Lo que este harness no hace
 
-**No verifica nada solo.** No hay scripts, ni hooks, ni nada corriendo en segundo plano. Si nadie
-ejecuta `/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió. Es una decisión
-registrada, no un descuido: `docs/adr/ADR-003`.
+**No verifica nada solo.** No hay scripts, hooks ni procesos corriendo en segundo plano. Si nadie ejecuta `/starteria-probar`, el harness no certifica por sí mismo que el agente de Portfolio Entry siga cumpliendo sus contratos. Esta separación entre harness documental y runtime productivo es deliberada.
 
-**No decide.** Interpreta, compara, marca huecos y recomienda. Aprobar, confirmar y decidir sigue
-siendo de una persona, que es el invariante INV-03 del Core Contract aplicado a la herramienta que
-gobierna ese contrato.
+**No decide.** Interpreta, compara, marca huecos y recomienda. Aprobar, confirmar y decidir sigue siendo responsabilidad humana, de acuerdo con los invariantes y contratos vigentes de Starteria.
 
-## Estado
+## Regla principal
 
-v0.1 escrito y verificado por estructura. **Sin correr end to end todavía**: el plan de pruebas está
-en `docs/PLAN.md`, fase 2.
+El harness protege contratos; no redefine Starteria ni incorpora runtime productivo.

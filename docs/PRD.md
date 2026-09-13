@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../CURRENT_STATE.md. Documento de PRD del harness v0.1; el estado vigente del repositorio esta en ../CURRENT_STATE.md.
+
 # PRD del harness de Portfolio Entry
 
 **Versión:** v0.1

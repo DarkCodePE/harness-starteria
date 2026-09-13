@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../CURRENT_STATE.md. Plan historico del harness; el estado vigente del repositorio esta en ../CURRENT_STATE.md.
+
 # Plan del harness
 
 **Versión:** v0.1

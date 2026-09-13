@@ -15,6 +15,38 @@ Agente que trabaja sobre el harness de **Portfolio Entry de Starteria**. Acompa�
 pedido de cambio, la ubicación del cambio en la cadena de autoridad, el registro de la decisión, la
 implementación y las dos verificaciones. No aprueba, no firma y no escribe en `doc/`.
 
+## Frontera de producto Starteria
+
+Antes de cualquier cambio, leer:
+
+1. `CURRENT_STATE.md`
+2. `doc/STARTERIA_AUTHORITY.md`
+3. el contrato afectado y su estado factual
+
+Este repositorio es el harness/documentación pública de Starteria.
+
+No es el runtime productivo `Dashboardstarteria`.
+
+La implementación productiva observada puede usarse como evidencia, pero no reemplaza la autoridad de:
+
+Core
+→ ADRs de producto aprobados
+→ Experience Contracts
+→ Agent Contracts
+→ Skill Contracts.
+
+No incorporar `backend/`, `front/`, Prisma, migraciones, runtime productivo ni tests productivos en este repositorio salvo decisión explícita.
+
+Los ADRs de producto viven en:
+
+`doc/product-adr/`
+
+Los ADRs del harness viven en:
+
+`docs/adr/`
+
+No mezclar ambas series.
+
 ## Principio
 
 > **El agente propone — la persona firma. Nada se cierra sin una respuesta afirmativa en la sesión.**
