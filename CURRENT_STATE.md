@@ -56,6 +56,33 @@ Este repositorio no contiene ni ejecuta esa runtime productiva. Conserva el cont
 - ADRs de producto: `doc/product-adr/`.
 - La serie de producto se mantiene separada de `docs/adr/ADR-001...007`.
 
+## Current development target
+
+`Portfolio Bootstrap + Home V1`
+
+Objetivo: convertir el contexto preservado desde Portfolio Entry en la primera experiencia util de Portfolio para el usuario.
+
+Este siguiente slice debe:
+
+- continuar desde el contexto ya preservado por Portfolio Entry;
+- permitir al Portfolio Lead revisar y ordenar su prioridad/contexto inicial;
+- preparar la incorporacion posterior de iniciativas reales;
+- mantener Portfolio como destino principal de la experiencia.
+
+No debe:
+
+- reconstruir Portfolio Entry;
+- redirigir Portfolio Entry a Steps;
+- crear `Project`, `Step` o Adaptive Core como efecto del onboarding Portfolio;
+- canonicalizar `StrategicFront` o `Challenge` automaticamente desde sugerencias IA.
+
+## Known limitations
+
+- Browser E2E fue validado localmente en el checkout productivo autorizado.
+- GitHub CI no fuerza actualmente ese browser E2E para este slice.
+- Las llamadas live al proveedor IA no son requisito automatico de cada PR.
+- `Portfolio Bootstrap + Home V1` es el siguiente vertical slice y todavia no esta validado.
+
 ## Legacy e historico
 
 Los documentos legacy o historicos deben abrir con banner `DEPRECATED`, `SUPERSEDED` o `HISTORICAL` y enlazar a este archivo y al reemplazo vigente si existe.
