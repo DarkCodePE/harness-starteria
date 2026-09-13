@@ -1,45 +1,51 @@
 # harness-starteria
 
-Harness de producto para **Portfolio Entry** de Starteria, pensado para gente de lead y de producto
-que no es técnica.
+Harness publico de producto para Portfolio Entry de Starteria.
 
-Ocho comandos de chat sobre los contratos de `doc/`. Funcionan en Claude Code (`/comando`) y en
-ChatGPT (como Proyecto).
+Este repositorio contiene contratos, comandos de trabajo, ADRs de harness y estado documental. No contiene ni debe incorporar `backend/`, `front/`, Prisma, runtime ni tests productivos salvo decision explicita.
+
+## Punto de entrada
+
+- Estado actual: `CURRENT_STATE.md`
+- Instrucciones neutrales para agentes: `AGENTS.md`
+- Mapa de autoridad: `doc/STARTERIA_AUTHORITY.md`
+- Core Contract: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+- Portfolio Entry activo: `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- ADRs del harness: `docs/adr/ADR-INDEX.md`
+- ADRs de producto: `doc/product-adr/ADR-INDEX.md`
+
+## E2E
+
+El E2E de producto fue validado en el checkout productivo/autorizado `Dashboardstarteria`.
+
+Este repositorio conserva el harness y la documentacion asociada. No es el entorno que ejecuta la runtime productiva ni debe presentarse como si contuviera una aplicacion productiva certificada.
+
+Portfolio Post-Entry Continuation fue observado como `IMPLEMENTED / LOCALLY VALIDATED` en el checkout productivo autorizado, incluyendo backend + DB, browser E2E through Portfolio Home y casos representativos del harness. Esa observacion no aprueba por si misma el contrato propuesto.
+
+## Comandos del harness
+
+Los comandos de chat viven en `.claude/skills/starteria*` y trabajan sobre los contratos de `doc/`.
 
 ```text
-/starteria             el mapa: qué comando para qué situación
+/starteria             mapa: que comando usar en cada situacion
 /starteria-afilar      entrevista por rondas para afilar una idea
-/starteria-autoridad   qué contrato manda, si hay conflicto, si hace falta ADR
-/starteria-probar      corre un caso del AI Harness y lo puntúa
-/starteria-caso        convierte una conversación real en un caso nuevo
+/starteria-autoridad   que contrato manda, si hay conflicto, si hace falta ADR
+/starteria-probar      corre un caso del AI Harness y lo puntua
+/starteria-caso        convierte una conversacion real en un caso nuevo
 /starteria-decision    registra un ADR
-/starteria-cierre      deja el estado escrito para la próxima sesión
-/starteria-glosario    explica un término del contrato
+/starteria-cierre      deja el estado escrito para la proxima sesion
+/starteria-glosario    explica un termino del contrato
 ```
 
-**Empezá por `/starteria`.** Si estás en ChatGPT, por
-`.claude/skills/starteria/PARA-CHATGPT.md`.
+## Organizacion
 
-## Cómo está organizado
-
-| Carpeta | Qué hay |
+| Carpeta | Contenido |
 |---|---|
-| `doc/` | Los contratos de Starteria. La autoridad. El harness no los toca |
-| `.claude/skills/starteria*` | Los ocho comandos |
-| `docs/` | Por qué el harness está hecho así: PRD, dominio, arquitectura, ciclos de vida, plan |
-| `docs/adr/` | Las siete decisiones, con sus alternativas y su costo |
+| `doc/` | Contratos, autoridad y ADRs de producto |
+| `.claude/skills/starteria*` | Comandos del harness |
+| `docs/` | PRD, dominio, arquitectura, lifecycle, plan e historial del harness |
+| `docs/adr/` | ADRs del harness |
 
-## Lo que este harness no hace
+## Regla principal
 
-**No verifica nada solo.** No hay scripts, ni hooks, ni nada corriendo en segundo plano. Si nadie
-ejecuta `/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió. Es una decisión
-registrada, no un descuido: `docs/adr/ADR-003`.
-
-**No decide.** Interpreta, compara, marca huecos y recomienda. Aprobar, confirmar y decidir sigue
-siendo de una persona, que es el invariante INV-03 del Core Contract aplicado a la herramienta que
-gobierna ese contrato.
-
-## Estado
-
-v0.1 escrito y verificado por estructura. **Sin correr end to end todavía**: el plan de pruebas está
-en `docs/PLAN.md`, fase 2.
+El harness protege contratos; no redefine Starteria ni incorpora runtime productivo.

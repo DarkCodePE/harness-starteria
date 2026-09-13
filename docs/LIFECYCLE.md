@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../CURRENT_STATE.md. Lifecycle historico del harness; el estado vigente del repositorio esta en ../CURRENT_STATE.md.
+
 # Ciclos de vida
 
 **Versión:** v0.1

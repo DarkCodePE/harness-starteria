@@ -8,10 +8,10 @@ gates, por qué las skills no viven donde las pidieron. Decisiones durables.
 | | ADR de **harness** (esta serie) | ADR de **producto** (Starteria) |
 |---|---|---|
 | Qué cambian | cómo funciona la herramienta | una regla del producto |
-| Dónde viven | `docs/adr/` | serían nivel 2 de la cadena de autoridad, junto a `doc/` |
+| Donde viven | docs/adr/ | doc/product-adr/ |
 | Formato | el de este archivo | Development Harness §4.6, plantilla en `/starteria-decision` |
 | Quién los escribe | quien mantiene el harness | quien gobierna el producto |
-| Cuántos hay | 7 | **ninguno todavía** |
+| Cuantos hay | 7 | ver doc/product-adr/ADR-INDEX.md |
 
 `ADR-001` de una serie no tiene nada que ver con `ADR-001` de la otra. Cuando
 `/starteria-decision` redacte el primer ADR de producto, va a ser el `ADR-001` **de esa serie**, y
