@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../../CURRENT_STATE.md. Documento legacy de admision; reemplazo vigente: ../../CURRENT_STATE.md y ../STARTERIA_AUTHORITY.md.
+
 # session-handoff.md — Punto de retoma
 
 > **Pregunta única que responde:** Si soy la sesión 2 ahora mismo, ¿dónde retomo y por qué se decidió así?
@@ -43,3 +45,4 @@ Flujo de admisión **documentado y verificado**, y las **3 verificaciones abiert
 ## Costo de reconstrucción si se ignora este archivo
 
 Medio-alto: re-mapear el contrato de estado del autofill (front↔backend↔ai-service) y volver a distinguir el camino público del autenticado. Empezar por `flujo-admision.md` §6 (BUG-001) evita rehacerlo.
+> HISTORICAL: ver `../../CURRENT_STATE.md`. Documento legacy de admision; reemplazo vigente: `../../CURRENT_STATE.md` y `../STARTERIA_AUTHORITY.md`.

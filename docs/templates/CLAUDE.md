@@ -1,3 +1,5 @@
+> DEPRECATED TEMPLATE: ver ../../CURRENT_STATE.md. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: ../../AGENTS.md para instrucciones de agentes y ../../CURRENT_STATE.md para estado.
+
 # CLAUDE.md
 
 Estás trabajando en un repositorio diseñado para trabajo de implementación de larga duración.
@@ -45,3 +47,4 @@ y el resultado esté registrado.
 3. Registra qué sigue roto o sin verificar.
 4. Haz commit una vez que el repositorio sea seguro para reanudar.
 5. Deja una ruta de reinicio limpia para la próxima sesión.
+> DEPRECATED TEMPLATE: ver `../../CURRENT_STATE.md`. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: `../../AGENTS.md` para instrucciones de agentes y `../../CURRENT_STATE.md` para estado.

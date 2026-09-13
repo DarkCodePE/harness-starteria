@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../../CURRENT_STATE.md. Documento legacy de admision; reemplazo vigente: ../../CURRENT_STATE.md y ../STARTERIA_AUTHORITY.md.
+
 # clean-state-checklist.md — Compuerta de cierre
 
 > **Pregunta única que responde:** ¿El repo está realmente listo para entregar, sin deuda oculta?
@@ -52,3 +54,4 @@
 ## Veredicto de salida
 
 > **Estado: DOCUMENTACIÓN + VERIFICACIONES + OPCIÓN C LISTAS.** Las 3 verificaciones resueltas; la Opción C implementada y verificada (212/212 tests + build). **Deuda abierta y explícita:** (1) BUG-001 (autofill autenticado) documentado pero **no corregido**; (2) cambios **no commiteados** (Opción C). No hay deuda oculta.
+> HISTORICAL: ver `../../CURRENT_STATE.md`. Documento legacy de admision; reemplazo vigente: `../../CURRENT_STATE.md` y `../STARTERIA_AUTHORITY.md`.

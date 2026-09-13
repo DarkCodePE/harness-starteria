@@ -1,3 +1,5 @@
+> DEPRECATED TEMPLATE: ver ../../CURRENT_STATE.md. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: ../../AGENTS.md para instrucciones de agentes y ../../CURRENT_STATE.md para estado.
+
 # Registro de Progreso
 
 ## Estado Verificado Actual
@@ -33,3 +35,4 @@
 - Archivos o artefactos actualizados:
 - Riesgo conocido o problema sin resolver:
 - Mejor próximo paso:
+> DEPRECATED TEMPLATE: ver `../../CURRENT_STATE.md`. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: `../../AGENTS.md` para instrucciones de agentes y `../../CURRENT_STATE.md` para estado.

@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../../CURRENT_STATE.md. Esta auditoria conserva el estado observado de Portfolio Entry; no autoriza cambios productivos ni reemplaza el contrato vigente ../experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md.
+
 # Portfolio Entry Current State Audit
 
 Audit prompt: `docs/audit-prompts/CODEX_AUDIT_PROMPT_PORTFOLIO_ENTRY_v0.1.md`

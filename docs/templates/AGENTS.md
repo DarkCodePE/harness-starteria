@@ -1,3 +1,5 @@
+> DEPRECATED TEMPLATE: ver ../../CURRENT_STATE.md. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: ../../AGENTS.md para instrucciones de agentes y ../../CURRENT_STATE.md para estado.
+
 # AGENTS.md
 
 Este repositorio está diseñado para trabajo de agentes de codificación de larga duración. El objetivo no
@@ -53,3 +55,4 @@ Antes de terminar una sesión:
 4. Haz commit con un mensaje descriptivo una vez que el trabajo esté en un estado seguro.
 5. Deja el repositorio lo suficientemente limpio para que la próxima sesión pueda ejecutar
    `./init.sh` inmediatamente.
+> DEPRECATED TEMPLATE: ver `../../CURRENT_STATE.md`. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: `../../AGENTS.md` para instrucciones de agentes y `../../CURRENT_STATE.md` para estado.

@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../../CURRENT_STATE.md. Documento legacy de admision; reemplazo vigente: ../../CURRENT_STATE.md y ../STARTERIA_AUTHORITY.md.
+
 # claude-progress.md — Historial del trabajo (admisión / onboarding)
 
 > **Pregunta única que responde:** ¿Qué pasó, paso a paso, a lo largo de las sesiones?
@@ -103,3 +105,4 @@
 - No se tocó el baseline de 175 errores tsc (fuera de alcance).
 
 <!-- Próximas sesiones: AGREGAR debajo, no editar lo anterior. -->
+> HISTORICAL: ver `../../CURRENT_STATE.md`. Documento legacy de admision; reemplazo vigente: `../../CURRENT_STATE.md` y `../STARTERIA_AUTHORITY.md`.

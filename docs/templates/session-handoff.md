@@ -1,3 +1,5 @@
+> DEPRECATED TEMPLATE: ver ../../CURRENT_STATE.md. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: ../../AGENTS.md para instrucciones de agentes y ../../CURRENT_STATE.md para estado.
+
 # Entrega de Sesión
 
 ## Verificado Ahora
@@ -28,3 +30,4 @@
 - Inicio:
 - Verificación:
 - Comando de depuración enfocado:
+> DEPRECATED TEMPLATE: ver `../../CURRENT_STATE.md`. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: `../../AGENTS.md` para instrucciones de agentes y `../../CURRENT_STATE.md` para estado.

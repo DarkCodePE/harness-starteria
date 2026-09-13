@@ -1,3 +1,5 @@
+> DEPRECATED TEMPLATE: ver ../../CURRENT_STATE.md. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: ../../AGENTS.md para instrucciones de agentes y ../../CURRENT_STATE.md para estado.
+
 # Documento de Calidad
 
 Una instantánea de calidad para cada dominio de producto y capa arquitectónica. Tanto agentes como humanos pueden usar este documento para entender rápidamente dónde el código base es fuerte y dónde necesita trabajo.
@@ -41,3 +43,4 @@ Una instantánea de calidad para cada dominio de producto y capa arquitectónica
 - Degradados:
 - Nuevas brechas identificadas:
 - Brechas cerradas:
+> DEPRECATED TEMPLATE: ver `../../CURRENT_STATE.md`. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: `../../AGENTS.md` para instrucciones de agentes y `../../CURRENT_STATE.md` para estado.

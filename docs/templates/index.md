@@ -1,3 +1,5 @@
+> DEPRECATED TEMPLATE: ver ../../CURRENT_STATE.md. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: ../../AGENTS.md para instrucciones de agentes y ../../CURRENT_STATE.md para estado.
+
 # Guía de Plantillas
 
 Estas plantillas están listas para copiar en tu propio proyecto. Cada una cumple un propósito específico en el flujo de trabajo del agente. Edita el contenido para que coincida con los comandos, rutas, nombres de características y pasos de verificación de tu proyecto.
@@ -224,3 +226,4 @@ El documento de calidad también soporta la simplificación del harness. Cada co
 3. Ejecuta el conjunto de tareas de benchmark.
 4. Toma otra instantánea.
 5. Compara — si las calificaciones no bajaron, el componente era sobrecarga. Si bajaron, restáuralo.
+> DEPRECATED TEMPLATE: ver `../../CURRENT_STATE.md`. Plantilla legacy; no usar como autoridad de producto. Reemplazo vigente: `../../AGENTS.md` para instrucciones de agentes y `../../CURRENT_STATE.md` para estado.

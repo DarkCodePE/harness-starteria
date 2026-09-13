@@ -1,3 +1,5 @@
+> HISTORICAL: ver ../../CURRENT_STATE.md. Documento legacy de admision; reemplazo vigente: ../../CURRENT_STATE.md y ../STARTERIA_AUTHORITY.md.
+
 # Flujo de admisión / onboarding de iniciativas (Starteria)
 
 > **Pregunta única que responde este archivo:** ¿Cómo entra una iniciativa al sistema y cómo se llenan los Pasos 0–4, tanto subiendo un PDF (autofill por agente) como manualmente?
@@ -217,3 +219,4 @@ Las 3 dudas abiertas de la sesión 1 se resolvieron con SPARC (S/P/A/R) + pase a
 **Fix aplicado (Opción A, 2026-06-19):** se normaliza el estado en un único punto del backend. Nueva función exportada `toWireStatus()` (`backend/modules/initiative-pdfs/pdf.service.ts`) mapea el enum de BD → minúsculas del wire (`PENDING→queued`, `RUNNING→running`, `COMPLETED→completed`, `FAILED/COST_CAPPED→failed`) y se usa en `toRunDTO`. El tipo del DTO pasó a `ExtractionRunWireStatus` (`pdf.types.ts`). El enum de BD sigue en MAYÚSCULAS; **el front no cambió** (ya esperaba minúsculas).
 
 **Tests:** nuevo `__tests__/run-status-wire-mapping.test.ts` (6 casos, guard del contrato) + se corrigieron las aserciones "wishful" en MAYÚSCULAS de `integration-regression.test.ts` y `pdf.service.test.ts`. Verificado: **394/394 backend + 212/212 front**. `COST_CAPPED` se colapsa a `failed` en el wire (el front no tiene estado de cost-cap; el detalle queda en `errorReason`) — posible mejora futura: exponer un mensaje específico de límite de costo y alinear `errorMessage`/`errorReason`.
+> HISTORICAL: ver `../../CURRENT_STATE.md`. Documento legacy de admision; reemplazo vigente: `../../CURRENT_STATE.md` y `../STARTERIA_AUTHORITY.md`.
