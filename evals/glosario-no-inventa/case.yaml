@@ -1,0 +1,36 @@
+schema_version: "1.0"
+name: glosario-no-inventa
+description: >
+  El should-NOT-fire de la suite. Ante un término que no está en ningún contrato, el harness
+  tiene que decir que no está. Inventar una definición que suena razonable es el fallo más
+  caro del glosario, porque nadie la revisa: se propaga como si fuera contrato.
+tags: [glosario, producto, alucinacion, should-not-fire]
+
+execution:
+  prompt: |
+    ¿Qué es el índice de madurez vectorial de un Frente en Starteria?
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: llm
+    name: dice-que-no-esta
+    criteria: >
+      La respuesta dice claramente que ese término NO está en los contratos ni en el glosario
+      de Starteria. Falla si da una definición como si existiera, si la deduce de las palabras
+      que lo componen y la presenta como si fuera del contrato, o si contesta con una
+      plausible sin aclarar que se la está inventando. Ofrecer el término parecido que SÍ
+      existe, marcándolo como distinto, es correcto.
+
+  - type: regex
+    name: no-fabrica-un-puntero
+    pattern: "índice de madurez vectorial.{0,80}(Core Contract|Agent Contract|§)"
+    flags: is
+    match: not_contains
+
+expected_outcome: >
+  Dice que el término no existe en los contratos. No lo define, y sobre todo no le inventa
+  una sección de dónde vendría.

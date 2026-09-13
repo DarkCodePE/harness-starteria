@@ -1,0 +1,44 @@
+schema_version: "1.0"
+name: glosario-cita-el-contrato
+description: >
+  Traduce un término del contrato a español llano y termina con el puntero al documento.
+  Traducir es la parte fácil. Citar de dónde salió es lo que evita que alguien se lleve una
+  definición que sonaba razonable y no está escrita en ningún lado.
+tags: [glosario, producto]
+
+execution:
+  prompt: |
+    ¿Qué es provenance en Starteria?
+  max_turns: 6
+  timeout_seconds: 180
+  allowed_tools: [Read, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: nombra-los-valores-reales
+    pattern: "USER_DECLARED"
+    match: contains
+
+  - type: regex
+    name: termina-con-el-puntero
+    pattern: "Agent Contract"
+    match: contains
+
+  - type: llm
+    name: espanol-llano-antes-del-termino
+    criteria: >
+      La respuesta explica qué es la procedencia en palabras corrientes ANTES de usar el
+      nombre formal del campo o sus valores en mayúsculas. Un lead sin contexto técnico
+      entiende para qué sirve leyendo sólo la primera frase. Falla si abre con la jerga,
+      si el español llano aparece recién al final, o si nunca aparece.
+
+  - type: tool_used
+    name: disparo-el-glosario
+    tool: Skill
+    arm: with-only
+
+expected_outcome: >
+  Explica procedencia en español llano, nombra los valores que admite el campo y cierra con
+  el documento y la sección de donde sale.

@@ -143,10 +143,18 @@ mal era el árbol de `ARCHITECTURE.md` §2, que lo listaba como archivo de este 
       importa es la de ejecución y se sostiene —`sync-para-chatgpt.py --check` no escribe nada, y
       por eso diverge a propósito del `check-mirror-sync.sh` de token-optimizer, que sí regenera
       sobre el working tree.
-- [ ] Existe una suite de evals del plugin y `claude plugin eval` la corre.
+- [x] Existe una suite de evals del plugin y `claude plugin eval` la corre. Cinco casos en
+      `evals/`, tres corridas cada uno, con brazo sin plugin para medir el delta. Verificado el
+      2026-09-13.
 
-El último va sin marcar porque es el trabajo que esta decisión habilita y todavía no se hizo. Es,
-también, lo que vuelve barato cambiar un comando del producto.
+Ese último era el trabajo que esta decisión habilitaba, y es lo que vuelve barato cambiar un comando
+del producto: ahora se puede saber qué se rompió sin abrir diez chats.
+
+**La suite no cruza la línea de `ADR-003`.** Ningún caso puntúa si el agente de Portfolio Entry
+interpretó bien una entrada. `probar-aisla-la-fase-1` verifica que el aislamiento haya ocurrido, que
+es una propiedad de ejecución y una máquina puede mirarla; no verifica que `PE-B03` haya pasado, que
+es interpretación y la puntúa una persona. La distinción es la misma que separa este ADR del otro, y
+es lo primero que se va a perder si alguien agrega casos sin leer esto.
 
 ## 6. Gatillos de revisión
 
@@ -177,3 +185,10 @@ Dos, y cualquiera de los dos obliga a releer esto:
   indexar el estado del producto y puntuar al agente son dos problemas distintos, y `ADR-010` §2.3
   solo resuelve el primero. Además, `estado/BITACORA.md` deja de vivir en el repo del usuario y pasa
   a `$STARTERIA_STATE_ROOT`, lo que vuelve moot la entrada de `.gitignore` que lo cubría.
+- 2026-09-13 · cerrado el último criterio: la suite de evals existe y corre. De paso, dos números de
+  esta sección quedaron viejos: dicen `Skills (8)` y hoy son diez, porque `ADR-010` agregó
+  `/starteria-patron` y `/starteria-revisar`. Se deja el texto original, que registra lo que se
+  verificó ese día, y se anota acá que el gate cuenta diez. `scripts/verify.sh` también pasó a exigir
+  `Agents (1)` y a comparar la versión instalada contra el manifiesto: sin lo segundo,
+  `claude plugin update` contesta "ya estás al día" y deja una copia vieja instalada sin avisar, que
+  fue exactamente lo que pasó al publicar.

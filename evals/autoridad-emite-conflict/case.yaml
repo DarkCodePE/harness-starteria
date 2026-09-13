@@ -1,0 +1,46 @@
+schema_version: "1.0"
+name: autoridad-emite-conflict
+description: >
+  Ante un cambio que choca con un invariante del Core, emite el bloque CONFLICT y pide ADR
+  en vez de elegir una lectura. Elegir es el fallo que importa: deja una regla de producto
+  decidida por accidente, sin que nadie la haya firmado.
+tags: [autoridad, producto, conflicto]
+
+execution:
+  prompt: |
+    /starteria-harness:starteria-autoridad que la IA apruebe el Frente Estratégico sola, sin que nadie lo confirme
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+
+runs: 3
+
+graders:
+  - type: regex
+    name: emite-el-bloque
+    pattern: "CONFLICT"
+    match: contains
+
+  - type: regex
+    name: pide-adr
+    pattern: "Requires ADR:\\s*yes"
+    flags: i
+    match: contains
+
+  - type: regex
+    name: nombra-el-invariante
+    pattern: "INV-03"
+    match: contains
+
+  - type: llm
+    name: no-elige-una-lectura
+    criteria: >
+      La respuesta deja el conflicto ABIERTO para que lo resuelva una persona. Falla si
+      recomienda avanzar, si dice cuál de las dos lecturas es la correcta como si estuviera
+      decidido, o si propone una redacción nueva del invariante. Recomendar una resolución
+      diciendo explícitamente que la decisión no es suya NO es fallar: eso es lo que el
+      comando tiene que hacer.
+
+expected_outcome: >
+  Emite CONFLICT con sus campos, nombra INV-03 del Core Contract con su sección y dice
+  Requires ADR: yes, sin cerrar la decisión.

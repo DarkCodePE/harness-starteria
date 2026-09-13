@@ -68,7 +68,26 @@ seguir: nada de lo que viene después significa algo con un plugin que no carga.
 
 Esto **no** prueba el harness, prueba el envase. Es `ADR-009` y la distinción importa.
 
-### 0.2 Instalar desde ruta local
+### 0.2 La suite de evals
+
+```bash
+claude plugin eval . --max-cost-usd 30
+```
+
+Cinco casos, tres corridas cada uno, contra dos brazos: con el plugin y sin él. El número que
+importa no es el puntaje sino el **delta**: cuánto cambia la respuesta por tener el harness puesto.
+Un caso que saca lo mismo en los dos brazos no está midiendo el harness, está midiendo al modelo.
+
+Corre unos veinte minutos y cuesta del orden de veinte a treinta dólares, así que no es de cada
+commit: es de cuando se toca un contrato, un comando o la rúbrica. Para iterar mientras escribís,
+`--case 'glosario*' --ablation none --runs 1` baja eso a menos de un dólar.
+
+**Qué NO prueba, y es a propósito.** Ningún caso puntúa si el agente de Portfolio Entry interpretó
+bien una entrada. Eso es `ADR-003` y lo hace una persona, con las fases de abajo. `probar-aisla-la-fase-1`
+verifica que el aislamiento haya ocurrido, no que `PE-B03` haya pasado. Confundir las dos cosas es
+cómo se consigue una suite verde sobre un producto roto.
+
+### 0.3 Instalar desde ruta local
 
 ```bash
 claude plugin marketplace add <ruta absoluta del repo>
@@ -78,7 +97,7 @@ claude plugin details starteria-harness
 
 **Pasa si:** el inventario reporta `Skills (10)`, `Agents (1)`, `Hooks (0)` y `MCP servers (0)`.
 
-### 0.3 Instalar desde GitHub
+### 0.4 Instalar desde GitHub
 
 Este es el criterio abierto de `ADR-008`. En una sesión nueva:
 
@@ -87,7 +106,7 @@ claude plugin marketplace add DarkCodePE/harness-starteria
 claude plugin install starteria-harness@darkcodepe
 ```
 
-**Pasa si:** instala y el inventario coincide con 0.2.
+**Pasa si:** instala y el inventario coincide con 0.3.
 
 **Falla si** el marketplace no encuentra `.claude-plugin/marketplace.json`. Causa casi segura: la
 rama por defecto del repo no tiene los archivos del plugin. `marketplace add <owner/repo>` va a la
@@ -100,7 +119,7 @@ git ls-tree -r --name-only origin/main | grep claude-plugin
 Sin salida, la instalación desde GitHub no puede funcionar por más que el repo exista. Se arregla
 mergeando a la rama por defecto, no tocando el plugin.
 
-### 0.4 Instalar donde no hay `doc/`
+### 0.5 Instalar donde no hay `doc/`
 
 El otro criterio abierto de `ADR-008`. En **cualquier otro repo** de la máquina:
 
@@ -264,11 +283,12 @@ no de memoria:
 - [ ] `PE-B03` produjo un registro `aislado` con las siete dimensiones y la capa de fallo (§2.2)
 - [ ] la prueba negativa produjo `CONTAMINADO` (§2.3)
 - [ ] alguien no técnico corrió la fase 2 sin ayuda y entendió el veredicto (§4)
+- [ ] la suite de evals corre entera y el delta con plugin es positivo (§0.2)
 
 Y de paso, los dos de `ADR-008` §5:
 
-- [ ] instala desde GitHub (§0.3)
-- [ ] en un repo sin `doc/`, pide el contrato en vez de inventarlo (§0.4)
+- [ ] instala desde GitHub (§0.4)
+- [ ] en un repo sin `doc/`, pide el contrato en vez de inventarlo (§0.5)
 
 ## Cuando termines
 

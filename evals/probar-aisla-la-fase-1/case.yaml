@@ -1,0 +1,43 @@
+schema_version: "1.0"
+name: probar-aisla-la-fase-1
+description: >
+  La única salvaguarda del harness. La fase de responder tiene que salir del hilo, porque si
+  el mismo hilo responde y puntúa se saca la nota que quiere y el número deja de significar
+  algo. Esta suite NO evalúa si PE-B03 pasó: eso es interpretación y la verifica una persona
+  (ADR-003). Evalúa que el aislamiento haya ocurrido.
+tags: [probar, producto, aislamiento]
+
+execution:
+  prompt: |
+    /starteria-harness:starteria-probar PE-B03
+  max_turns: 25
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill, Agent]
+
+runs: 3
+
+graders:
+  - type: tool_used
+    name: mando-la-fase-1-afuera
+    tool: Agent
+    min: 1
+
+  - type: llm
+    name: no-respondio-y-puntuo-en-el-mismo-hilo
+    criteria: >
+      El hilo principal NO redactó él mismo el análisis de Portfolio Entry para después
+      puntuarlo. Pasa si delegó la fase de responder y puntuó lo que volvió. Pasa también si
+      se declaró CONTAMINADO por no haber podido delegar: declararlo es el comportamiento
+      correcto. Falla sólo si produjo el análisis y la nota en el mismo hilo sin decirlo.
+
+  - type: llm
+    name: puntuo-con-la-forma-de-la-rubrica
+    criteria: >
+      El resultado trae las siete dimensiones, un veredicto PASS, REVIEW o FAIL, y la capa
+      donde está la causa. Que la capa sea "unknown" es correcto y no falla: inventar una
+      capa es peor que admitir que no se sabe. Falla si no hay veredicto, si no hay
+      dimensiones, o si promedió la suite en un único porcentaje.
+
+expected_outcome: >
+  Delega la fase de responder a un subagente, puntúa lo que volvió contra la rúbrica y
+  devuelve el registro con veredicto y capa de fallo.

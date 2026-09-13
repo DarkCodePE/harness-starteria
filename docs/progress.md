@@ -364,10 +364,9 @@ funcionando, no un olvido.
 |---|---|---|
 | Correr `PE-B03` de punta a punta (fase 2.2), con la prueba negativa | sin definir | todo lo demás: hasta que esto pase, el harness no está probado |
 | Firmar los 9 ADR que siguen en `proposed`, o rechazar los que no vayan | una persona con autoridad | que las decisiones dejen de ser propuestas; `ADR-010` ya está firmado |
-| Instalar el plugin desde GitHub, no solo desde ruta local | sin definir | criterio abierto de `ADR-008` |
 | Probar el plugin en un repo **sin** `doc/` | sin definir | criterio abierto de `ADR-008`; puede mover la frontera entre plugin y contratos |
+| Correr la suite de evals entera, con los dos brazos, y mirar el **delta** | sin definir | hoy la suite existe y está validada caso por caso; el número que dice si el harness sirve todavía no se sacó |
 | Decidir si `doc/` debe ser público en el repo | sin definir | son contratos del cliente y hoy están visibles |
-| Suite de evals del plugin (`claude plugin eval`) | sin definir | criterio abierto de `ADR-009`; que cambiar un comando tenga antes y después |
 | Entender por qué una sesión cargó 1 de 8 skills | sin definir | el gate mira el disco; este síntoma era de sesión y sigue sin causa |
 | Pasar `BLUEPRINT.md`, `ARCHITECTURE.md` y `LIFECYCLE.md` a la cita calificada de ADR (`BENCHMARK.md` ya está) | sin definir | que el primer ADR de producto no llegue a un repo ambiguo |
 | Cerrar los cinco huecos de `BLUEPRINT.md` §2.3 | sin definir | que el harness cumpla el workflow que le exige al producto |
@@ -377,7 +376,24 @@ funcionando, no un olvido.
 | Correr la cadena punta a punta con un caso real y confirmar que cada paso encuentra el anterior | una persona | criterio de aceptación de `ADR-010`; hoy sin verificar |
 | Cortar la cadena a propósito y confirmar que la skill siguiente lo dice y **sigue** | una persona | la invariante de `ADR-003`; si falla, el diseño de `ADR-010` está mal |
 
-**El primero es el que importa.** Los otros cinco se pueden hacer en cualquier orden.
+**El primero es el que importa.** Los otros se pueden hacer en cualquier orden.
+
+### Cerrado el 2026-09-13
+
+- **Instalar desde GitHub.** `marketplace add DarkCodePE/harness-starteria` + `install` reporta
+  `Skills (10)`, `Agents (1)`, `MCP servers (0)`. Criterio de `ADR-008` §5 marcado.
+- **Suite de evals.** Cinco casos en `evals/`, corriendo con `claude plugin eval .`. Criterio de
+  `ADR-009` §5 marcado. Con eso `scripts/verify.sh` pasa sin avisos.
+- **`docs/RUNBOOK.md`.** La fase 2 de `PLAN.md` pasó de "qué probar" a "cómo, con qué comando y qué
+  tiene que salir".
+- **El aislamiento de la fase 1 dejó de ser una intención.** `agents/portfolio-entry-responder.md`
+  tiene el AI Harness fuera de su alcance de lectura, así que no puede abrir el archivo del
+  `EXPECTED`. El gate lo exige con `Agents (1)`.
+
+Dos cosas que aparecieron al publicar y no estaban en ninguna lista. Sin bump de versión,
+`claude plugin update` contesta "ya estás al día" y deja instalada una copia vieja: `verify.sh` ahora
+compara la versión instalada contra el manifiesto. Y la rama por defecto del repo no tenía el plugin,
+así que la instalación que el README documentaba no podía funcionar.
 
 ---
 

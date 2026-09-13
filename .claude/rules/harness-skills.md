@@ -40,6 +40,29 @@ gate del productor falla, que es exactamente para lo que está.
 **Un solo runtime.** `ADR-010` abandonó ChatGPT: no escribas ramas "en Claude Code X, en ChatGPT Y".
 Queda X como prosa directa.
 
+## La suite de evals
+
+`evals/*/case.yaml`, cinco casos, la corre `claude plugin eval .`. Vive del lado del **productor**
+(`ADR-009` §5) y por eso puede ser mecánica.
+
+**La línea que no se cruza:** ningún caso puntúa si el agente de Portfolio Entry interpretó bien una
+entrada. Eso es `ADR-003` y lo hace una persona. `probar-aisla-la-fase-1` verifica que el
+aislamiento haya ocurrido, no que `PE-B03` haya pasado.
+
+Si agregás un caso, cuatro reglas que vienen del propio autor de la herramienta y no son negociables:
+
+- **Un caso que NO tiene que disparar** se queda en la suite. Hoy es `glosario-no-inventa`. Una
+  suite donde todo dispara no distingue el harness del modelo.
+- **Cada caso lleva al menos un grader de resultado**, no sólo `tool_used`. Que una skill se haya
+  invocado no dice que haya servido.
+- **`runs: 3` como piso.** Una corrida sola de un modelo no es evidencia de nada.
+- **`--ablation with-without` se queda.** El número que importa es el delta contra el brazo sin
+  plugin, no el puntaje absoluto.
+
+Y el orden para elegir grader: primero lo verificable (`regex`, `file_exists`, `tool_used`), después
+un criterio binario, y `llm` sólo cuando lo anterior no puede capturarlo. Un `llm` con una rúbrica
+vaga es un generador de ruido caro.
+
 ## Antes de cambiar la estructura, leé los ADR
 
 `docs/adr/ADR-INDEX.md`. Varias rarezas del harness son decisiones registradas con su costo, no
