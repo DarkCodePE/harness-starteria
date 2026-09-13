@@ -16,6 +16,7 @@ set -uo pipefail
 ESPERADAS=10
 AGENTES_ESPERADOS=1
 PLUGIN="starteria-harness@darkcodepe"
+PLUGIN_NOMBRE="starteria-harness"
 
 ROOT=""
 while [ $# -gt 0 ]; do
@@ -127,6 +128,16 @@ else
   else
     real=$(grep -o 'Skills ([0-9]*)' <<<"$det" | head -1)
     fallo "el inventario reporta '${real:-nada}', se esperaba Skills ($ESPERADAS)"
+  fi
+
+  # Sin bump de version, `claude plugin update` dice "ya estas al dia" y
+  # deja instalada una copia vieja sin avisar. Pasa en silencio.
+  esperada=$(grep -o '"version"[^,]*' .claude-plugin/plugin.json | grep -o '[0-9][0-9.]*')
+  instalada=$(grep -o "$PLUGIN_NOMBRE [0-9][0-9.]*" <<<"$det" | grep -o '[0-9][0-9.]*' | head -1)
+  if [ "$esperada" = "$instalada" ]; then
+    ok "version instalada $instalada = manifiesto"
+  else
+    fallo "instalada ${instalada:-ninguna}, manifiesto $esperada (subi la version y reinstala)"
   fi
 
   # El agente de la fase 1 no es cosmetico: sin el, /starteria-probar

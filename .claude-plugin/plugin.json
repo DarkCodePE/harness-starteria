@@ -1,6 +1,6 @@
 {
   "name": "starteria-harness",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Harness de producto para Portfolio Entry de Starteria. Diez comandos de chat que dejan correr los casos del AI Harness, detectar conflictos entre contratos y registrar decisiones, sin leer los nueve documentos primero. Para gente de lead y de producto que no es tecnica.",
   "author": {
     "name": "DarkCodePE"
