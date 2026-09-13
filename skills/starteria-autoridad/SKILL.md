@@ -2,6 +2,8 @@
 name: starteria-autoridad
 description: Dado un cambio propuesto, dice qué documento manda ahí, si choca con un contrato o un invariante, y si hace falta un ADR antes de tocar nada. Use when alguien quiere cambiar una regla, un mockup propone algo que el contrato no dice, o un caso del harness falló y no sabés qué arreglar.
 disable-model-invocation: true
+argument-hint: "<el cambio propuesto>"
+allowed-tools: Read Grep Glob
 ---
 
 # Contra qué contrato choca esto
@@ -12,8 +14,8 @@ dejar el conflicto por escrito si lo hay.
 
 ## Antes de contestar, leé
 
-[MAPA-DE-DOCUMENTOS.md](../starteria/MAPA-DE-DOCUMENTOS.md) (en ChatGPT:
-`starteria-MAPA-DE-DOCUMENTOS.md`), que dice cuál de los archivos de `doc/` ocupa cada nivel.
+[MAPA-DE-DOCUMENTOS.md](../starteria/MAPA-DE-DOCUMENTOS.md), que dice cuál de los archivos de `doc/`
+ocupa cada nivel.
 Después, el documento del nivel que corresponda. **Leelo de verdad, no lo cites de memoria.**
 
 Si el documento que le tocaría al cambio es uno de los que todavía no existen (el Experience Logic
@@ -86,6 +88,16 @@ primer escalón que explique el fallo:
 **No escales un fallo de prompt a cambio de producto.** Es el error más caro de este harness: se
 cambia un contrato por un caso aislado que no gustó, y el contrato deja de describir el producto.
 Un cambio de contrato tiene que salir de un **patrón** de fallos, no de una corrida.
+
+## Dónde queda
+
+Escribí el veredicto de nivel y, si lo hay, el bloque `CONFLICT`, en
+`$STARTERIA_STATE_ROOT/conflictos/<slug>.md`. Si la variable no está puesta, el default es
+`~/.starteria/<nombre-del-repo>/`.
+
+Si venís de `/starteria-afilar`, buscá el entendimiento en `$STARTERIA_STATE_ROOT/entendimiento/`.
+**Si no está, decilo y preguntá lo que falte.** Que el paso anterior no haya dejado nada escrito es
+información sobre cómo se trabajó, no un motivo para frenar.
 
 ## Lo que no hacés acá
 

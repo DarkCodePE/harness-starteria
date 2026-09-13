@@ -2,6 +2,8 @@
 name: starteria-caso
 description: Convierte una conversación real de un usuario en un caso nuevo del AI Harness, con su input, lo esperado y lo que tiene prohibido hacer. Use when alguien dijo algo que las suites A a I no cubren, o cuando una entrada real rompió algo que las pruebas armadas no detectaban.
 disable-model-invocation: true
+argument-hint: "<el texto real del usuario, sin limpiar>"
+allowed-tools: Read Grep Glob
 ---
 
 # Convertir una conversación real en un caso
@@ -55,10 +57,11 @@ enseñar nada.
 fallos duros aplican siempre y no hace falta repetirlos; lo que va acá es lo específico. Ejemplo: si
 la persona nombró una iniciativa, lo prohibido concreto es proponer crearla.
 
-**5. Llená [PLANTILLA.md](PLANTILLA.md)** (en ChatGPT: `starteria-caso-PLANTILLA.md`).
+**5. Llená [PLANTILLA.md](PLANTILLA.md)** y guardala en `$STARTERIA_STATE_ROOT/casos/<CASE_ID>.md`.
 
-**6. Corré el caso recién escrito** con `/starteria-probar`. Un caso que nadie corrió no se sabe si
-está bien planteado, y el momento de descubrirlo es ahora, no dentro de tres meses.
+**6. Revisalo y corrélo.** Primero `/starteria-revisar`, que chequea si el caso mide lo que dice
+medir; después `/starteria-probar`. Un caso que nadie corrió no se sabe si está bien planteado, y el
+momento de descubrirlo es ahora, no dentro de tres meses.
 
 ## Cuando no sepas qué esperar
 

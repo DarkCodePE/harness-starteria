@@ -4,16 +4,25 @@
 
 ## Harness de Portfolio Entry
 
-Este repo tiene un harness de producto para gente de lead y de producto, en `.claude/skills/starteria*`.
-Son ocho comandos de chat sobre los contratos de `doc/`: `/starteria` es el mapa y explica el resto.
-La rúbrica, el glosario y la cadena de autoridad viven ahí, no acá. Nada de eso corre solo: si nadie
-ejecuta `/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió.
+Este repo **es** un plugin de Claude Code: el harness de producto de Starteria, diez comandos de
+chat sobre los contratos de `doc/`, para gente de lead y de producto que no es técnica. Corre en
+Claude Code y sólo ahí (`ADR-010`).
 
-El porqué está en `docs/`: `PRD.md`, `DDD.md`, `ARCHITECTURE.md`, `LIFECYCLE.md`, `PLAN.md` y los
-siete ADR en `docs/adr/`. Antes de cambiar el harness, leé `docs/adr/ADR-INDEX.md`: varias de sus
-rarezas (dos fases para probar, cero verificación automática) son decisiones registradas, no
-descuidos.
+| Si vas a | Leé |
+|---|---|
+| usar el harness | `/starteria`, que es el mapa y explica los otros nueve |
+| **cambiar** el harness | [`AGENTS.md`](AGENTS.md): fases, puntos de control humanos, y las dos verificaciones que no se mezclan |
+| tocar `doc/` | `.claude/rules/contratos-doc.md`. Son contratos con autoridad, no se editan acá |
+| tocar `skills/`, `agents/` o el plugin | `.claude/rules/harness-skills.md` |
+| entender por qué está hecho así | `docs/adr/ADR-INDEX.md`, antes de cambiar la estructura |
+| probar que el plugin sigue vivo | `scripts/verify.sh` (productor) y `docs/RUNBOOK.md` (producto) |
 
+Las dos verificaciones no se mezclan y es `ADR-009`: `verify.sh` comprueba que el plugin cargue, una
+máquina puede hacerlo; que el agente de Portfolio Entry se comporte bien lo verifica una persona
+corriendo `/starteria-probar`, y si nadie lo corre, nadie lo sabe (`ADR-003`).
+
+Nada de esto corre solo, y es una decisión registrada (`ADR-003`), no un descuido: si nadie ejecuta
+`/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió.
 
 ## Rules
 
@@ -193,3 +202,10 @@ npx ruflo@latest doctor --fix
 > by default; `--ttl 0` to disable, `daemon status --all` to audit running daemons).
 
 **Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.
+
+## Research Base (hyperresearch)
+
+Las instrucciones de hyperresearch **no viven acá**. Están en [`AGENTS.md`](AGENTS.md), porque este
+archivo lo lee solo Claude Code, y `AGENTS.md` es la convención que leen también los otros agentes
+de código. `hyperresearch install` las inyecta acá por defecto; si volvés a correrlo, movelas de nuevo.
+

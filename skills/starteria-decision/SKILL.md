@@ -2,6 +2,8 @@
 name: starteria-decision
 description: Registra una decisión que cambia una regla de Starteria como ADR, en lenguaje de producto. Use when se decidió cambiar un invariante, mover la frontera entre lo que decide la persona y lo que decide la IA, cambiar una relación del dominio, o cualquier cosa que obligue a migrar datos.
 disable-model-invocation: true
+argument-hint: "<la decisión a registrar>"
+allowed-tools: Read Grep Glob
 ---
 
 # Registrar la decisión
@@ -34,7 +36,9 @@ en la Pantalla 1". Si el campo problema ya contiene la respuesta, nadie va a pod
 decisión fue buena.
 
 **Evidencia.** Qué se vio, no qué se cree. Casos del harness que fallaron con su id, conversaciones
-con usuarios, números. **Si no hay evidencia, escribí `ninguna`.** Un ADR honesto sin evidencia es
+con usuarios, números. Los registros están en `$STARTERIA_STATE_ROOT/registros/`; si además hay un
+patrón escrito en `patrones/`, citá ese: vale más que tres registros sueltos, porque ya se puso a
+prueba. **Si no hay evidencia, escribí `ninguna`.** Un ADR honesto sin evidencia es
 una decisión tomada por criterio, que es legítimo. Uno con evidencia inventada es otra cosa.
 
 **Alternativas.** Al menos una que se haya considerado en serio, con el motivo por el que se
@@ -42,7 +46,7 @@ descartó. Un ADR con una sola opción no registra una decisión, registra un an
 
 ## Cómo se escribe
 
-Llená [PLANTILLA-ADR.md](PLANTILLA-ADR.md) (en ChatGPT: `starteria-decision-PLANTILLA-ADR.md`).
+Llená [PLANTILLA-ADR.md](PLANTILLA-ADR.md).
 
 **En español llano.** Este documento lo va a leer alguien de negocio dentro de un año. Si usás
 `entry_state` o `AI_INFERRED`, explicalo en la misma línea.

@@ -22,17 +22,17 @@ entienda la forma del trabajo.
 
 | Decisión | ADR |
 |---|---|
-| Skills en `.claude/skills/`, con prefijo `starteria-` | `ADR-001` |
+| Skills en `skills/`, empaquetadas como plugin autodescubierto | `ADR-001` (superado por `ADR-008`) |
 | `/starteria-probar` separa responder de puntuar | `ADR-002` |
 | Sin gates: nada se verifica solo, y se declara | `ADR-003` |
 | Alcance v0.1: Portfolio Entry | `ADR-004` |
 | Citar `doc/`, no copiarlo, salvo tres derivados | `ADR-005` |
-| Un cuerpo de markdown para los dos runtimes | `ADR-006` |
+| Un cuerpo de markdown para los dos runtimes | `ADR-006`, superado por `ADR-010` |
 | El harness no escribe en `doc/` | `ADR-007` |
 
 ## Fase 1: construir. Hecha
 
-**Los ocho comandos**, en `.claude/skills/starteria*`:
+**Los diez comandos**, en `skills/starteria*`:
 `/starteria` (router), `/starteria-afilar`, `/starteria-autoridad`, `/starteria-probar`,
 `/starteria-caso`, `/starteria-decision`, `/starteria-cierre`, `/starteria-glosario`.
 
@@ -56,25 +56,82 @@ entienda la forma del trabajo.
 | Los 3 que el mapa declara ausentes, siguen ausentes | confirmado |
 | Los 32 ids de caso coinciden con el AI Harness | OK |
 | Los 9 fallos duros de `RUBRICA.md` coinciden con §3, en orden | OK |
-| El clon de `skills/` quedó intacto | `git status` vacío |
+| El clon de mattpocock quedó intacto, movido a `referencia/` | `git status` vacío |
 
 ## Fase 2: probar. Sin empezar
 
 Esto es lo que separa un harness escrito de un harness que sirve. Ninguno de estos pasos lo puede
 dar la herramienta sola.
 
-1. **Sesión nueva de Claude Code.** Escribir `/starteria` y confirmar que aparecen los ocho.
-2. **`/starteria-probar PE-B03`** de punta a punta. Es el caso más diagnóstico: solution-first puro,
-   tiene que disparar reverse alignment y no debe crear objetos canónicos. Verificar que la fase 1
-   corre aislada, que salen las siete dimensiones puntuadas, los fallos duros y la capa de fallo.
-3. **`/starteria-autoridad`** con un cambio que contradiga INV-03, por ejemplo "que la IA apruebe el
+La forma de estas pruebas salió de mirar cómo se prueban hoy los harness de agentes (investigación
+del 2026-09-10, fuentes en `~/Documents/Last30Days/ai-agent-evals-harness-testing-raw-v3.md`). Tres
+hallazgos cambiaron el plan y están marcados abajo donde aplican.
+
+### 2.1 Humo: los comandos existen y responden
+
+1. **Instalar el plugin y abrir sesión nueva.** `claude plugin marketplace add <ruta o repo>` y
+   `claude plugin install starteria-harness@darkcodepe`. Después, escribir `/starteria` y confirmar
+   que aparecen los ocho. Verificado el 2026-09-11: el inventario reporta `Skills (8)`.
+2. **`/starteria-autoridad`** con un cambio que contradiga INV-03, por ejemplo "que la IA apruebe el
    frente sola". Tiene que emitir `CONFLICT` y pedir ADR, no elegir una lectura.
-4. **`/starteria-glosario`**: preguntar qué es reverse alignment en medio de otra conversación y ver
+3. **`/starteria-glosario`**: preguntar qué es reverse alignment en medio de otra conversación y ver
    si salta sin que lo invoquen.
-5. **Montar el Proyecto de ChatGPT** siguiendo `PARA-CHATGPT.md` y repetir los pasos 2 y 3.
-6. **La prueba que importa:** alguien de producto que no vio esto antes corre el paso 2 sin ayuda.
-   Si necesita que le expliquen qué es un fallo duro, el glosario o la rúbrica fallaron, y se
-   arreglan ahí, no en la conversación.
+
+### 2.2 Trayectoria: que el aislamiento haya aislado de verdad
+
+**Este es el paso que antes no estaba, y es el que más importa.**
+
+El ejemplo que lo explica: un "refund processed" se ve idéntico con o sin el paso de verificación de
+identidad. Una salida correcta puede tapar un razonamiento roto, así que evaluar solo el resultado
+final no alcanza. Traducido acá: `/starteria-probar` puede devolver un registro impecable aunque la
+fase de responder haya visto la rúbrica, **porque el registro se ve igual**. Verificar el veredicto
+no verifica el harness.
+
+Corré `PE-B03` (solution-first puro, el más diagnóstico: tiene que disparar reverse alignment y no
+debe crear objetos canónicos) y comprobá, en este orden:
+
+1. **La fase de responder corrió ciega.** Abrí lo que se le mandó y confirmá que no contiene la
+   rúbrica, ni el `EXPECTED`, ni la palabra "evaluar". Si el subagente vio cualquiera de las tres, el
+   resultado es `CONTAMINADO` aunque el registro diga otra cosa.
+2. **El `ACTUAL` está sin editar.** Comparalo con lo que devolvió la fase 1, carácter por carácter.
+3. **Recién ahí**, que salgan las siete dimensiones puntuadas, los fallos duros y la capa de fallo.
+
+**Prueba negativa, obligatoria:** corré el mismo caso a propósito en un solo hilo. Si el registro
+**no** dice `CONTAMINADO`, la única salvaguarda del harness no funciona y hay que arreglar eso antes
+de correr nada más. Un harness que no detecta su propia contaminación produce verdes que no
+significan nada.
+
+### 2.3 Rúbrica: que el orden de puntuación sea el correcto
+
+1. **Los nueve fallos duros se revisan ANTES que las siete dimensiones.** No es un detalle de
+   presentación: la evidencia sobre jueces LLM muestra que los veredictos binarios sesgan menos que
+   los scores holísticos. Los fallos duros son binarios; las dimensiones de 0 a 2 no. Si al puntuar
+   se arranca por las dimensiones, se está entrando por la puerta más sesgada.
+2. **`unknown` en la capa de fallo tiene que aparecer y ser aceptable.** El mejor método publicado
+   para atribuir el paso decisivo de un fallo acierta el **14.2%** de las veces. Si tus corridas
+   nunca dicen `unknown`, no es que el harness sea preciso: es que está adivinando y presentando la
+   adivinanza como diagnóstico.
+
+### 2.4 Audiencia: la prueba que de verdad decide
+
+**Alguien de producto que no vio esto antes corre 2.2 sin ayuda.** Si necesita que le expliquen qué
+es un fallo duro, el glosario o la rúbrica fallaron, y se arreglan ahí, no en la conversación.
+
+### 2.5 Segundo runtime
+
+**Montar el Proyecto de ChatGPT** siguiendo `PARA-CHATGPT.md` y repetir 2.2 y 2.1. El aislamiento
+acá es de dos chats en vez de un subagente, así que la prueba negativa de 2.2 vale doble: es el
+runtime donde más fácil es saltearse el paso.
+
+### Criterio de salida de la fase 2
+
+No se pasa a fase 3 hasta que:
+
+- [ ] los diez comandos responden en sesión nueva;
+- [ ] `PE-B03` produjo un registro `aislado` con las siete dimensiones y la capa de fallo;
+- [ ] la prueba negativa produjo `CONTAMINADO`;
+- [ ] alguien no técnico corrió 2.2 sin ayuda y entendió el veredicto;
+- [ ] lo mismo funciona en ChatGPT.
 
 ## Fase 3: usar. Depende de la 2
 
@@ -86,6 +143,23 @@ El protocolo del AI Harness §18, que ya está escrito y solo hay que ejecutar:
 
 El criterio de salida hacia Tech Spec está en `LIFECYCLE.md` §4.
 
+### Tres reglas de curaduría para el Round 3
+
+Salieron de la misma investigación y contradicen el instinto de "agregar todos los casos reales que
+aparezcan". Van acá y no en fase 2 porque recién aplican cuando el set empieza a crecer:
+
+- **Core congelado, set creciente aparte.** Los 32 casos de las suites A a I son el baseline y no se
+  tocan: si cambian, se pierde la única referencia contra la cual comparar corridas viejas. Los casos
+  de Round 3 van a un set separado que sí crece.
+- **Clusterizar, no acumular.** Si veinte usuarios tropiezan con el mismo borde, eso es **un** caso,
+  no veinte. Guardar uno o dos representativos por modo de fallo; el resto infla la suite y no agrega
+  señal.
+- **Incluir casos que pasan.** Un set de puros fallos no detecta cuándo arreglar un modo rompió otro
+  que andaba bien. Por cada caso de Round 3 que expone un fallo, sumar uno que hoy funciona y que
+  quedaría roto si se toca esa regla.
+
+Las tres van a `/starteria-caso`, que hoy no las tiene.
+
 ## Lo que quedó afuera, y por qué
 
 | Fuera | Motivo |
@@ -94,7 +168,7 @@ El criterio de salida hacia Tech Spec está en `LIFECYCLE.md` §4.
 | Suites parametrizadas por experiencia | `ADR-004`. Generalizar con un solo caso produce la abstracción equivocada |
 | Empaquetado como plugin instalable | No hace falta mientras el harness viva en este repo |
 | Bundle generado para ChatGPT | `ADR-006`. Es una copia más que envejece |
-| Tocar `skills/`, el clon de mattpocock | `ADR-001`. Es de otro proyecto |
+| Tocar el clon de mattpocock (ahora `referencia/`) | `ADR-001`. Es de otro proyecto |
 | Los ADR de producto | `ADR-007`. Los escribe una persona cuando haya una decisión que registrar |
 
 ## Riesgos vivos

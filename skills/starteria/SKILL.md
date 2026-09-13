@@ -2,11 +2,13 @@
 name: starteria
 description: Mapa del harness de Starteria. Dada tu situación, te dice qué comando corresponde. Empezá siempre por acá si no sabés cuál usar.
 disable-model-invocation: true
+argument-hint: "[tu situación en una línea]"
+allowed-tools: Read Grep Glob
 ---
 
 # Starteria, el mapa
 
-No hace falta que te acuerdes de los ocho comandos. Preguntá acá.
+No hace falta que te acuerdes de los diez comandos. Preguntá acá.
 
 Este harness cubre **Portfolio Entry**: la Pantalla 1 (la persona escribe lo que quiere) y el pase
 a la Pantalla 2. Nada más, todavía. El resto de Starteria no tiene contratos escritos, y un harness
@@ -42,6 +44,14 @@ todo esto.
 que tiene prohibido hacer. Es el Round 3 del protocolo del AI Harness, y es trabajo que solo puede
 hacer alguien que habla con usuarios.
 
+**Escribiste un caso y todavía no lo corriste.**
+`/starteria-revisar`. Chequea si el caso mide lo que dice medir, antes de que su resultado cuente
+para algo. Un caso mal construido no falla: pasa, y te deja más tranquilo que antes.
+
+**Se acumularon corridas fallidas y nadie las miró juntas.**
+`/starteria-patron`. Busca la causa común entre varios registros y la pone a prueba con un caso que
+todavía no se corrió. Un contrato se cambia por un patrón, nunca por una corrida suelta.
+
 **Tomaron una decisión que cambia una regla.**
 `/starteria-decision`. La deja registrada como ADR, en lenguaje de producto. Sin esto, la decisión
 vive en un chat que nadie va a volver a abrir.
@@ -61,9 +71,13 @@ qué significa algo. `provenance`, `entry_state`, "objeto canónico", *reverse a
         ↓
 /starteria-autoridad       chequeás contra qué contrato choca
         ↓
-/starteria-probar          probás el comportamiento con casos
+/starteria-caso            escribís el caso que faltaba
         ↓
-/starteria-caso            agregás los casos reales que faltaban
+/starteria-revisar         chequeás que el caso mida lo que dice medir
+        ↓
+/starteria-probar          probás el comportamiento
+        ↓
+/starteria-patron          buscás la causa común entre varias corridas
         ↓
 /starteria-decision        registrás lo que se decidió cambiar
         ↓
@@ -71,6 +85,21 @@ qué significa algo. `provenance`, `entry_state`, "objeto canónico", *reverse a
 ```
 
 No es obligatorio pasar por todos. Es el orden en que se necesitan.
+
+## Dónde queda lo que hacés
+
+Cada comando deja su resultado en un archivo y el siguiente lo levanta. Todo eso vive en
+`$STARTERIA_STATE_ROOT`, afuera de este repo, con `~/.starteria/<nombre-del-repo>/` como default:
+
+```text
+entendimiento/  conflictos/  casos/  revisiones/  registros/  patrones/  BITACORA.md
+```
+
+Está afuera del repo porque los registros tienen conversaciones reales de usuarios, y esas no tienen
+por qué quedar publicadas en la historia de un repositorio.
+
+Que un comando no encuentre el archivo del anterior **no lo frena**: lo dice y sigue con lo que le
+des. Encadenar no es poner una puerta.
 
 ## Qué NO hace este harness
 
@@ -90,10 +119,6 @@ harness da por existentes y todavía no están escritos.
 
 ## Si querés saber por qué está hecho así
 
-`docs/` tiene el PRD, el modelo de dominio, la arquitectura, los ciclos de vida y los siete ADR con
+`docs/` tiene el PRD, el modelo de dominio, la arquitectura, los ciclos de vida y los diez ADR con
 las decisiones y su costo. No hace falta leerlo para usar los comandos. Hace falta para cambiarlos.
 
-## Si estás en ChatGPT
-
-Todo esto funciona igual, con un paso de armado previo. Está en
-[PARA-CHATGPT.md](PARA-CHATGPT.md).

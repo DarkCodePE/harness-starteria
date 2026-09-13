@@ -25,6 +25,8 @@ Portfolio Post-Entry Continuation fue observado como `IMPLEMENTED / LOCALLY VALI
 ## Comandos del harness
 
 Ocho comandos de chat trabajan sobre los contratos de `doc/`:
+Diez comandos de chat sobre los contratos de `doc/`. Funcionan en Claude Code (`/comando`) y en
+ChatGPT (como Proyecto).
 
 ```text
 /starteria             mapa: qué comando usar en cada situación
@@ -37,7 +39,8 @@ Ocho comandos de chat trabajan sobre los contratos de `doc/`:
 /starteria-glosario    explica un término del contrato
 ```
 
-**Empezá por `/starteria`.** Si estás en ChatGPT, por `skills/starteria/PARA-CHATGPT.md`.
+**Empezá por `/starteria`.** Si estás en ChatGPT, por
+`skills/starteria/PARA-CHATGPT.md`.
 
 ## Instalar
 
@@ -46,30 +49,37 @@ Es un plugin de Claude Code. Dos caminos, según para qué lo quieras.
 **Desde el marketplace**, para usarlo en cualquier repo:
 
 ```text
+```
+
 /plugin marketplace add DarkCodePE/harness-starteria
 /plugin install starteria-harness@darkcodepe
 ```
 
+
 **Desde una ruta local**, para probarlo mientras se desarrolla o para usarlo en otro harness de esta misma máquina:
 
 ```text
+```
 /plugin marketplace add /home/orlando/Desktop/harness-starteria
 /plugin install starteria-harness@darkcodepe
 ```
 
-Los ocho comandos aparecen escribiendo `/starteria`. Después de instalar, `/plugin` los lista.
 
-**Lo que el plugin NO se lleva:** los contratos de `doc/`. Son de Starteria, no del harness, y un plugin instalado en otro repo no debería arrastrarlos. Si instalás el plugin donde no hay `doc/`, los comandos van a pedirte que pegues el contrato que necesiten en vez de inventarlo.
+Los diez comandos aparecen escribiendo `/starteria`. Después de instalar, `/plugin` los lista.
+
+**Lo que el plugin NO se lleva:** los contratos de `doc/`. Son de Starteria, no del harness, y un
+plugin instalado en otro repo no debería arrastrarlos. Si instalás el plugin donde no hay `doc/`,
+los comandos van a pedirte que pegues el contrato que necesiten en vez de inventarlo.
 
 ## Organización
 
 | Carpeta | Contenido |
 |---|---|
-| `doc/` | Contratos, autoridad y ADRs de producto de Starteria |
-| `skills/starteria*` | Los ocho comandos del harness / plugin |
+| `doc/` | Contratos y autoridad de producto de Starteria |
+| `doc/product-adr/` | ADRs de producto, separados de los ADRs del harness |
+| `skills/starteria*` | Los diez comandos del harness / plugin |
 | `docs/` | PRD, dominio, arquitectura, lifecycle, plan e historial del harness |
 | `docs/adr/` | ADRs y decisiones del harness |
-| `doc/product-adr/` | ADRs de producto, separados de los ADRs del harness |
 
 ## Lo que este harness no hace
 

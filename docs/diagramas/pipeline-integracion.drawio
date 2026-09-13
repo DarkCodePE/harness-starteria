@@ -1,0 +1,236 @@
+<mxfile host="next-ai-draw-io" agent="harness-starteria" version="24.0.0">
+  <diagram id="pipeline-integracion" name="Pipeline de la integración">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="band_hot" value="&lt;b&gt;TRAMO CALIENTE&lt;/b&gt; · segundos · por request · &lt;i&gt;corre aunque nadie se acuerde&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFF4E6;strokeColor=#D79B00;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=13;fontColor=#7F4F00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="1400" height="250" as="geometry"/>
+        </mxCell>
+        <mxCell id="band_cold" value="&lt;b&gt;TRAMO FRÍO&lt;/b&gt; · semanas · por lote · &lt;i&gt;corre solo si alguien lo corre&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#EAF2FB;strokeColor=#6C8EBF;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=13;fontColor=#20456B;" vertex="1" parent="1">
+          <mxGeometry x="40" y="420" width="1400" height="490" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="doc" value="&lt;b&gt;doc/&lt;/b&gt; — 9 contratos · fuente única&lt;br/&gt;&lt;i&gt;se cita, no se copia (ADR-005)&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="25" width="320" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="usuario" value="Una persona escribe&lt;br/&gt;&lt;b&gt;Pantalla 1&lt;/b&gt;&lt;br/&gt;&lt;i&gt;raw_input: string&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="195" width="170" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="aiservice" value="&lt;b&gt;ai-service&lt;/b&gt; — Portfolio Entry&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;valida contra schema · emite HarnessTrace&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;verticalAlign=top;spacingTop=4;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="290" y="145" width="310" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="e01" value="entry-01 · intent + entry_state" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="305" y="197" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e02" value="entry-02 · contexto + contradicciones" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="305" y="232" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e03" value="entry-03 · reverse alignment (condicional)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="305" y="267" width="280" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="e04" value="entry-04 · 0 a 3 preguntas" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="305" y="302" width="280" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="analysis" value="&lt;b&gt;PortfolioEntryAnalysis&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;pending · ready · insufficient_input&lt;br/&gt;failed · superseded&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="190" width="210" height="105" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pantalla2" value="🔒 &lt;b&gt;Pantalla 2&lt;/b&gt; — la persona confirma&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;confirmar · editar · descartar&lt;br/&gt;(patrón de ADR-005 del producto)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="930" y="190" width="210" height="105" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="project" value="&lt;b&gt;Challenge / Project&lt;/b&gt;&lt;br/&gt;con Step 0 prefilled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="205" width="200" height="75" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="redaccion" value="¿salió sin nombres de&lt;br/&gt;persona, empresa, cliente?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="915" y="455" width="200" height="115" as="geometry"/>
+        </mxCell>
+        <mxCell id="deadend" value="&lt;b&gt;no&lt;/b&gt; → el lote no sale&lt;br/&gt;&lt;i&gt;el corte sano: falla cerrado&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#999999;dashed=1;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="482" width="200" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="produccion" value="&lt;b&gt;produccion/&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;en $STARTERIA_STATE_ROOT&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="650" y="482" width="200" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="gbrain" value="&lt;b&gt;gbrain&lt;/b&gt; — wiki + memoria&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;servidor MCP · dos fuentes&lt;br/&gt;harness-estado · produccion&lt;br/&gt;&lt;br/&gt;&lt;b&gt;doc/ NO entra&lt;/b&gt; (ADR-010 §2.3)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="370" y="450" width="230" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="stateroot" value="&lt;b&gt;$STARTERIA_STATE_ROOT&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;casos · registros · patrones · …&lt;br/&gt;lo escribe el plugin, vía MCP&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="370" y="620" width="230" height="65" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="patron" value="&lt;b&gt;/starteria-patron&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;causa común entre análisis que&lt;br/&gt;no comparten vocabulario&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="105" y="475" width="205" height="75" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="seleccion" value="🔒 &lt;b&gt;una persona elige&lt;/b&gt;&lt;br/&gt;cuáles casos valen&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;este candado no falla: se olvida&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="105" y="620" width="205" height="75" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="caso" value="&lt;b&gt;/starteria-caso&lt;/b&gt;&lt;br/&gt;[redactado] → [corrible]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="105" y="740" width="205" height="65" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="golden" value="&lt;b&gt;golden case&lt;/b&gt; en&lt;br/&gt;ai-service/harness/eval/&lt;br/&gt;&lt;i&gt;corre en CI para siempre&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="385" y="710" width="215" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="decision" value="&lt;b&gt;/starteria-decision&lt;/b&gt; → ADR&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;si el caso cambia una regla&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="385" y="805" width="215" height="65" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nota_cola" value="⚠ &lt;b&gt;El desbalance es el riesgo nuevo.&lt;/b&gt;&lt;br/&gt;El tramo caliente produce sin parar; el frío&lt;br/&gt;consume solo cuando alguien se acuerda.&lt;br/&gt;La cola crece, y nadie la ve crecer.&lt;br/&gt;&lt;i&gt;Los otros relojes fallan quedándose quietos;&lt;br/&gt;este falla llenándose.&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="660" y="620" width="300" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nota_gbrain" value="Si gbrain se cae, el tramo caliente&lt;br/&gt;&lt;b&gt;no se entera&lt;/b&gt;: la lectura de memoria&lt;br/&gt;nunca va en el camino crítico.&lt;br/&gt;&lt;i&gt;§6.4 del LIFECYCLE&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#B3B3B3;align=left;spacingLeft=10;fontSize=11;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="620" width="270" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nota_hoy" value="&lt;b&gt;Nada de esto existe todavía.&lt;/b&gt; El contrato de Portfolio Entry&lt;br/&gt;no aparece en una sola línea de la plataforma: &lt;i&gt;grep&lt;/i&gt; de&lt;br/&gt;entry_state / AI_INFERRED sobre Dashboardstarteria → cero.&lt;br/&gt;Este reloj está parado en cero." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;align=left;spacingLeft=10;fontSize=11;dashed=1;fontColor=#B85450;" vertex="1" parent="1">
+          <mxGeometry x="760" y="25" width="400" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_doc_ai" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#82B366;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="doc" target="aiservice">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_u_ai" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="usuario" target="aiservice">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_ai_an" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="aiservice" target="analysis">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_an_p2" value="⚠ ready ≠ confirmed" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;fontSize=11;fontColor=#B85450;labelBackgroundColor=#FFF4E6;" edge="1" parent="1" source="analysis" target="pantalla2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_p2_pr" value="confirma" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;fontSize=11;labelBackgroundColor=#FFF4E6;" edge="1" parent="1" source="pantalla2" target="project">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_p2_red" value="&lt;b&gt;corrige&lt;/b&gt; ← señal de oro&lt;br/&gt;&lt;i&gt;la única verdad que no&lt;br/&gt;viene de un agente&lt;/i&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=3;strokeColor=#D79B00;endArrow=block;fontSize=11;fontColor=#7F4F00;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="pantalla2" target="redaccion">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_red_dead" value="no" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#999999;endArrow=block;fontSize=11;" edge="1" parent="1" source="redaccion" target="deadend">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_red_prod" value="sí" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;fontSize=11;labelBackgroundColor=#EAF2FB;" edge="1" parent="1" source="redaccion" target="produccion">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_prod_gb" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="produccion" target="gbrain">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_state_gb" value="MCP" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;strokeColor=#9673A6;endArrow=block;fontSize=10;labelBackgroundColor=#EAF2FB;" edge="1" parent="1" source="stateroot" target="gbrain">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_gb_pat" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="gbrain" target="patron">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_pat_sel" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="patron" target="seleccion">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_sel_caso" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="seleccion" target="caso">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_caso_gold" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;" edge="1" parent="1" source="caso" target="golden">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_caso_dec" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;dashed=1;" edge="1" parent="1" source="caso" target="decision">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_ret" value="&lt;b&gt;el contrato cambia&lt;/b&gt; — y el tramo caliente empieza a cumplirlo&lt;br/&gt;&lt;i&gt;esta flecha es toda la integración: hoy no existe&lt;/i&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=3;strokeColor=#82B366;endArrow=block;fontSize=11;fontColor=#3D6B2E;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="decision" target="doc">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="62" y="838"/>
+              <mxPoint x="62" y="53"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="topologia-mcp" name="Topología MCP y fronteras">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="t_title" value="&lt;b&gt;El backend MCP no hay que construirlo: ya existe.&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:11px&quot;&gt;gbrain 0.50 trae servidor MCP (stdio / http), 6 perfiles, cercos de escritura por prefijo de slug,&lt;br/&gt;lectura federada por fuente, presupuesto diario y TTL de token. Falta otorgarlo y cercarlo, no escribirlo.&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=none;align=left;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="60" y="25" width="900" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_plugin" value="&lt;b&gt;Claude Code&lt;/b&gt; — el plugin&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;10 skills de skills/&lt;br/&gt;(ADR-008)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="180" width="220" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_gbrain" value="&lt;b&gt;gbrain serve&lt;/b&gt; — MCP&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;wiki (páginas, links tipados, grafo)&lt;br/&gt;+ búsqueda semántica&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;verticalAlign=top;spacingTop=8;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="540" y="160" width="300" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_src1" value="fuente: &lt;b&gt;harness-estado&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="255" width="260" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_src2" value="fuente: &lt;b&gt;produccion&lt;/b&gt; (redactada)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="300" width="260" height="35" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_ai" value="&lt;b&gt;ai-service&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;cliente 2 — fase 3, condicional&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;dashed=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="180" width="220" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_doc" value="&lt;b&gt;doc/&lt;/b&gt; — los 9 contratos" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="590" y="520" width="200" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_skills" value="&lt;b&gt;skills/&lt;/b&gt; — el producto" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="100" y="520" width="200" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_backend" value="&lt;b&gt;backend/modules/portfolio&lt;/b&gt;&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;guards requirePermission&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#999999;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="520" width="220" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_f1" value="&lt;b&gt;FRONTERA 1&lt;/b&gt; — doc/ NO entra al brain&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;ADR-010 §2.3 · crearía la copia que envejece&lt;br/&gt;en silencio, que es lo que ADR-005 prohíbe&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="620" width="280" height="75" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_f2" value="&lt;b&gt;FRONTERA 2&lt;/b&gt; — skills/ no es de gbrain&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;su doctor las reclama (20 avisos) y ofrece&lt;br/&gt;skillpack sync: publicaría 63 comandos&lt;br/&gt;ajenos dentro del producto (ADR-008)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="620" width="280" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_f3" value="&lt;b&gt;FRONTERA 3&lt;/b&gt; — gbrain no ve negocio&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;retos e iniciativas siguen en el backend&lt;br/&gt;con sus guards. Un segundo MCP sobre la&lt;br/&gt;plataforma: §5.5, todavía no se justifica&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;align=left;spacingLeft=10;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="620" width="290" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="t_e1" value="&lt;b&gt;stdio&lt;/b&gt; · perfil memory-writer&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;fence: casos/ registros/ patrones/&lt;br/&gt;revisiones/ conflictos/ entendimiento/&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;endArrow=block;startArrow=block;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="t_plugin" target="t_gbrain">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_e2" value="&lt;b&gt;http&lt;/b&gt; · perfil memory-reader&lt;br/&gt;&lt;font style=&quot;font-size:10px&quot;&gt;solo lectura · nunca en el&lt;br/&gt;camino crítico de un request&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;dashed=1;endArrow=block;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="t_ai" target="t_gbrain">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_e3" value="cita en vivo" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeWidth=2;strokeColor=#82B366;endArrow=block;fontSize=11;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="t_doc" target="t_plugin">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="548"/>
+              <mxPoint x="450" y="225"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="t_x1" value="" style="edgeStyle=none;html=1;strokeWidth=3;strokeColor=#B85450;endArrow=none;dashed=1;" edge="1" parent="1" source="t_doc" target="t_gbrain">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="t_x1b" value="✕" style="text;html=1;align=center;verticalAlign=middle;fontSize=28;fontColor=#B85450;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="660" y="430" width="60" height="40" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

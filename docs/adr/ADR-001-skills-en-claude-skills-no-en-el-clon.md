@@ -1,12 +1,12 @@
 ---
 id: ADR-001
 title: "Las skills del harness viven en `.claude/skills/`, no dentro del clon de mattpocock"
-status: proposed
+status: superseded
 type: standard
 date: 2026-09-10
 deciders: [producto]
 supersedes: null
-superseded_by: null
+superseded_by: ADR-008
 # Este ADR llega en `proposed` a propósito. La decisión está tomada y argumentada, pero
 # `accepted` significa que una persona la aprobó, y eso no lo puede hacer la herramienta.
 # Para firmarlo: status: accepted · aprobado_por: <tu nombre> · aprobado_en: <fecha>
@@ -83,3 +83,7 @@ prueba.
 ## Historial
 
 - 2026-09-10 · proposed · decisión tomada al descubrir que `skills/` era un clon de terceros.
+- 2026-09-11 · superseded por `ADR-008` · el harness se empaquetó como plugin y las skills pasaron
+  a `skills/` en la raíz del plugin, y el clon de Matt se movió a `referencia/`. Lo que este ADR
+  decidió sigue valiendo en su parte central: no escribir dentro del clon de Matt. Lo que cambió es el destino, de `.claude/skills/` a un plugin instalable, y con eso
+  se pagó justamente el costo que la sección 4 anotaba como aceptado: dejaron de autodescubrirse.
