@@ -2,6 +2,8 @@
 name: starteria-afilar
 description: Entrevista por rondas para afilar una idea, una decisión o un cambio de Starteria antes de escribirlo. Preguntas numeradas, cada una con respuesta recomendada. Use when la idea todavía es difusa, o alguien te pidió "algo así" y no sabés qué es "así". No use when ya está claro y solo hay que escribirlo.
 disable-model-invocation: true
+argument-hint: "<la idea o el cambio a afilar>"
+allowed-tools: Read Grep Glob
 ---
 
 # Afilar una idea

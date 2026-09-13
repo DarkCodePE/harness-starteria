@@ -2,16 +2,19 @@
 
 ## Harness de Portfolio Entry
 
-Este repo tiene un harness de producto para gente de lead y de producto, en `skills/starteria*`, empaquetadas como plugin de Claude Code.
-Son ocho comandos de chat sobre los contratos de `doc/`: `/starteria` es el mapa y explica el resto.
-La rúbrica, el glosario y la cadena de autoridad viven ahí, no acá. Nada de eso corre solo: si nadie
-ejecuta `/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió.
+Este repo **es** un plugin de Claude Code: el harness de producto de Starteria, ocho comandos de chat
+sobre los contratos de `doc/`, para gente de lead y de producto que no es técnica.
 
-El porqué está en `docs/`: `PRD.md`, `DDD.md`, `ARCHITECTURE.md`, `LIFECYCLE.md`, `PLAN.md` y los
-siete ADR en `docs/adr/`. Antes de cambiar el harness, leé `docs/adr/ADR-INDEX.md`: varias de sus
-rarezas (dos fases para probar, cero verificación automática) son decisiones registradas, no
-descuidos.
+| Si vas a | Leé |
+|---|---|
+| usar el harness | `/starteria`, que es el mapa y explica los otros siete |
+| tocar `doc/` | `.claude/rules/contratos-doc.md`. Son contratos con autoridad, no se editan acá |
+| tocar `skills/`, `agents/` o el plugin | `.claude/rules/harness-skills.md` |
+| entender por qué está hecho así | `docs/adr/ADR-INDEX.md`, antes de cambiar la estructura |
+| probarlo | `docs/RUNBOOK.md` |
 
+Nada de esto corre solo, y es una decisión registrada (`ADR-003`), no un descuido: si nadie ejecuta
+`/starteria-probar`, nadie sabe si el agente de Portfolio Entry se rompió.
 
 ## Rules
 

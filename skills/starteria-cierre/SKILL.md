@@ -2,6 +2,8 @@
 name: starteria-cierre
 description: Deja escrito en qué quedó la sesión para que la próxima no arranque de cero: qué se trabajó, qué se decidió, qué casos se corrieron y qué quedó abierto. Use when se termina una sesión con cosas a medio hacer, o antes de pasarle el trabajo a otra persona.
 disable-model-invocation: true
+argument-hint: "[quién cierra la sesión]"
+allowed-tools: Read Grep Glob Write(estado/**) Edit(estado/**)
 ---
 
 # Cerrar la sesión

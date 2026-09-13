@@ -2,6 +2,8 @@
 name: starteria-probar
 description: Corre un caso del AI Harness de Portfolio Entry y lo puntúa contra la rúbrica. Separa responder de puntuar para que el resultado signifique algo. Use when querés saber si el agente se comporta bien ante una entrada, o cuando tocaron un contrato y hay que ver qué se rompió. Acepta un id de caso (PE-B03), una suite entera (Suite B) o un texto real de usuario.
 disable-model-invocation: true
+argument-hint: "<PE-B03 | Suite B | texto real del usuario>"
+allowed-tools: Read Grep Glob Agent
 ---
 
 # Probar un caso
@@ -25,7 +27,8 @@ Entonces:
 `EXPECTED`, sin saber que lo están evaluando.
 **Fase 2, puntuar.** Recién ahí aparecen la rúbrica y lo esperado.
 
-En Claude Code la fase 1 va a un subagente. En ChatGPT va a otro chat.
+En Claude Code la fase 1 va al subagente `portfolio-entry-responder`, que viene con el
+plugin. En ChatGPT va a otro chat.
 
 **Si hacés las dos en el mismo hilo**, el comando igual corre, y escribe en el registro
 `CONTAMINADO: respondió y puntuó el mismo hilo, el resultado está inflado`. No lo borres. Un
@@ -77,8 +80,10 @@ Después, la síntesis que le mostrarías a la persona.
 No preguntes nada. Devolvé el análisis y la síntesis, nada más.
 ```
 
-- **En Claude Code:** mandalo a un subagente, junto con los cinco documentos. El subagente no ve
-  este hilo, así que no ve la rúbrica ni lo esperado. Es justo lo que queremos.
+- **En Claude Code:** mandalo al subagente `portfolio-entry-responder`. No ve este hilo, así que
+  no ve la rúbrica ni lo esperado, y además tiene el AI Harness **fuera de su alcance de lectura**:
+  no puede abrir el archivo donde vive el `EXPECTED` aunque se lo pidan. Si usás cualquier otro
+  subagente, esa segunda mitad del aislamiento vuelve a depender de que te acuerdes.
 - **En ChatGPT:** abrí otro chat del mismo Proyecto, pegá el bloque, y traé la respuesta de vuelta.
 
 Eso que vuelve es el `ACTUAL`. No lo edites, ni lo mejores, ni le completes lo que le falta.

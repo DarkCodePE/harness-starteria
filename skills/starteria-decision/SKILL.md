@@ -2,6 +2,8 @@
 name: starteria-decision
 description: Registra una decisión que cambia una regla de Starteria como ADR, en lenguaje de producto. Use when se decidió cambiar un invariante, mover la frontera entre lo que decide la persona y lo que decide la IA, cambiar una relación del dominio, o cualquier cosa que obligue a migrar datos.
 disable-model-invocation: true
+argument-hint: "<la decisión a registrar>"
+allowed-tools: Read Grep Glob
 ---
 
 # Registrar la decisión

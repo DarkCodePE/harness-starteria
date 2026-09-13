@@ -2,12 +2,15 @@
 referencia/
 token-optimizer/
 
-# Configuración de herramientas, no del harness
-.claude/
+# Configuración de herramientas, no del harness.
+# Excepción: .claude/rules/ sí es del harness y se comparte con el equipo.
+.claude/*
+!.claude/rules/
 .claude-flow/
 .swarm/
 estado/
 .mcp.json
+.serena/
 
 # Artefactos de herramientas
 ruvector.db

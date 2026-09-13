@@ -2,6 +2,8 @@
 name: starteria-caso
 description: Convierte una conversación real de un usuario en un caso nuevo del AI Harness, con su input, lo esperado y lo que tiene prohibido hacer. Use when alguien dijo algo que las suites A a I no cubren, o cuando una entrada real rompió algo que las pruebas armadas no detectaban.
 disable-model-invocation: true
+argument-hint: "<el texto real del usuario, sin limpiar>"
+allowed-tools: Read Grep Glob
 ---
 
 # Convertir una conversación real en un caso

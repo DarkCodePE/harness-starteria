@@ -2,6 +2,8 @@
 name: starteria-autoridad
 description: Dado un cambio propuesto, dice qué documento manda ahí, si choca con un contrato o un invariante, y si hace falta un ADR antes de tocar nada. Use when alguien quiere cambiar una regla, un mockup propone algo que el contrato no dice, o un caso del harness falló y no sabés qué arreglar.
 disable-model-invocation: true
+argument-hint: "<el cambio propuesto>"
+allowed-tools: Read Grep Glob
 ---
 
 # Contra qué contrato choca esto

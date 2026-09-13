@@ -2,6 +2,8 @@
 name: starteria
 description: Mapa del harness de Starteria. Dada tu situación, te dice qué comando corresponde. Empezá siempre por acá si no sabés cuál usar.
 disable-model-invocation: true
+argument-hint: "[tu situación en una línea]"
+allowed-tools: Read Grep Glob
 ---
 
 # Starteria, el mapa

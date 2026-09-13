@@ -1,6 +1,8 @@
 ---
 name: starteria-glosario
 description: Explica un término de los contratos de Starteria en español llano. Use when alguien pregunta qué significa provenance, entry_state, AI_INFERRED, objeto canónico, reverse alignment, solution-first, fallo duro, Step, invariante, ADR, baseline, o cualquier término del Core Contract o del Agent Contract de Portfolio Entry.
+argument-hint: "<el término que no entendés>"
+allowed-tools: Read Grep Glob
 ---
 
 # Glosario de Starteria
