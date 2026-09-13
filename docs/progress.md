@@ -336,24 +336,26 @@ funcionando, no un olvido.
   mano en formato nativo de draw.io. Se eligió eso sobre generarlo con `next-ai-draw-io` porque su
   validador es VLM y necesita API key, y porque un round-trip por modelo degrada un diagrama cuyo
   contenido ya estaba decidido. Abre igual en la herramienta para editarlo por chat.
-- **Deriva encontrada al correr el gate: el plugin publicado quedó dos skills atrás.**
-  `verify.sh` pasó de `OK Skills (10)` a `FALLA Skills (8)` dentro de la misma sesión, sin que nadie
-  tocara `skills/`. `claude plugin details` lee el **snapshot instalado**, no el árbol de trabajo:
-  en disco hay diez skills y los manifiestos ya dicen "Diez comandos" (sin commitear), pero el
-  instalado sigue en ocho y en "Ocho comandos". Las dos que faltan son **`starteria-patron` y
-  `starteria-revisar`** — justo las que `ADR-010 §2.4` creó y las que justifican que gbrain esté acá.
-  - **`ADR-010 §5` tiene un criterio verificado que dejó de ser cierto:**
-    `[x] El plugin instalado reporta Skills (10) — verificado 2026-09-12, sin reinstalar el plugin`.
-    Hoy reporta 8. Se deja **sin tocar el ADR** hasta que una persona decida: reinstalar cambia
-    justamente la condición bajo la que ese criterio se verificó, y esa es su decisión, no la de la
-    herramienta.
-  - **El plugin instalado trae un agente que el repo ya no tiene:** `Agents (1)
-    portfolio-entry-responder`, y `find` sobre el árbol no lo encuentra en ningún lado. `AGENTS.md`
-    dice que este repo define cero agentes propios; el artefacto publicado lo contradice.
-  - **Lo que esto enseña del gate:** `verify.sh` bloque 4 no verifica el repo, verifica **el entorno
-    de quien lo corre**. Puede pasar en verde con un árbol roto o fallar en rojo con un árbol sano,
-    según cuándo se refrescó el caché del plugin. No es un fallo del gate: es su alcance real, y
-    hasta hoy no estaba escrito en ningún lado.
+- **Lo que esta sesión leyó como deriva era su propio árbol viejo. Corregido el mismo día.**
+  `verify.sh` pasó de `OK Skills (10)` a `FALLA Skills (8)` sin que nadie tocara `skills/`, y se
+  registró acá como "el plugin publicado quedó dos skills atrás". **Era falso, y la causa estaba en
+  esta sesión:** la rama iba 11 commits detrás de `main`, donde otra sesión del mismo día ya había
+  subido `0.2.0`, las diez skills, el agente `portfolio-entry-responder` y la suite de evals. Con el
+  árbol al día, `verify.sh` sale **todo verde y sin avisos**.
+  - **No había nada que publicar.** El marketplace `darkcodepe` es este repo en GitHub con
+    `source: "./"`: publicar *es* empujar a `main`, y eso ya había pasado. Lo que estaba viejo era el
+    caché de instalación local.
+  - **`ADR-010 §5` no tenía ningún criterio falsificado.** Se dijo acá que sí. El artefacto publicado
+    sí reporta diez skills; el número ocho venía del caché.
+  - **Lo único que sobrevive de aquel hallazgo, y sobrevive entero:** `verify.sh` bloque 4 no
+    verifica el repo, verifica **el entorno de quien lo corre**, y por eso puede fallar en rojo con
+    un árbol sano. No es teórico: es lo que pasó acá, y ya tenía antecedente en el "hallazgo sin
+    resolver" del 2026-09-11. La otra sesión lo atacó el mismo día por su lado —`6903e28` agregó el
+    chequeo de versión estancada— así que ahora el gate al menos distingue *instalado viejo* de
+    *manifiesto viejo*.
+  - **La lección de proceso, que es la cara:** se diagnosticó deriva del repo sin haber hecho
+    `git fetch` primero. Un `fetch` al empezar habría mostrado los once commits y ahorrado un
+    diagnóstico equivocado escrito en el registro y en un mensaje de commit.
 - **Costo aceptado:** este blueprint **propone**; nada está firmado. Mientras las cuatro decisiones
   de su §8 no tengan nombre y fecha, `docs/` describe una integración que nadie aprobó — y ese es
   exactamente el estado que `AGENTS.md` permite y el que `ADR-007` obliga a declarar en voz alta.
