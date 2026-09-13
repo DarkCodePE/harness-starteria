@@ -17,9 +17,13 @@ execution:
 runs: 3
 
 graders:
+  # input_match no es opcional: sin el, este grader pasa con CUALQUIER subagente, y un
+  # subagente genérico sí puede abrir PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md, que es donde vive
+  # el EXPECTED. Delegar no alcanza: la mitad estructural del aislamiento es a QUIÉN se delega.
   - type: tool_used
-    name: mando-la-fase-1-afuera
+    name: mando-la-fase-1-al-responder
     tool: Agent
+    input_match: portfolio-entry-responder
     min: 1
 
   - type: llm

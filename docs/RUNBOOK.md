@@ -82,6 +82,9 @@ Corre unos veinte minutos y cuesta del orden de veinte a treinta dólares, así 
 commit: es de cuando se toca un contrato, un comando o la rúbrica. Para iterar mientras escribís,
 `--tag glosario --ablation none --runs 1` baja eso a menos de un dólar.
 
+**Para mirar por dentro una corrida, `--keep-temp`.** Sin eso el sandbox se borra al terminar y
+el `trace.jsonl` que el reporte referencia ya no existe cuando vas a abrirlo.
+
 **`--case` no se puede repetir.** Pasar `--case 'a*' --case 'b*'` no selecciona los dos: gana el
 último y el primero se pierde sin avisar. Se ve en el `aggregate-result.json`, que reporta un solo
 `caseFilter`. Para elegir varios, `--tag`, que sí acumula.
