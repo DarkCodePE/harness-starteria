@@ -165,6 +165,22 @@ else
   aviso "sin suite de evals — criterio abierto de ADR-009 §5"
 fi
 
+# --- 6. mirror de distribucion (ADR-011 §2.4) ------------------------------
+# El mirror es una copia, y una copia sin chequeo es como murio ADR-006.
+# Este bloque es el chequeo: regenera y compara contra lo commiteado.
+echo
+echo "Mirror de distribucion"
+if [ -d plugins/starteria-harness ]; then
+  if out=$(bash scripts/check-mirror-sync.sh 2>&1); then
+    ok "plugins/starteria-harness coincide con skills/ + agents/"
+  else
+    fallo "el mirror derivo — corre scripts/sync-plugin-mirror.sh y commitea"
+    echo "$out" | grep -E '^\s+[AMD?]{1,2} ' | head -5
+  fi
+else
+  aviso "sin mirror de distribucion — corre scripts/sync-plugin-mirror.sh"
+fi
+
 # --- resumen ---------------------------------------------------------------
 echo
 if [ "$FALLOS" -eq 0 ]; then

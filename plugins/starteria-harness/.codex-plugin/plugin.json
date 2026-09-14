@@ -1,0 +1,31 @@
+{
+  "name": "starteria-harness",
+  "version": "0.2.0",
+  "description": "Harness de producto para Portfolio Entry de Starteria. Diez comandos de chat sobre los contratos de doc/, para gente de lead y de producto que no es tecnica. En Codex nueve de los diez corren igual; /starteria-probar corre con el aislamiento de su fase 1 degradado, y esta dicho.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Starteria Harness",
+    "shortDescription": "Correr casos del AI Harness de Portfolio Entry, ubicar conflictos entre contratos y registrar decisiones.",
+    "longDescription": "Diez comandos sobre los nueve contratos de Starteria. El harness no aprueba nada: propone, y una persona firma. En Codex no existe la allowlist de herramientas que en Claude Code hace imposible que la fase 1 de /starteria-probar vea la rubrica, asi que ese aislamiento pasa de impuesto a declarado. Lo mismo con la autoinvocacion: las skills piden no autoinvocarse y Codex decide solo. Las dos degradaciones estan escritas en codex/README.md y no se tapan.",
+    "developerName": "DarkCodePE",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Correr casos del AI Harness",
+      "Ubicar un cambio en la cadena de autoridad",
+      "Redactar ADR de producto",
+      "Buscar la causa comun entre fallos"
+    ],
+    "websiteURL": "https://github.com/DarkCodePE/harness-starteria",
+    "defaultPrompt": [
+      "Corre /starteria y decime que comando me corresponde.",
+      "Tengo un pedido de cambio difuso: usa /starteria-afilar.",
+      "Esto choca con algo escrito: usa /starteria-autoridad.",
+      "Necesito redactar un caso del AI Harness: usa /starteria-caso."
+    ]
+  },
+  "author": {
+    "name": "DarkCodePE"
+  },
+  "repository": "https://github.com/DarkCodePE/harness-starteria",
+  "license": "MIT"
+}

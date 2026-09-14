@@ -1,0 +1,19 @@
+{
+  "name": "darkcodepe-starteria-harness",
+  "interface": {
+    "displayName": "Starteria Harness by DarkCodePE"
+  },
+  "plugins": [
+    {
+      "name": "starteria-harness",
+      "source": {
+        "source": "local",
+        "path": "./plugins/starteria-harness"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
