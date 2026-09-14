@@ -170,6 +170,11 @@ usarla, y lo barato sería volver a archivos planos.
   nadie puede autoinvocarlas, y eso es `ADR-003` funcionando. Corrección de lo asumido al decidir:
   **OpenRouter sí sirve embeddings** por `/api/v1/embeddings`, aunque no esté en su API reference;
   se probó contra la API real y devolvió un vector. No hizo falta una clave de Voyage.
+- 2026-09-13 · **el primer gatillo de §6 se disparó** · alguien pidió correr el harness fuera de
+  Claude Code, que es textualmente la condición escrita en `review_trigger`. `ADR-011` responde. De
+  los dos argumentos de §2.1, el de costo se cayó: el renombrado manual de catorce archivos que
+  `ADR-006 §4` había aceptado no hace falta, porque Codex consume el mismo `skills/` con otro
+  manifiesto. **§2.2 y §2.3 de este ADR no se tocan**; solo §2.1 queda revisada por `ADR-011`.
 - 2026-09-12 · accepted · aprobado en sesión por producto, que decidió el abandono de ChatGPT, el
   estado afuera del repo con ruta configurable, y gbrain con síntesis semántica desde el arranque.
   La aprobación se **transcribe**, no se produce: `AGENTS.md` permite lo primero y prohíbe lo
