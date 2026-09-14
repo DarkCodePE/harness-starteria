@@ -1,16 +1,17 @@
 # Registro de ADR del harness
 
 Las decisiones de diseño de **esta herramienta**: por qué probar tiene dos fases, por qué no hay
-gates, por qué las skills no viven donde las pidieron. Decisiones durables.
+gates, por qué las skills se empaquetan como plugin y cómo se separan las decisiones del harness de las del producto. Decisiones durables.
 
 ## Hay dos series de ADR y no se mezclan
 
 | | ADR de **harness** (esta serie) | ADR de **producto** (Starteria) |
 |---|---|---|
 | Qué cambian | cómo funciona la herramienta | una regla del producto |
-| Dónde viven | `docs/adr/` | serían nivel 2 de la cadena de autoridad, junto a `doc/` |
+| Dónde viven | `docs/adr/` | `doc/product-adr/` |
 | Formato | el de este archivo | Development Harness §4.6, plantilla en `/starteria-decision` |
 | Quién los escribe | quien mantiene el harness | quien gobierna el producto |
+
 | Cuántos hay | 10 | **ninguno todavía** |
 
 `ADR-001` de una serie no tiene nada que ver con `ADR-001` de la otra. Cuando
@@ -44,8 +45,12 @@ Para firmar uno: `status: accepted`, `aprobado_por: <tu nombre>`, `aprobado_en: 
 | [ADR-006](ADR-006-un-cuerpo-de-markdown-dos-runtimes.md) | Un cuerpo de markdown para Claude Code y ChatGPT, con el renombrado como precio | **superseded** → ADR-010 | el armado de ChatGPT es manual |
 | [ADR-007](ADR-007-el-harness-no-escribe-en-doc.md) | El harness no escribe en `doc/`, y ningún comando promueve a `aceptado` | proposed | los casos redactados esperan a que alguien los integre |
 | [ADR-008](ADR-008-el-harness-se-empaqueta-como-plugin.md) | El harness se empaqueta como plugin, con las skills autodescubiertas en `skills/` | proposed | se perdió el cero-instalación en este repo |
+
+
+Los ADRs de producto se consultan aparte en `doc/product-adr/ADR-INDEX.md`.
 | [ADR-009](ADR-009-dos-harnesses-el-producto-y-el-productor.md) | El repo tiene dos harnesses: el producto que se instala y el productor que lo construye | proposed | un segundo harness es un segundo harness que mantener |
 | [ADR-010](ADR-010-un-solo-runtime-y-el-estado-como-artefacto.md) | Un solo runtime, y el estado del harness como artefacto encadenado que una memoria indexa | **accepted** | se pierde ChatGPT, y el harness gana una dependencia de servicio |
+
 
 La columna de la derecha existe porque un registro de decisiones que solo cuenta las ventajas no
 sirve para revisarlas después.
