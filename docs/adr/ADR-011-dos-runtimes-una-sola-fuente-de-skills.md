@@ -81,6 +81,36 @@ Pero su checklist obliga a convertir `agents/` en skills, y eso **destruye la al
 honesta la fase 1. Publicar antes de resolver §2.2 sería someter a revisión externa un harness cuyas
 garantías todavía no decidimos. Primero se usa en Codex desde el repo; después se publica.
 
+### 2.4 La capa genérica: un paquete autocontenido, generado y chequeado
+
+Entre los manifiestos por runtime y los adaptadores documentales va una tercera capa que al principio
+parece prolijidad y no lo es.
+
+`.claude-plugin/marketplace.json` usa `"source": "./"`: **el paquete es la raíz del repo**. Eso ya
+tuvo una consecuencia real —`ADR-008 §4` la declaró y la dejó abierta— cuando el plugin instalado
+desde ruta local reportó `MCP servers (1) claude-flow`, arrastrando el `.mcp.json` de ruflo. Ese ADR
+anotó la parte que importa: *"la próxima cosa que alguien deje en la raíz va a viajar igual"*.
+
+Se agrega `plugins/starteria-harness/`, un paquete autocontenido con `skills/`, `agents/` y los dos
+manifiestos, y `.agents/plugins/marketplace.json` como catálogo en ubicación **neutral** —ni
+`.claude-*` ni `.codex-*`— que apunta a él. La raíz deja de ser la frontera del paquete.
+
+**Es una copia, y una copia sin chequeo es exactamente como murió `ADR-006`.** Por eso viene con dos
+piezas que no son opcionales:
+
+- `scripts/sync-plugin-mirror.sh` lo genera desde la raíz.
+- `scripts/check-mirror-sync.sh` lo **regenera y compara contra lo commiteado**, y es el bloque 6 de
+  `verify.sh`.
+
+La diferencia con `ADR-006` está en una sola frase: **el generador es dueño de las divergencias**.
+Aquello pedía mantener catorce renombrados en una tabla a mano, y una tabla a mano se pudre. Acá no
+hay lista de excepciones: si el paquete tiene que diferir de la raíz, la diferencia se escribe en el
+script, y el chequeo la respeta sola.
+
+Es también el lugar donde va a vivir la conversión de `agents/` a skill que pide OpenAI (§2.3) el día
+que se publique: como divergencia de un generador, con la degradación declarada, y no como una copia
+editada a mano que nadie vuelve a mirar.
+
 ## 3. Alternativas consideradas
 
 - **Quedarse en un solo runtime:** rechazada. El argumento de costo de `ADR-010` se cayó, y el de
@@ -122,6 +152,10 @@ garantías todavía no decidimos. Primero se usa en Codex desde el repo; despué
 - [ ] Un comando nuevo aparece en los dos runtimes sin editar ningún manifiesto.
 - [ ] Un registro de `/starteria-probar` sacado en Codex dice que se sacó en Codex.
 - [ ] `grep -ri "claude" skills/` sigue en cero, que es lo que mantiene el paquete portable.
+- [x] El chequeo de deriva del mirror falla cuando una skill cambia y no se regenera. — verificado
+      2026-09-13 en negativo: se tocó `starteria-glosario`, `verify.sh` dio `FALLA` y nombró el
+      archivo. Un chequeo que no se probó fallando es teatro.
+- [ ] Instalar desde `plugins/starteria-harness` reporta `MCP servers (0)`, cerrando `ADR-008 §4`.
 - [ ] Alguien que no escribió esto instala el harness en Codex siguiendo solo `codex/README.md`.
 
 El último es el criterio que `ADR-006` dejó abierto y nunca se cumplió. Se repite a propósito: si

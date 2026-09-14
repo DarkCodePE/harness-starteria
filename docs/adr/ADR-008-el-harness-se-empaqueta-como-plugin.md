@@ -87,6 +87,11 @@ proyecto.
   `.mcp.json` de ruflo, que es configuración de este proyecto y no del harness. Desde GitHub no pasa,
   porque `.mcp.json` está en `.gitignore` y no viaja. Queda anotado porque es la clase de fuga que
   produce empaquetar en la raíz, y la próxima cosa que alguien deje en la raíz va a viajar igual.
+  **Cerrado estructuralmente el 2026-09-13 por `ADR-011 §2.4`:** el paquete dejó de ser la raíz.
+  `plugins/starteria-harness/` lleva solo `skills/`, `agents/` y los manifiestos, lo genera un script
+  que es dueño de esa exclusión, y `verify.sh` bloque 6 falla si deriva. La predicción de esta línea
+  —que la próxima cosa dejada en la raíz iba a viajar igual— deja de cumplirse por diseño y no por
+  suerte de `.gitignore`.
 - Un plugin instalado donde no hay `doc/` no puede leer los contratos. Los comandos degradan bien
   (piden que se peguen) pero es una degradación real, no una ausencia de problema.
 
