@@ -9,6 +9,11 @@ description: >
   escrito en `STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md` §1 línea 202. El caso estaba mal, no
   el comando. Este input se eligió después de verificar con grep que no aparece en ningún
   documento de `doc/`. Si alguna vez se escribe, este caso hay que cambiarlo, no el comando.
+
+  Revisado el 2026-09-13, cuando apareció `doc/experience/portfolio-entry/`. Ese contrato ahora
+  gobierna el `question_plan`, pero sigue sin decir nada sobre numeradas contra viñetas, así que
+  la premisa del caso aguanta. Lo que sí cambió es la respuesta correcta: antes era "ese nivel no
+  existe todavía", ahora es "ese nivel existe y ahí no está escrito".
 tags: [autoridad, producto, no-escala]
 
 execution:
@@ -35,8 +40,8 @@ graders:
     criteria: >
       Contestá una sola pregunta: ¿la respuesta permite que el cambio avance sin ADR?
 
-      PASA si dice que se puede avanzar, o que no toca ningún invariante, o que el nivel que
-      le correspondería (Experience) todavía no está escrito.
+      PASA si dice que se puede avanzar, o que no toca ningún invariante, o que ubica el cambio
+      en el Experience Logic Contract y constata que ahí no está escrito.
 
       FALLA si pide un ADR, si emite un bloque CONFLICT, o si escala a Core por un cambio de
       presentación.

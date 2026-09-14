@@ -22,16 +22,24 @@ los edita. Esto no es una convención de estilo: es `docs/adr/ADR-007` y `docs/a
 
 ## Quién manda en qué
 
-| Si el cambio toca | Nivel | Archivo |
-|---|---|---|
-| Un invariante, la autoridad humana, el dominio | 1, Core | `CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` |
-| Qué puede o no puede hacer el agente | 4, Agent | `PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md` |
-| Cómo se comporta una skill sola | 5, Skill | `entry-01` a `entry-04` |
-| Los casos de prueba y la rúbrica | | `PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md` |
+**No lo contestes de memoria ni desde esta regla: está escrito.** `doc/STARTERIA_AUTHORITY.md` §2
+tiene la jerarquía de nueve niveles, y `§4` dice cuál es el contrato activo de Portfolio Entry. Abrilo.
 
-El nivel 3, Experience Logic Contract, **no existe todavía**. Si una pregunta le tocaría a ese
-nivel, decilo en vez de contestarla desde uno más abajo: así es como una regla de producto se decide
-por accidente.
+Esta regla no repite esa tabla a propósito. Copiarla acá sería la copia que envejece en silencio que
+`ADR-005` rechaza, y ya pasó una vez: durante un día esta regla afirmó que el Experience Logic
+Contract "no existe todavía", cuando había dejado de ser cierto.
+
+Dos cosas del mapa que conviene saber antes de abrirlo, porque cambian cómo se lee todo lo demás:
+
+- **Los ADR de producto (`doc/product-adr/`) pesan más que los Experience Contracts.** Son nivel 2,
+  arriba de los contratos que gobiernan una experiencia.
+- **Que el Core esté en el repo no lo vuelve aprobado.** Su estado declarado es "Base fundacional
+  revisada / Por validar" (`§3`). Cualquier cambio que dependa de tratarlo como aprobado necesita
+  ratificación explícita, y decirlo es parte del trabajo.
+
+Ojo con los dos registros de decisiones, que son distintos y se confunden fácil: `doc/product-adr/`
+son decisiones **de producto**, con autoridad de nivel 2. `docs/adr/` son decisiones **del harness**,
+y no gobiernan el producto.
 
 ## Si hay que decidir algo
 
