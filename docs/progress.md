@@ -365,7 +365,9 @@ funcionando, no un olvido.
 | Correr `PE-B03` de punta a punta (fase 2.2), con la prueba negativa | sin definir | todo lo demás: hasta que esto pase, el harness no está probado |
 | Firmar los 9 ADR que siguen en `proposed`, o rechazar los que no vayan | una persona con autoridad | que las decisiones dejen de ser propuestas; `ADR-010` ya está firmado |
 | Probar el plugin en un repo **sin** `doc/` | sin definir | criterio abierto de `ADR-008`; puede mover la frontera entre plugin y contratos |
-| Correr la suite de evals entera, con los dos brazos, y mirar el **delta** | sin definir | el número que dice si el harness sirve todavía no se sacó |
+| **Arreglar que el aislamiento de la fase 1 falle 1 de cada 3 veces** | sin definir | medido, no sospechado. Es la única salvaguarda del harness y funciona el 67% de las veces |
+| **Arreglar que `/starteria-autoridad` escale de más 2 de cada 3 veces** | sin definir | medido. Un comando que pide ADR casi siempre se deja de correr, y ahí muere el harness sin que nadie lo declare |
+| Rehacer `glosario-no-inventa`: mide al modelo, no al glosario | sin definir | Δ +0.17 porque el brazo sin plugin también acierta |
 | `/starteria-autoridad` lee el Core entero (66 KB) para un cambio de copy | sin definir | midió $1.37 y más de 5 minutos para decir "cambiá el texto del botón, adelante". No tiene camino barato para un cambio trivial, y eso lo va a hacer impagable en el uso diario |
 | Decidir si `doc/` debe ser público en el repo | sin definir | son contratos del cliente y hoy están visibles |
 | Entender por qué una sesión cargó 1 de 8 skills | sin definir | el gate mira el disco; este síntoma era de sesión y sigue sin causa |
@@ -378,6 +380,46 @@ funcionando, no un olvido.
 | Cortar la cadena a propósito y confirmar que la skill siguiente lo dice y **sigue** | una persona | la invariante de `ADR-003`; si falla, el diseño de `ADR-010` está mal |
 
 **El primero es el que importa.** Los otros se pueden hacer en cualquier orden.
+
+### El delta, medido el 2026-09-13
+
+Primera corrida con los dos brazos: 5 casos x 3 corridas x 2 brazos = 30 corridas, 17 minutos,
+$20.54. **Delta promedio +0.60.** El harness hace algo medible, y ahora se sabe cuánto y dónde.
+
+| Caso | con plugin | sin plugin | Δ |
+|---|---|---|---|
+| `autoridad-emite-conflict` | 1.00 · 1.00 · 1.00 | 0 · 0 · 0 | **+1.00** |
+| `glosario-cita-el-contrato` | 0.67 · 1.00 · 1.00 | 0 · 0 · 0 | **+0.89** |
+| `probar-aisla-la-fase-1` | 1.00 · **0.33** · 1.00 | 0 · 0 · 0 | **+0.78** |
+| `autoridad-no-escala-de-mas` | **0.50 · 0.50** · 1.00 | 0.50 · 0.50 · 0.50 | +0.17 |
+| `glosario-no-inventa` | 1.00 · 1.00 · 1.00 | 0.50 · 1.00 · 1.00 | +0.17 |
+
+**Lo que hay que arreglar, por orden de gravedad.**
+
+1. **El aislamiento de la fase 1 falla 1 de cada 3 veces.** En la corrida 2 de
+   `probar-aisla-la-fase-1`, `/starteria-probar` no delegó al `portfolio-entry-responder` y encima
+   el registro salió sin la forma de la rúbrica. El agente existe y el plugin lo carga; lo que falla
+   es que el comando se acuerde de usarlo. Es exactamente el fallo que la fase 2.3 del `RUNBOOK.md`
+   busca a mano, y ahora tiene número: **33% de las corridas**. Mientras esto siga así, un registro
+   que diga `aislado` es verdad dos de cada tres veces.
+
+2. **`/starteria-autoridad` escala de más 2 de cada 3 veces.** Ante un cambio de presentación que no
+   toca ningún invariante, el comando pidió ADR o emitió `CONFLICT` en dos de las tres corridas. Un
+   comando que escala casi siempre no le sirve a nadie: la gente lo va a dejar de correr, y ese es
+   el modo en que un harness muere sin que nadie lo declare muerto.
+
+**Y dos casos de la suite que hay que rehacer, no del harness.**
+
+- `glosario-no-inventa` saca Δ +0.17 porque **el brazo sin plugin también contesta bien**: un modelo
+  sin el harness igual suele decir que un término no existe. El caso mide la honestidad por defecto
+  del modelo, no el glosario. Hay que pedirle algo que sólo el glosario sepa.
+- `autoridad-no-escala-de-mas` saca Δ +0.17, pero por el otro motivo: el brazo con plugin falla
+  tanto como el brazo sin. El caso está bien planteado; lo que mide está roto (punto 2).
+
+**Una lección sobre el método, pagada con plata.** Los cinco casos habían dado 1.00 con una sola
+corrida. Con tres, dos de ellos se cayeron. La validación de una corrida era suerte, y el piso de
+`runs: 3` que venía del autor de la herramienta se acaba de justificar solo sobre nuestro propio
+trabajo.
 
 ### Cerrado el 2026-09-13
 
