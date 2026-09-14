@@ -367,7 +367,7 @@ funcionando, no un olvido.
 | Correr `PE-B03` de punta a punta (fase 2.2), con la prueba negativa | sin definir | todo lo demás: hasta que esto pase, el harness no está probado |
 | Firmar los 9 ADR que siguen en `proposed`, o rechazar los que no vayan | una persona con autoridad | que las decisiones dejen de ser propuestas; `ADR-010` ya está firmado |
 | Probar el plugin en un repo **sin** `doc/` | sin definir | criterio abierto de `ADR-008`; puede mover la frontera entre plugin y contratos |
-| **Arreglar que el aislamiento de la fase 1 falle 1 de cada 3 veces** | sin definir | medido, no sospechado. Es la única salvaguarda del harness y funciona el 67% de las veces |
+| **Volver a medir el delta con `add_dirs` puesto** | sin definir | el primero se tomó con el workspace sin `doc/`, así que los tres casos que dependen de contratos midieron en parte suerte de permisos |
 | **Arreglar que `/starteria-autoridad` escale de más 2 de cada 3 veces** | sin definir | medido. Un comando que pide ADR casi siempre se deja de correr, y ahí muere el harness sin que nadie lo declare |
 | Rehacer `glosario-no-inventa`: mide al modelo, no al glosario | sin definir | Δ +0.17 porque el brazo sin plugin también acierta |
 | `/starteria-autoridad` lee el Core entero (66 KB) para un cambio de copy | sin definir | midió $1.37 y más de 5 minutos para decir "cambiá el texto del botón, adelante". No tiene camino barato para un cambio trivial, y eso lo va a hacer impagable en el uso diario |
@@ -398,17 +398,25 @@ $20.54. **Delta promedio +0.60.** El harness hace algo medible, y ahora se sabe 
 
 **Lo que hay que arreglar, por orden de gravedad.**
 
-1. **El aislamiento de la fase 1 falla 1 de cada 3 veces.** En la corrida 2 de
-   `probar-aisla-la-fase-1`, `/starteria-probar` no delegó al `portfolio-entry-responder` y encima
-   el registro salió sin la forma de la rúbrica. El agente existe y el plugin lo carga; lo que falla
-   es que el comando se acuerde de usarlo. Es exactamente el fallo que la fase 2.3 del `RUNBOOK.md`
-   busca a mano, y ahora tiene número: **33% de las corridas**. Mientras esto siga así, un registro
-   que diga `aislado` es verdad dos de cada tres veces.
+1. ~~**El aislamiento de la fase 1 falla 1 de cada 3 veces.**~~ **RETIRADO el 2026-09-14.** No era
+   un defecto del harness: era el banco de pruebas. El workspace del eval **no tenía `doc/`**, así
+   que las tres corridas intentaron salir del sandbox a leer el repo real; dos lo lograron y
+   pasaron, y a la tercera le denegaron el permiso, se quedó sin el caso y nunca llegó a delegar.
+   Verificado en las trazas: la corrida que falló hizo 8 `Glob`, 2 `Read`, 1 `Grep` y **cero**
+   llamadas a `Agent`, y dejó escrito "el permiso de búsqueda está denegado fuera del directorio de
+   trabajo". La que pasó dice "Found it, the Starteria repo is at /home/orlando/...". Se arregló con
+   `context.add_dirs: [doc]` en los tres casos que dependen de los contratos.
 
-2. **`/starteria-autoridad` escala de más 2 de cada 3 veces.** Ante un cambio de presentación que no
-   toca ningún invariante, el comando pidió ADR o emitió `CONFLICT` en dos de las tres corridas. Un
-   comando que escala casi siempre no le sirve a nadie: la gente lo va a dejar de correr, y ese es
-   el modo en que un harness muere sin que nadie lo declare muerto.
+2. **`/starteria-autoridad` escala de más 2 de cada 3 veces. En revisión.** Sigue siendo el
+   candidato a defecto real, pero su medición arrastra dos problemas: se tomó sin `doc/` en el
+   sandbox (las tres corridas leyeron el repo por afuera) y contra el set de contratos **anterior**,
+   sin nivel Experience. Hay que volver a medirlo antes de tratarlo como defecto.
+
+**El delta de arriba mide menos de lo que parece.** Los tres casos que dependen de `doc/` corrieron
+sin `doc/` en su workspace, o sea que midieron en parte si cada corrida conseguía leer el repo desde
+afuera del sandbox. Los números de `autoridad-*` y `probar-aisla-la-fase-1` hay que volver a
+sacarlos con `add_dirs` puesto. Los dos de `glosario-*` no están afectados: leen el `GLOSARIO.md`
+que viaja adentro del plugin.
 
 **Y dos casos de la suite que hay que rehacer, no del harness.**
 

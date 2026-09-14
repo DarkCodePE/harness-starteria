@@ -71,8 +71,18 @@ Esto **no** prueba el harness, prueba el envase. Es `ADR-009` y la distinción i
 ### 0.2 La suite de evals
 
 ```bash
-claude plugin eval . --max-cost-usd 30
+claude plugin eval . --scaffold --max-cost-usd 40
 ```
+
+**`--scaffold` no es opcional y conviene saber qué hace.** El workspace del eval no incluye `doc/`:
+`add_dirs` sólo acepta rutas adentro del directorio del caso, y los contratos viven en la raíz. Sin
+scaffold, cada corrida termina intentando salir del sandbox a leer el repo real, las que lo logran
+pasan y las que no fallan, y eso mide la suerte del permiso de lectura en vez del comando. Pasó, y
+costó un delta entero.
+
+Los `scaffold.sh` de los tres casos que dependen de contratos copian `doc/` al workspace. Se ubican
+solos vía `BASH_SOURCE`, sin rutas absolutas. **Corren bash como vos**, así que leelos antes de
+pasar la bandera, como harías con cualquier suite ajena.
 
 Cinco casos, tres corridas cada uno, contra dos brazos: con el plugin y sin él. El número que
 importa no es el puntaje sino el **delta**: cuánto cambia la respuesta por tener el harness puesto.

@@ -16,6 +16,12 @@ description: >
   existe todavía", ahora es "ese nivel existe y ahí no está escrito".
 tags: [autoridad, producto, no-escala]
 
+# Sin esto el workspace del eval no tiene doc/, y cada corrida termina intentando salir del
+# sandbox a leer el repo real. Las que lo lograban pasaban; la que no, fallaba. Eso medía la
+# suerte del permiso de lectura, no el comando.
+context:
+  scaffold_script: scaffold.sh
+
 execution:
   prompt: |
     /starteria-harness:starteria-autoridad mostrar las preguntas del question_plan numeradas en vez de con viñetas

@@ -7,6 +7,12 @@ description: >
   (ADR-003). Evalúa que el aislamiento haya ocurrido.
 tags: [probar, producto, aislamiento]
 
+# Sin esto el workspace del eval no tiene doc/, y cada corrida termina intentando salir del
+# sandbox a leer el repo real. Las que lo lograban pasaban; la que no, fallaba. Eso medía la
+# suerte del permiso de lectura, no el comando.
+context:
+  scaffold_script: scaffold.sh
+
 execution:
   prompt: |
     /starteria-harness:starteria-probar PE-B03

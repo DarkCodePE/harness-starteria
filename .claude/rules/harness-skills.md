@@ -59,6 +59,11 @@ Si agregás un caso, cuatro reglas que vienen del propio autor de la herramienta
 - **`--ablation with-without` se queda.** El número que importa es el delta contra el brazo sin
   plugin, no el puntaje absoluto.
 
+**Si el caso nuevo necesita `doc/`, lleva `scaffold_script`.** El workspace del eval no lo tiene y
+`add_dirs` no puede traerlo: sólo acepta rutas adentro del directorio del caso. Copiá el
+`scaffold.sh` de cualquiera de los tres casos que ya lo usan. Y acordate de que la suite entonces se
+corre con `--scaffold`.
+
 Y el orden para elegir grader: primero lo verificable (`regex`, `file_exists`, `tool_used`), después
 un criterio binario, y `llm` sólo cuando lo anterior no puede capturarlo. Un `llm` con una rúbrica
 vaga es un generador de ruido caro.
