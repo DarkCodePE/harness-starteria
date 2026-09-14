@@ -16,14 +16,31 @@ barato: `ADR-006` murió porque exigía renombrar catorce archivos a mano, y ac�
 codex
 ```
 
-Codex escanea `.agents/skills` desde el directorio actual hasta la raíz del repo. Si preferís esa
-vía en lugar del manifiesto:
+Codex escanea `.agents/skills` desde el directorio actual hasta la raíz del repo, y **el repo ya trae
+ese symlink commiteado** (`.agents/skills → ../skills`, 9 bytes, modo `120000`). Codex sigue symlinks
+al escanear, así que no hay copia: clonás y los diez comandos están.
+
+Son dos vías independientes a propósito. El symlink sirve adentro de este repo sin instalar nada; el
+manifiesto `.codex-plugin/plugin.json` sirve para empaquetar y distribuir. Si una falla, la otra no
+depende de ella.
+
+## Probarlo, y qué contaría como que funciona
+
+Nada de esto se verificó todavía en Codex: **no está instalado en la máquina donde se armó**. Lo que
+sí se verificó es lo estructural — las diez skills tienen `name` y `description`, el manifiesto es
+JSON válido y su `skills` resuelve a los diez `SKILL.md`.
+
+Lo que falta es una persona corriendo esto:
 
 ```
-mkdir -p .agents && ln -s ../skills .agents/skills
+cd <este repo>
+codex
+/skills          # deberían aparecer los diez starteria*
+/starteria       # el mapa, que es el que explica los otros nueve
 ```
 
-Codex sigue symlinks al escanear, así que eso no duplica nada tampoco.
+Si los diez aparecen, el primer criterio abierto de `ADR-011 §5` se cierra. Si aparecen menos,
+lo que falla es el descubrimiento y no el contenido: revisar que Codex haya seguido el symlink.
 
 **Como plugin**, para usarlo en otro repo: ver `docs/PLAN.md`. Todavía no está publicado en el
 directorio universal de OpenAI, y `ADR-011` explica por qué esa parte espera.
