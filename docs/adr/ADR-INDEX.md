@@ -15,7 +15,7 @@ gates, por qué las skills se empaquetan como plugin y cómo se separan las deci
 
 `ADR-001` de una serie no tiene nada que ver con `ADR-001` de la otra. Cuando
 `/starteria-decision` redacte el primer ADR de producto, va a ser el `ADR-001` **de esa serie**, y
-no se numera después del décimo de acá.
+no se numera después del undécimo de acá.
 
 ## Casi todos están en `proposed`, a propósito
 
