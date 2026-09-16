@@ -1,0 +1,12 @@
+-- ADR-028: `portfolio_lead` como séptimo rol de plataforma.
+--
+-- Producción se sincroniza con `prisma db push` y no necesita este fichero (no tiene
+-- historial `_prisma_migrations`; ver ADR-018). Pero el stack e2e SÍ provisiona con
+-- `prisma migrate deploy` (front/scripts/database/provision-e2e-database.ts), así que
+-- sin esta migración el seed e2e falla con:
+--   invalid input value for enum "Role": "portfolio_lead"  (SQLSTATE 22P02)
+--
+-- `ADD VALUE` es aditivo: no reescribe filas ni rompe los valores existentes. En
+-- PostgreSQL 12+ puede ejecutarse dentro de la transacción de la migración siempre que
+-- el valor nuevo no se USE en esa misma transacción — el seed corre después, en otra.
+ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'portfolio_lead';

@@ -2,9 +2,19 @@
 
 Estado del repositorio `DarkCodePE/harness-starteria`.
 
+## Migration branch note
+
+La rama `feat/traer-plataforma` incorpora una migracion candidata de la plataforma productiva desde `nmindFa/Dashboardstarteria` para revision antes de convertir este repositorio en fuente oficial productiva.
+
+Este cambio no altera por si mismo el estado de `main`: `main` sigue siendo la fuente estable de harness/documentacion hasta que la PR de migracion sea revisada y mergeada de forma explicita.
+
+Auditoria de la migracion:
+
+`STARTERIA_PLATFORM_REPO_MIGRATION_AUDIT.md`
+
 ## Naturaleza
 
-Este repositorio debe leerse como harness/documentacion publica de Starteria. Conserva contratos, comandos de trabajo, ADRs del harness, referencias de producto y estado documental.
+Este repositorio debe leerse como harness/documentacion publica de Starteria en `main`. Conserva contratos, comandos de trabajo, ADRs del harness, referencias de producto y estado documental.
 
 No debe leerse como runtime productivo. No debe incorporar `backend/`, `front/`, Prisma, runtime ni tests productivos salvo decision explicita.
 

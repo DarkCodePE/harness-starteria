@@ -1,0 +1,80 @@
+import api, { setAccessToken, getAccessToken } from './api';
+export type { AuthError, AuthErrorDetail, ApiErrorBody } from './api';
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'participante' | 'mentor' | 'admin' | 'sponsor' | 'colaborador' | 'viewer' | 'portfolio_lead';
+  /** ADR-029: el conjunto de roles del backend. `role` es sólo el primario. */
+  roles?: string[];
+  /** ADR-029: permisos ya derivados en el servidor. Es lo que decide qué se pinta. */
+  permissions?: string[];
+  initials: string;
+  cohort?: string | null;
+}
+
+export interface LoginResponse {
+  user: AuthUser;
+  tokens?: { accessToken: string; refreshToken: string };
+  accessToken?: string;
+  waitlisted?: boolean;
+}
+
+export const authService = {
+  async login(email: string, password: string): Promise<LoginResponse> {
+    const { data } = await api.post('/auth/login', { email, password });
+    const result = data.data;
+    const token = result.tokens?.accessToken || result.accessToken;
+    if (token) setAccessToken(token);
+    return result;
+  },
+
+  async register(name: string, email: string, password: string): Promise<LoginResponse> {
+    const { data } = await api.post('/auth/register', {
+      name,
+      email,
+      password,
+      role: 'participante',
+    });
+    const result = data.data;
+    const token = result.tokens?.accessToken || result.accessToken;
+    if (token) setAccessToken(token);
+    return result;
+  },
+
+  // Google Identity Services (GIS) sign-in. Frontend obtains a Google-signed
+  // ID token via @react-oauth/google and forwards it here; the backend verifies
+  // it server-side and issues our own JWT pair.
+  async googleSignIn(idToken: string): Promise<LoginResponse> {
+    const { data } = await api.post('/auth/google', { idToken });
+    const result = data.data;
+    const token = result.tokens?.accessToken || result.accessToken;
+    if (token) setAccessToken(token);
+    return result;
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      setAccessToken(null);
+    }
+  },
+
+  async getMe(): Promise<AuthUser> {
+    const { data } = await api.get('/auth/me');
+    return data.data;
+  },
+
+  async refreshToken(): Promise<string> {
+    const { data } = await api.post('/auth/refresh');
+    const token = data.data.accessToken;
+    setAccessToken(token);
+    return token;
+  },
+
+  isAuthenticated(): boolean {
+    return getAccessToken() !== null;
+  },
+};

@@ -1,0 +1,42 @@
+import { z } from 'zod';
+
+export const sessionParamsSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
+export const createSessionBodySchema = z.object({
+  sourceMetadata: z.record(z.unknown()).optional(),
+}).strict().default({});
+
+export const expectedRevisionSchema = z.object({
+  expectedRevision: z.number().int().min(0),
+});
+
+export const submitMessageBodySchema = expectedRevisionSchema.extend({
+  message: z.string().trim().min(1).max(8000),
+  matchedQuestionIds: z.array(z.string().min(1)).max(10).optional(),
+  respondedResolves: z.array(z.string().min(1)).max(20).optional(),
+}).strict();
+
+export const materializeHandoffBodySchema = expectedRevisionSchema.strict();
+
+export const guidedExplorationBodySchema = expectedRevisionSchema.extend({
+  choice: z.enum(['accept', 'reject']),
+}).strict();
+
+export const confirmationBodySchema = expectedRevisionSchema.extend({
+  action: z.enum(['confirm', 'correct']),
+  acceptedFields: z.array(z.string().min(1)).max(50).optional(),
+  correctedFields: z.record(z.unknown()).optional(),
+  rejectedFields: z.array(z.string().min(1)).max(50).optional(),
+  notes: z.string().trim().max(4000).optional(),
+}).strict();
+
+export const claimBodySchema = expectedRevisionSchema.strict();
+
+export type CreateSessionBody = z.infer<typeof createSessionBodySchema>;
+export type SubmitMessageBody = z.infer<typeof submitMessageBodySchema>;
+export type GuidedExplorationBody = z.infer<typeof guidedExplorationBodySchema>;
+export type MaterializeHandoffBody = z.infer<typeof materializeHandoffBodySchema>;
+export type ConfirmationBody = z.infer<typeof confirmationBodySchema>;
+export type ClaimBody = z.infer<typeof claimBodySchema>;
