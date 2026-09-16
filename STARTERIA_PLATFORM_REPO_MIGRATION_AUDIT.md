@@ -10,9 +10,11 @@ Source repo: `nmindFa/Dashboardstarteria`.
 
 The target branch was created from target `main` and received the selected product runtime from the source branch that contains Portfolio Entry product wiring. This was not a blind repository copy: target authority, harness, skills, plugins, and existing documentation were preserved.
 
-Final verdict for this branch: `READY_WITH_GAPS`.
+Pre-merge gap closure update: DB migration validation now passes against isolated PostgreSQL; DB integration tests for Portfolio Entry sessions, conversion/confirmation, continuation, and bootstrap pass without skips; Portfolio Entry browser smoke passes. Full browser E2E still fails outside the Portfolio Entry smoke, so the branch is not merge-ready yet.
 
-Blocking gaps before declaring `READY`: browser E2E was not executed locally, DB migrations were not executed against Postgres because Docker Desktop was unavailable, Python tests were not executed locally because `uv`/`pytest` were unavailable, and `npm audit` reports inherited dependency vulnerabilities.
+Final pre-merge verdict for this branch: `NOT_MERGE_READY`.
+
+Blocking gap before declaring merge-ready: full browser E2E failed (`20 failed, 4 did not run, 21 passed`). The targeted Portfolio Entry smoke is green (`8 passed`) and now protected in CI as `e2e-light`.
 
 ## 2. Source Repo State
 
@@ -133,12 +135,13 @@ Observed runtime:
 - That conversion is retained as an Initiative Entry/legacy-compatible path and is not the Portfolio Lead primary journey.
 - Backend tests include a rejection path for Project conversion from Portfolio sessions.
 
-Confirmation status:
+Confirmation status from `npm run test:e2e -- e2e/portfolio-entry-conversion.spec.ts`:
 
-- Portfolio Entry creates Project for Portfolio Lead: `NO` by intended Portfolio continuation path; full browser E2E not executed locally.
-- Portfolio Entry creates Steps: `NO` by intended Portfolio continuation path; full browser E2E not executed locally.
-- Portfolio Entry activates Step0: `NO` by intended Portfolio continuation path; full browser E2E not executed locally.
-- Portfolio Lead ends in Portfolio: `YES` by code/tests present; full browser E2E not executed locally.
+- Portfolio Entry creates Project for Portfolio Lead: `NO`.
+- Portfolio Entry creates Steps: `NO`.
+- Portfolio Entry activates Step0: `NO`.
+- Portfolio Lead ends in Portfolio: `YES`.
+- Forbidden-route watcher found no navigation to `/public/draft/:id/edit`, `/projects/:id`, `/projects/:id/step/0`, or `/step/0`.
 
 ## 10. Docs Reconciliation
 
@@ -186,10 +189,13 @@ Migrated:
 
 Validation:
 
-- `npx prisma generate`: passed after allowing Prisma engine download.
-- `DATABASE_URL=postgresql://postgres:postgres@localhost:55433/postgres npx prisma validate`: passed.
-- `docker compose -f docker-compose.e2e.yml -p starteria-e2e up -d postgres`: failed because Docker Desktop/Linux engine was not available locally.
-- `prisma migrate deploy/status` against Postgres: not executed locally.
+- Isolated PostgreSQL: `docker compose -f docker-compose.e2e.yml -p starteria-e2e up -d --wait postgres`: passed.
+- Clean DB provisioning: `npm run db:e2e:provision`: passed.
+- Migrations from zero: 37 migrations applied successfully, from `20260414220131_add_portfolio_lead_models` through `20260914150000_add_portfolio_bootstrap_import_batches`.
+- `npx prisma generate`: passed.
+- Prisma client connectivity against isolated DB: passed (`user_count=4` after E2E seed).
+- `npx prisma migrate status`: passed (`Database schema is up to date!`).
+- Destructive-operation audit: no `DROP TABLE` found. Existing clean-migration SQL contains index/constraint drops, nullable-column relaxations, and `TruthValidation` normalization deletes in historical migration `20260810120000_r1_truth_integrity_review_fix`; no unexpected destructive operation for a clean database bootstrap was observed.
 
 ## 13. Tests
 
@@ -202,13 +208,19 @@ Executed locally:
 - `npm run test:backend`: passed.
 - `npm run test:front`: passed.
 - `npx prisma validate` with local dummy `DATABASE_URL`: passed.
+- DB integration command with `PORTFOLIO_ENTRY_DB_INTEGRATION=1` and `PORTFOLIO_BOOTSTRAP_DB_INTEGRATION=1`: passed (`4` files, `42` tests, `0` skips reported).
+- Full browser E2E: failed (`45` tests total; `21` passed, `20` failed, `4` did not run).
+- Targeted Portfolio Entry browser smoke: passed (`8` tests).
 
 Not executed locally:
 
 - Python tests: `uv` not available; `python -m pytest -m unit` unavailable because `pytest` is not installed.
-- DB integration tests requiring Postgres: Docker engine unavailable.
-- Browser E2E: not executed because DB/Postgres dependency was unavailable.
-- Full Portfolio Entry browser path Landing -> clarification -> handoff -> confirmation -> auth -> Portfolio continuation -> Portfolio Home: not executed locally.
+
+Full Portfolio Entry browser path result:
+
+- `/public/start` -> clarification -> handoff -> confirmation/auth -> Portfolio continuation -> Portfolio Home: passed in targeted smoke.
+- Forbidden destinations `/public/draft/:id/edit`, `/projects/:id`, `/projects/:id/step/0`, `/step/0`: not reached in targeted smoke.
+- Full-suite gap: `public-start-access.spec.ts` failed in the full run and must be reviewed with the other E2E failures before merge-ready status.
 
 ## 14. CI
 
@@ -220,13 +232,13 @@ CI covers:
 - Python unit tests with coverage via `uv`.
 - Frontend build.
 - Python ruff check in advisory mode.
+- E2E light: `npm run test:e2e -- e2e/portfolio-entry-conversion.spec.ts`.
 - CI summary.
 
 CI does not fully protect browser E2E:
 
-- `E2E light (disabled - Phase 1)` is hard skipped with `if: false`.
-
-Do not declare E2E fully protected.
+- Full browser E2E is not enabled as a required CI job because the complete suite is currently red and materially broader than the pre-merge Portfolio Entry smoke.
+- Do not declare full E2E protected until the 20 full-suite failures are resolved.
 
 ## 15. Security/Secret Scan
 
@@ -238,8 +250,20 @@ Result: no matches.
 
 Dependency audit:
 
-- `npm ci` reported 35 vulnerabilities: 2 low, 8 moderate, 20 high, 5 critical.
-- These appear inherited from the source dependency graph and require separate dependency-security triage before production cutover.
+- `npm audit --json`: 35 vulnerabilities: 2 low, 8 moderate, 20 high, 5 critical.
+- `npm audit --omit=dev --json`: 19 production-scope vulnerabilities: 1 low, 4 moderate, 13 high, 1 critical.
+
+Critical triage:
+
+| Package/advisory group | Path | Classification | Blocking? | Treatment |
+|---|---|---|---:|---|
+| `vitest` | direct devDependency | DEV_ONLY | No | Fix requires major upgrade to Vitest 5; not applied in this scoped pre-merge pass. |
+| `@vitest/coverage-v8` | direct devDependency, via `vitest` | DEV_ONLY | No | Same major-upgrade risk as Vitest; not applied. |
+| `shell-quote` | transitive via `concurrently` | DEV_ONLY / TRANSITIVE | No | Used by local dev script `dev:all`, not production runtime. |
+| `tar` | transitive via `@tailwindcss/oxide` and `@mapbox/node-pre-gyp` | TRANSITIVE / RUNTIME_NON_BLOCKING | No | Install/build-time archive parser dependency; not reached by Portfolio Entry HTTP/runtime paths. No safe scoped non-major fix identified. |
+| npm critical total | audit metadata | MIXED | No runtime blocker identified | Keep Dependabot/audit follow-up before production cutover. |
+
+Safe scoped fixes applied: none. Available automated fixes either require major version changes (`vitest`, `prisma`, `nodemailer`) or affect broad transitive install tooling; these were documented instead of upgraded indiscriminately.
 
 PII scan:
 
@@ -263,12 +287,15 @@ EXPECTED_OUTPUT: frontend Vite `front/dist`; backend compiled output per `tsconf
 
 ENV_VARIABLES_REQUIRED:
 
-- `DATABASE_URL`
-- `JWT_SECRET`
-- auth/provider credentials as enabled
-- AI provider keys for live model mode
-- mailer/provider credentials if notifications are enabled
-- frontend API/base URL config as used by deployment environment
+- Frontend: `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_ENABLE_INITIAL_REVIEW`, `VITE_ENABLE_INITIATIVE_REVIEW_CHAT`, `VITE_ENABLE_DEMO_DATA`, `VITE_FEATURE_PDF_AUTOFILL`, `VITE_BACKEND_PROXY_TARGET` for local/E2E proxying.
+- Backend: `NODE_ENV`, `PORT`, `LOG_LEVEL`, `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`, `CORS_ORIGIN`, `BODY_LIMIT`, `AI_SERVICE_URL`, `BRIDGE_SHARED_SECRET` or `AI_SERVICE_TOKEN`, `LOCAL_STORAGE_DIR`, `GOOGLE_CLIENT_ID`, billing flags/secrets if enabled, SMTP variables if notifications are enabled.
+- AI service: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_BASE_URL`, `ENVIRONMENT`, `LOG_LEVEL`, `MAX_COST_PER_REQUEST_USD`, `MAX_COST_PER_PROJECT_DAY_USD`, `LANGSMITH_*` if tracing is enabled, `BACKEND_WEBHOOK_URL`, `BACKEND_WEBHOOK_TOKEN`, `BACKEND_WEBHOOK_TIMEOUT_SEC`, `PDF_EXTRACT_COST_CAP_USD`, `PDF_EXTRACT_STUB`.
+- Provider IA: OpenRouter by default (`https://openrouter.ai/api/v1`); deterministic Portfolio Entry mode is available through `PORTFOLIO_ENTRY_RUNTIME_MODE=deterministic` for E2E.
+- Auth config: JWT access/refresh config, Google OAuth client ID if Google sign-in is enabled, waitlist/rate-limit flags only for test/E2E.
+- CORS: `CORS_ORIGIN` supports comma-separated allowed origins.
+- Production URLs: no runtime/CI deployment reference to `nmindFa/Dashboardstarteria` was found. Historical docs/audit/ADR references remain as provenance only.
+- Build commands: frontend `cd front && npm ci && npx prisma generate && npm run build`; backend `cd front && npm run build:backend` or `Dockerfile.backend`; AI service `cd ai-service && uv sync --all-extras`.
+- Start commands: backend `cd front && npm run start:backend` after build or Docker image; frontend served from Vite `dist`/nginx image; AI service through its Python app/runtime container.
 
 MIGRATION_REQUIRED: yes, apply Prisma migrations from `front/prisma/migrations` to target production database only after review and backup.
 
@@ -276,15 +303,14 @@ ROLLBACK_PLAN: keep deployment pointed at `nmindFa/Dashboardstarteria` until tar
 
 ## 17. Remaining Gaps
 
-- Browser E2E not executed locally.
-- DB integration and Prisma migrations against Postgres not executed locally.
+- Full browser E2E is red: `20` failures, `4` did not run.
 - Python tests not executed locally due missing `uv`/`pytest`.
 - GitHub CI must run on the PR in target repo and become the source of truth for Linux/Node 20/Python 3.11.
-- `npm audit` vulnerabilities need triage.
+- `npm audit` still reports inherited vulnerabilities; no runtime-blocking critical was identified, but dependency security follow-up remains required before production cutover.
 - Legacy Project/Step0 conversion remains in codebase and must remain isolated from Portfolio Lead journey.
 
 ## 18. Final Verdict
 
-`READY_WITH_GAPS`
+`NOT_MERGE_READY`
 
-Reason: Runtime and documentation were migrated/reconciled and core local Node validation passed, but full E2E, DB migration validation, Python tests, and dependency vulnerability remediation are not complete.
+Reason: DB migrations, DB integrations, and the targeted Portfolio Entry browser smoke pass, and CI now includes that smoke. However, full browser E2E failed and CI has not yet re-run with the new `e2e-light` job on PR #6.
