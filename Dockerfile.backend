@@ -60,6 +60,13 @@ RUN npx prisma generate
 # Copy compiled JavaScript from the build stage
 COPY --from=builder /app/dist/backend ./dist/backend/
 
+# The prompt manifest is read at runtime with fs.readFileSync, not imported, so
+# esbuild does not bundle it. In the bundle `promptsRoot` resolves to
+# dirname(import.meta.url) + '/v0.2' -> /app/dist/backend/v0.2, so the files must
+# land there. Without them loadResolvedPromptManifest() throws ENOENT and the
+# runtime silently degrades to the Unconfigured adapter.
+COPY backend/modules/portfolio-entry-runtime/prompts/v0.2 ./dist/backend/v0.2/
+
 # Create a non-root user for security
 RUN addgroup -g 1001 -S appgroup && \
     adduser -S appuser -u 1001 -G appgroup
