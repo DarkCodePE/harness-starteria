@@ -16,6 +16,8 @@ import {
 import { ProgressBar } from '../ProgressBar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { AttentionItem } from '../design-system/patterns';
+import type { AttentionSeverity } from '../design-system/patterns/AttentionItem';
 import { PortfolioLeadEmptyState } from '../../../features/portfolio-lead/components/states/PortfolioLeadEmptyState';
 import type {
   PortfolioAttentionQueueItem,
@@ -80,6 +82,12 @@ const queueIconMap: Record<PortfolioAttentionQueueItem['iconKey'], React.Compone
   decision: GitBranch,
   users: Users,
 };
+
+function attentionSeverityFromTone(tone: StrategicObjectiveFrontCard['alerts'][number]['tone']): AttentionSeverity {
+  if (tone === 'rose') return 'danger';
+  if (tone === 'amber' || tone === 'violet') return 'warning';
+  return 'info';
+}
 
 const challengeSeverityClasses: Record<StrategicObjectiveChallengeRow['severity'], { card: string; badge: string; action: string }> = {
   critical: {
@@ -277,7 +285,7 @@ export function PortfolioAttentionQueueSection({
   onNavigate: (path: string) => void;
 }) {
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-6 md:p-7">
+    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 md:p-6">
       <div className="max-w-3xl">
         <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>COLA DE ATENCIÓN</p>
         <h2 className="mt-1 text-xl text-slate-950" style={{ fontWeight: 700 }}>Lo que conviene mirar primero, sin ruido.</h2>
@@ -712,7 +720,7 @@ export function ExpandedStrategicFrontCard({
   }];
 
   return (
-    <article className={`rounded-[22px] border p-4 shadow-sm md:p-5 ${frontToneClasses[front.statusTone]}`}>
+    <article className="rounded-ds-lg border border-border-default bg-surface-default p-4 shadow-elevation-none md:p-5">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_220px] lg:items-start">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -746,15 +754,15 @@ export function ExpandedStrategicFrontCard({
           <p className="text-xs text-slate-500" style={{ fontWeight: 800 }}>Atencion</p>
           <div className="mt-2 space-y-2">
             {alerts.slice(0, 2).map(alert => (
-              <button
+              <AttentionItem
                 key={alert.id}
-                type="button"
-                onClick={() => onNavigate(alert.actionPath)}
-                className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/85 px-3 py-2 text-left text-xs text-slate-700 transition-colors hover:bg-white"
-              >
-                <span className="line-clamp-1">{normalizePortfolioText(alert.label)}</span>
-                <span className="shrink-0 text-slate-950" style={{ fontWeight: 800 }}>{alert.actionLabel}</span>
-              </button>
+                severity={attentionSeverityFromTone(alert.tone)}
+                title={normalizePortfolioText(alert.label)}
+                description="Senal suministrada por el modelo actual de portafolio."
+                context="Frente estrategico"
+                primaryAction={{ id: alert.actionPath, label: alert.actionLabel, ariaLabel: alert.actionLabel }}
+                onAction={actionPath => onNavigate(actionPath)}
+              />
             ))}
           </div>
         </div>
@@ -1428,6 +1436,3 @@ function stateBadgeClasses(tone: PortfolioFrontOverviewCard['executiveTone']) {
   };
   return tones[tone];
 }
-
-
-

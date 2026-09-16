@@ -72,7 +72,7 @@ Primary authority map:
 | PG-1 Projection | GO |
 | PG-2 Events / interaction_channel | GO |
 | PG-4 Permissions | GO |
-| Portfolio -> Initiative Activation/Handoff | NEXT, not implemented |
+| Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
 The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
 
@@ -156,16 +156,42 @@ NEXT:
 Portfolio -> Initiative Activation/Handoff
 ```
 
-Open questions before Tech Spec:
+H-0 documentation freeze:
+
+- [Activation Experience Contract](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md)
+- [Current State Audit](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md)
+- [Acceptance Checklist](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md)
+
+Authority relationship:
+
+```text
+STARTERIA_AUTHORITY
+        |
+        v
+STARTERIA_CORE_LOGIC_CONTRACT
+        |
+        v
+PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT
+        |
+        v
+PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT
+        |
+        v
+Implementation / Tech Specs
+```
+
+The Current State Audit is outside the authority chain. It is evidence for KEEP /
+ADAPT / NEW / DEPRECATE only.
+
+ADR candidates still unresolved:
 
 - Project vs Initiative identity.
-- Challenge optional/mandatory at activation.
-- Activation Readiness semantics.
-- Owner assignment/acceptance.
-- Imported/existing initiative reconstruction.
-- Single canonical activation command.
+- Technical representation of `pre_start`.
+- Challenge coverage/cardinality if Core and handoff semantics conflict.
+- Exact moment of Step materialization.
+- Canonical ownership if current `Project.ownerId` prevents the target semantics.
 
-Activation/Handoff is not implemented by this documentation consolidation.
+Activation/Handoff is not implemented by this documentation freeze.
 
 ## I. Document Map
 
@@ -208,6 +234,10 @@ Channel Independence / PG:
 
 Activation/Handoff:
 
+- [Activation/Handoff local index](05-activation-handoff/README.md)
+- [Activation Experience Contract](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md)
+- [Current State Audit](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md)
+- [Acceptance Checklist](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md)
 - [Portfolio Entry continuation ADR](../product-adr/ADR-031-portfolio-entry-continuation-to-portfolio.md)
 - [Portfolio -> Steps single path audit](../../PORTFOLIO_TO_STEPS_SINGLE_PATH_AUDIT_v0.1.md)
 - No `STARTERIA_NEXT_CHAT_HANDOFF_CONTEXT.md` was found in this repository.

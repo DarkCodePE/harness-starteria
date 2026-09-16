@@ -27,6 +27,9 @@ Actions:
 | `ADR-031-portfolio-entry-continuation-to-portfolio.md` | `docs/product-adr/ADR-031-portfolio-entry-continuation-to-portfolio.md` | ADR-031 | TARGET_CANDIDATE | Product ADR proposed | Proposed Portfolio continuation decision; not approved authority. | KEEP_IN_PLACE |
 | `STARTERIA_PORTFOLIO_ARCHITECTURE_PLUGIN_READINESS_COMPARISON_v0.1.md` | `docs/portfolio-lead/01-architecture/STARTERIA_PORTFOLIO_ARCHITECTURE_PLUGIN_READINESS_COMPARISON_v0.1.md` | v0.1 | REFERENCE | Architecture reference | Imported from provided docs for discoverability. | COPY_REFERENCE_ONLY |
 | `PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT_v0.1.md` | `docs/portfolio-lead/04-channel-independence/PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT_v0.1.md` | v0.1 | TARGET_CANDIDATE | Experience/interaction contract candidate | Governs channel-independence target; not higher than Core/ADRs. | COPY_REFERENCE_ONLY |
+| `PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md` | `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md` | v0.1 | TARGET_CONTRACT | Experience Contract for bounded context | Governs Portfolio / Challenge -> Invitation -> Accept -> Initiative Overview -> Start under Core and Portfolio Governance Interaction Contract. | KEEP_IN_PLACE |
+| `PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md` | `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md` | v0.1 | REFERENCE | Factual current-state audit | Evidence only for KEEP / ADAPT / NEW / DEPRECATE; not functional authority. | KEEP_IN_PLACE |
+| `PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md` | `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md` | v0.1 | TARGET_CHECKLIST | Acceptance checklist | Protects lifecycle, pre_start, Start boundary, channel independence, team and UI invariants for the bounded context. | KEEP_IN_PLACE |
 | `PORTFOLIO_GOVERNANCE_CHANNEL_INDEPENDENCE_AUDIT_v0.1.md` | `PORTFOLIO_GOVERNANCE_CHANNEL_INDEPENDENCE_AUDIT_v0.1.md` | v0.1 | REFERENCE | Factual audit | Pre-PG implementation audit; useful historical baseline. | KEEP_IN_PLACE |
 | `PORTFOLIO_TO_STEPS_SINGLE_PATH_AUDIT_v0.1.md` | `PORTFOLIO_TO_STEPS_SINGLE_PATH_AUDIT_v0.1.md` | v0.1 | REFERENCE | Factual audit | Defines remaining Activation/Handoff gap and single-path risks. | KEEP_IN_PLACE |
 | `STARTERIA_STEPS_ARCHITECTURE_COMPARISON_AND_TARGET_v0.1.md` | not found | v0.1 | UNKNOWN | Architecture dependency | Requested as Steps dependency; absent from repo and provided files. | REVIEW_REQUIRED |
@@ -83,6 +86,7 @@ Actions:
 | Harness execution spec | `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.1.md` | external `v0.2` | Repo version remains indexed; external `v0.2` needs review. |
 | Bootstrap/Home | `docs/portfolio-lead/03-bootstrap-home/PORTFOLIO_BOOTSTRAP_HOME_LOGIC_CONTRACT_v0.1.md` | none observed in repo | Imported as current Bootstrap/Home contract reference below Core. |
 | PG-4 | `PERMISSION_GUARD_CONSOLIDATION_REPORT_v0.1.md` | earlier AUTHORITY_GAP state superseded by same report final closure | Current report states GO and final closure block. |
+| Portfolio -> Initiative Activation/Handoff | `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md` | external copy in user-provided Downloads | Repo copy is the indexed bounded-context Experience Contract; Current State Audit remains evidence only. |
 
 ## Documents Not Resolved
 
@@ -98,3 +102,5 @@ Actions:
 - Add status banners only when editing legacy documents for another reason; do not rewrite history merely to make it tidy.
 - Resolve missing Steps architecture and next-chat handoff references before the Activation/Handoff Tech Spec.
 - Treat `Portfolio -> Initiative Activation/Handoff` as the next bounded context, not as implemented.
+- Use `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md` as the bounded-context target before H-1 implementation.
+- Keep `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md` outside the authority chain as factual evidence only.

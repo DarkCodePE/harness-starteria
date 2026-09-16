@@ -84,6 +84,8 @@ describe('PortfolioLeadHomePage Bootstrap integration', () => {
     renderPage('/portfolio/inicio');
 
     expect(createOrReuse).not.toHaveBeenCalled();
-    expect(screen.getByText(/Resumen secundario del portafolio/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Qué requiere atención hoy/i })).toBeInTheDocument();
+    expect(screen.getByText(/Resumen ejecutivo/i)).toBeInTheDocument();
+    expect(screen.getByText(/No hay alertas operativas criticas ahora/i)).toBeInTheDocument();
   });
 });

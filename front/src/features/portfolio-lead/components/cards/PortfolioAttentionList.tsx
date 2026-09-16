@@ -1,18 +1,12 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
-import { PortfolioLeadEmptyState } from '../states/PortfolioLeadEmptyState';
+import { EmptyState, AttentionItem, type AttentionSeverity } from '../../../../app/components/design-system/patterns';
 import type { PortfolioAlert, PortfolioNextAction } from '../../domain/types';
 
-function alertToneClasses(tone: PortfolioAlert['tone']) {
-  const tones = {
-    amber: 'border-amber-200 bg-amber-50 text-amber-900',
-    rose: 'border-rose-200 bg-rose-50 text-rose-900',
-    violet: 'border-violet-200 bg-violet-50 text-violet-900',
-    sky: 'border-sky-200 bg-sky-50 text-sky-900',
-    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-    slate: 'border-slate-200 bg-slate-50 text-slate-900',
-  };
-  return tones[tone];
+function alertToneToSeverity(tone: PortfolioAlert['tone']): AttentionSeverity {
+  if (tone === 'rose') return 'danger';
+  if (tone === 'amber' || tone === 'violet') return 'warning';
+  if (tone === 'emerald') return 'success';
+  return 'info';
 }
 
 export function PortfolioAttentionList({
@@ -26,35 +20,39 @@ export function PortfolioAttentionList({
 }) {
   if (alerts.length === 0) {
     return (
-      <PortfolioLeadEmptyState
+      <EmptyState
+        eyebrow="Atencion despejada"
         title="No hay alertas operativas criticas ahora"
         description="El portafolio no muestra retos atorados, actores pendientes ni iniciativas frenadas en este momento. El siguiente paso mas util es revisar frentes y confirmar si conviene abrir nuevo trabajo."
         primaryAction={{
+          id: 'portfolio-empty-primary',
           label: fallbackAction.label,
-          onClick: () => onNavigate(fallbackAction.path ?? '/portfolio/frentes-estrategicos'),
+          ariaLabel: fallbackAction.label,
         }}
+        onAction={() => onNavigate(fallbackAction.path ?? '/portfolio/frentes-estrategicos')}
       />
     );
   }
 
   return (
-    <>
+    <div className="grid gap-3">
       {alerts.map(alert => (
-        <article key={alert.id} className={`rounded-2xl border p-4 ${alertToneClasses(alert.tone)}`}>
-          <p className="text-sm" style={{ fontWeight: 700 }}>{alert.title}</p>
-          <p className="mt-2 text-sm opacity-90">{alert.description}</p>
-          {alert.actionLabel && alert.actionPath ? (
-            <button
-              onClick={() => onNavigate(alert.actionPath)}
-              className="mt-4 inline-flex items-center gap-2 text-sm transition-colors hover:opacity-80"
-              style={{ fontWeight: 700 }}
-            >
-              {alert.actionLabel}
-              <ArrowRight size={14} />
-            </button>
-          ) : null}
-        </article>
+        <AttentionItem
+          key={alert.id}
+          severity={alertToneToSeverity(alert.tone)}
+          title={alert.title}
+          description={alert.description}
+          context={alert.contextLabel}
+          reason={alert.whyItMatters}
+          metadata={alert.recommendedAction ? [{ label: 'Siguiente movimiento', value: alert.recommendedAction }] : undefined}
+          primaryAction={alert.actionLabel && alert.actionPath ? {
+            id: alert.actionPath,
+            label: alert.actionLabel,
+            ariaLabel: alert.actionLabel,
+          } : undefined}
+          onAction={actionId => onNavigate(actionId)}
+        />
       ))}
-    </>
+    </div>
   );
 }

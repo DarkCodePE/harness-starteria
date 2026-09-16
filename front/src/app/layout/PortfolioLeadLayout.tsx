@@ -61,7 +61,7 @@ function PortfolioLeadLayoutContent() {
   // ADR-029: se pregunta por CAPACIDAD, no por identidad.
   //
   // Antes esto enumeraba roles (`role === 'portfolio_lead' || role === 'admin'`), y esa
-  // lista tenía que ampliarse a mano cada vez que otro rol necesitaba entrar — el parche
+  // lista tenía que ampliarse a mano cada vez que otro rol necesitaba entrar â€” el parche
   // #156 fue exactamente eso. Ahora quien tenga el permiso entra, y añadir un rol nuevo
   // con acceso al portafolio no toca este archivo.
   //

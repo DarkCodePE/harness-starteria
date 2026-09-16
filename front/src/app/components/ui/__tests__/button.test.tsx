@@ -45,9 +45,15 @@ describe('Button', () => {
   });
 
   it('applies variant + size classes via buttonVariants', () => {
-    const cls = buttonVariants({ variant: 'destructive', size: 'lg' });
-    expect(cls).toMatch(/bg-destructive/);
+    const cls = buttonVariants({ variant: 'primary', size: 'lg' });
+    expect(cls).toMatch(/bg-brand-primary/);
     expect(cls).toMatch(/h-10/);
+  });
+
+  it('keeps legacy default size and destructive variant aliases available', () => {
+    const cls = buttonVariants({ variant: 'destructive', size: 'default' });
+    expect(cls).toMatch(/bg-destructive/);
+    expect(cls).toMatch(/h-9/);
   });
 
   it('merges custom className with variant classes', () => {
@@ -58,5 +64,12 @@ describe('Button', () => {
     );
     const btn = screen.getByRole('button');
     expect(btn.className).toMatch(/custom-cls/);
+  });
+
+  it('marks loading buttons busy and disables the native button', () => {
+    render(<Button loading>Saving</Button>);
+    const btn = screen.getByRole('button', { name: 'Saving' });
+    expect(btn).toHaveAttribute('aria-busy', 'true');
+    expect(btn).toBeDisabled();
   });
 });
