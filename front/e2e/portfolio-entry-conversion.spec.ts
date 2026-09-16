@@ -9,7 +9,6 @@ type Scenario = {
   id: string;
   input: string;
   answer: string;
-  expectedRouteText: RegExp;
   continueToPortfolio?: boolean;
 };
 
@@ -18,26 +17,22 @@ const SCENARIOS: Scenario[] = [
     id: 'portfolio-first',
     input: 'Tengo 18 iniciativas y necesito decidir cuales continuar.',
     answer: 'Necesito comparar contribucion, evidencia y esfuerzo antes del proximo comite.',
-    expectedRouteText: /Aclarar|Incorporar|Priorizar/i,
     continueToPortfolio: true,
   },
   {
     id: 'solution-first',
     input: 'Compramos un asistente de IA para ventas y no se si esta generando valor.',
     answer: 'Todavia no tenemos claro que resultado comercial deberia justificar la inversion.',
-    expectedRouteText: /Reconectar|Revisar|Preparar decision/i,
   },
   {
     id: 'reporting-first',
     input: 'Tengo comite y necesito saber que iniciativas estan bloqueadas.',
     answer: 'El comite necesita ver bloqueos, pendientes y decisiones que destraben avance.',
-    expectedRouteText: /Alinear|Conectar|Detectar|Decidir|Clarificar|Consolidar|Actualizar/i,
   },
   {
     id: 'strategy-first',
     input: 'Necesitamos reducir costes 15% y no sabemos que priorizar.',
     answer: 'Queremos entender que iniciativas pueden contribuir a la reduccion sin inventar evidencia.',
-    expectedRouteText: /Aterrizar|Conectar|Seguir/i,
   },
 ];
 
@@ -205,10 +200,11 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await page.getByLabel(/necesitas conseguir/i).fill('Necesito ordenar mis iniciativas ya.');
     await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
-    await expect(page.getByText(/Esto entendi hasta ahora/i)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Quick clarification/i)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Siguiente aclaracion/i)).toBeVisible();
     await expect(page.getByText(/Hasta 3 preguntas/i)).toBeVisible();
     await expect(page.getByLabel(/Tu respuesta/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /No lo se todavia/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toBeVisible();
     await expect(page.getByText(/TU LECTURA INICIAL/i)).toHaveCount(0);
 
     await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
@@ -220,11 +216,17 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await reachHandoff(page, scenario, testInfo);
 
       await expect(page.getByText(/Lectura inicial lista/i)).toBeVisible();
-      await expect(page.getByText(scenario.expectedRouteText).first()).toBeVisible();
-      await expect(page.getByText(/Early Access/i)).toBeVisible();
+      await expect(page.getByText(/Continua con Starteria/i)).toBeVisible();
+      await expect(page.getByText(/Portfolio/i).first()).toBeVisible();
+      await expect(page.getByText(/Retos/i).first()).toBeVisible();
+      await expect(page.getByText(/Iniciativas/i).first()).toBeVisible();
+      await expect(page.getByText(/Evidencia/i).first()).toBeVisible();
+      await expect(page.getByText(/Decisiones/i).first()).toBeVisible();
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar lectura/i })).toBeVisible();
       await expect(page.getByText(/Crear iniciativa y continuar/i)).toHaveCount(0);
+      await expect(page.getByText(/\bProject\b/i)).toHaveCount(0);
+      await expect(page.getByText(/Step0/i)).toHaveCount(0);
       await expect(page.getByText(/Step 0/i)).toHaveCount(0);
       await expect(page.getByText(/Initiative Overview/i)).toHaveCount(0);
 
