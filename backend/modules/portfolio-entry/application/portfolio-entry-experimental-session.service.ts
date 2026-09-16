@@ -1,0 +1,465 @@
+import { createHash, randomUUID } from 'node:crypto';
+import type {
+  PortfolioEntryAgentAdapterV2,
+  PortfolioEntryAnalyzeTurnInputV2,
+  PortfolioEntryAnalyzeTurnOutputV2,
+  PortfolioEntryHandoffMaterializer,
+  SessionContext,
+} from '../../portfolio-entry-runtime';
+import {
+  createSessionContextFromPersistedProjection,
+  normalizePortfolioEntryTurnForPersistence,
+  PortfolioEntrySessionController,
+} from '../../portfolio-entry-runtime';
+import { LiveModelExecutionError } from '../../portfolio-entry-runtime/model/live-model-error';
+import { PortfolioEntrySessionService } from '../../portfolio-entry-sessions/application/portfolio-entry-session.service';
+import type { PortfolioEntrySessionRepository } from '../../portfolio-entry-sessions/application/portfolio-entry-session.repository';
+import { PortfolioEntrySessionError } from '../../portfolio-entry-sessions/application/portfolio-entry-session-errors';
+import type { PortfolioEntrySession, PortfolioEntryTurn } from '../../portfolio-entry-sessions/domain/portfolio-entry-session.types';
+import type { PortfolioEntryModelExecutionRecord } from '../../portfolio-entry-sessions/observability/portfolio-entry-execution-metadata';
+import { toPortfolioEntrySessionClientDto, type PortfolioEntrySessionClientDto } from '../portfolio-entry.dto';
+import { PortfolioEntryApiError } from '../portfolio-entry.errors';
+import type { ConfirmationBody, CreateSessionBody, GuidedExplorationBody, SubmitMessageBody } from '../portfolio-entry.schemas';
+import type {
+  PortfolioEntryIdempotencyRecord,
+  PortfolioEntryIdempotencyRepository,
+} from './portfolio-entry-idempotency.repository';
+
+type Principal = { id: string };
+type RequestContext = {
+  requestId?: string;
+  publicAccessToken?: string;
+  principal?: Principal;
+  idempotencyKey?: string;
+  idempotencyRecordId?: string;
+};
+type Operation = 'submit_message' | 'guided_exploration_choice' | 'materialize_handoff' | 'confirm_handoff' | 'claim_session';
+type RecoveryHint = {
+  kind: 'portfolio-entry-recovery';
+  operation: Operation;
+  expectedRevision: number;
+  turnIndex?: number;
+  ownerUserId?: string;
+};
+
+export type PortfolioEntryExperimentalSessionConfig = {
+  idempotencyTtlMs: number;
+  versioning: PortfolioEntrySession['versioning'];
+};
+
+export class PortfolioEntryExperimentalSessionService {
+  constructor(
+    private readonly sessionService: PortfolioEntrySessionService,
+    private readonly sessionRepository: PortfolioEntrySessionRepository,
+    private readonly idempotencyRepository: PortfolioEntryIdempotencyRepository,
+    private readonly agentAdapter: PortfolioEntryAgentAdapterV2,
+    private readonly handoffMaterializer: PortfolioEntryHandoffMaterializer,
+    private readonly config: PortfolioEntryExperimentalSessionConfig,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
+
+  async createAnonymousSession(body: CreateSessionBody) {
+    const result = await this.sessionService.createAnonymousSession({
+      entryOrigin: 'public_start',
+      sourceMetadata: body.sourceMetadata,
+      now: this.now(),
+    });
+    const turns = await this.sessionRepository.listTurns(result.session.id);
+    return {
+      session: toPortfolioEntrySessionClientDto(result.session, turns),
+      publicAccessToken: result.publicAccessToken,
+    };
+  }
+
+  async readSession(input: { sessionId: string; publicAccessToken?: string; principal?: Principal }): Promise<PortfolioEntrySessionClientDto> {
+    const session = await this.authorize(input.sessionId, input);
+    return this.toDto(session);
+  }
+
+  async submitMessage(sessionId: string, body: SubmitMessageBody, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
+    const initial = await this.authorize(sessionId, context);
+    assertNotConverted(initial);
+    return this.withIdempotency('submit_message', sessionId, body, context, async () => {
+      this.assertExpectedRevision(initial, body.expectedRevision);
+      const session = await this.authorize(sessionId, context);
+      assertNotConverted(session);
+      this.assertExpectedRevision(session, body.expectedRevision);
+      const turnsBefore = await this.sessionRepository.listTurns(sessionId);
+      const runtimeContext = contextFromSession(session, turnsBefore);
+      const controller = new PortfolioEntrySessionController(this.agentAdapter, {
+        runId: context.requestId ?? randomUUID(),
+        candidateId: 'portfolio-entry-api-v1',
+      });
+      let result;
+      try {
+        result = await controller.execute({
+          caseId: sessionId,
+          sessionId,
+          runId: context.requestId ?? randomUUID(),
+          candidateId: 'portfolio-entry-api-v1',
+          initialUserInput: body.message,
+          initialContext: runtimeContext,
+        });
+      } catch (error) {
+        await this.recordFailure(sessionId, error);
+        throw error;
+      }
+      const runtimeTurn = result.trace.turns.at(-1);
+      if (!runtimeTurn) throw PortfolioEntryApiError.schemaFailure();
+      const runtimeTurnForPersistence = normalizePortfolioEntryTurnForPersistence(runtimeTurn, turnsBefore.length + 1);
+      if (result.modelExecution) await this.recordExecution(sessionId, result.modelExecution);
+      await this.storeRecovery(context, {
+        kind: 'portfolio-entry-recovery',
+        operation: 'submit_message',
+        expectedRevision: body.expectedRevision,
+        turnIndex: runtimeTurnForPersistence.turn_index,
+      });
+      await this.sessionService.appendTurn({
+        sessionId,
+        runtimeTurn: runtimeTurnForPersistence,
+        runtimeContextAfter: result.final_context,
+        matchedQuestionIds: body.matchedQuestionIds,
+        respondedResolves: body.respondedResolves,
+        expectedRevision: body.expectedRevision,
+        now: this.now(),
+      });
+      return this.toDto(await this.requireSession(sessionId));
+    }, (record) => this.recoverSubmit(sessionId, record, body.expectedRevision));
+  }
+
+  async chooseGuidedExploration(sessionId: string, body: GuidedExplorationBody, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
+    const initial = await this.authorize(sessionId, context);
+    assertNotConverted(initial);
+    return this.withIdempotency('guided_exploration_choice', sessionId, body, context, async () => {
+      this.assertExpectedRevision(initial, body.expectedRevision);
+      const session = await this.authorize(sessionId, context);
+      assertNotConverted(session);
+      this.assertExpectedRevision(session, body.expectedRevision);
+      const turnsBefore = await this.sessionRepository.listTurns(sessionId);
+      const runtimeContext = contextFromSession(session, turnsBefore);
+      if (runtimeContext.clarification_status !== 'exploration_offered') {
+        throw PortfolioEntrySessionError.invalidTransition('Guided Exploration is not currently offered.');
+      }
+      const controller = new PortfolioEntrySessionController(this.agentAdapter, {
+        runId: context.requestId ?? randomUUID(),
+        candidateId: 'portfolio-entry-api-v1',
+      });
+      let result;
+      try {
+        result = await controller.execute({
+          caseId: sessionId,
+          sessionId,
+          runId: context.requestId ?? randomUUID(),
+          candidateId: 'portfolio-entry-api-v1',
+          initialUserInput: '',
+          initialContext: runtimeContext,
+          guidedExplorationChoice: body.choice,
+        });
+      } catch (error) {
+        await this.recordFailure(sessionId, error);
+        throw error;
+      }
+      const runtimeTurn = result.trace.turns.at(-1);
+      if (result.modelExecution) await this.recordExecution(sessionId, result.modelExecution);
+      await this.storeRecovery(context, {
+        kind: 'portfolio-entry-recovery',
+        operation: 'guided_exploration_choice',
+        expectedRevision: body.expectedRevision,
+        turnIndex: runtimeTurn ? turnsBefore.length + 1 : undefined,
+      });
+      if (runtimeTurn) {
+        const runtimeTurnForPersistence = normalizePortfolioEntryTurnForPersistence(runtimeTurn, turnsBefore.length + 1);
+        await this.sessionService.appendTurn({
+          sessionId,
+          runtimeTurn: runtimeTurnForPersistence,
+          runtimeContextAfter: result.final_context,
+          expectedRevision: body.expectedRevision,
+          now: this.now(),
+        });
+      } else {
+        await this.sessionService.applyRuntimeContext({
+          sessionId,
+          runtimeContextAfter: result.final_context,
+          expectedRevision: body.expectedRevision,
+          now: this.now(),
+        });
+      }
+      return this.toDto(await this.requireSession(sessionId));
+    }, (record) => this.recoverSessionRevision(sessionId, record, body.expectedRevision));
+  }
+
+  async materializeHandoff(sessionId: string, expectedRevision: number, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
+    const initial = await this.authorize(sessionId, context);
+    assertNotConverted(initial);
+    return this.withIdempotency('materialize_handoff', sessionId, { expectedRevision }, context, async () => {
+      this.assertExpectedRevision(initial, expectedRevision);
+      const session = await this.authorize(sessionId, context);
+      assertNotConverted(session);
+      this.assertExpectedRevision(session, expectedRevision);
+      if (!session.latestAnalysis) throw PortfolioEntrySessionError.invalidTransition('Portfolio Entry analysis is not ready for handoff.');
+      let materialized;
+      try {
+        materialized = await this.handoffMaterializer.materialize({
+          sessionId,
+          runId: context.requestId ?? randomUUID(),
+          analysis: session.latestAnalysis,
+          context: contextFromSession(session),
+        });
+      } catch (error) {
+        await this.recordFailure(sessionId, error);
+        throw error;
+      }
+      if (materialized.modelExecution) await this.recordExecution(sessionId, materialized.modelExecution);
+      await this.storeRecovery(context, { kind: 'portfolio-entry-recovery', operation: 'materialize_handoff', expectedRevision });
+      await this.sessionService.saveHandoff({ sessionId, handoff: materialized.handoff, expectedRevision, now: this.now() });
+      return this.toDto(await this.requireSession(sessionId));
+    }, (record) => this.recoverSessionRevision(sessionId, record, expectedRevision));
+  }
+
+  async readHandoff(input: { sessionId: string; publicAccessToken?: string; principal?: Principal }): Promise<PortfolioEntrySessionClientDto> {
+    return this.readSession(input);
+  }
+
+  async confirmOrCorrect(sessionId: string, body: ConfirmationBody, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
+    const initial = await this.authorize(sessionId, context);
+    assertNotConverted(initial);
+    return this.withIdempotency('confirm_handoff', sessionId, body, context, async () => {
+      this.assertExpectedRevision(initial, body.expectedRevision);
+      const session = await this.authorize(sessionId, context);
+      assertNotConverted(session);
+      this.assertExpectedRevision(session, body.expectedRevision);
+      if (!session.latestHandoff) throw PortfolioEntrySessionError.invalidTransition('Portfolio Entry handoff is not available.');
+      const status = body.action === 'confirm' ? 'CONFIRMED' : 'REVISIONS_REQUESTED';
+      await this.storeRecovery(context, { kind: 'portfolio-entry-recovery', operation: 'confirm_handoff', expectedRevision: body.expectedRevision });
+      await this.sessionService.saveConfirmation({
+        sessionId,
+        handoffId: session.latestHandoff.id,
+        status,
+        acceptedFields: body.acceptedFields,
+        correctedFields: body.correctedFields,
+        rejectedFields: body.rejectedFields,
+        notes: body.notes,
+        confirmedByUserId: context.principal?.id,
+        expectedRevision: body.expectedRevision,
+        now: this.now(),
+      });
+      return this.toDto(await this.requireSession(sessionId));
+    }, (record) => this.recoverSessionRevision(sessionId, record, body.expectedRevision));
+  }
+
+  async claim(sessionId: string, expectedRevision: number, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
+    if (!context.principal || !context.publicAccessToken) throw PortfolioEntrySessionError.unauthorized();
+    const initial = await this.sessionService.getForPublicAccess({ sessionId, publicAccessToken: context.publicAccessToken, now: this.now() });
+    return this.withIdempotency('claim_session', sessionId, { expectedRevision }, context, async () => {
+      this.assertExpectedRevision(initial, expectedRevision);
+      const session = await this.sessionService.getForPublicAccess({ sessionId, publicAccessToken: context.publicAccessToken!, now: this.now() });
+      this.assertExpectedRevision(session, expectedRevision);
+      await this.storeRecovery(context, { kind: 'portfolio-entry-recovery', operation: 'claim_session', expectedRevision, ownerUserId: context.principal!.id });
+      await this.sessionService.claimOwnership(sessionId, context.principal!.id, this.now(), expectedRevision);
+      return this.toDto(await this.requireSession(sessionId));
+    }, (record) => this.recoverClaim(sessionId, record, expectedRevision));
+  }
+
+  private async authorize(sessionId: string, context: { publicAccessToken?: string; principal?: Principal }): Promise<PortfolioEntrySession> {
+    if (context.principal) {
+      try { return await this.sessionService.getForOwner(sessionId, context.principal.id, this.now()); } catch {
+        if (!context.publicAccessToken) {
+          const candidate = await this.sessionRepository.findSessionById(sessionId);
+          if (candidate?.ownershipState === 'CLAIMED') throw PortfolioEntryApiError.forbiddenOwner();
+        }
+        /* An anonymous session may still be accessed with its public credential. */
+      }
+    }
+    if (!context.publicAccessToken) throw PortfolioEntryApiError.missingPublicToken();
+    return this.sessionService.getForPublicAccess({ sessionId, publicAccessToken: context.publicAccessToken, now: this.now() });
+  }
+
+  private async requireSession(sessionId: string): Promise<PortfolioEntrySession> {
+    const session = await this.sessionRepository.findSessionById(sessionId);
+    if (!session) throw PortfolioEntrySessionError.notFound();
+    return session;
+  }
+
+  private async toDto(session: PortfolioEntrySession): Promise<PortfolioEntrySessionClientDto> {
+    return toPortfolioEntrySessionClientDto(session, await this.sessionRepository.listTurns(session.id));
+  }
+
+  private assertExpectedRevision(session: PortfolioEntrySession, expectedRevision: number): void {
+    if (session.revision !== expectedRevision) throw PortfolioEntrySessionError.conflict();
+  }
+
+  private async withIdempotency<T>(operation: Operation, sessionId: string, payload: unknown, context: RequestContext, run: () => Promise<T>, recover: (record: PortfolioEntryIdempotencyRecord) => Promise<T | null>): Promise<T> {
+    const key = context.idempotencyKey;
+    if (!key) throw PortfolioEntryApiError.missingIdempotencyKey();
+    const now = this.now();
+    const hash = createHash('sha256').update(stableJson(payload)).digest('hex');
+    const existing = await this.idempotencyRepository.findActive(operation, sessionId, key, now);
+    if (existing) {
+      if (existing.requestPayloadHash !== hash) throw PortfolioEntryApiError.idempotencyConflict();
+      if (existing.status === 'COMPLETED') return existing.responseSnapshot as T;
+      const recovered = await recover(existing);
+      if (recovered !== null) {
+        await this.idempotencyRepository.complete({ id: existing.id, responseSnapshot: recovered });
+        return recovered;
+      }
+      if (existing.status === 'FAILED') {
+        context.idempotencyRecordId = existing.id;
+        try {
+          const result = await run();
+          await this.idempotencyRepository.complete({ id: existing.id, responseSnapshot: result });
+          return result;
+        } catch (error) {
+          await this.idempotencyRepository.markFailed(existing.id).catch(() => undefined);
+          throw error;
+        }
+      }
+      throw PortfolioEntryApiError.idempotencyInProgress();
+    }
+    const record = await this.idempotencyRepository.create({
+      operation,
+      scope: sessionId,
+      sessionId,
+      idempotencyKey: key,
+      requestPayloadHash: hash,
+      expiresAt: new Date(now.getTime() + this.config.idempotencyTtlMs),
+    });
+    context.idempotencyRecordId = record.id;
+    try {
+      const result = await run();
+      await this.idempotencyRepository.complete({ id: record.id, responseSnapshot: result });
+      return result;
+    } catch (error) {
+      await this.idempotencyRepository.markFailed(record.id).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  private async storeRecovery(context: RequestContext, hint: RecoveryHint): Promise<void> {
+    if (!context.idempotencyRecordId) return;
+    await this.idempotencyRepository.storeRecoveryHint({ id: context.idempotencyRecordId, recoverySnapshot: hint });
+  }
+
+  private async recoverSubmit(sessionId: string, record: PortfolioEntryIdempotencyRecord, expectedRevision: number): Promise<PortfolioEntrySessionClientDto | null> {
+    const hint = recoveryHint(record, 'submit_message', expectedRevision);
+    if (!hint?.turnIndex) return null;
+    const session = await this.requireSession(sessionId);
+    if (session.revision !== expectedRevision + 1) return null;
+    const turns = await this.sessionRepository.listTurns(sessionId);
+    if (!turns.some((turn) => turn.turnIndex === hint.turnIndex)) return null;
+    return toPortfolioEntrySessionClientDto(session, turns);
+  }
+
+  private async recoverSessionRevision(sessionId: string, record: PortfolioEntryIdempotencyRecord, expectedRevision: number): Promise<PortfolioEntrySessionClientDto | null> {
+    const hint = recoveryHint(record, record.operation as Operation, expectedRevision);
+    if (!hint) return null;
+    const session = await this.requireSession(sessionId);
+    return session.revision === expectedRevision + 1 ? this.toDto(session) : null;
+  }
+
+  private async recoverClaim(sessionId: string, record: PortfolioEntryIdempotencyRecord, expectedRevision: number): Promise<PortfolioEntrySessionClientDto | null> {
+    const hint = recoveryHint(record, 'claim_session', expectedRevision);
+    if (!hint?.ownerUserId) return null;
+    const session = await this.requireSession(sessionId);
+    if (session.revision !== expectedRevision + 1 || session.ownerUserId !== hint.ownerUserId) return null;
+    return this.toDto(session);
+  }
+
+  private async recordFailure(sessionId: string, error: unknown): Promise<void> {
+    if (!(error instanceof LiveModelExecutionError)) return;
+    const result = error.result;
+    await this.recordExecution(sessionId, result);
+  }
+
+  private async recordExecution(sessionId: string, result: import('../../portfolio-entry-runtime').ModelExecutionResult<unknown>): Promise<void> {
+    const metadata = result.execution_metadata;
+    const execution: PortfolioEntryModelExecutionRecord = {
+      id: randomUUID(),
+      sessionId,
+      purpose: metadata.purpose,
+      provider: metadata.provider,
+      requestedModel: metadata.requested_model ?? metadata.model,
+      providerReportedModel: metadata.provider_reported_model,
+      callId: metadata.call_id,
+      durationMs: metadata.duration_ms,
+      retryCount: metadata.retry_count,
+      technicalError: result.technical_error,
+      schemaErrors: result.schema_errors,
+      parsedOutputPresent: result.parsed_output !== null,
+      validatedOutputPresent: result.validated_output !== null,
+      createdAt: this.now(),
+    };
+    await this.sessionService.appendModelExecution(execution).catch(() => undefined);
+  }
+}
+
+export class UnconfiguredPortfolioEntryAgentAdapter implements PortfolioEntryAgentAdapterV2 {
+  async analyzeTurn(_input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    throw PortfolioEntryApiError.providerFailure();
+  }
+}
+
+export class DeterministicPortfolioEntryAgentAdapter implements PortfolioEntryAgentAdapterV2 {
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    const ready = input.rawInput.length > 40;
+    return {
+      analysis: {
+        entry_id: input.entryId,
+        analysis_version: 'deterministic-dev',
+        primary_intent: 'portfolio_tracking',
+        secondary_intents: [],
+        initial_entry_state: 'initiative_first',
+        current_frame: ready ? 'portfolio_first' : 'initiative_first',
+        extracted_context: { summary: input.rawInput },
+        ambiguities: ready ? [] : ['decision_to_enable'],
+        contradictions: [],
+        reverse_alignment: {
+          required: true,
+          subject_type: 'initiative',
+          subject: input.rawInput,
+          connection_state: ready ? 'partial' : 'insufficient_input',
+          missing_links: ready ? [] : ['decision_to_enable'],
+        },
+        provenance: [{ path: 'extracted_context.summary', origin: 'EXTRACTED_FROM_USER_TEXT', review_disposition: 'UNREVIEWED' }],
+        status: ready ? 'ready' : 'insufficient_input',
+      },
+      question_plan: ready ? { questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' } : {
+        question_count: 1,
+        status: 'questions_required',
+        questions: [{ id: 'decision_to_enable', question: 'Que decision necesitas habilitar?', question_type: 'critical_gap', reason_to_ask: 'Falta decision posterior.', resolves: ['decision_to_enable'], priority: 1, expected_answer_type: 'decision' }],
+      },
+    };
+  }
+}
+
+function contextFromSession(session: PortfolioEntrySession, turns?: PortfolioEntryTurn[]): SessionContext {
+  return createSessionContextFromPersistedProjection({
+    interactionMode: session.interactionMode,
+    quickQuestionsAsked: session.questionBudget.quickQuestionsAsked,
+    explorationRound: session.questionBudget.explorationRound,
+    questionsAskedCurrentRound: session.questionBudget.questionsAskedCurrentRound,
+    previousQuestions: session.semanticState.previousQuestions,
+    answeredGaps: session.semanticState.answeredGaps,
+    lifecycleStatus: session.lifecycleStatus,
+    runtimeClarificationStatus: session.semanticState.runtimeClarificationStatus ?? turns?.at(-1)?.transition.to_status,
+  });
+}
+
+function stableJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => `${JSON.stringify(key)}:${stableJson(entry)}`).join(',')}}`;
+}
+
+function assertNotConverted(session: PortfolioEntrySession): void {
+  if (session.lifecycleStatus === 'CONVERTED') {
+    throw PortfolioEntrySessionError.invalidTransition('Portfolio Entry session has already been converted.');
+  }
+}
+
+function recoveryHint(record: PortfolioEntryIdempotencyRecord, operation: Operation, expectedRevision: number): RecoveryHint | null {
+  const snapshot = record.responseSnapshot;
+  if (!snapshot || typeof snapshot !== 'object') return null;
+  const candidate = snapshot as Partial<RecoveryHint>;
+  if (candidate.kind !== 'portfolio-entry-recovery' || candidate.operation !== operation || candidate.expectedRevision !== expectedRevision) return null;
+  return candidate as RecoveryHint;
+}

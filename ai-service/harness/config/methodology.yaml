@@ -1,0 +1,199 @@
+# Starteria methodology-as-config (ADR-027).
+# This file is the single source of truth for how the diagnostic harness classifies
+# and routes a request. "Configuración, no prompts monolíticos": editing routing or
+# gate behavior happens here, not in code. Loaded + validated by config_loader.py.
+version: "1.0.0"
+
+model:
+  # deepseek-v4-flash is the model initial_reviewer benchmarked as reliable for
+  # OpenRouter json_schema structured output (qwen fails it). The GROUND/INTERPRET
+  # stages need structured output, so they use this, not the qwen the workers use.
+  stage_model: "openrouter:deepseek/deepseek-v4-flash"
+  # Diagnosis is a classification task: the same input must route the same way on re-runs.
+  # temperature=0 minimizes run-to-run variance in grounding/interpretation (observed at 0.2).
+  temperature: 0.0
+  max_tokens: 4000
+
+# §3 epistemic states + promotion rule + §4 authority hierarchy.
+epistemic:
+  statuses: [declared, extracted, inferred, suggested, unknown, conflicting, confirmed, outdated]
+  promotion_rule:
+    promotable_from: [inferred, suggested, conflicting]
+    promotable_to: confirmed
+    requires_human_action: true
+  authority_hierarchy:
+    - confirmed_by_actor
+    - structured_workspace_current
+    - official_document_current
+    - user_declaration_unverified
+    - historical_document
+    - ai_inference
+
+# Ordered diagnostic pipeline. `prompt`/`output_contract` present ⇒ LLM stage.
+stages:
+  - id: intake
+  - id: ground
+    prompt: prompts/ground.system.md
+    output_contract: GroundedFieldList
+  - id: interpret
+    prompt: prompts/interpret.system.md
+    output_contract: RouteProfile
+  - id: confirm
+  - id: classify_route
+  - id: method_hint
+  - id: gate
+  - id: emit
+
+# §14 gates. Conditions are NAMED PREDICATES (see gates.py PREDICATES registry),
+# never free-text expressions — config cannot inject code.
+gates:
+  thresholds:
+    review: 0.34
+    confirm: 0.60
+    block: 0.85
+  hard:  # any triggered hard gate forces at least RequireConfirmation (→ confirm)
+    - id: critical_unknown
+      predicate: any_critical_unknown
+      weight: 0.7
+      message: "Falta información crítica para clasificar con confianza."
+    - id: contradiction
+      predicate: any_conflicting
+      weight: 0.7
+      message: "Hay datos contradictorios que un actor autorizado debe resolver."
+    - id: ambiguous_classification
+      predicate: confidence_low
+      weight: 0.6
+      message: "La clasificación no es suficientemente confiable para enrutar."
+    - id: red_line
+      predicate: field_flag
+      field: sensitive
+      severity: block
+      weight: 0.9
+      message: "La solicitud toca información sensible / línea roja: requiere rol autorizado."
+  soft:  # continue, but surface a visible assumption + regularization action
+    - id: baseline_estimated
+      predicate: field_status_in
+      field: baseline
+      values: [inferred, suggested]
+      weight: 0.2
+      message: "El baseline es estimado, no confirmado."
+    - id: unit_inferred
+      predicate: unit_status_not
+      value: confirmed
+      weight: 0.15
+      message: "La unidad de trabajo fue inferida, no confirmada por el usuario."
+    - id: horizon_unconfirmed
+      predicate: horizon_is
+      value: unconfirmed
+      weight: 0.1
+      message: "El horizonte estratégico no pudo confirmarse con el contexto disponible."
+  prohibited_terms:  # §19 — must not appear in emitted human-facing text
+    - validada
+    - aprobada
+    - garantizada
+    - escalable
+    - roi realizado
+    - gantt definitivo
+  max_strategic_questions: 3
+
+# §10 routing. Maps (challenge_type, route, depth, ...) → step agent + method pack.
+# Rules evaluated top→bottom; first full match wins; else `default`.
+# This supersedes the hard-coded tools/context_tools.get_agent_routing_hint.
+routing_table:
+  rules:
+    - match: { route: explore_validate, challenge_type: correction, depth: systemic }
+      step: 1
+      agent: research-assistant
+      method_pack: process_discovery_iceberg
+    - match: { route: explore_validate }
+      step: 1
+      agent: research-assistant
+      method_pack: qualitative_research
+    - match: { route: design_solution }
+      step: 2
+      agent: solution-design
+      method_pack: hmw_ideation
+    - match: { route: implement_handoff }
+      step: 3
+      agent: experiment-coach
+      method_pack: readiness_roadmap
+    - match: { route: reconstruct_existing }
+      step: 1
+      agent: research-assistant
+      method_pack: source_mapping_gap
+    - match: { route: plan_coordinate }
+      step: 0
+      agent: mentor-virtual
+      method_pack: scope_workstreams
+    - match: { route: lightweight_plan }
+      step: 0
+      agent: mentor-virtual
+      method_pack: lightweight_action
+  default:
+    step: 0
+    agent: mentor-virtual
+    method_pack: context_alignment
+
+# §11.3 method packs. quality_rubric_ref bridges to context_tools.get_step_rubric.
+method_packs:
+  context_alignment:
+    version: "1.0"
+    applicable_routes: [lightweight_plan, plan_coordinate]
+    applicable_steps: [0]
+    required_evidence: []
+    quality_rubric_ref: null
+    hard_gates: [ambiguous_classification]
+    soft_gates: [unit_inferred]
+  lightweight_action:
+    version: "1.0"
+    applicable_routes: [lightweight_plan]
+    applicable_steps: [0]
+    required_evidence: []
+    hard_gates: []
+    soft_gates: []
+  scope_workstreams:
+    version: "1.0"
+    applicable_routes: [plan_coordinate]
+    applicable_steps: [0]
+    required_evidence: [decision_record]
+    hard_gates: []
+    soft_gates: [baseline_estimated]
+  qualitative_research:
+    version: "1.0"
+    applicable_routes: [explore_validate]
+    applicable_steps: [1]
+    required_evidence: [interview, user_statement]
+    quality_rubric_ref: "step:1,module:B"
+    hard_gates: [critical_unknown]
+    soft_gates: [baseline_estimated]
+  process_discovery_iceberg:
+    version: "1.0"
+    applicable_routes: [explore_validate]
+    applicable_steps: [1]
+    required_evidence: [system_log, observation, interview]
+    quality_rubric_ref: "step:1,module:A"
+    hard_gates: [critical_unknown, contradiction]
+    soft_gates: [baseline_estimated]
+  source_mapping_gap:
+    version: "1.0"
+    applicable_routes: [reconstruct_existing]
+    applicable_steps: [1]
+    required_evidence: [document, experiment_result, decision_record]
+    hard_gates: []
+    soft_gates: [baseline_estimated]
+  hmw_ideation:
+    version: "1.0"
+    applicable_routes: [design_solution]
+    applicable_steps: [2]
+    required_evidence: [user_statement]
+    quality_rubric_ref: "step:2,module:A"
+    hard_gates: []
+    soft_gates: []
+  readiness_roadmap:
+    version: "1.0"
+    applicable_routes: [implement_handoff]
+    applicable_steps: [3]
+    required_evidence: [decision_record, experiment_result]
+    quality_rubric_ref: "step:3,module:C"
+    hard_gates: []
+    soft_gates: [baseline_estimated]

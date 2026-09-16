@@ -41,3 +41,39 @@ research/notes/*
 
 # Resultados de las corridas de evals: son de cada corrida, no del harness
 evals/results/
+
+# Runtime dependencies and generated output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+.vite/
+
+# Runtime caches and test artifacts
+coverage/
+**/coverage/
+**/coverage.xml
+test-results/
+playwright-report/
+.nyc_output/
+.npm-cache/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/__pycache__/
+**/.coverage
+**/.venv/
+*.pyc
+*.log
+*.tmp
+
+# Local runtime storage
+backend/storage/
+storage/
+front/.pilot-dry-run/
+docker-compose.override.yml
+
+# Provider/client secrets
+client_secret_*.json

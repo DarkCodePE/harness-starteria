@@ -1,0 +1,987 @@
+import express, { type RequestHandler } from 'express';
+import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+import { AppError } from '../../../shared/errors/AppError';
+import { errorHandler } from '../../../shared/errors/error-handler';
+import { requestId } from '../../../shared/middleware/request-id';
+import type {
+  ModelExecutionResult,
+  PortfolioEntryAgentAdapterV2,
+  PortfolioEntryAnalyzeTurnInputV2,
+  PortfolioEntryAnalyzeTurnOutputV2,
+} from '../../portfolio-entry-runtime';
+import { LiveModelExecutionError } from '../../portfolio-entry-runtime/model/live-model-error';
+import { hashPublicAccessToken } from '../../portfolio-entry-sessions/application/portfolio-entry-session.service';
+import type { PortfolioEntryModelExecutionRecord } from '../../portfolio-entry-sessions/observability/portfolio-entry-execution-metadata';
+import { InMemoryPortfolioEntrySessionRepository } from '../../portfolio-entry-sessions/infrastructure/in-memory-portfolio-entry-session.repository';
+import { InMemoryPortfolioEntryIdempotencyRepository } from '../infrastructure/in-memory-portfolio-entry-idempotency.repository';
+import type { PortfolioEntryIdempotencyRepository } from '../application/portfolio-entry-idempotency.repository';
+import { buildPortfolioEntryRouter } from '../portfolio-entry.router';
+
+const base = '/api/v1/public/portfolio-entry';
+
+describe('Portfolio Entry Experimental Session API', () => {
+  it('creates an anonymous session without a model call and returns the raw token once', async () => {
+    const adapter = new FakeAgentAdapter();
+    const { app, repository } = makeApp({ adapter });
+
+    const res = await request(app).post(`${base}/sessions`).send({}).expect(201);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.publicAccessToken).toHaveLength(64);
+    expect(adapter.calls).toHaveLength(0);
+    expect(res.body.data.session.revision).toBe(0);
+    expect(res.body.data.session.conversation).toEqual([]);
+    const stored = await repository.findSessionById(res.body.data.session.id);
+    expect(stored?.rawEntry).toBe('');
+    expect(stored?.publicAccessTokenHash).toBe(hashPublicAccessToken(res.body.data.publicAccessToken));
+    expect(stored?.publicAccessTokenHash).not.toBe(res.body.data.publicAccessToken);
+
+    const read = await request(app)
+      .get(`${base}/sessions/${res.body.data.session.id}`)
+      .set('X-Starteria-Entry-Token', res.body.data.publicAccessToken)
+      .expect(200);
+    expect(read.body.data.publicAccessToken).toBeUndefined();
+  });
+
+  it('rejects wrong or expired anonymous credentials', async () => {
+    const { app, repository } = makeApp();
+    const created = await createSession(app);
+
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('X-Starteria-Entry-Token', 'wrong')
+      .expect(401);
+
+    const stored = await repository.findSessionById(created.sessionId);
+    await repository.saveSessionState({
+      session: {
+        ...stored!,
+        expiresAt: new Date(Date.now() - 1_000),
+        revision: stored!.revision + 1,
+      },
+      expectedRevision: stored!.revision,
+    });
+
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .expect(410);
+  });
+
+  it('submits the first message through Runtime, preserves semantic guardrails, and rejects stale revisions', async () => {
+    const { app } = makeApp();
+    const created = await createSession(app);
+
+    const submitted = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'submit-1')
+      .send({ expectedRevision: 0, message: 'Queremos ordenar iniciativas de experiencia cliente para decidir cuales financiar este trimestre.' })
+      .expect(200);
+
+    expect(submitted.body.data.revision).toBe(1);
+    expect(submitted.body.data.conversation).toHaveLength(1);
+    expect(submitted.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
+    expect(submitted.body.data.clarification.answeredGaps).toEqual([]);
+    expect(submitted.body.data.conversation[0].respondedResolves).toEqual([]);
+    expect(submitted.body.data.clarification.interactionMode).toBe('quick_clarification');
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'submit-stale')
+      .send({ expectedRevision: 0, message: 'Otro intento con revision obsoleta.' })
+      .expect(409);
+  });
+
+  it('keeps live quick clarification sessions open and accepts the next answer', async () => {
+    const { app } = makeApp({ adapter: new ClarifyingThenReadyAdapter() });
+    const created = await createSession(app);
+    const firstMessage = 'Tenemos muchas iniciativas de Operaciones abiertas, con reclamos y retrabajo, pero todavia no sabemos que decision concreta necesita tomar la gerencia ni que criterios usar.';
+
+    const first = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'clarify-live-like-1')
+      .send({ expectedRevision: 0, message: firstMessage })
+      .expect(200);
+
+    expect(first.body.data.lifecycleStatus).toBe('CLARIFYING');
+    expect(first.body.data.lifecycleStatus).not.toBe('ABANDONED');
+    expect(first.body.data.nextAction).toBe('answer_clarification');
+    expect(first.body.data.clarification.quickQuestionsAsked).toBe(3);
+    expect(first.body.data.conversation[0].emittedQuestions).toHaveLength(3);
+
+    const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
+    const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
+    const second = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'clarify-live-like-2')
+      .send({
+        expectedRevision: first.body.data.revision,
+        message: 'La gerencia debe decidir que tres iniciativas financiar primero. Usaremos impacto operativo, urgencia, riesgo y capacidad disponible como criterios.',
+        matchedQuestionIds: questionIds,
+        respondedResolves: resolves,
+      })
+      .expect(200);
+
+    expect(second.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    expect(second.body.data.nextAction).toBe('generate_handoff');
+    expect(second.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
+    expect(second.body.data.semanticProjection.initialEntryState).toBe('portfolio_first');
+    expect(second.body.data.semanticProjection.currentFrame).toBe('portfolio_first');
+  });
+
+  it('offers Guided Exploration without automatic opt-in and accepts through the explicit HTTP contract', async () => {
+    const adapter = new GuidedExplorationAdapter();
+    const { app } = makeApp({ adapter });
+    const offered = await offerGuidedExploration(app);
+
+    expect(offered.response.body.data.lifecycleStatus).toBe('CLARIFYING');
+    expect(offered.response.body.data.nextAction).toBe('offer_guided_exploration');
+    expect(offered.response.body.data.clarification.interactionMode).toBe('quick_clarification');
+    expect(adapter.calls).toHaveLength(2);
+    expect(adapter.calls[1].sessionContext.clarification_status).toBe('in_progress');
+
+    const accepted = await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'guided-accept-1')
+      .send({ expectedRevision: offered.response.body.data.revision, choice: 'accept' })
+      .expect(200);
+
+    expect(accepted.body.data.lifecycleStatus).toBe('CLARIFYING');
+    expect(accepted.body.data.clarification.interactionMode).toBe('guided_exploration');
+    expect(accepted.body.data.clarification.explorationRound).toBe(1);
+    expect(accepted.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
+    expect(accepted.body.data.clarification.answeredGaps).toEqual([]);
+    expect(accepted.body.data.semanticProjection.currentFrame).toBe('portfolio_first');
+    expect(adapter.calls).toHaveLength(3);
+    expect(adapter.calls[2].sessionContext.clarification_status).toBe('guided_exploration');
+    expect(adapter.calls[2].sessionContext.interaction_mode).toBe('guided_exploration');
+  });
+
+  it('rejects Guided Exploration through Runtime state without hardcoding handoff readiness', async () => {
+    const adapter = new GuidedExplorationAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const offered = await offerGuidedExploration(app);
+
+    const rejected = await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'guided-reject-1')
+      .send({ expectedRevision: offered.response.body.data.revision, choice: 'reject' })
+      .expect(200);
+
+    expect(rejected.body.data.lifecycleStatus).toBe('CLARIFYING');
+    expect(rejected.body.data.lifecycleStatus).not.toBe('HANDOFF_ELIGIBLE');
+    expect(adapter.calls).toHaveLength(2);
+    const stored = await repository.findSessionById(offered.sessionId);
+    expect(stored?.semanticState.runtimeClarificationStatus).toBe('ended_with_uncertainty');
+    expect(stored?.semanticState.userExplorationChoice).toBe('reject');
+  });
+
+  it('protects Guided Exploration choice with CAS, idempotency, credentials, expiry, owner auth, and lifecycle guards', async () => {
+    const { app, repository } = makeApp({ adapter: new GuidedExplorationAdapter() });
+    const offered = await offerGuidedExploration(app);
+    const revision = offered.response.body.data.revision;
+    const payload = { expectedRevision: revision, choice: 'accept' };
+
+    await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'guided-stale')
+      .send({ ...payload, expectedRevision: revision - 1 })
+      .expect(409);
+
+    await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', 'wrong')
+      .set('Idempotency-Key', 'guided-wrong-token')
+      .send(payload)
+      .expect(401);
+
+    const first = await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'guided-replay')
+      .send(payload)
+      .expect(200);
+    const replay = await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'guided-replay')
+      .send(payload)
+      .expect(200);
+    expect(replay.body).toEqual(first.body);
+
+    await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'guided-replay')
+      .send({ expectedRevision: revision, choice: 'reject' })
+      .expect(409);
+
+    const invalid = await createSession(app);
+    await request(app)
+      .post(`${base}/sessions/${invalid.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', invalid.token)
+      .set('Idempotency-Key', 'guided-invalid-lifecycle')
+      .send({ expectedRevision: 0, choice: 'accept' })
+      .expect(409);
+
+    const expired = await offerGuidedExploration(app);
+    const expiredStored = await repository.findSessionById(expired.sessionId);
+    await repository.saveSessionState({
+      session: {
+        ...expiredStored!,
+        expiresAt: new Date(Date.now() - 1_000),
+        revision: expiredStored!.revision + 1,
+      },
+      expectedRevision: expiredStored!.revision,
+    });
+    await request(app)
+      .post(`${base}/sessions/${expired.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', expired.token)
+      .set('Idempotency-Key', 'guided-expired')
+      .send({ expectedRevision: expiredStored!.revision + 1, choice: 'reject' })
+      .expect(410);
+  });
+
+  it('allows the claimed owner to choose Guided Exploration without the anonymous token', async () => {
+    const { app } = makeApp({ adapter: new GuidedExplorationAdapter() });
+    const offered = await offerGuidedExploration(app);
+    const claimed = await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', offered.token)
+      .set('Idempotency-Key', 'claim-before-guided')
+      .send({ expectedRevision: offered.response.body.data.revision })
+      .expect(200);
+
+    const accepted = await request(app)
+      .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'guided-owner-accept')
+      .send({ expectedRevision: claimed.body.data.revision, choice: 'accept' })
+      .expect(200);
+
+    expect(accepted.body.data.ownership.state).toBe('CLAIMED');
+    expect(accepted.body.data.clarification.interactionMode).toBe('guided_exploration');
+  });
+
+  it('persists requestedModel as internal execution metadata', async () => {
+    const adapter = new ModelMetadataAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const created = await createSession(app);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'metadata-requested-model')
+      .send({ expectedRevision: 0, message: 'Necesitamos ordenar iniciativas comerciales para decidir foco y financiamiento trimestral.' })
+      .expect(200);
+
+    const executions = await repository.listModelExecutions(created.sessionId);
+    expect(executions).toHaveLength(1);
+    expect(executions[0]).toMatchObject({
+      provider: 'openai_responses',
+      requestedModel: 'gpt-5.6-luna',
+      providerReportedModel: 'gpt-5.6-luna-2026-09-12',
+    });
+  });
+
+  it('does not let execution metadata persistence failure corrupt a successful turn', async () => {
+    const repository = new ExecutionFailsRepository();
+    const { app } = makeApp({ adapter: new ModelMetadataAdapter(), repository });
+    const created = await createSession(app);
+
+    const response = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'metadata-fails-semantic-succeeds')
+      .send({ expectedRevision: 0, message: 'Necesitamos ordenar iniciativas comerciales para decidir foco y financiamiento trimestral.' })
+      .expect(200);
+
+    expect(response.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    const stored = await repository.findSessionById(created.sessionId);
+    expect(stored?.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    expect(stored?.revision).toBe(1);
+  });
+
+  it('replays duplicate idempotent submits and rejects reused keys with different payloads', async () => {
+    const { app } = makeApp();
+    const created = await createSession(app);
+    const payload = { expectedRevision: 0, message: 'Mensaje suficientemente largo para que exista una respuesta estable y reproducible.' };
+
+    const first = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'same-submit')
+      .send(payload)
+      .expect(200);
+    const replay = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'same-submit')
+      .send(payload)
+      .expect(200);
+    expect(replay.body).toEqual(first.body);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'same-submit')
+      .send({ ...payload, message: 'payload distinto' })
+      .expect(409);
+  });
+
+  it('recovers a semantic commit when idempotency completion is interrupted', async () => {
+    const idempotency = new CompleteFailsOnceRepository();
+    const { app, repository } = makeApp({ idempotencyRepository: idempotency });
+    const created = await createSession(app);
+    const payload = { expectedRevision: 0, message: 'Mensaje suficientemente largo para recuperar el resultado persistido.' };
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'recover-submit')
+      .send(payload)
+      .expect(500);
+
+    const retry = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'recover-submit')
+      .send(payload)
+      .expect(200);
+    expect(retry.body.data.conversation).toHaveLength(1);
+    expect((await repository.listTurns(created.sessionId))).toHaveLength(1);
+  });
+
+  it('does not silently use a deterministic adapter in live composition', async () => {
+    const { app } = makeApp({ useDefaultAdapter: true });
+    const created = await createSession(app);
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'missing-live-provider')
+      .send({ expectedRevision: 0, message: 'Mensaje de prueba para provider no configurado.' })
+      .expect(503);
+  });
+
+  it('keeps provider failure from mutating semantic lifecycle', async () => {
+    const adapter = new FailingAgentAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const created = await createSession(app);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'provider-fails')
+      .send({ expectedRevision: 0, message: 'Necesitamos ordenar el portafolio.' })
+      .expect(503);
+
+    const stored = await repository.findSessionById(created.sessionId);
+    const executions = await repository.listModelExecutions(created.sessionId);
+    expect(stored?.lifecycleStatus).toBe('ENTRY_CAPTURED');
+    expect(stored?.revision).toBe(0);
+    expect(executions).toHaveLength(1);
+    expect(executions[0].technicalError).toBe('provider timeout');
+  });
+
+  it('does not overwrite newer state when a valid model result loses the CAS race', async () => {
+    const adapter = new FakeAgentAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const created = await createSession(app);
+
+    const [first, second] = await Promise.all([
+      request(app)
+        .post(`${base}/sessions/${created.sessionId}/messages`)
+        .set('X-Starteria-Entry-Token', created.token)
+        .set('Idempotency-Key', 'race-1')
+        .send({ expectedRevision: 0, message: 'Primera version suficientemente larga para habilitar analisis.' }),
+      request(app)
+        .post(`${base}/sessions/${created.sessionId}/messages`)
+        .set('X-Starteria-Entry-Token', created.token)
+        .set('Idempotency-Key', 'race-2')
+        .send({ expectedRevision: 0, message: 'Segunda version suficientemente larga para competir por CAS.' }),
+    ]);
+
+    expect([first.status, second.status].sort()).toEqual([200, 409]);
+    const turns = await repository.listTurns(created.sessionId);
+    const stored = await repository.findSessionById(created.sessionId);
+    expect(turns).toHaveLength(1);
+    expect(stored?.revision).toBe(1);
+  });
+
+  it('materializes, reads, confirms, and corrects handoffs without exposing internals or conversion eligibility', async () => {
+    const { app } = makeApp();
+    const first = await readySession(app);
+
+    const handoff = await request(app)
+      .post(`${base}/sessions/${first.sessionId}/handoff`)
+      .set('X-Starteria-Entry-Token', first.token)
+      .set('Idempotency-Key', 'handoff-1')
+      .send({ expectedRevision: first.revision })
+      .expect(200);
+
+    expect(handoff.body.data.handoff.reviewDisposition).toBe('UNREVIEWED');
+    expect(handoff.body.data.handoff.handoff.recommended_approach.origin).toBe('AI_SUGGESTED');
+    expect(JSON.stringify(handoff.body.data)).not.toContain('provider');
+    expect(JSON.stringify(handoff.body.data)).not.toContain('publicAccessTokenHash');
+    expect(handoff.body.data.lifecycleStatus).toBe('HANDOFF_READY');
+
+    await request(app)
+      .get(`${base}/sessions/${first.sessionId}/handoff`)
+      .set('X-Starteria-Entry-Token', first.token)
+      .expect(200);
+
+    const confirmed = await request(app)
+      .post(`${base}/sessions/${first.sessionId}/handoff/confirmation`)
+      .set('X-Starteria-Entry-Token', first.token)
+      .set('Idempotency-Key', 'confirm-1')
+      .send({ expectedRevision: handoff.body.data.revision, action: 'confirm', acceptedFields: ['understanding'] })
+      .expect(200);
+    expect(confirmed.body.data.lifecycleStatus).toBe('CONFIRMED');
+    expect(confirmed.body.data.confirmation.status).toBe('CONFIRMED');
+    expect(confirmed.body.data.lifecycleStatus).not.toBe('CONVERSION_ELIGIBLE');
+
+    const second = await readySession(app);
+    const secondHandoff = await request(app)
+      .post(`${base}/sessions/${second.sessionId}/handoff`)
+      .set('X-Starteria-Entry-Token', second.token)
+      .set('Idempotency-Key', 'handoff-2')
+      .send({ expectedRevision: second.revision })
+      .expect(200);
+    const corrected = await request(app)
+      .post(`${base}/sessions/${second.sessionId}/handoff/confirmation`)
+      .set('X-Starteria-Entry-Token', second.token)
+      .set('Idempotency-Key', 'correct-1')
+      .send({
+        expectedRevision: secondHandoff.body.data.revision,
+        action: 'correct',
+        correctedFields: { understanding: { value: 'Correccion humana', origin: 'USER_CONFIRMED' } },
+      })
+      .expect(200);
+    expect(corrected.body.data.lifecycleStatus).toBe('REVISIONS_REQUESTED');
+    expect(corrected.body.data.confirmation.correctedFields.understanding.origin).toBe('USER_CONFIRMED');
+    expect(secondHandoff.body.data.handoff.handoff.recommended_approach.origin).toBe('AI_SUGGESTED');
+
+    const confirmedAfterCorrection = await request(app)
+      .post(`${base}/sessions/${second.sessionId}/handoff/confirmation`)
+      .set('X-Starteria-Entry-Token', second.token)
+      .set('Idempotency-Key', 'confirm-after-correct-1')
+      .send({ expectedRevision: corrected.body.data.revision, action: 'confirm', acceptedFields: ['understanding', 'recommended_approach'] })
+      .expect(200);
+    expect(confirmedAfterCorrection.body.data.lifecycleStatus).toBe('CONFIRMED');
+    expect(confirmedAfterCorrection.body.data.lifecycleStatus).not.toBe('CONVERSION_ELIGIBLE');
+  });
+
+  it('claims anonymous sessions with auth, then requires the owner and rejects the anonymous token', async () => {
+    const { app } = makeApp();
+    const created = await createSession(app);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/claim`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'claim-no-auth')
+      .send({ expectedRevision: 0 })
+      .expect(401);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'claim-no-token')
+      .send({ expectedRevision: 0 })
+      .expect(401);
+
+    const claimed = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'claim-ok')
+      .send({ expectedRevision: 0 })
+      .expect(200);
+    expect(claimed.body.data.ownership.state).toBe('CLAIMED');
+    expect(claimed.body.data.ownership.ownerUserId).toBe('user-1');
+
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .expect(401);
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('Authorization', 'Bearer user-2')
+      .expect(403);
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('Authorization', 'Bearer user-1')
+      .expect(200);
+  });
+
+  it('supports required custom CORS headers and rate limits public operations', async () => {
+    const { app } = makeApp({ options: { maxCreateRequests: 1, windowMs: 60_000 } });
+
+    const cors = await request(app)
+      .options(`${base}/sessions`)
+      .set('Origin', 'http://localhost:5173')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'X-Starteria-Entry-Token,Idempotency-Key')
+      .expect(204);
+    expect(cors.headers['access-control-allow-headers']).toContain('X-Starteria-Entry-Token');
+    expect(cors.headers['access-control-allow-headers']).toContain('Idempotency-Key');
+
+    await request(app).post(`${base}/sessions`).send({}).expect(201);
+    await request(app).post(`${base}/sessions`).send({}).expect(429);
+  });
+});
+
+function makeApp(input: {
+  adapter?: PortfolioEntryAgentAdapterV2;
+  useDefaultAdapter?: boolean;
+  repository?: InMemoryPortfolioEntrySessionRepository;
+  idempotencyRepository?: PortfolioEntryIdempotencyRepository;
+  options?: Parameters<typeof buildPortfolioEntryRouter>[0];
+} = {}) {
+  const app = express();
+  const repository = input.repository ?? new InMemoryPortfolioEntrySessionRepository();
+  app.use(express.json());
+  app.use((_req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, Idempotency-Key, X-Starteria-Entry-Token');
+    if (_req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+  app.use(requestId);
+  app.use(base, buildPortfolioEntryRouter(input.options ?? { maxCreateRequests: 100, maxSubmitRequests: 100, maxHandoffRequests: 100 }, {
+    sessionRepository: repository as never,
+    idempotencyRepository: input.idempotencyRepository ?? new InMemoryPortfolioEntryIdempotencyRepository(),
+    agentAdapter: input.useDefaultAdapter ? undefined : input.adapter ?? new FakeAgentAdapter(),
+    authenticate: fakeAuthenticate,
+    optionalAuthenticate: fakeOptionalAuthenticate,
+    sessionTtlMs: 60 * 60_000,
+    idempotencyTtlMs: 60 * 60_000,
+  }));
+  app.use(errorHandler);
+  return { app, repository };
+}
+
+class CompleteFailsOnceRepository extends InMemoryPortfolioEntryIdempotencyRepository implements PortfolioEntryIdempotencyRepository {
+  private failed = false;
+
+  override async complete(input: Parameters<PortfolioEntryIdempotencyRepository['complete']>[0]): ReturnType<PortfolioEntryIdempotencyRepository['complete']> {
+    if (!this.failed) {
+      this.failed = true;
+      throw new Error('simulated response snapshot interruption');
+    }
+    return super.complete(input);
+  }
+}
+
+class ExecutionFailsRepository extends InMemoryPortfolioEntrySessionRepository {
+  override async appendModelExecution(_execution: PortfolioEntryModelExecutionRecord): Promise<PortfolioEntryModelExecutionRecord> {
+    throw new Error('observability store unavailable');
+  }
+}
+
+async function createSession(app: express.Express): Promise<{ sessionId: string; token: string }> {
+  const res = await request(app).post(`${base}/sessions`).send({}).expect(201);
+  return {
+    sessionId: res.body.data.session.id,
+    token: res.body.data.publicAccessToken,
+  };
+}
+
+async function readySession(app: express.Express): Promise<{ sessionId: string; token: string; revision: number }> {
+  const created = await createSession(app);
+  const submitted = await request(app)
+    .post(`${base}/sessions/${created.sessionId}/messages`)
+    .set('X-Starteria-Entry-Token', created.token)
+    .set('Idempotency-Key', `ready-${created.sessionId}`)
+    .send({ expectedRevision: 0, message: 'Queremos ordenar el portafolio de iniciativas comerciales para decidir inversion y foco del trimestre.' })
+    .expect(200);
+  return { ...created, revision: submitted.body.data.revision };
+}
+
+async function offerGuidedExploration(app: express.Express): Promise<{
+  sessionId: string;
+  token: string;
+  response: request.Response;
+}> {
+  const created = await createSession(app);
+  const first = await request(app)
+    .post(`${base}/sessions/${created.sessionId}/messages`)
+    .set('X-Starteria-Entry-Token', created.token)
+    .set('Idempotency-Key', `guided-seed-${created.sessionId}`)
+    .send({
+      expectedRevision: 0,
+      message: 'Tenemos demasiadas iniciativas operativas abiertas y necesitamos decidir que priorizar.',
+    })
+    .expect(200);
+
+  const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
+  const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
+  const response = await request(app)
+    .post(`${base}/sessions/${created.sessionId}/messages`)
+    .set('X-Starteria-Entry-Token', created.token)
+    .set('Idempotency-Key', `guided-offer-${created.sessionId}`)
+    .send({
+      expectedRevision: first.body.data.revision,
+      message: 'Aun necesitamos seguir aclarando criterios, restricciones y decision final antes de ordenar el portafolio.',
+      matchedQuestionIds: questionIds,
+      respondedResolves: resolves,
+    })
+    .expect(200);
+  return { ...created, response };
+}
+
+const fakeAuthenticate: RequestHandler = (req, _res, next) => {
+  const auth = req.header('Authorization');
+  if (!auth?.startsWith('Bearer ')) {
+    next(AppError.unauthorized('Autenticacion requerida'));
+    return;
+  }
+  const id = auth.slice('Bearer '.length);
+  req.user = {
+    id,
+    email: `${id}@starteria.test`,
+    role: 'participante',
+    roles: ['participante'],
+    permissions: new Set(),
+  };
+  next();
+};
+
+const fakeOptionalAuthenticate: RequestHandler = (req, res, next) => {
+  if (!req.header('Authorization')) {
+    next();
+    return;
+  }
+  fakeAuthenticate(req, res, next);
+};
+
+class FakeAgentAdapter implements PortfolioEntryAgentAdapterV2 {
+  calls: PortfolioEntryAnalyzeTurnInputV2[] = [];
+  private lastResult: ModelExecutionResult<PortfolioEntryAnalyzeTurnOutputV2> | null = null;
+
+  getLastModelExecutionResult(): ModelExecutionResult<PortfolioEntryAnalyzeTurnOutputV2> | null {
+    return this.lastResult;
+  }
+
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    this.calls.push(input);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const output = makeAnalysisOutput(input);
+    this.lastResult = {
+      provider_raw: { redacted: true },
+      parsed_output: output,
+      validated_output: output,
+      schema_errors: [],
+      execution_metadata: {
+        call_id: `call-${this.calls.length}`,
+        purpose: 'analysis_turn',
+        provider: 'test-provider',
+        requested_model: 'test-model',
+        model: 'test-model',
+        duration_ms: 5,
+        retry_count: 0,
+        seed_support: 'not_requested',
+      },
+    };
+    return output;
+  }
+}
+
+class FailingAgentAdapter implements PortfolioEntryAgentAdapterV2 {
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    const result: ModelExecutionResult<PortfolioEntryAnalyzeTurnOutputV2> = {
+      provider_raw: null,
+      parsed_output: null,
+      validated_output: null,
+      schema_errors: [],
+      technical_error: 'provider timeout',
+      error_type: 'TECHNICAL_ERROR',
+      execution_metadata: {
+        call_id: 'failed-call',
+        purpose: 'analysis_turn',
+        provider: 'test-provider',
+        requested_model: 'test-model',
+        model: 'test-model',
+        duration_ms: 1000,
+        retry_count: 0,
+        seed_support: 'not_requested',
+      },
+    };
+    throw new LiveModelExecutionError('provider timeout', result);
+  }
+}
+
+class ClarifyingThenReadyAdapter implements PortfolioEntryAgentAdapterV2 {
+  calls: PortfolioEntryAnalyzeTurnInputV2[] = [];
+
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    this.calls.push(input);
+    if (input.sessionContext.quick_questions_asked === 0) {
+      return makeClarifyingOutput(input);
+    }
+    return makeReadyPortfolioOutput(input);
+  }
+}
+
+class GuidedExplorationAdapter implements PortfolioEntryAgentAdapterV2 {
+  calls: PortfolioEntryAnalyzeTurnInputV2[] = [];
+
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    this.calls.push(input);
+    if (input.sessionContext.interaction_mode === 'guided_exploration') {
+      return makeGuidedExplorationOutput(input);
+    }
+    if (input.sessionContext.quick_questions_asked === 0) {
+      return makeClarifyingOutput(input);
+    }
+    return makeNeedsGuidedExplorationOutput(input);
+  }
+}
+
+class ModelMetadataAdapter implements PortfolioEntryAgentAdapterV2 {
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    const output = makeAnalysisOutput(input);
+    const modelExecution: ModelExecutionResult<PortfolioEntryAnalyzeTurnOutputV2> = {
+      provider_raw: { redacted: true },
+      parsed_output: output,
+      validated_output: output,
+      schema_errors: [],
+      execution_metadata: {
+        call_id: 'metadata-call-1',
+        purpose: 'analysis_turn',
+        provider: 'openai_responses',
+        model: 'gpt-5.6-luna',
+        provider_reported_model: 'gpt-5.6-luna-2026-09-12',
+        duration_ms: 12,
+        retry_count: 0,
+        seed_support: 'not_requested',
+      },
+    };
+    return { ...output, modelExecution };
+  }
+}
+
+function makeAnalysisOutput(input: PortfolioEntryAnalyzeTurnInputV2): PortfolioEntryAnalyzeTurnOutputV2 {
+  const ready = input.rawInput.length > 40;
+  return {
+    analysis: {
+      entry_id: input.entryId,
+      analysis_version: 'test',
+      primary_intent: 'portfolio_tracking',
+      secondary_intents: [],
+      initial_entry_state: 'initiative_first',
+      current_frame: ready ? 'portfolio_first' : 'initiative_first',
+      extracted_context: { summary: input.rawInput },
+      ambiguities: ready ? [] : ['decision_to_enable'],
+      contradictions: [],
+      reverse_alignment: {
+        required: true,
+        subject_type: 'initiative',
+        subject: input.rawInput,
+        connection_state: ready ? 'partial' : 'insufficient_input',
+        missing_links: ready ? [] : ['decision_to_enable'],
+      },
+      provenance: [{ path: 'extracted_context.summary', origin: 'EXTRACTED_FROM_USER_TEXT', review_disposition: 'UNREVIEWED' }],
+      status: ready ? 'ready' : 'insufficient_input',
+    },
+    question_plan: ready
+      ? { questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' }
+      : {
+          question_count: 1,
+          status: 'questions_required',
+          questions: [{
+            id: 'q1',
+            question: 'Que decision necesitas habilitar?',
+            question_type: 'critical_gap',
+            reason_to_ask: 'Falta decision posterior.',
+            resolves: ['decision_to_enable'],
+            priority: 1,
+            expected_answer_type: 'decision',
+          }],
+        },
+  };
+}
+
+function makeClarifyingOutput(input: PortfolioEntryAnalyzeTurnInputV2): PortfolioEntryAnalyzeTurnOutputV2 {
+  return {
+    analysis: {
+      entry_id: input.entryId,
+      analysis_version: 'test',
+      primary_intent: 'portfolio_governance',
+      secondary_intents: [],
+      initial_entry_state: 'portfolio_first',
+      current_frame: 'portfolio_first',
+      extracted_context: { summary: input.rawInput },
+      ambiguities: [
+        'No se especifica la decision gerencial.',
+        'No se cuantifican reclamos ni retrabajo.',
+        'No se indican criterios de priorizacion.',
+      ],
+      contradictions: [],
+      reverse_alignment: {
+        required: false,
+        subject_type: 'unknown',
+        subject: null,
+        connection_state: 'not_required',
+        missing_links: [],
+      },
+      provenance: [{ path: 'extracted_context.summary', origin: 'EXTRACTED_FROM_USER_TEXT', review_disposition: 'UNREVIEWED' }],
+      status: 'pending',
+    },
+    question_plan: {
+      question_count: 3,
+      status: 'questions_required',
+      questions: [
+        {
+          id: 'q1',
+          question: 'Que decision concreta debe tomar la gerencia?',
+          question_type: 'critical_gap',
+          reason_to_ask: 'Falta decision posterior.',
+          resolves: ['analysis.extracted_context.decision_need'],
+          priority: 1,
+          expected_answer_type: 'decision',
+        },
+        {
+          id: 'q2',
+          question: 'Que indicadores muestran la magnitud de reclamos y retrabajo?',
+          question_type: 'critical_gap',
+          reason_to_ask: 'Falta baseline o senal de magnitud.',
+          resolves: ['analysis.extracted_context.baseline', 'analysis.extracted_context.metric'],
+          priority: 2,
+          expected_answer_type: 'evidence',
+        },
+        {
+          id: 'q3',
+          question: 'Que criterios o restricciones debe considerar la gerencia?',
+          question_type: 'clarification',
+          reason_to_ask: 'Faltan criterios de priorizacion.',
+          resolves: ['analysis.extracted_context.constraints', 'analysis.extracted_context.goal'],
+          priority: 3,
+          expected_answer_type: 'text',
+        },
+      ],
+    },
+  };
+}
+
+function makeReadyPortfolioOutput(input: PortfolioEntryAnalyzeTurnInputV2): PortfolioEntryAnalyzeTurnOutputV2 {
+  return {
+    analysis: {
+      entry_id: input.entryId,
+      analysis_version: 'test',
+      primary_intent: 'portfolio_governance',
+      secondary_intents: [],
+      initial_entry_state: 'portfolio_first',
+      current_frame: 'portfolio_first',
+      extracted_context: { summary: input.rawInput, decision_need: 'prioritize_operational_portfolio' },
+      ambiguities: [],
+      contradictions: [],
+      reverse_alignment: {
+        required: false,
+        subject_type: 'unknown',
+        subject: null,
+        connection_state: 'not_required',
+        missing_links: [],
+      },
+      provenance: [{ path: 'extracted_context.summary', origin: 'EXTRACTED_FROM_USER_TEXT', review_disposition: 'UNREVIEWED' }],
+      status: 'ready',
+    },
+    question_plan: {
+      questions: [],
+      question_count: 0,
+      status: 'no_questions_required',
+      stop_reason: 'sufficient_context',
+    },
+  };
+}
+
+function makeNeedsGuidedExplorationOutput(input: PortfolioEntryAnalyzeTurnInputV2): PortfolioEntryAnalyzeTurnOutputV2 {
+  return {
+    analysis: {
+      entry_id: input.entryId,
+      analysis_version: 'test',
+      primary_intent: 'portfolio_governance',
+      secondary_intents: ['portfolio_prioritization'],
+      initial_entry_state: 'portfolio_first',
+      current_frame: 'portfolio_first',
+      extracted_context: { summary: input.rawInput, decision_need: 'prioritize_operational_portfolio' },
+      ambiguities: ['Persisten criterios y restricciones por aclarar.'],
+      contradictions: [],
+      reverse_alignment: {
+        required: false,
+        subject_type: 'unknown',
+        subject: null,
+        connection_state: 'not_required',
+        missing_links: [],
+      },
+      provenance: [{ path: 'extracted_context.summary', origin: 'EXTRACTED_FROM_USER_TEXT', review_disposition: 'UNREVIEWED' }],
+      status: 'insufficient_input',
+    },
+    question_plan: {
+      question_count: 1,
+      status: 'questions_required',
+      questions: [{
+        id: 'guided-q1',
+        question: 'Que criterio debe pesar mas si no pueden avanzar todas las iniciativas?',
+        question_type: 'guided_deepening',
+        reason_to_ask: 'El presupuesto rapido ya se agoto y queda una aclaracion material.',
+        resolves: ['analysis.extracted_context.constraints'],
+        priority: 1,
+        expected_answer_type: 'text',
+      }],
+    },
+  };
+}
+
+function makeGuidedExplorationOutput(input: PortfolioEntryAnalyzeTurnInputV2): PortfolioEntryAnalyzeTurnOutputV2 {
+  return {
+    analysis: {
+      entry_id: input.entryId,
+      analysis_version: 'test',
+      primary_intent: 'portfolio_governance',
+      secondary_intents: ['portfolio_prioritization'],
+      initial_entry_state: 'portfolio_first',
+      current_frame: 'portfolio_first',
+      extracted_context: {
+        summary: input.rawInput,
+        decision_need: 'prioritize_operational_portfolio',
+        exploration: 'accepted',
+      },
+      ambiguities: ['Falta seleccionar criterio dominante.'],
+      contradictions: [],
+      reverse_alignment: {
+        required: false,
+        subject_type: 'unknown',
+        subject: null,
+        connection_state: 'not_required',
+        missing_links: [],
+      },
+      provenance: [{ path: 'extracted_context.exploration', origin: 'AI_INFERRED', review_disposition: 'UNREVIEWED' }],
+      status: 'insufficient_input',
+    },
+    question_plan: {
+      question_count: 1,
+      status: 'questions_required',
+      questions: [{
+        id: 'guided-q2',
+        question: 'Que criterio quieres usar primero para ordenar las iniciativas?',
+        question_type: 'guided_deepening',
+        reason_to_ask: 'El usuario acepto explorar con mas detalle antes del handoff.',
+        resolves: ['analysis.extracted_context.constraints'],
+        priority: 1,
+        expected_answer_type: 'text',
+      }],
+    },
+  };
+}

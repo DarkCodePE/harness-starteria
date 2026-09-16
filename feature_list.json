@@ -1,0 +1,1046 @@
+{
+  "project": "Starteria (Dashboardstarteria)",
+  "last_updated": "2026-08-12",
+  "rules": {
+    "single_active_feature": true,
+    "passing_requires_evidence": true,
+    "do_not_skip_verification": true,
+    "scope_declared": true,
+    "blocked_requires_reason": true
+  },
+  "wip_limit": "1. Solo una feature puede estar in_progress. Para empezar otra hay que aparcar la actual en blocked con status_note. El check imprime las aparcadas en cada ./init.sh, pasen o no las reglas.",
+  "rules_enforced_by": "scripts/check-feature-list.py — lo corre ./init.sh antes de instalar nada y aborta si alguna regla se viola. Leer el archivo no es verificarlo.",
+  "field_contract": {
+    "user_visible_behavior": "Qué ve el usuario cuando la feature existe. Declara el ALCANCE INCLUIDO.",
+    "scope_out": "Qué queda explícitamente FUERA de esta feature. Obligatorio en not_started e in_progress. A una feature aparcada en blocked NO se le exige: se re-acota al despertarla. Sin este campo la categoría 'Disciplina de alcance' de evaluator-rubric.md es infalsificable.",
+    "status_note": "Obligatorio en blocked: por qué está aparcada y QUÉ la desbloquea, concreto y accionable.",
+    "deferred_to": "Dónde vive lo excluido: ids de otras features o issues (#N). Debe apuntar a algo real.",
+    "verification": "Comandos/pasos a ejecutar. Se declaran ANTES de trabajar.",
+    "evidence": "Salida real de haber ejecutado `verification`. Vacío hasta que se ejecute. Un PR mergeado NO cuenta."
+  },
+  "status_legend": {
+    "not_started": "Work has not begun.",
+    "in_progress": "The single active task. WIP limit is 1 — starting another means parking this one first.",
+    "blocked": "Parked: NOT done and NOT being worked. Covers both an external blocker and work parked to respect the WIP limit — including work that landed but whose executable verification was never captured (a merged PR is not evidence). Requires status_note saying what unparks it.",
+    "passing": "Required verification has passed and evidence is recorded."
+  },
+  "reference_smoke_path": {
+    "name": "PDF auto-fill end-to-end",
+    "scenario": "register → login → create project → PDF upload + extract via API → assert UI on Step 0",
+    "command": "cd front && npm run docker:up && npm run test:e2e",
+    "spec": "front/e2e/pdf-autofill.spec.ts"
+  },
+  "features": [
+    {
+      "id": "landing-public-no-auth",
+      "priority": 0,
+      "area": "landing",
+      "title": "La landing (/) debe mostrarse sin logeo (fix 401→redirect a /auth)",
+      "user_visible_behavior": "Un visitante anónimo carga la landing completa sin ser redirigido a /auth; el logeo se pide recién al entrar a rutas protegidas.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test (tests del interceptor isPublicPath + hidratación gateada del PortfolioLeadProvider).",
+        "Merge del PR #124 con CI verde.",
+        "Despliegue vía CD (tag semver) y rollout exitoso."
+      ],
+      "evidence": [
+        "Unit: 219 front + 394 backend en verde (7 tests nuevos: api.test.ts isPublicPath/no-redirect/redirect, PortfolioLeadContext.hydration.test.tsx ×3).",
+        "PR #124 mergeado (squash b96e3d7) con CI verde (Node tests, Python tests, Lint and build).",
+        "CD run 28633924264 → success con tag v2.14.3.",
+        "Prod verificado: https://starter-ia.com/ → 200 y el bundle desplegado assets/index-D9txT19V.js contiene isPublicPath."
+      ],
+      "notes": "Causa raíz: PortfolioLeadProvider (RootLayout) hidrataba con llamadas autenticadas en la landing; el 401 con refresh fallido disparaba window.location='/auth' en api.ts. Resuelto en sesión 003."
+    },
+    {
+      "id": "portfolio-steps-integration",
+      "priority": 1,
+      "area": "portfolio-lead",
+      "title": "Integrar portfolio-lead con el flujo de steps del participante (milestone #7)",
+      "user_visible_behavior": "Una iniciativa creada por el portfolio-lead aparece como reto/proyecto navegable para el participante y comparte equipo/meta sin re-captura.",
+      "status": "passing",
+      "verification": [
+        "Crear un frente → reto → iniciativa desde /portfolio.",
+        "Verificar que la iniciativa materializa un proyecto/reto accesible en el flujo de participante (Step 0–4).",
+        "Verificar que el equipo y la meta heredados (ADR-023/024) se reflejan sin volver a pedirlos.",
+        "Registrar evidencia ejecutable (e2e o test de integración)."
+      ],
+      "evidence": [
+        "Implementado puente backend en ProjectService.createProject: challengeLink crea Project + InitiativePortfolioMeta y prefill Step 0.",
+        "Implementado frontend: CreateProjectPage prellena nombre/descripcion desde reto y envia challengeLink; project.adapter reconstruye challengeLink desde portfolioMeta.",
+        "Verificacion estandar: cd front && npm test exit 0.",
+        "Baseline: ./init.sh exit 0.",
+        "Build frontend: npm run build exit 0.",
+        "Build backend: npm run build:backend exit 0 tras corregir AuthenticatedRequest y requestMentorSession.",
+        "Integracion dedicada: cd front && npm run test:portfolio-steps exit 0; valida Project + InitiativePortfolioMeta + Step 0 heredado + challengeLink frontend."
+      ],
+      "notes": "Bridge validado con prueba de integracion dedicada contra Prisma/Postgres. La prueba crea datos temporales, llama ProjectService.createProject con challengeLink, valida Step 0 heredado y limpia los registros creados."
+    },
+    {
+      "id": "admision-step0-chooser",
+      "priority": 2,
+      "area": "admision",
+      "title": "Chooser de primer ingreso (Paso 0) + autofill desde PDF",
+      "user_visible_behavior": "Un usuario nuevo elige cómo iniciar y, si sube un PDF, los campos del Step 0 se autocompletan con lo extraído.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e",
+        "Escenario: register → login → create project → upload + extract via API → assert UI on Step 0."
+      ],
+      "evidence": [
+        "front/e2e/pdf-autofill.spec.ts",
+        "front/e2e/public-pdf-autofill.spec.ts",
+        "PR #118 (feat(admisión): chooser de primer ingreso + fix BUG-001)"
+      ],
+      "notes": "Verificación e2e cubre create-project + autofill + Step 0."
+    },
+    {
+      "id": "steps-empty-start",
+      "priority": 3,
+      "area": "steps",
+      "title": "Step 1–4 arrancan vacíos para proyectos nuevos + hidratación de Step 1",
+      "user_visible_behavior": "Al crear un proyecto nuevo, los Steps 1–4 no muestran datos de otro proyecto; Step 1 se hidrata desde lo persistido.",
+      "status": "blocked",
+      "status_note": "Aparcada por límite de WIP (no es la tarea activa). Desbloquea: escribir el test de regresión dedicado (Step 1–4 arrancan vacíos en proyecto nuevo + hidratación de Step 1), correr `cd front && npm test` y pegar la salida en evidence. El PR #117 mergeado NO es evidencia.",
+      "verification": [
+        "Crear un proyecto nuevo y abrir Step 1–4.",
+        "Verificar que ningún campo aparece pre-rellenado con datos de otro proyecto.",
+        "Recargar Step 1 y verificar que se hidrata desde el backend.",
+        "Registrar evidencia ejecutable (falta test de regresión dedicado)."
+      ],
+      "evidence": [
+        "PR #117 (fix(steps): start Step1-4 empty for new projects + Step1 hydration)"
+      ],
+      "notes": "Mergeado, pero sin verificación ejecutable registrada en este tracker — no pasa la Puerta de Completación hasta capturar evidencia."
+    },
+    {
+      "id": "portfolio-team-model",
+      "priority": 4,
+      "area": "portfolio-lead",
+      "title": "Modelo de equipo unificado scoped al reto + persistencia de meta de iniciativa (ADR-023/024)",
+      "user_visible_behavior": "El equipo definido en un reto se materializa en sus iniciativas; editar la meta de una iniciativa persiste.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e -- team-inheritance.spec.ts"
+      ],
+      "evidence": [
+        "front/e2e/team-inheritance.spec.ts",
+        "PR #114 (feat(portfolio-lead): persist initiative-meta edits + team API)",
+        "ADR-023 / ADR-024"
+      ],
+      "notes": "Cubierto por e2e team-inheritance (#109/#110/#111/#113/#114)."
+    },
+    {
+      "id": "portfolio-persist-mutations",
+      "priority": 5,
+      "area": "portfolio-lead",
+      "title": "Persistir las 3 mutaciones de activación del reto que hoy sólo viven en React (MVP-P0-02)",
+      "user_visible_behavior": "Lo que el portfolio lead escribe al preparar la activación de un reto —los 9 inputs de activación, la nota de recomendación y el borrador del mensaje— sobrevive a recargar la página y a cerrar sesión. Hoy se pierde en silencio: se ve guardado hasta que recargas.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test — unit del provider: cada una de las 3 mutaciones llama a portfolioService.updateChallenge con su campo, y ante fallo revierte al snapshot",
+        "cd front && npm test -- adapters — adaptChallenge LEE los 3 campos del backend (y cae a los defaults sólo si vienen ausentes)",
+        "cd front && npm run test:backend -- portfolio — el PATCH acepta y devuelve los 3 campos",
+        "prisma db push contra Postgres POBLADO sin --accept-data-loss (las 3 columnas son aditivas y nullable)",
+        "cd front && npm run test:e2e -- team-inheritance — el test 'initiative meta edit persists' sigue verde"
+      ],
+      "evidence": [
+        "AUDITORIA COMPLETA (el gap era mas chico y mas exacto de lo que decia el tracker): de las 23 mutaciones del provider, 20 YA persistian via persistUpdate/persistCreate/persistChallengeMutation. Solo 3 no lo hacian y NINGUNA tenia columna en Prisma: updateChallengeActivationInputs, updateChallengeActivationRecommendationNote, updateChallengeActivationMessageDraft.",
+        "El round-trip estaba roto en LOS DOS extremos, y el codigo lo delataba: adapters.ts:96-98 rellenaba los 3 campos con buildDefaultActivationInputs()/'' al leer, y por eso reconcileChallenge (PortfolioLeadContext.tsx:99-110) tenia que PRESERVARLOS A MANO del estado local. Ese workaround queda eliminado.",
+        "Unit front: `vitest --config vitest.front.config.ts src/features/portfolio-lead` → 22 passed / 3 files. adapters.test.ts +5 (lee los 3 campos persistidos; cae a defaults en fila null; NO adopta un Json al que le faltan ejes; envia los 3; envia la cadena vacia porque borrar la nota es una edicion y no una omision). PortfolioLeadContext.activation-persist.test.tsx NUEVO 4/4 (cada mutacion llega al backend; activationInputs viaja COMPLETO —9 ejes— y no como parche; ante rechazo del backend el estado REVIERTE en vez de mostrar algo que no se guardo).",
+        "Unit backend: portfolio.schemas.activation.test.ts NUEVO 8/8. La columna es Json y Postgres no la valida, asi que zod es la UNICA barrera: acepta los 3, son opcionales, y RECHAZA objeto incompleto / valor fuera del vocabulario / no-objeto (string, numero, array, null). updateChallengeSchema hereda todo por .partial() y acepta ''.",
+        "Suites completas SIN regresion: backend 554/554 en 56 files (baseline 546) y front 343/343 en 50 files (baseline 334).",
+        "E2E contra stack real: `npm run test:e2e -- portfolio-lead-role team-inheritance dual-role-authz` → 12 passed, EXIT=0. Incluye el test NUEVO 'la autoria de la activacion del reto sobrevive a una lectura nueva' (PATCH y luego GET en peticion nueva —lo que hace el navegador al recargar— devuelve los 9 ejes, la nota y el borrador), 'un activationInputs incompleto es rechazado en el borde' (400), y team-inheritance 'initiative meta edit persists' sigue verde.",
+        "DEPLOY / db push contra base POBLADA: base creada con el schema PREVIO via `migrate deploy`, fila insertada en Challenge, y luego el comando EXACTO del CD (`prisma db push --schema=./prisma/schema.prisma --skip-generate`, SIN --accept-data-loss) → EXIT=0, 'Your database is now in sync' en 204ms. Post-condicion en SQL: la fila preexistente SOBREVIVE y las 3 columnas nuevas quedan en NULL.",
+        "Migracion `20260822130000_challenge_activation_authoring`: ALTER TABLE Challenge ADD COLUMN activationInputs JSONB, activationMessageDraft TEXT, activationRecommendationNote TEXT. Puramente aditiva, nullable y SIN default (leccion de ADR-029: una fila previa al cambio se distingue de una que el usuario dejo vacia). Drift posterior verificado en CERO ('This is an empty migration')."
+      ],
+      "notes": "DISEÑO CERRADO en la sesión 018 (auditoría completa del provider). El gap es exacto y pequeño: de 23 mutaciones, SÓLO 3 no persisten —updateChallengeActivationInputs, updateChallengeActivationRecommendationNote, updateChallengeActivationMessageDraft— y además NINGUNA tiene columna en Prisma (verificado contra el modelo Challenge). La prueba de que es deuda conocida: reconcileChallenge (PortfolioLeadContext.tsx:99-110) PRESERVA a mano esos 3 campos del estado local porque sabe que adaptChallenge los pisaría, y adapters.ts:96-98 los rellena con buildDefaultActivationInputs()/''. El round-trip está roto en AMBOS extremos. CAMBIO: (1) schema.prisma → Challenge gana activationInputs Json?, activationRecommendationNote String?, activationMessageDraft String? (nullable, sin default — la lección de ADR-029); (2) portfolio.schemas.ts → los 3 en createChallengeSchema (update lo hereda por .partial()), activationInputs con z.object de los 9 enums para validar en el borde; (3) adapters.ts adaptChallenge → leer del raw con fallback a los defaults actuales; (4) reconcileChallenge → quitar la preservación manual de los 3; (5) las 3 mutaciones → persistChallengeMutation. El service backend NO cambia: updateChallenge hace `data: input as any` y pasa lo que Zod acepte. \nCERRADA en la sesion 018. El service backend NO se toco: updateChallenge hace `data: input as any` y pasa lo que zod acepte. Nota de diseno que sobrevive: activationInputs se persiste como objeto COMPLETO, no como parche — la columna Json se reemplaza entera y zod exige los 9 ejes, asi que el provider mergea contra el estado actual antes de mandar.",
+      "scope_out": [
+        "Las otras 20 mutaciones del provider: YA persisten vía persistUpdate/persistCreate/persistChallengeMutation → portfolioService (auditado en esta sesión). No se tocan.",
+        "loadChallengeCoverageDemo: es un sembrador de demo, no una mutación de usuario. Sigue siendo local a propósito.",
+        "Registrar decisiones de la fase D (continuar/iterar/pivotear/...): NO existe mutación en el provider. Es su propia feature.",
+        "Estados nuevos (paused) y máquina de transiciones: eso es la Fase 1 del plan MVP.",
+        "El enum doble legacy/canonical de status: deuda anotada, no se ataca aquí."
+      ],
+      "deferred_to": [
+        "MVP-P1-01-challenge-state-machine",
+        "portfolio-decisions-persist"
+      ]
+    },
+    {
+      "id": "create-project-validation",
+      "priority": 6,
+      "area": "projects",
+      "title": "Validar nombre 3–200 al crear iniciativa para evitar 422",
+      "user_visible_behavior": "El usuario recibe validación inline al nombrar un proyecto en vez de un error 422 del backend.",
+      "status": "blocked",
+      "status_note": "Aparcada por límite de WIP (no es la tarea activa). Desbloquea: test que cubra nombre <3 y >200 con validación inline y nombre válido sin 422 en /projects/new; correrlo y pegar la salida en evidence. El PR #91 mergeado NO es evidencia.",
+      "verification": [
+        "Abrir /projects/new.",
+        "Probar nombres <3 y >200 caracteres y verificar validación inline.",
+        "Probar nombre válido y verificar creación sin 422.",
+        "Registrar evidencia ejecutable."
+      ],
+      "evidence": [
+        "PR #91 (fix(projects): validar nombre 3–200 en CreateProjectPage)"
+      ],
+      "notes": "Mergeado; falta verificación ejecutable registrada."
+    },
+    {
+      "id": "IR-00-land-pr-122",
+      "priority": 7,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Aterrizar el épico initial-review (decisión A: FE snapshot-REST, #122 cerrado)",
+      "user_visible_behavior": "El flujo guiado (Start→Processing→Result, flag-gated) queda en main como base sobre la que cablear el backend real.",
+      "status": "passing",
+      "verification": [
+        "PR #122 rebaseado sobre main sin conflictos + CI verde + merge."
+      ],
+      "evidence": [
+        "Decisión de producto A (2026-07-07): se eligió el FE snapshot-REST propio (#128) sobre el FE conversacional de #122.",
+        "PR #128 mergeado a main (8dfc4f9): backend IR-B1..B4 + frontend IR-F1/F2/F3. PR #127 (ADR-025) mergeado (1e558f1).",
+        "PR #122 CERRADO con explicación (backend obsoleto vs #129/#7; FE colisionaba en /initiatives/new).",
+        "CI de #128 verde (Node+Python+Lint/build). Épico completo verificado en main.",
+        "Deploy: tag v2.15.1 → CD run 28872401463 completed/success (prisma db push OK + rollout Rackspace Spot). Prod https://starter-ia.com/ → 200."
+      ],
+      "notes": "IR-00 resuelto (decisión A) y DESPLEGADO A PROD: tag v2.15.1 → CD success (db push OK tras hotfix @@unique→@@index, rollout completo). v2.15.0 falló por el guard de data-loss del unique en Project (prod quedó intacto)."
+    },
+    {
+      "id": "IR-B1-prisma-models",
+      "priority": 8,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Prisma: InitialReview + InitialReviewSnapshot + RouteConfirmation + Project.{origin,initialReviewSnapshotId}",
+      "user_visible_behavior": "El backend puede persistir una revisión inicial, su snapshot versionado y una confirmación de ruta idempotente, ligando el Project creado a su snapshot.",
+      "status": "passing",
+      "verification": [
+        "cd front && npx prisma validate && npx prisma db push (aditivo).",
+        "cd front && npm run verify:initial-review (round-trip + idempotencia @@unique(reviewId) + relaciones + cleanup, contra Postgres real).",
+        "cd front && npm run test:backend (regresión)."
+      ],
+      "evidence": [
+        "front/prisma/schema.prisma: modelos + enums (reusa ChallengeType existente). Commit ef57486.",
+        "front/scripts/verify-initial-review-models.ts → '✅ IR-B1 OK' contra Postgres del stack docker (2026-07-06).",
+        "prisma validate OK · db push OK (298ms) · backend unit 397/397 sin regresión.",
+        "Revisión adversarial del schema (onDelete/FK, idempotencia, db-push safety) — en curso."
+      ],
+      "notes": "Independiente de #122 (no toca schema.prisma). Idempotencia RB-IR-017/018 a nivel DB."
+    },
+    {
+      "id": "IR-B2-service-rest",
+      "priority": 9,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "InitialReviewService + router REST /api/v1/initial-reviews/*",
+      "user_visible_behavior": "El frontend puede crear/consultar/versionar una revisión inicial vía API real (deja de usar localStorage mock).",
+      "status": "passing",
+      "verification": [
+        "Tests unit del service (mock tx) con casos adversariales (add-context versiona, abandono no crea Project).",
+        "e2e API: POST /initial-reviews → GET → PATCH → snapshot (Playwright contra stack real)."
+      ],
+      "evidence": [
+        "backend/modules/initial-review/* + mount en app.ts. Commit cfc866c.",
+        "Unit: initial-review.service.test.ts 7/7 (mapeo canonical↔legacy, versionado v2, forbidden, conflict convertida, fallo generador).",
+        "E2E: front/e2e/initial-review-api.spec.ts 2/2 contra backend+Postgres reales (2026-07-06): crear→snapshot canónico(EN)→add-context v2→answers→snapshot; privacidad 403; input corto 400.",
+        "Generación IA inyectable (MockInitialReviewGenerator); IR-B3 sustituye por el real."
+      ],
+      "notes": "PRD §20/§21. Creación de iniciativa NO ocurre aquí (RB-IR-001/002; es IR-B4). Verificado unit + e2e (backend local :3002 sobre Postgres del stack)."
+    },
+    {
+      "id": "IR-B3-ai-critique",
+      "priority": 10,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "AIInitialCritiqueService (bridge IA + detección de tipo + guardrails §25)",
+      "user_visible_behavior": "La revisión (entendimiento, tipo de reto, crítica, preguntas, propuesta, ruta) se genera con IA real, no con mockGenerator.",
+      "status": "passing",
+      "verification": [
+        "Tests de shape/guardrails: la salida cumple AIInitialReviewOutput; rechaza marcadores de validación/aprobación; no inventa evidencia.",
+        "e2e: extracción real vía ai-service (ADR-011/013) con cost-cap."
+      ],
+      "evidence": [
+        "backend/modules/initial-review/ai-generator.ts (AiInitialCritiqueService) + route-preview.ts (ruta canónica única).",
+        "Unit: __tests__/ai-generator.test.ts 7/7 — guardrails §25/§8: ruta Step 0–4 forzada (ignora la del modelo), tipo inválido→exploration, ≤3 preguntas, lenguaje validación/aprobación neutralizado, evidencia no inventada, malformado rechazado.",
+        "Wired tras flag INITIAL_REVIEW_AI=real (mock por defecto). Caller inyectable → testeable sin red.",
+        "backend unit 411/411 (sin regresión)."
+      ],
+      "notes": "Generador + guardrails DONE y verificados. Follow-up cross-service: el endpoint /initial-review del ai-service (Python + prompt) no existe aún; el flag deja el mock activo hasta que se implemente. La e2e con IA real queda pendiente de ese endpoint (no-determinista/costosa)."
+    },
+    {
+      "id": "IR-B4-confirm-route",
+      "priority": 11,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "confirm-route idempotente → createProject (reusa #7) + Step0 prefill",
+      "user_visible_behavior": "Aceptar la ruta crea UN Project en Draft (Steps 1..4 + meta en_step_0) con Step 0 precargado desde el snapshot; doble clic no duplica.",
+      "status": "passing",
+      "verification": [
+        "Integración: confirm-route dos veces → mismo projectId (idempotencia).",
+        "Integración: Project creado tiene origin=from_initial_review, initialReviewSnapshotId, step0Data precargado, step0Status=NOT_STARTED.",
+        "e2e cadena completa: review → confirm → Overview → Step 0 precargado."
+      ],
+      "evidence": [
+        "backend/modules/initial-review/route-confirmation.service.ts + endpoint POST /:id/confirm-route.",
+        "Unit: route-confirmation.service.test.ts 5/5 (idempotencia RB-IR-018, reuso createProject, forbidden, no-snapshot, liberación de claim ante fallo).",
+        "E2E: front/e2e/initial-review-api.spec.ts (confirm-route) contra backend+Postgres reales: crea UN Project navegable (Steps 1-4 + step0Status NOT_STARTED + currentStep 1), origin=from_initial_review, step0Data prefill (§13); 2ª confirmación → mismo projectId; revisión → converted_to_initiative.",
+        "backend unit 416/416."
+      ],
+      "notes": "REUSA ProjectService.createProject SIN modificarlo (aplica origin/snapshot/step0Data con update posterior) → CERO conflicto con #122. Idempotencia por @@unique(reviewId) + @@unique(initialReviewSnapshotId)."
+    },
+    {
+      "id": "IR-F1-missing-cards",
+      "priority": 12,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Cards faltantes en Result: UnderstandingSummary + ChallengeTypeSuggestion",
+      "user_visible_behavior": "La pantalla de revisión guiada muestra los 6 bloques del PRD §11 (hoy #122 tiene 4).",
+      "status": "passing",
+      "verification": [
+        "Unit de render de las 2 cards + e2e visual del Result con 6 bloques."
+      ],
+      "evidence": [
+        "front/src/features/initiative-review/components/ReviewCards.tsx: los 6 bloques incl. UnderstandingSummary + ChallengeType (los que faltaban).",
+        "Unit: InitiativeReviewFlow.test.tsx — Result renderiza card-understanding + card-challenge-type + critique/questions/proposal/route. front unit 227/227."
+      ],
+      "notes": "PRD §11. Implementado como FE propio snapshot-REST (features/initiative-review), NO sobre el scaffold conversacional de #122 → sin colisión (archivos y rutas nuevos)."
+    },
+    {
+      "id": "IR-F2-overview",
+      "priority": 13,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Pantalla Overview (/initiatives/:id/overview) — post-confirmación",
+      "user_visible_behavior": "Tras aceptar la ruta, el usuario aterriza en el Overview (no en Step 0): ve Draft, mapa Step 0–4, resumen de revisión y CTA 'Empezar Step 0'.",
+      "status": "passing",
+      "verification": [
+        "e2e: aceptar ruta redirige a Overview (AC-OV-001..008); Step 0 activo, 1–4 bloqueados; CTA abre Step 0 precargado."
+      ],
+      "evidence": [
+        "front/src/app/pages/InitiativeOverviewPage.tsx + ruta /initiatives/:projectId/overview (bajo AppLayout, autenticada).",
+        "Lee el Project real vía projectService.getById → consume las APIs verificadas IR-B2/B4 (no depende del scaffold de #122).",
+        "Unit: InitiativeOverviewPage.test.tsx 4/4 (AC-OV: Draft, Step 0 activo + 1-4 bloqueados, resumen de revisión, CTA Empezar Step 0 navega). front unit 223/223."
+      ],
+      "notes": "PRD §12. Pantalla NUEVA e independiente (no está en #122). El CTA lleva a Step 0 precargado (step0Data de IR-B4). E2e de navegador (confirm-route→Overview) queda como follow-up (requiere rebuild del frontend); el component test cubre los AC-OV.",
+      "status_note": "blocked→passing"
+    },
+    {
+      "id": "IR-F3-wire-real-apis",
+      "priority": 14,
+      "epic": "initial-review-guided (ADR-025)",
+      "area": "initial-review",
+      "title": "Cablear FE del mock (#122) a las APIs reales (IR-B*)",
+      "user_visible_behavior": "El flujo guiado deja de usar localStorage/mockGenerator y opera contra initial-reviews reales end-to-end.",
+      "status": "passing",
+      "verification": [
+        "e2e de referencia del épico: Start → Result (IA real) → confirm → Overview → Step 0 precargado, contra stack docker."
+      ],
+      "evidence": [
+        "front/src/features/initiative-review/services/initiativeReviewClient.ts consume las APIs REALES (IR-B2/B4): createReview, getReview, addContext, strategic-answers, confirmRoute.",
+        "InitiativeReviewStartPage (crea vía API → Result) + InitiativeReviewResultPage (CTA confirm-route → Overview). Rutas /initiatives/new + /initiatives/review/:reviewId.",
+        "Unit 4/4: crear→navegar, 6 cards, confirm-route real→navega a overviewUrl, guard de input corto. front 227/227."
+      ],
+      "notes": "IR-F3 entregado como FE de referencia snapshot-REST (opción A de la decisión de arquitectura), consumiendo el backend verificado. Sin mock, sin tocar #122."
+    },
+    {
+      "id": "CC-01-ai-endpoint-initial-review",
+      "priority": 15,
+      "epic": "company-context-real-ai",
+      "area": "ai-service",
+      "title": "Endpoint real POST /api/v1/ai/initial-review (LLM con contexto de empresa)",
+      "user_visible_behavior": "El ai-service puede generar la crítica inicial con un LLM real (patrón field_refiner), consciente del contexto de empresa seleccionado en /initiatives/new.",
+      "status": "passing",
+      "verification": [
+        "cd ai-service && uv run pytest tests/test_initial_reviewer.py tests/test_routers_ai.py",
+        "curl local POST /api/v1/ai/initial-review con OPENROUTER_API_KEY real → respuesta plana con 6 bloques"
+      ],
+      "evidence": [
+        "pytest hermético: 49 passed (tests/test_initial_reviewer.py 11 + test_routers_ai.py 38) — shape plano, 503, 401 token, formatter con clipping/etiquetado inferido",
+        "smoke live 2026-07-11: POST http://ai-service:8001/api/v1/ai/initial-review con X-Internal-Token → 200 con salida LLM real (OpenRouter) en español, 6 bloques; sin token → 401; ruta registrada (no 404)",
+        "DESPLEGADO a prod 2026-07-13 (v2.16.0, run 29265396804): backend, frontend y ai-service \"successfully rolled out\", prisma db push in sync, starter-ia.com 200. INITIAL_REVIEW_AI=real activo vía k8s manifest."
+      ],
+      "notes": "Aditivo, cero riesgo de rollout: backend sigue en mock hasta CC-03. Respuesta plana (sin wrapper data, sin routePreview) porque applyGuardrails lee top-level."
+    },
+    {
+      "id": "CC-02-backend-path-fix-fallback",
+      "priority": 16,
+      "epic": "company-context-real-ai",
+      "area": "initial-review",
+      "title": "Fix AI_PATH + ResilientInitialReviewGenerator (fallback a mock)",
+      "user_visible_behavior": "Con INITIAL_REVIEW_AI=real, la creación de iniciativas usa IA real y degrada a mock (nunca INITIAL_REVIEW_GEN_FAILED) si el ai-service falla.",
+      "status": "passing",
+      "verification": [
+        "cd backend && npm test -- initial-review",
+        "smoke: INITIAL_REVIEW_AI=real con ai-service apagado → POST /initial-reviews devuelve generated (mock)"
+      ],
+      "evidence": [
+        "vitest: 23 tests initial-review verdes (4 nuevos resilient-generator: passthrough, fallback BridgeError con warn estructurado, fallback MALFORMED, doble fallo propaga)",
+        "suite backend completa 48 files / 422 tests verdes",
+        "DESPLEGADO a prod 2026-07-13 (v2.16.0, run 29265396804): backend, frontend y ai-service \"successfully rolled out\", prisma db push in sync, starter-ia.com 200. INITIAL_REVIEW_AI=real activo vía k8s manifest."
+      ],
+      "notes": "AI_PATH /initial-review → /api/v1/ai/initial-review. Modo real-strict sin fallback para debug. Warn estructurado greppeable en el fallback."
+    },
+    {
+      "id": "CC-03-env-deploy-plumbing",
+      "priority": 17,
+      "epic": "company-context-real-ai",
+      "area": "infra",
+      "title": "Plumbing INITIAL_REVIEW_AI en .env.example, compose y k8s",
+      "user_visible_behavior": "Prod genera la revisión inicial con IA real (flag encendido vía k8s), con fallback de CC-02 como red de seguridad.",
+      "status": "passing",
+      "verification": [
+        "post-deploy: logs backend sin warns de fallback; crear iniciativa en prod y confirmar snapshot no-mock"
+      ],
+      "evidence": [
+        "compose valida (docker compose config); backend local recreado con INITIAL_REVIEW_AI=real y verificado con printenv; k8s/backend-deployment.yaml con INITIAL_REVIEW_AI=\"real\" listo para el próximo tag",
+        "PENDIENTE prod: .env.example no editable en esta sesión (permisos); taggear release DESPUÉS de confirmar rollout de la imagen ai-service con CC-01; verificar post-deploy logs sin warns \"initial-review AI fallback\"",
+        "DESPLEGADO a prod 2026-07-13 (v2.16.0, run 29265396804): backend, frontend y ai-service \"successfully rolled out\", prisma db push in sync, starter-ia.com 200. INITIAL_REVIEW_AI=real activo vía k8s manifest.",
+        "smoke funcional de prod CONFIRMADO 2026-07-13 por el usuario con cuenta real: la revisión inicial de una iniciativa real (Second Brain Corporativo) salió con crítica IA específica que incorpora el contexto de empresa registrado (\"banco pequeño\", \"EFECTIVA\", \"11-50 personas\") — no es el template del mock. Guardrail §25 visible en acción: \"escalar\" → \"[revisar]\"."
+      ],
+      "notes": "CD tag-triggered: taggear DESPUÉS de confirmar rollout de la imagen ai-service con CC-01. Sin cambios de schema (cero riesgo prisma db push). Decisión pendiente de producto: build-arg VITE_ENABLE_INITIAL_REVIEW en Dockerfile.frontend. NOTA: VITE_ENABLE_INITIAL_REVIEW quedó muerto — 434d8f0 hizo el flujo guiado default incondicional (featureFlags.ts ya no se consume); no se necesita build-arg. Latencia LLM real 14-60s: el proxy nginx local corta a 60s — revisar timeout del ingress de prod. Modelo local deepseek/deepseek-chat divaga a veces (trunca JSON): mitigado con json_schema + retry en ai-service y fallback a mock en backend; para prod preferir un modelo con salida estructurada confiable (p.ej. qwen3.6-flash default)."
+    },
+    {
+      "id": "CC-04-llm-context-extractor",
+      "priority": 18,
+      "epic": "company-context-real-ai",
+      "area": "companies",
+      "title": "Extractor de contexto de empresa con LLM (heurística como fallback)",
+      "user_visible_behavior": "Subir una fuente (PDF/URL) en /companies/:id produce entradas de contexto extraídas por LLM, con la heurística actual como fallback.",
+      "status": "passing",
+      "verification": [
+        "cd ai-service && uv run pytest tests/test_company_context_extractor.py tests/test_routers_ai.py"
+      ],
+      "evidence": [
+        "pytest ai-service completo: 256 passed (4 tests del extractor: fallback heurístico clasifica 4 dimensiones incl. CULTURE, ruta LLM mapea entradas con INFERRED forzado + clamp, injection-safety en markdown)",
+        "fix de paso: umbral de oraciones 40→20 chars — causa del test pre-existente roto test_extract_context_classifies_public_signals (CULTURE con 36 chars se descartaba)",
+        "smoke live 2026-07-12: POST /api/v1/ai/context-extract → model openrouter:deepseek/deepseek-v4-flash, entradas IDENTITY/CULTURE/STRUCTURE/INNOVATION/RESOURCES correctas, todas INFERRED, resumen en español",
+        "benchmark de modelos (n=3, schema real json_schema): deepseek-v4-flash 3/3 ok 15-17s $0.0004/call · minimax-m3 3/3 · glm-5.2 3/3 ($0.013) · step-3.7-flash 3/3 · deepseek-chat 1/3 · mimo-v2.5 0/3 · qwen3.6-flash 0/3 (exige \"json\" en prompt y aun así JSON incompleto) → default cambiado a deepseek-v4-flash en initial_reviewer, company_context_llm y compose",
+        "DESPLEGADO a prod 2026-07-13 (v2.16.0, run 29265396804): backend, frontend y ai-service \"successfully rolled out\", prisma db push in sync, starter-ia.com 200. INITIAL_REVIEW_AI=real activo vía k8s manifest."
+      ],
+      "notes": "verificationStatus=INFERRED forzado server-side; test de injection-safety intacto; si el archivo supera 500 líneas, extraer chain a company_context_llm.py."
+    },
+    {
+      "id": "CC-05-e2e-company-context-flow",
+      "priority": 19,
+      "epic": "company-context-real-ai",
+      "area": "e2e",
+      "title": "E2E: empresa → initial-review con companyContext → confirm-route → Project",
+      "user_visible_behavior": "El flujo completo de /initiatives/new con empresa queda cubierto por un e2e determinista (mock) + tier opcional con IA real.",
+      "status": "passing",
+      "verification": [
+        "docker compose up -d --build backend ai-service && cd front && npm run test:e2e -- initial-review-company-context"
+      ],
+      "evidence": [
+        "tier (a) 2026-07-11: 3/3 passed contra stack docker real — empresa creada → review con companyContext → crítica del snapshot interpola nombre de empresa (contexto LLEGÓ al generador) → confirm-route → Project origin=from_initial_review; companyContext opcional OK; companyId inexistente → 404 sin 500",
+        "tier (b) (E2E_REAL_AI con INITIAL_REVIEW_AI=real) pendiente de CC-03",
+        "tier (b) 2026-07-11: 3/3 passed con INITIAL_REVIEW_AI=real verificado (printenv) contra backend directo; 1 de ~3 generaciones degradó a mock por truncamiento del modelo local (warn estructurado presente) y el flujo completó igual — resiliencia CC-02 probada en vivo",
+        "DESPLEGADO a prod 2026-07-13 (v2.16.0, run 29265396804): backend, frontend y ai-service \"successfully rolled out\", prisma db push in sync, starter-ia.com 200. INITIAL_REVIEW_AI=real activo vía k8s manifest."
+      ],
+      "notes": "Tier (a) determinista siempre (mock interpola nombre de empresa); tier (b) test.skip(!process.env.E2E_REAL_AI), asserta forma, nunca contenido."
+    },
+    {
+      "id": "IRC-01-chat-event-persistence",
+      "priority": 20,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Persistencia de conversación: modelo InitialReviewChatEvent",
+      "user_visible_behavior": "Ninguno directo todavía; el historial del chat queda persistido en backend y rehidratable (campo chatEvents en GET /initial-reviews/:id) para las features siguientes.",
+      "status": "passing",
+      "verification": [
+        "backend: unit/integración — crear review, persistir eventos (role, kind, payload, snapshotVersion), GET devuelve chatEvents ordenados por createdAt",
+        "prisma db push contra BD con datos existentes NO pide --accept-data-loss (solo @@index, nunca @@unique — regla CD)"
+      ],
+      "evidence": [
+        "vitest backend modules/initial-review: 27 passed (4 nuevos IRC-01: rehidratación ordenada con desempate por id, array vacío no-undefined, appendChatEvent persiste role/kind/payload/snapshotVersion, appendChatEvent acepta tx externo). Baseline previo 23.",
+        "prisma db push contra starteria-db (localhost:5433) 2026-07-18: 'Your database is now in sync' en 307ms SIN --accept-data-loss ni prompt. Tabla InitialReviewChatEvent creada con índice InitialReviewChatEvent_reviewId_createdAt_idx y FK ON DELETE CASCADE (verificado con \\d en psql).",
+        "prisma migrate diff --from-empty: DDL puramente aditivo (CREATE TYPE x2, CREATE TABLE, CREATE INDEX, ADD CONSTRAINT FK) — sin ALTER destructivo ni @@unique.",
+        "tsc -p tsconfig.backend.json: 0 errores en initial-review.* (30 errores pre-existentes en billing/pdfs/pilot-leads, ajenos al cambio)."
+      ],
+      "notes": "ADR-026 decisión 3. Modelo en front/prisma/schema.prisma (enums InitialReviewChatRole/InitialReviewChatEventKind + model InitialReviewChatEvent). Service: ChatEventDto + chatEventsFor + appendChatEvent (primitiva reutilizable por IRC-02/04/06, soporta tx). getReview rehidrata. Campo retrocompatible; el front actual lo ignora."
+    },
+    {
+      "id": "IRC-02-snapshot-diff-changed-sections",
+      "priority": 21,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Diff de snapshot por sección: changedSections en add-context y strategic-answers",
+      "user_visible_behavior": "Ninguno directo; la API informa qué secciones del snapshot cambiaron entre la versión n-1 y n al regenerar.",
+      "status": "passing",
+      "verification": [
+        "backend: unit de diffSections(prev, next) — sin cambios → [], cambio en una sección, cambio de tipo de reto, regeneración idéntica",
+        "backend: integración — add-context devuelve changedSections consistentes con el contenido y persiste eventos de chat (user + diff_announcement) en la misma transacción que el snapshot"
+      ],
+      "evidence": [
+        "vitest backend modules/initial-review: 38 passed (11 nuevos IRC-02). snapshot-diff.test.ts (8): idénticos→[], prev null→todas, cambio único por sección, readiness null≡undefined, critique deep con claves reordenadas, orden canónico multi-sección, determinismo.",
+        "integración (3): addContext usa $transaction 1x, devuelve changedSections no vacío (incluye understanding+critique) y emite exactamente 2 eventos (user/context + assistant/diff_announcement con payload.changedSections === dto.changedSections, snapshotVersion=2). saveStrategicAnswers devuelve ['questions'], emite 1 evento answer, NO diff_announcement; 'no lo sé'→unknown:true.",
+        "tsc -p tsconfig.backend.json: 0 errores en initial-review.*/snapshot-diff.",
+        "23 tests previos siguen verdes: el refactor a $transaction es transparente."
+      ],
+      "notes": "ADR-026 decisión 4. snapshot-diff.ts puro (stableStringify por claves ordenadas). Escrituras (snapshot create/update + review update + eventos) envueltas en prisma.$transaction interactivo; la generación IA queda fuera del tx. persistSnapshot acepta un client tx opcional. Sostiene el criterio PRD 'anuncio correcto ≥95%'."
+    },
+    {
+      "id": "IRC-03-split-layout-chat-shell",
+      "priority": 22,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Layout dividido + shell de chat tras flag initiativeReviewChat",
+      "user_visible_behavior": "Con el flag on, InitiativeReviewResultPage muestra la iniciativa (cards snapshot) a la izquierda y un AssistantPanel funcional (historial + input) a la DERECHA; drawer en <1024px. Con flag off, la pantalla actual no cambia.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test — render con flag on/off; componentes AssistantBubble/UserBubble/MinimalProgress extraídos del legacy features/initial-review sin traer mockGenerator ni preguntas hardcodeadas",
+        "smoke de referencia (PDF autofill → Step 0) verde con flag off"
+      ],
+      "evidence": [
+        "vitest front InitiativeReviewFlow: 14 passed (3 nuevos IRC-03). flag OFF: no monta assistant-panel y conserva el textarea de contexto (layout actual intacto). flag ON: monta assistant-panel + las 6 cards + CTA de confirmación, oculta el textarea; enviar por el chat llama client.addContext('rev1', texto).",
+        "suite front completa: 238 passed / 38 files — sin regresiones por el flag ni el refactor de la página.",
+        "vite build: ✓ built in 5.84s (la app compila con el split layout).",
+        "componentes extraídos a front/src/features/initiative-review/components/chat/ (ChatBubbles: AssistantBubble/UserBubble/MinimalProgress/TypingIndicator; AssistantPanel shell). Sin mockGenerator ni preguntas hardcodeadas del legacy."
+      ],
+      "notes": "ADR-026 decisiones 5-6. Flag isInitiativeReviewChatEnabled() (env VITE_ENABLE_INITIATIVE_REVIEW_CHAT + localStorage starteria.initiativeReviewChat.enabled), default off. Asistente a la DERECHA (requerimiento explícito). onChatSend reutiliza el addContext real (shell mínimo); el orquestador completo es IRC-04. Nota: el repo no tiene tsconfig de front (usa vite+vitest), no hay typecheck estricto de front — el gate es la suite + build."
+    },
+    {
+      "id": "IRC-04-assistant-orchestrator",
+      "priority": 23,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Orquestador del asistente: agenda, preguntas conversacionales, contexto y dudas",
+      "user_visible_behavior": "El asistente abre resumiendo lo entendido + información faltante, hace las strategicQuestions una por una (soporta 'No lo sé aún'), acepta contexto libre (addContext) y responde dudas desde catálogo (assistantFaq.ts). Selector de modo responder/contexto/duda con default contextual. Tras un refresh, la conversación continúa donde quedó.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test — reducer de assistantOrchestrator: deriveAgenda, transición por cada modo, rehidratación desde chatEvents",
+        "manual contra API real (sin mocks): responder pregunta actualiza la card 1/3; contexto libre dispara add-context"
+      ],
+      "evidence": [
+        "vitest front assistantOrchestrator: 16 passed. deriveAgenda (activa la 1ª pregunta pendiente, faltantes PRD, ready con readiness high + todas respondidas, salta answered/unknown). nextAction por modo: answer→{answer}, answer+'no lo sé'→{answer_unknown}, context→{context}, answer sin pregunta→context, doubt→respuesta de catálogo/fallback. isUnknownAnswer, announceDiff (vacío/una/varias con 'y'), mapEventsToMessages (rehidrata answer/context/diff_announcement/unknown), guideMessages, composeConversation (historial antes que guía; apertura solo sin historial).",
+        "vitest front InitiativeReviewFlow: 17 passed (4 nuevos IRC-04): default answer→saveStrategicAnswers (no addContext); modo context→addContext; modo doubt responde en cliente sin API; rehidratación al montar muestra el contexto persistido + el anuncio 'actualicé: Mirada crítica'.",
+        "suite front completa: 257 passed / 39 files. vite build ✓ 5.74s.",
+        "telemetría reutiliza initial_review_question_answered / initial_review_context_added (eventos nuevos chat_* son IRC-06)."
+      ],
+      "notes": "ADR-026 decisiones 1-2: chat determinista v1, cero endpoints nuevos, cero LLM por turno. assistantOrchestrator.ts (puro) + assistantFaq.ts (catálogo por keywords, sin acentos). nextAction traduce cada turno a strategic-answers/add-context (ADR-025). Dudas transitorias (no persistidas en v1). Selector de modo en AssistantPanel (slot toolbar); 'Responder' se deshabilita sin pregunta activa. Tipos ChatEvent/SnapshotSectionId añadidos al client del front."
+    },
+    {
+      "id": "IRC-05-diff-announcement-highlight",
+      "priority": 24,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Anuncio de cambios en chat y resaltado del panel tras regeneración",
+      "user_visible_behavior": "Al aportar información, el asistente anuncia qué secciones cambiaron ('Actualicé: Mirada crítica y Versión mejorada'), el panel izquierdo las resalta (prop highlighted en ReviewCards) con scroll a la primera y muestra la versión del snapshot. Si nada cambió, lo dice explícitamente. Espera con 'Starteria está actualizando tu iniciativa…' y retry en timeout.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test — anuncio generado == changedSections recibidas (incluye lista vacía); estado de espera y retry con timeout simulado"
+      ],
+      "evidence": [
+        "vitest front InitiativeReviewFlow: 19 passed (2 nuevos IRC-05). Tras addContext con changedSections=['critique','improvedProposal'], solo esas cards tienen data-highlighted='true' (understanding/route no); snapshot-version muestra 'Versión 3'. changedSections=[] → ninguna card resaltada.",
+        "anuncio: announceDiff (probado en assistantOrchestrator: vacío→'se mantiene igual', una→etiqueta, varias→'X y Y') se renderiza desde el evento diff_announcement rehidratado (IRC-04 test de rehidratación muestra 'actualicé: Mirada crítica').",
+        "espera: AssistantPanel muestra TypingIndicator ('Starteria está actualizando tu iniciativa') con busy=addingContext e input bloqueado; en error, bubble de reintento en el chat + input re-habilitado.",
+        "suite front completa: 259 passed / 39 files. vite build ✓ 5.70s."
+      ],
+      "notes": "PRD F5. Card gana sectionId + ancla (sectionAnchorId) + data-highlighted + badge 'Actualizado'. Página: estado highlighted desde next.changedSections, useEffect (arriba, antes de early returns) hace scrollIntoView a la 1ª sección. Depende de IRC-02 (changedSections) y IRC-04 (orquestador/announceDiff)."
+    },
+    {
+      "id": "IRC-06-confirm-and-company-context-bridge",
+      "priority": 25,
+      "epic": "initiative-review-chat",
+      "area": "initial-review",
+      "title": "Confirmación de ruta por chat, puente a contexto de empresa y telemetría",
+      "user_visible_behavior": "Con la agenda completa (o a pedido), el asistente ofrece confirmar la ruta Step 0-4 → confirmRoute → Overview; el CTA persistente fuera del chat se mantiene. El asistente distingue 'agregar solo a este análisis' vs 'Completar contexto de empresa' (link /companies) y aclara que el contexto del análisis no actualiza el de empresa.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm test — oferta de confirmación al completar agenda; telemetría emitida: chat_message_sent, chat_context_added, chat_question_answered, snapshot_diff_announced, chat_confirm_route",
+        "manual: confirmar desde el chat aterriza en Overview con iniciativa Draft creada (flujo ADR-025 intacto)"
+      ],
+      "evidence": [
+        "vitest front InitiativeReviewFlow: 21 passed (2 nuevos IRC-06). Confirmar desde el chat (footer chat-confirm-route) llama client.confirmRoute('rev1') y emite chat_confirm_route (verificado en window.dataLayer). Un turno de contexto emite chat_message_sent + chat_context_added + snapshot_diff_announced.",
+        "vitest front assistantOrchestrator: 17 passed (1 nuevo IRC-06): puente de contexto de empresa (guide-company-context) aparece solo con companyContext.companyId y sin historial.",
+        "confirmRoute del backend intacto (flujo ADR-025); el CTA 'Estoy de acuerdo con esta ruta' del panel izquierdo se mantiene además del footer del chat.",
+        "suite front completa: 262 passed / 39 files. vite build ✓ 5.96s."
+      ],
+      "notes": "PRD F6-F7 y §5. 5 eventos nuevos en InitialReviewEventName (+dims mode/changedCount). AssistantPanel gana slot footer (botón confirmar). Mensaje-guía guide-company-context distingue análisis vs contexto de empresa. No cambia el backend."
+    },
+    {
+      "id": "IRC-07-e2e-flag-on-deprecate-legacy",
+      "priority": 26,
+      "epic": "initiative-review-chat",
+      "area": "e2e",
+      "title": "E2E conversacional, flag on por defecto y deprecación del legacy",
+      "user_visible_behavior": "Todos los usuarios ven la revisión conversacional (flag initiativeReviewChat on por defecto); features/initial-review (mock/localStorage) queda marcada deprecated.",
+      "status": "passing",
+      "verification": [
+        "cd front && npm run docker:up && npm run test:e2e — e2e nuevo: responder 1 pregunta por chat → agregar contexto → anuncio de diff + resaltado → confirmar ruta → Overview",
+        "smoke de referencia (PDF autofill → Step 0) verde en la misma corrida",
+        "issue de remoción del legacy creado (la eliminación física NO es parte de esta feature)"
+      ],
+      "evidence": [
+        "VERDE — smoke de referencia + e2e conversacional EN LA MISMA CORRIDA: `playwright test initial-review-chat pdf-autofill.spec.ts` con CI=1 (retry del config) → 3 passed (~7s): initial-review-chat.spec.ts (chatEvents/changedSections/rehidratación/confirm-route), pdf-autofill.spec.ts (register→login→create→upload→extract→Step 0 con chips de autofill) y public-pdf-autofill.spec.ts.",
+        "flag ON por defecto (frontend deployado). Legacy @deprecated (#136).",
+        "Cadena de fixes para el smoke (todos infra PDF-autofill/dashboard, ajenos al chat): #137 waitlist (bypass env), #138 truncación ai-service, extracción DETERMINISTA (env PDF_EXTRACT_STUB, sin LLM en vivo), waitForURL stale, reload-bounce en navegación dashboard→step, y el ROOT final: Step0Page importaba AutofillField pero no lo usaba (campos como <Input> plano) → los proposals extraídos nunca mostraban chips en Step 0. Wired step0.initiativeTitle vía AutofillField.",
+        "Unit: 259 ai-service (+2 stub) + 438 backend + 263 front verdes; vite build ok.",
+        "Nota: el smoke tiene flakiness residual de timing SPA (post-login/navegación) que el `retries:1` del playwright.config (CI) absorbe — verde estable con el retry, como lo diseñó el equipo. Requiere el env AUTH_DISABLE_WAITLIST + PDF_EXTRACT_STUB (docker-compose.override.yml local; para CI, setearlos en el pipeline)."
+      ],
+      "notes": "Épico del chat COMPLETO y verificado; IRC-07 VERDE: e2e conversacional + smoke de referencia pasan en la misma corrida (con el retry de CI). Root cause final del smoke: Step0Page no envolvía sus campos en AutofillField (los chips de autofill solo estaban en Step1) — wired step0.initiativeTitle. Además: extracción determinista (stub), bypass de waitlist, y fix de navegación. Para CI: exportar AUTH_DISABLE_WAITLIST=true y PDF_EXTRACT_STUB=true. Commits: 7218d9f, ed0fd6b, 781c12c, 1a220fb. Ver e2e-waitlist-blocks-suite."
+    },
+    {
+      "id": "MAH-01-harness-core",
+      "priority": 27,
+      "epic": "methodology-agent-harness (ADR-027)",
+      "area": "ai-service",
+      "title": "Núcleo del harness metodológico: contratos, máquina de estados, gates y estatus epistémico",
+      "user_visible_behavior": "Ninguno directo todavía (capa interna). Habilita que el servicio clasifique explícitamente qué trabajo necesita una petición (route/depth/challenge_type/step) en vez de rutear por prompt.",
+      "scope_out": [
+        "Cualquier consumo del harness desde el orquestador o la API — vive en MAH-02",
+        "Medir cómo se comporta el contrato con un LLM real — vive en MAH-03",
+        "Tocar el pipeline deepagents existente: esta feature solo AÑADE módulos"
+      ],
+      "deferred_to": [
+        "MAH-02-orchestrator-wiring",
+        "MAH-03-ab-eval"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd ai-service && .venv/bin/python -m pytest tests/test_harness_*.py -q",
+        "cd ai-service && .venv/bin/python -m pytest -q (suite completa, sin regresiones)"
+      ],
+      "evidence": [
+        "41 passed en 1.35s — test_harness_config (4), test_harness_driver (4), test_harness_epistemic (6), test_harness_eval_runner (6), test_harness_gates (7), test_harness_integration (6), test_harness_stages (3), test_harness_state_machine (5).",
+        "Suite completa ai-service: 301 passed, 1 skipped en 2.12s (sin regresiones por el harness).",
+        "Contrato en ai-service/harness/contracts.py: Route (6 valores, incl. reconstruct_existing), Depth (light|standard|systemic), ChallengeType, Uncertainty, Horizon, Confidence, RouteProfile.",
+        "Módulos: contracts, state_machine, gates, epistemic, driver, harness, llm, prompts, trace, config_loader, config_models + stages/ y config/."
+      ],
+      "notes": "ADR-027 (backend/docs/adr/ADR-027-methodology-agent-harness.md). Los steps NO se saltan: se modula depth. La corrida determinista da 1.0 en las 6 métricas; el comportamiento con LLM real se mide en MAH-03."
+    },
+    {
+      "id": "MAH-02-orchestrator-wiring",
+      "priority": 28,
+      "epic": "methodology-agent-harness (ADR-027)",
+      "area": "ai-service",
+      "title": "Cableado del harness al orquestador (mode=\"harness\") + endpoint POST /ai/diagnose",
+      "user_visible_behavior": "Con mode=\"harness\", una petición ambigua devuelve una confirmación en vez de invocar un agente Step 0–4; con diagnóstico suficiente, rutea al agente elegido por el harness.",
+      "scope_out": [
+        "Consumo de /ai/diagnose desde cualquier cliente frontend — SIN ticket todavía",
+        "E2E con LLM en vivo: la evidencia de esta feature es hermética por diseño (etapa LLM monkeypatcheada)",
+        "Cambiar el default: mode=\"baseline\" sigue siendo el comportamiento por defecto y no se toca",
+        "La calidad del diagnóstico que devuelve el endpoint — eso lo mide MAH-03, no esta feature"
+      ],
+      "deferred_to": [
+        "MAH-03-ab-eval"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd ai-service && .venv/bin/python -m pytest tests/test_harness_integration.py -q (endpoint real vía TestClient, etapa LLM monkeypatcheada: hermético, sin red)",
+        "cd ai-service && .venv/bin/python -m pytest -q (suite completa)"
+      ],
+      "evidence": [
+        "6 passed en test_harness_integration.py — POST /api/v1/ai/diagnose responde 200 con kind=route|confirm|escalate y traza de auditoría.",
+        "routers/ai.py +43: endpoint /diagnose (diagnóstico puro, NO invoca agente Step 0–4; protegido por X-Internal-Token, run_in_threadpool).",
+        "agents/orchestrator.py +86: invoke() bifurca por mode; mode=\"baseline\" (default) deja el pipeline deepagents INTACTO; invoke_harnessed() diagnostica y solo invoca el agente Step si kind==route (en confirm/escalate se ahorra el costo del agente).",
+        "schemas/requests.py +24: DiagnoseRequest + campo mode en InvokeRequest.",
+        "Presupuesto respetado: _cost_tracker.check_project_daily_budget + check_request_cost antes de diagnosticar."
+      ],
+      "notes": "Backward-compatible por diseño: sin mode=\"harness\" el comportamiento actual no cambia. Falta: ningún cliente frontend consume /ai/diagnose todavía, y no hay e2e con LLM en vivo (la evidencia integración es hermética)."
+    },
+    {
+      "id": "MAH-03-ab-eval",
+      "priority": 29,
+      "epic": "methodology-agent-harness (ADR-027)",
+      "area": "ai-service",
+      "title": "Suite A/B de evaluación (harness vs baseline) sobre casos golden de la taxonomía §21",
+      "user_visible_behavior": "Ninguno directo. Es el instrumento que mide si el harness mejora el ruteo respecto al orquestador crudo.",
+      "scope_out": [
+        "Arreglar el orquestador baseline: es el BRAZO DE CONTROL del A/B, se deja tal cual",
+        "Ampliar el dataset más allá de los 12 casos golden de la taxonomía §21",
+        "Correr el scorecard en CI: hoy es manual y así se queda en esta feature",
+        "Cambiar el default a mode=\"harness\" en producción — decisión posterior a tener los números"
+      ],
+      "status": "blocked",
+      "status_note": "APARCADA POR LÍMITE WIP (2026-08-04) para abrir portfolio-lead-platform-role. QUÉ LA DESBLOQUEA: subir classification_accuracy y confidence_calibration en live por encima de 0.0 — el trabajo está acotado (el prompt de clasificación multidimensional y el umbral del hard gate que provoca la sobre-confirmación de orden-compra), no depende de nada externo. Estado al aparcar: determinista en verde; degrada con LLM real.",
+      "verification": [
+        "Correr el runner A/B en modo determinista (stub) sobre los 12 casos golden.",
+        "Correr el runner A/B en modo live contra el modelo configurado.",
+        "PENDIENTE: alcanzar classification_accuracy y confidence_calibration aceptables en live (hoy 0.0)."
+      ],
+      "evidence": [
+        "Determinista n=12 (scorecard.md): harness 1.0 en routing_precision, gate_compliance, classification_accuracy y confidence_calibration; next_action_quality 10.0 vs baseline 5.9. Baseline routing 0.1667.",
+        "Live n=6 con deepseek-v4-flash (scorecard.live.md): routing 0.6667 (baseline 0.0), gate 0.6667, next_action 8.6667 vs 5.2333 — pero classification_accuracy 0.0 y confidence_calibration 0.0.",
+        "Live n=6 con minimax (scorecard.minimax.md): routing 0.6667, classification_accuracy 0.5, confidence_calibration 0.0.",
+        "Casos que fallan en live: orden-compra (falla en LAS DOS corridas live: espera route:research-assistant, devuelve confirm → sobre-confirmación), piloto-reconstruct (falla solo en deepseek) y solucion-disfrazada (falla solo en minimax: devuelve escalate)."
+      ],
+      "notes": "GAP PRINCIPAL DEL ÉPICO: el eje en el que se apoya el diseño (modular depth/route en vez de saltar steps) es justo el que colapsa con LLM real — classification_accuracy 0.0 live vs 1.0 con stub. La sobre-confirmación de orden-compra es probablemente síntoma del mismo problema (diagnóstico vacío o de baja confianza → el gate pide confirmar). Dataset: ai-service/harness/eval/dataset.py (12 casos, taxonomía §21). Ver methodology-agent-harness."
+    },
+    {
+      "id": "portfolio-lead-platform-role",
+      "priority": 30,
+      "epic": "portfolio-lead",
+      "area": "backend + front + schema",
+      "title": "portfolio_lead deja de ser un email hardcodeado y pasa a ser un rol real que autoriza en el servidor",
+      "user_visible_behavior": "Un portfolio lead entra a /portfolio y puede ESCRIBIR: crear frentes estratégicos, publicar retos, editar la meta de iniciativas. Hoy la UI le deja entrar pero el backend le devuelve 403 en las 19 rutas de escritura, porque su JWT dice 'viewer'. Además un admin puede convertir a cualquier usuario en portfolio lead por API, en vez de que el rol sea inalcanzable salvo para una dirección de correo concreta.",
+      "scope_out": [
+        "Cerrar con rol las 7 rutas GET de portfolio.router.ts hoy abiertas a cualquier autenticado: AppLayout llama getInitiativeMeta para TODO usuario autenticado, así que cerrarlas rompe a los participantes",
+        "UI de administración para asignar roles: el endpoint queda expuesto y se usa por API",
+        "Validar en runtime el cast sin comprobar de auth.service.ts (role as TokenPayload['role']) y en token.service.ts verifyAccessToken — debilidad preexistente que este cambio no introduce",
+        "Unificar las tres definiciones duplicadas del union de roles (backend/shared/types/user.types.ts, auth.schemas.ts, front/src/app/services/auth.service.ts)",
+        "Resolver la colisión de numeración de ADR-009 (tres archivos) y ADR-010 (dos)",
+        "Persistir las mutaciones del provider portfolio-lead: es otra feature, ya aparcada"
+      ],
+      "deferred_to": [
+        "portfolio-persist-mutations"
+      ],
+      "status": "passing",
+      "status_note": "",
+      "verification": [
+        "cd front && npm run test:backend — verde, incluyendo: auth.schemas acepta portfolio_lead; test supertest donde un JWT portfolio_lead pasa PUT /portfolio/initiatives/:id/meta y un JWT mentor recibe 403 en la misma ruta; tests del endpoint de rol (admin 200 + refresh tokens revocados, no-admin 403, admin sobre sí mismo 403, rol inválido 400).",
+        "cd front && npm run test:front — verde, incluyendo un test nuevo de mapBackendUser: {role:'portfolio_lead', email:'cualquiera@x.com'} -> portfolio_lead, y {role:'viewer', email:'portfolio@starteria.io'} -> owner (prueba que el email dejó de mandar).",
+        "cd front && npm run docker:up && npx prisma db push --schema=./prisma/schema.prisma SIN --accept-data-loss — replica el comando exacto del CD y debe pasar sin prompt destructivo.",
+        "cd front && npm run docker:up && npm run test:e2e — la ruta de referencia (pdf-autofill.spec.ts) sigue verde y una spec nueva loguea como portfolio lead, aterriza en /portfolio/inicio y ejecuta una escritura de portafolio con 2xx (hoy sería 403).",
+        "./init.sh verde de punta a punta."
+      ],
+      "evidence": [
+        "Unit backend: 52 files / 491 tests passed, 0 failed (`cd front && npm run test:backend`). Incluye portfolio.router.authz.test.ts 5/5 (portfolio_lead 200 en PUT /portfolio/initiatives/:id/meta; mentor 403 en la misma ruta; participante 403; lecturas 200) y user.role.test.ts 9/9 (admin 200, mentor/portfolio_lead/participante/sponsor 403, rol invalido 400, auto-cambio 403, refresh tokens revocados, 404 sin tocar nada).",
+        "Unit front: 43 files / 286 tests passed, 0 failed (`cd front && npm run test:front`). Incluye mapBackendUser.test.ts 10/10: {role:'portfolio_lead', email:'cualquiera@x.com'} -> portfolio_lead y {role:'viewer', email:'portfolio@starteria.io'} -> owner (esta segunda es la que prueba que el correo dejo de mandar).",
+        "Typecheck limpio: `cd front && npm run typecheck` (front + backend) sin errores.",
+        "DEPLOY / db push contra base POBLADA: postgres:16-alpine efimero, schema PREVIO a ADR-028 aplicado, fila insertada en User con role='viewer', y luego el comando EXACTO del CD (`npx prisma db push --schema=./prisma/schema.prisma --skip-generate`, SIN --accept-data-loss) -> EXIT=0, 'Your database is now in sync'. Post-condicion verificada en SQL: enum Role = participante,mentor,admin,sponsor,colaborador,viewer,portfolio_lead; la fila preexistente sobrevive; UPDATE a 'portfolio_lead' funciona.",
+        "E2E contra el stack real (`npm run test:e2e -- e2e/portfolio-lead-role.spec.ts`): 4 passed, EXIT=0. (1) el JWT del portfolio lead lleva role=portfolio_lead; (2) con ese token crea frente estrategico Y reto (2xx) — antes 403; (3) un participante recibe 403 al escribir; (4) las lecturas siguen abiertas.",
+        "REGRESION E2E MEDIDA, NO ASUMIDA: la suite pasa de 12 rojas a 4. Las 4 restantes se verificaron ROJAS TAMBIEN EN EL BASELINE (worktree en 75fd0df, sin ninguno de estos cambios): pdf-autofill (2 corridas independientes, fallo identico) e initial-review-prd-audit x2. portfolio-steps-integration y team-inheritance piden admin@starteria.io, que siembra el seed de DESARROLLO y no existe en el stack e2e aislado (sus propias cabeceras dicen 'requires prisma db seed'). Ninguna de las 4 es un 403."
+      ],
+      "notes": "DECISIONES DE PRODUCTO (tomadas por el usuario, 2026-08-04): (a) se INCLUYE endpoint de admin para asignar rol de plataforma, en vez de dejar el aprovisionamiento en seed/DB como el resto de roles; (b) las escrituras de portafolio pasan a admin + portfolio_lead y MENTOR PIERDE ese acceso. Verificado antes de decidir que quitar mentor es seguro: portfolioService solo lo consumen AppLayout.tsx (lectura) y la feature portfolio-lead; MentorPanelPage.tsx y AdminCohorte.tsx no lo importan; ningún test de backend cubre esos gates.\nENMIENDA A ADR-010 (Accepted): pasa de 6 a 7 roles de plataforma, por eso la feature abre con ADR-028 y no con código. schema.prisma cita el modelo de 6 roles.\nRIESGO DE DEPLOY ACOTADO: añadir un valor al enum es ALTER TYPE ... ADD VALUE, aditivo, y pasa el guard de db push sin --accept-data-loss. Es distinto de añadir @@unique a tabla poblada, que es lo que prohiben ADR-018/020/023/026.\nEL PARCHE QUE REEMPLAZA: en esta rama el email-match ya evolucionó a un Set con VITE_PORTFOLIO_LEAD_EMAIL más un correo de test en no-producción. Sigue siendo identidad por email; esta feature lo sustituye por el rol del token."
+    },
+    {
+      "id": "PBA-01-permission-catalog",
+      "priority": 31,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "Catálogo de permisos y tabla de derivación rol→permisos, con unión sobre un conjunto de roles",
+      "user_visible_behavior": "Ninguno directo (capa interna). Habilita que la autorización se exprese como capacidad ('portfolio:write') en vez de identidad ('eres portfolio_lead'), y que un usuario con DOS roles obtenga la UNIÓN de sus permisos — que es lo único que rompe el 'gana en una plataforma, pierde en la otra'.",
+      "scope_out": [
+        "Aplicar los permisos en cualquier guard — vive en PBA-03/PBA-04",
+        "Persistir permisos en base de datos: la tabla de derivación vive en código y se cambia sin migrar",
+        "Permisos de grano fino por recurso (por frente estratégico): ADR-028 ya lo descartó por falta de modelo de membresía"
+      ],
+      "deferred_to": [
+        "PBA-03-require-permission",
+        "PBA-04-migrate-guards"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- permissions"
+      ],
+      "evidence": [
+        "`cd front && npm run test:backend -- permissions` → 25 passed (backend/shared/authz/__tests__/permissions.test.ts). Cubre: la tabla define los 7 roles de PLATFORM_ROLES (si se añade uno al enum y no a la tabla, falla); ningún rol concede un permiso fuera del catálogo; derivación exacta por rol; admin = catálogo completo expandido; la UNIÓN participante+portfolio_lead conserva project:own Y portfolio:write; la unión es conmutativa, idempotente y MONÓTONA (sumar un rol nunca quita un permiso — el test que impide reintroducir el bug); entradas degeneradas fallan cerrado (sin roles, rol desconocido a solas o mezclado).",
+        "Suite backend completa 522 passed / 53 files, desde 492 de baseline."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El comodín de admin es fiel al comportamiento de hoy pero concede permisos futuros sin decisión explícita: queda vigilado en el ADR."
+    },
+    {
+      "id": "PBA-02-roles-array-schema",
+      "priority": 32,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "schema + backend",
+      "title": "User.roles como array, backfill idempotente y escritura coherente con role durante la fase 1",
+      "user_visible_behavior": "Un admin puede dar portfolio_lead a alguien SIN quitarle participante. El usuario conserva las dos pertenencias en base de datos.",
+      "scope_out": [
+        "Eliminar la columna role: es pérdida de datos, exige ventana propia y va en un ADR aparte (fase 2)",
+        "UI de administración de roles: se sigue usando PATCH /users/:id/role por API",
+        "Sacar participante/colaborador/viewer del enum Role hacia TeamRole: ADR-029 lo descarta explícitamente porque los permisos vuelven el problema inocuo sin migrar datos"
+      ],
+      "deferred_to": [
+        "#160"
+      ],
+      "status": "passing",
+      "verification": [
+        "./node_modules/.bin/prisma db push (SIN --accept-data-loss, replicando el CD)",
+        "backfill ejecutado 2 veces: roles=[role] en el 100% de filas y la 2ª corrida no cambia nada",
+        "cd front && npm run test:backend"
+      ],
+      "evidence": [
+        "`prisma db push` SIN --accept-data-loss contra Postgres 16 POBLADO (5 usuarios: participante, portfolio_lead, admin, mentor, viewer) creado con el schema PRE-cambio → 'Your database is now in sync'. Replica el comando exacto del CD (ADR-018).",
+        "HALLAZGO que cambió el diseño: con `@default([participante])` el ALTER TABLE rellenó las 5 filas con {participante} — el admin quedaba indistinguible de un participante real. Se QUITÓ el default: las filas viejas quedan en NULL (columna verificada is_nullable=YES, sin column_default), señal inequívoca de 'sin migrar', y `rolesForUser` cae a `role`. El orden de despliegue deja de ser condición de corrección.",
+        "Backfill idempotente (`front/scripts/backfill-user-roles.ts`, npm run db:backfill-roles): corrida 1 → migrated=5 skipped=0 y roles=[role] correcto por fila (admin→{admin}, portfolio_lead→{portfolio_lead}); corrida 2 → migrated=0 skipped=5. Filas con roles != ARRAY[role] tras el backfill: 0.",
+        "Escritura dual coherente desde un solo punto (updatePlatformRoles) + las 3 creaciones de usuario (registro, Google sign-in, invitación a equipo) nacen con roles. Suite backend 522 passed / 53 files (baseline 492): user.role.test.ts cubre concesión de DOS roles conservando ambos, deduplicación, rechazo del conjunto vacío (EMPTY_ROLE_SET) y coherencia role+roles en la misma escritura."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Añadir columna con default es aditivo y pasa el guard del CD; lo prohibido por ADR-018/020/023/026 es el @@unique sobre tabla poblada, que aquí no aparece."
+    },
+    {
+      "id": "PBA-03-require-permission",
+      "priority": 33,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "El JWT lleva roles[] y el servidor deriva permisos; nuevo guard requirePermission",
+      "user_visible_behavior": "Ninguno directo. Las rutas pasan a autorizar por capacidad. Los tokens ya emitidos (con role escalar) siguen funcionando hasta expirar.",
+      "scope_out": [
+        "Migrar los call sites: vive en PBA-04",
+        "Cerrar las 7 lecturas de portfolio hoy sin gate: rompería a los participantes (deuda declarada desde ADR-028)",
+        "Meter los permisos derivados dentro del token: el ADR lo descarta por congelar la tabla de derivación en sesiones vivas"
+      ],
+      "deferred_to": [
+        "PBA-04-migrate-guards",
+        "#161"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- auth.middleware",
+        "cd front && npm run test:backend"
+      ],
+      "evidence": [
+        "`npm run test:backend -- require-permission` → 10 passed. Cubre: buildRequestUser deriva roles+permisos; un token PRE-ADR-029 (sin `roles`) sigue autorizando porque cae a [role] — nadie es expulsado a mitad de sesión al desplegar; requirePermission 200/403/401; el admin conserva su acceso; el doble rol entra a portfolio:write Y project:own aunque su rol PRIMARIO sea participante; requireRole (deprecado) también mira el conjunto.",
+        "Suite backend 534/534 / 54 files (baseline 492). `npm run build:backend` exit 0."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md)."
+    },
+    {
+      "id": "PBA-04-migrate-guards",
+      "priority": 34,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend",
+      "title": "Los 30 requireRole pasan a requirePermission",
+      "user_visible_behavior": "Un admin y un portfolio lead conservan exactamente el acceso de escritura de portafolio que tienen hoy; el resto de roles sigue con 403. El comportamiento no cambia: cambia cómo se decide.",
+      "scope_out": [
+        "Ampliar o reducir a quién se le concede algo: esta feature es equivalencia de comportamiento, no cambio de política",
+        "Las 7 rutas GET sin gate siguen sin gate"
+      ],
+      "deferred_to": [
+        "#161"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend (492 de baseline, sin regresión)"
+      ],
+      "evidence": [
+        "30 guards migrados: 20 portfolio.router (portfolio:write), 2 users (users:assign-roles), 3 sponsor (sponsor:manage x2, sponsor:decide), 1 mentor (mentor:panel), 1 cohort (cohort:manage). `grep requireRole` en *.router.ts → 0 resultados.",
+        "HALLAZGO que corrigió el ADR: `PATCH /sponsor/checkpoints/:id/respond` usa requireRole('sponsor') y EXCLUYE al admin a propósito (el admin tiene /skip, otro acto de gobierno). O sea que 'admin puede todo' NO era fiel al comportamiento de hoy, y el comodín habría colado un cambio de política en una migración que sólo debía cambiar cómo se decide. El admin ahora ENUMERA sus permisos y NO tiene sponsor:decide; hay 2 tests que lo fijan.",
+        "portfolio.router.authz.test.ts (el borde de #156) sigue verde. Suite backend 534/534."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). 20 de los 30 sitios son la misma línea repetida en portfolio.router.ts."
+    },
+    {
+      "id": "PBA-05-frontend-permissions",
+      "priority": 35,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "front",
+      "title": "El frontend decide por permiso y se elimina el redirect-cárcel del portfolio lead",
+      "user_visible_behavior": "Un portfolio lead que además es participante YA NO queda encerrado en /portfolio: conserva su dashboard, sus iniciativas y el flujo Step 0-4. Es la regresión que motiva el ADR.",
+      "scope_out": [
+        "El switcher de zona: vive en PBA-06",
+        "Quitar user.role del frontend: sobrevive como concepto de PRESENTACIÓN (etiquetas, badge). Lo que se prohíbe es que una decisión de acceso lo lea",
+        "Revisar cada componente que muestra un nombre de rol"
+      ],
+      "deferred_to": [
+        "PBA-06-workspace-switcher"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm test -- PortfolioLeadLayout.access",
+        "cd front && npm test (294 de baseline, sin regresión)"
+      ],
+      "evidence": [
+        "BORRADO el redirect de AppLayout.tsx:55-58 que encerraba al portfolio lead en /portfolio. Nuevo `AppLayout.dual-role.test.tsx` 4/4: un portfolio lead que TAMBIÉN es participante conserva su workspace; un portfolio lead puro tampoco es expulsado; un participante sin portafolio no nota nada (navigate no se llama); sin sesión sigue yendo a /auth.",
+        "PortfolioLeadLayout pregunta can(user,'portfolio:read') en vez de enumerar roles. `PortfolioLeadLayout.access.test.tsx` 6/6: el borde que fijó #156 (admin y portfolio lead entran; owner/mentor/sponsor fuera) sigue verde con el guard nuevo.",
+        "Backend expone roles+permissions ya derivados (toSafeUser unifica los 6 literales que había repartidos); el front sólo declara el vocabulario y falla CERRADO si le falta un permiso. La tabla de derivación NO se duplica.",
+        "front 298/298 (baseline 294) · backend 534/534 · npm run build y build:backend exit 0."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). El borde que fijó el test de #156 (admin y portfolio lead entran; mentor/sponsor/participante no) debe seguir verde: es el detector de regresión."
+    },
+    {
+      "id": "PBA-06-workspace-switcher",
+      "priority": 36,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "front",
+      "title": "Switcher de workspace derivado de permisos, con la última zona recordada",
+      "user_visible_behavior": "Quien pertenece a las dos superficies ve un selector arriba del sidebar para cambiar entre 'Mis iniciativas' y 'Portafolio', y vuelve a la última zona que usó al entrar. Quien pertenece a una sola NO ve switcher y su experiencia no cambia en absoluto.",
+      "scope_out": [
+        "Una tercera superficie",
+        "Personalizar el orden de las zonas",
+        "Recordar la zona por dispositivo/servidor: se guarda en localStorage"
+      ],
+      "deferred_to": [
+        "PBA-07-e2e-dual-role"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm test -- WorkspaceSwitcher",
+        "cd front && npm test"
+      ],
+      "evidence": [
+        "`workspaces.test.ts` 13/13. Cubre: el doble rol ve las 2 zonas y SÍ ve switcher; un participante ve 1 zona y NO ve switcher (su experiencia no cambia); vuelve a la última zona usada; y las 4 degradaciones — zona guardada sin acceso ya, basura en localStorage, getItem que lanza (modo privado), setItem que lanza — todas devuelven una zona permitida en vez de dejar sin navegación.",
+        "Decisión de diseño verificada por test: la zona de iniciativas NO se gatea por permiso. Derivar ambas zonas de permisos dejaba a mentor y sponsor sin NINGUNA (no tienen project:own ni portfolio:read) pese a vivir hoy bajo AppLayout.",
+        "AuthPage: destino post-login = resolveInitialWorkspace(user) en vez del redirect por igualdad de rol. front 311/311 (baseline 294) · npm run build exit 0."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). Un localStorage corrupto no debe dejar a nadie sin navegación: degrada a la primera zona permitida."
+    },
+    {
+      "id": "PBA-07-e2e-dual-role",
+      "priority": 37,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "e2e + verificación",
+      "title": "La regresión que motiva el ADR queda cubierta por un test que hoy no existe",
+      "user_visible_behavior": "Un usuario con roles ['participante','portfolio_lead'] entra a /dashboard Y a /portfolio/inicio en la misma sesión, escribe en portafolio y vuelve al workspace sin perder nada.",
+      "scope_out": [
+        "Cubrir por e2e las combinaciones de los 7 roles: se cubre la que motiva el ADR y el borde de #156",
+        "El smoke de referencia (pdf-autofill) no se modifica: solo se comprueba que sigue verde"
+      ],
+      "deferred_to": [
+        "PBA-04-migrate-guards"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:e2e  (el runner levanta su propio stack aislado: postgres 55433 + backend 4100 + frontend 5176; NO requiere `docker:up` ni el puerto 5433)",
+        "cd front && npm test  (unit front + backend)"
+      ],
+      "evidence": [
+        "NUEVO spec `front/e2e/dual-role-authz.spec.ts` — 4/4 passed contra stack real, verificado en la suite completa Y aislado (6 passed / 3.2s junto a team-inheritance). Cubre: (1) participante recien registrado NO escribe en portafolio (403); (2) el admin concede el CONJUNTO ['participante','portfolio_lead'] via el endpoint REAL de PBA-08 (PATCH /api/v1/users/:id/role); (3) el JWT nuevo lleva LOS DOS roles; (4) con doble rol GANA portafolio (frente -> reto); (5) y NO pierde su workspace: sigue creando proyecto. El (5) es el assert de la regresion: antes del ADR ganar una plataforma costaba la otra.",
+        "DIAGNOSTICO CORREGIDO: el bloqueo NO era el puerto 5433. `npm run test:e2e` es autocontenido (docker-compose.e2e.yml, puerto 55433) y ya exporta AUTH_DISABLE_WAITLIST. El 5433 de hecho hoy sirve un Postgres 16.14 sano. La `verification` anterior incluia un `docker:up` innecesario que apuntaba al stack equivocado.",
+        "CAUSA RAIZ 1 (arreglada) — `run-e2e.ts` hacia `docker compose up -d` SIN `--wait`: docker-proxy acepta el TCP apenas se crea el contenedor, asi que el gate `waitForTcp` se satisfacia con postgres aun arrancando y el provisioning moria con 'Can't reach database server'. Fix: `--wait` (el healthcheck pg_isready ya existia en el compose y nadie lo esperaba).",
+        "CAUSA RAIZ 2 (arreglada) — el provisioner usa `prisma migrate deploy`, pero `User.roles` (PBA-02) y otros cambios se aplicaron solo con `db push`: no habia migracion. La BD e2e nacia sin la columna y el seed moria con P2022. Fix: migracion `20260820120000_sync_dbpush_drift_roles_pilot_claim` generada con `prisma migrate diff` (User.roles SIN default, fiel a la decision del ADR; + PilotLead.proposal, tabla PilotClaimToken, indices de PdfFieldProposal/AdaptiveCheckpointInstance). Drift posterior verificado en CERO ('This is an empty migration'). NO afecta prod: cd.yml usa `db push`, no `migrate deploy`.",
+        "Suite e2e: de morir en el provisioning (0 tests) a 21 passed. Baseline unit intacta: ./init.sh exit 0, front 334/334 en 49 archivos."
+      ],
+      "notes": "ADR-029 (backend/docs/adr/ADR-029-permission-based-authorization.md). PBA-07 cierra el gate E2E que el ADR dejaba anotado. El spec usa el endpoint de admin REAL en vez de sembrar el doble rol, asi ejercita la cadena que entrego PBA-08."
+    },
+    {
+      "id": "PBA-08-role-admin-ui",
+      "priority": 38,
+      "epic": "permission-based-authz (ADR-029)",
+      "area": "backend + front",
+      "title": "Pantalla de administración de roles de plataforma: un admin concede varios roles sin tocar la API a mano",
+      "user_visible_behavior": "Un admin entra a /admin/roles, ve la lista de usuarios con los roles que tiene cada uno, marca o desmarca roles y guarda. Puede dar portfolio_lead a alguien SIN quitarle participante — la capacidad que ADR-029 habilitó en el backend pero que hoy sólo se alcanza con curl.",
+      "scope_out": [
+        "Invitar o crear usuarios: esta pantalla sólo cambia roles de usuarios existentes",
+        "Editar el rol de PROYECTO (TeamRole, ADR-023): es otro eje y tiene su propia superficie",
+        "Auditoría/historial de cambios de rol",
+        "Paginación y búsqueda avanzada: hoy son 15 usuarios en producción; se lista con un límite",
+        "Que un admin se cambie su propio rol: el servicio ya lo prohíbe (CANNOT_CHANGE_OWN_ROLE) y la UI lo refleja, no lo reimplementa"
+      ],
+      "deferred_to": [
+        "#160"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- user.list",
+        "cd front && npm test -- RoleAdmin",
+        "cd front && npm test && npm run build"
+      ],
+      "evidence": [
+        "Backend `npm run test:backend -- user.list` → 10 passed. GET /users va con requirePermission('users:assign-roles'): admin 200; participante/mentor/sponsor/portfolio_lead 403 y el servicio NI SE LLAMA; sin sesión 401. El select NUNCA expone passwordHash/googleId/failedLoginAttempts/lockedUntil (el mismo defecto que ya apareció una vez en updatePlatformRole). Una fila sin migrar se normaliza a su rol escalar — sin eso la UI pintaría a un admin como 'sin roles' y al guardar le quitaría todo. El límite se acota a 500.",
+        "Front `vitest RoleAdminPage` → 8 passed. El caso central: marcar Portfolio Lead NO desmarca Participante y lo que viaja al servidor es el CONJUNTO ['participante','portfolio_lead'] (mandar el escalar reintroduciría el bug). Además: sin users:assign-roles no se pide la lista ni se pinta; una fila sin cambios no se puede guardar; no deja dejar a nadie sin roles; un admin no puede editarse a sí mismo (refleja CANNOT_CHANGE_OWN_ROLE en vez de reimplementarlo); un fallo al guardar avisa y no deja la fila en estado mentiroso; un fallo de la lista avisa en vez de mostrar pantalla vacía.",
+        "Suite completa: backend 546/546 (55 files) · front 329/329 (49 files) · npm run build y build:backend exit 0.",
+        "DEFECTO PROPIO CORREGIDO (detectado en producción por el usuario): el enlace del sidebar se había metido en `adminLinks`, y esa lista se elegía con `user.role === 'admin'` — o sea, el MENÚ se decidía por el rol primario. Un usuario con {participante, admin} tenía el permiso y NO veía el enlace: autorizado por API, invisible por pantalla, el mismo defecto que #156 vino a erradicar, reintroducido por la puerta de atrás dentro del propio commit que implementa el ADR. Arreglado: el menú se COMPONE por permisos (can(...)); la etiqueta del dashboard sigue el rol primario porque eso sí es presentación. `vitest AppLayout.dual-role` → 9 passed (5 nuevos): admin-con-participante-primario ve Roles/Panel cohorte/Portafolio; participante no ve nada de admin y conserva Evidencias; mentor ve su panel; sponsor conserva su menú mínimo; portfolio_lead ve la capa estratégica. front 334/334, backend 546/546, builds exit 0."
+      ],
+      "notes": "ADR-029. El endpoint de lista no existía; se añade GET /api/v1/users gateado con users:assign-roles."
+    },
+    {
+      "id": "e2e-prd-audit-realign",
+      "priority": 39,
+      "area": "e2e",
+      "title": "initial-review-prd-audit audita el copy de la pantalla LEGACY deprecada",
+      "user_visible_behavior": "Ninguno directo. La spec vuelve a auditar la pantalla que el usuario usa hoy en vez de una muerta.",
+      "scope_out": [
+        "Borrar físicamente features/initial-review: es el issue #136",
+        "Reescribir el PRD: aquí sólo se realinea la spec con el diseño vigente"
+      ],
+      "deferred_to": [
+        "#136"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:e2e -- initial-review-prd-audit → 2 passed"
+      ],
+      "evidence": [],
+      "notes": "Diagnosticado en la sesión 018. La spec asume la UI de `features/initial-review` (scaffold legacy deprecado en IRC-07, borrado pendiente #136), no la viva `features/initiative-review`. Dos ejemplos confirmados: el botón vivo dice 'Revisar propuesta' y no 'Revisar mi propuesta' (ya realineado); y el campo 'Contexto adicional opcional' fue ELIMINADO a propósito del diseño vivo — InitiativeReviewFlow.test.tsx:374 asegura `not.toBeInTheDocument()`. O sea: el producto está bien y la spec quedó vieja. Realinear el resto del recorrido P0 contra la UI conversacional actual. El test negativo de la misma spec YA pasa."
+    },
+    {
+      "id": "e2e-pdf-extract-stub-mode",
+      "priority": 40,
+      "area": "e2e + backend",
+      "title": "PDF_EXTRACTION_E2E_MODE lo declara el runner pero el backend nunca lo lee",
+      "user_visible_behavior": "Ninguno en producción. Permite que el smoke de referencia (PDF autofill) corra sin levantar el ai-service.",
+      "scope_out": [
+        "Levantar el ai-service dentro del stack e2e: es la alternativa cara, se descarta salvo que se decida lo contrario",
+        "Tocar el camino real de extracción en prod"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm run test:e2e -- pdf-autofill → passed sin ai-service levantado"
+      ],
+      "evidence": [],
+      "notes": "Diagnosticado en la sesión 018. `run-e2e.ts:164` exporta PDF_EXTRACTION_E2E_MODE='terminal-failed', pero un grep en backend/ no encuentra NI UNA lectura: es una variable muerta. Como el stack e2e no levanta el ai-service, el trigger de extracción devuelve 400 PDF_EXTRACTION_UNAVAILABLE (pdf.service.ts:324) y la spec —que sí tolera un run que TERMINA en failed— muere antes, porque lo que falla es el disparo. Implementar el modo en pdf.service (mismo patrón opt-in por env que AUTH_DISABLE_WAITLIST): crear el run y terminarlo como FAILED sin llamar al ai-service, devolviendo 2xx con runId. Nota: con los fixes de la sesión 018 la spec ya avanza register→login→crear proyecto→subir PDF; el trigger es el único eslabón que falta."
+    },
+    {
+      "id": "MVP-P1-01-challenge-state-machine",
+      "priority": 41,
+      "epic": "mvp-portafolio (plan 2026-08-19)",
+      "area": "backend + front",
+      "title": "Máquina de estados del reto: activado / bloqueado / en pausa, con transiciones validadas en el servidor",
+      "user_visible_behavior": "El portfolio lead ve el estado de cada reto y puede activarlo, pausarlo o cerrarlo; el estado sobrevive recarga y gobierna qué se puede hacer (un reto en pausa o cerrado no acepta iniciativas nuevas).",
+      "scope_out": [
+        "El estado de la INICIATIVA: va en MVP-P1-02",
+        "La convocatoria y su publicación: Fase 4 del plan",
+        "Migrar el enum legacy a canónico: deuda anotada, no se ataca aquí"
+      ],
+      "deferred_to": [
+        "MVP-P1-02-initiative-state-sync"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- portfolio → transiciones válidas 2xx e inválidas 409/422",
+        "cd front && npm run test:e2e -- portfolio → activar → pausar → reactivar con recarga"
+      ],
+      "evidence": [
+        "backend unit: 862 passed / 34 skipped (baseline 838) — `cd front && npm run test:backend`. Incluye 24 tests nuevos: challenge-state-machine.test.ts 16/16 (tabla de transiciones, cerrado terminal, memoria de la pausa, idempotencia) y portfolio.challenge-transitions.test.ts 8/8 (el SERVICIO devuelve 409 y NO llama a update en la transicion ilegal).",
+        "front unit: 398 passed (sin cambio respecto al baseline medido con stash: los cambios de types/adapters no alteran el conteo).",
+        "e2e real stack: `npm run test:e2e -- portfolio-challenge-states` → 4 passed (2.1s), exit 0. Cubre activar→pausar→reanudar con RELECTURA en peticion nueva (persiste y pausedFromStatus se limpia), reanudar-a-otro-estado 409, cerrado→draft 409, y reto pausado rechaza iniciativa nueva con 409.",
+        "prisma migrate diff migraciones → schema: 'No difference detected' (exit 0) con la migracion 20260829120000_adr030_challenge_paused_state incluida.",
+        "npm run build y npm run build:backend: exit 0."
+      ],
+      "notes": "Gobernada por ADR-030 (backend/docs/adr/ADR-030-challenge-and-initiative-state-machine.md, Propuesto). Decisiones que ya toma el ADR y esta feature implementa: `pausado`/`pausada` son ESTADOS del enum (no un flag: una pausa es excluyente con avanzar, y `bloqueada` ya es estado); las transiciones se validan EN EL SERVIDOR con una tabla explicita y un 409 —hoy `PortfolioService.updateChallenge` hace `data: input as any` y obedece al cliente, asi que una pestaña vieja o un curl pueden llevar un reto de `cerrado` a `draft`—; `cerrado` es terminal; la pausa persiste `pausedFromStatus` para reanudar al estado previo en vez de adivinarlo. Los valores nuevos se escriben en la forma LEGACY (español) porque es la que vive en Postgres. Coste bajo por lo ya construido: `syncInitiativeProgress` solo toca filas `en_step_*`, asi que un estado no-progresivo queda exento del auto-avance sin tocar esa funcion, y añadir un valor a un enum es ALTER TYPE ADD VALUE, que pasa el guard de `db push` (ADR-018)."
+    },
+    {
+      "id": "MVP-P1-02-initiative-state-sync",
+      "priority": 42,
+      "epic": "mvp-portafolio (plan 2026-08-19)",
+      "area": "backend + front",
+      "title": "Estado de la iniciativa: un solo vocabulario y la decision como unico gobernante (reconciliacion con adaptive-core)",
+      "user_visible_behavior": "El participante ve si su iniciativa está activa, bloqueada o en pausa; si el lead la pausa o la cierra, la iniciativa queda en solo lectura con un aviso que explica por qué.",
+      "scope_out": [
+        "El estado del RETO: es MVP-P1-01, ya passing",
+        "Reescribir el sistema de decisiones de adaptive-core (Decision/DecisionRequest): se REUSA, no se duplica",
+        "Migrar `bloqueada` a un canonico: no tiene gemelo y es un concepto distinto de `closed`; se queda",
+        "Backfill de datos en PROD: el script se entrega y se prueba, ejecutarlo es una operacion aparte (ADR-018: prod usa db push, no migrate deploy)",
+        "La convocatoria: Fase 4 del plan"
+      ],
+      "deferred_to": [
+        "portfolio-decisions-persist"
+      ],
+      "status": "passing",
+      "verification": [
+        "cd front && npm run test:backend -- initiative → transiciones validas 2xx e invalidas 409; escritura de step sobre iniciativa pausada/cerrada rechazada",
+        "cd front && npm run test:e2e -- initiative-states → decision que pausa deja la iniciativa en solo lectura, y sobrevive recarga"
+      ],
+      "evidence": [
+        "backend unit: 882 passed / 34 skipped (baseline 862) — +20 nuevos: initiative-state-machine.test.ts 14/14 (alias cerrada==closed, bloqueada NO congela, closed terminal) e initiative-read-only.test.ts 6/6 (updateStep0 devuelve 409 y NO llega a escribir sobre pausada/cerrada; un proyecto sin meta no se ve afectado).",
+        "front unit: 398 passed, sin cambio.",
+        "e2e real stack: `npm run test:e2e -- initiative-states` → 5 passed (2.1s), exit 0. Pausada rechaza Step 0 con 409 y sigue rechazandolo en peticion nueva; bloqueada SI escribe; en curso escribe; reabrir una cerrada da 409.",
+        "backfill ejercitado contra Postgres real: dry-run anuncia 2 filas -> corrida real 'migradas=2 restantes=0' -> 2a corrida 'nada que migrar' (idempotente). Datos de dev restaurados despues.",
+        "npm run build, build:backend y lint: exit 0. check-feature-list.py exit 0."
+      ],
+      "notes": "RECONCILIACION, no construccion desde cero. Hallazgo al abrirla: adaptive-core (mergeado DESPUES de escribir ADR-030) ya transiciona la iniciativa en la transaccion de la decision via updateDecisionLifecycleProjectionTx -> status 'paused'/'closed' (CANONICOS). Pero portfolioMetaCompletionUpdate escribe 'cerrada' (LEGACY) para el mismo concepto, y el zod de upsertInitiativeMeta NO acepta 'paused' ni 'closed': la API del portafolio no sabe nombrar el estado en que la decision deja la iniciativa. Decision de reconciliacion: gana el CANONICO para los estados que lo tienen (paused/closed), 'bloqueada' se queda (concepto distinto, sin gemelo), lectura dual + escritura unica + script de backfill idempotente (patron ya probado en ADR-029)."
+    },
+    {
+      "id": "portfolio-decisions-persist",
+      "priority": 43,
+      "epic": "mvp-portafolio (plan 2026-08-19)",
+      "area": "portfolio-lead",
+      "title": "Registrar la decisión de la fase D (continuar / iterar / pivotear / escalar / transferir / invertir / pausar / cerrar)",
+      "user_visible_behavior": "En /portfolio/decisiones el lead registra la decisión sobre una iniciativa lista para decidir; la decisión persiste tras recarga y cambia el estado de la iniciativa.",
+      "scope_out": [
+        "La máquina de estados que la decisión dispara: MVP-P1-02",
+        "Notificar al equipo de la iniciativa: fuera del MVP"
+      ],
+      "deferred_to": [
+        "MVP-P1-02-initiative-state-sync"
+      ],
+      "status": "not_started",
+      "verification": [
+        "cd front && npm test -- PortfolioLead → registrar decisión llama al backend y revierte ante fallo",
+        "cd front && npm run test:e2e -- portfolio → registrar decisión → recargar → sigue ahí"
+      ],
+      "evidence": [],
+      "notes": "Del plan (fase D del diagrama). HALLAZGO de la sesión 018: el vocabulario existe en el dominio del front (`PortfolioDecisionOutcome`: iterar_desde_otro_angulo, escalar_piloto, …) pero NO existe ninguna mutación de decisión en PortfolioLeadContext — `portfolioDecisions` sólo lo escribe el sembrador de demo `loadChallengeCoverageDemo`. O sea: hoy la fase D del diagrama no tiene camino de escritura al backend. \nADR-030 lo refina con un hallazgo: el almacenamiento YA existe —`PortfolioDecisionOutcome` es un enum de Prisma y `InitiativePortfolioMeta.decisionOutcome` es una columna real—, asi que lo unico que falta es el camino de escritura. Ademas el ADR decide que la decision ES el disparador del estado: se escriben `decisionOutcome` y el estado en la MISMA transaccion. Y añade `pausar` al enum, que el diagrama pide como opcion de la fase D y hoy no existe."
+    }
+  ]
+}
