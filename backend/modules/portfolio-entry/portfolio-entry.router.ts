@@ -1,6 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { Router } from 'express';
 import { config } from '../../config';
+import { logger } from '../../shared/utils/logger';
 import { prisma } from '../../shared/db/prisma';
 import { authenticate } from '../auth/auth.middleware';
 import { PrismaPortfolioEntrySessionRepository } from '../portfolio-entry-sessions/infrastructure/prisma-portfolio-entry-session.repository';
@@ -136,7 +137,10 @@ function configuredAgentAdapter(): PortfolioEntryAgentAdapterV2 {
     const prompts = loadResolvedPromptManifest();
     const candidate = createLiveCandidate(provider, prompts);
     return new LivePortfolioEntryAgentAdapter(new FetchStructuredModelAdapter(provider), candidate, prompts);
-  } catch {
+  } catch (err) {
+    // Degrading silently here surfaces later as PORTFOLIO_ENTRY_MODEL_PROVIDER_FAILURE
+    // on every request, which points at the provider instead of the real cause.
+    logger.error({ err }, 'Portfolio Entry live agent adapter is not configured; falling back to unconfigured.');
     return new UnconfiguredPortfolioEntryAgentAdapter();
   }
 }
@@ -153,7 +157,10 @@ function configuredHandoffMaterializer(): PortfolioEntryHandoffMaterializer {
     const prompts = loadResolvedPromptManifest();
     const candidate = createLiveCandidate(provider, prompts);
     return new LivePortfolioEntryHandoffMaterializer(new FetchStructuredModelAdapter(provider), candidate, prompts);
-  } catch {
+  } catch (err) {
+    // Degrading silently here surfaces later as PORTFOLIO_ENTRY_MODEL_PROVIDER_FAILURE
+    // on every request, which points at the provider instead of the real cause.
+    logger.error({ err }, 'Portfolio Entry live handoff materializer is not configured; falling back to unconfigured.');
     return new UnconfiguredPortfolioEntryHandoffMaterializer();
   }
 }
