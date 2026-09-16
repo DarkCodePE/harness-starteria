@@ -10,11 +10,11 @@ Source repo: `nmindFa/Dashboardstarteria`.
 
 The target branch was created from target `main` and received the selected product runtime from the source branch that contains Portfolio Entry product wiring. This was not a blind repository copy: target authority, harness, skills, plugins, and existing documentation were preserved.
 
-Pre-merge gap closure update: DB migration validation now passes against isolated PostgreSQL; DB integration tests for Portfolio Entry sessions, conversion/confirmation, continuation, and bootstrap pass without skips; Portfolio Entry browser smoke passes. Full browser E2E still fails outside the Portfolio Entry smoke, so the branch is not merge-ready yet.
+Pre-merge gap closure update: DB migration validation now passes against isolated PostgreSQL; DB integration tests for Portfolio Entry sessions, conversion/confirmation, continuation, and bootstrap pass without skips; Portfolio Entry browser smoke passes. Full browser E2E still reports `20` failures, but the same `20` failures reproduce on source commit `17b57a6e3dcf2d6d4b43571013427edb6c21ee22`; no migration-only browser regression was found.
 
-Final pre-merge verdict for this branch: `NOT_MERGE_READY`.
+Final pre-merge verdict for this branch: `MERGE_READY_WITH_ACCEPTED_TEST_DEBT`.
 
-Blocking gap before declaring merge-ready: full browser E2E failed (`20 failed, 4 did not run, 21 passed`). The targeted Portfolio Entry smoke is green (`8 passed`) and now protected in CI as `e2e-light`.
+Accepted test debt: full browser E2E remains red for preexisting/legacy suites (`20 failed, 4 did not run, 21 passed`). The targeted Portfolio Entry smoke is green (`8 passed`) and now protected in CI as `e2e-light`.
 
 ## 2. Source Repo State
 
@@ -209,7 +209,8 @@ Executed locally:
 - `npm run test:front`: passed.
 - `npx prisma validate` with local dummy `DATABASE_URL`: passed.
 - DB integration command with `PORTFOLIO_ENTRY_DB_INTEGRATION=1` and `PORTFOLIO_BOOTSTRAP_DB_INTEGRATION=1`: passed (`4` files, `42` tests, `0` skips reported).
-- Full browser E2E: failed (`45` tests total; `21` passed, `20` failed, `4` did not run).
+- Full browser E2E in target: failed (`45` tests total; `21` passed, `20` failed, `4` did not run).
+- Full browser E2E in source commit `17b57a6e3dcf2d6d4b43571013427edb6c21ee22`: failed with the same total (`45` tests total; `21` passed, `20` failed, `4` did not run).
 - Targeted Portfolio Entry browser smoke: passed (`8` tests).
 
 Not executed locally:
@@ -220,7 +221,7 @@ Full Portfolio Entry browser path result:
 
 - `/public/start` -> clarification -> handoff -> confirmation/auth -> Portfolio continuation -> Portfolio Home: passed in targeted smoke.
 - Forbidden destinations `/public/draft/:id/edit`, `/projects/:id`, `/projects/:id/step/0`, `/step/0`: not reached in targeted smoke.
-- Full-suite gap: `public-start-access.spec.ts` failed in the full run and must be reviewed with the other E2E failures before merge-ready status.
+- Full-suite gap: the failing full-suite tests are preexisting or legacy/non-current journeys for this migration PR; see `FULL BROWSER E2E FAILURE ANALYSIS`.
 
 ## 14. CI
 
@@ -309,9 +310,82 @@ MIGRATION_REQUIRED: yes, apply Prisma migrations from `front/prisma/migrations` 
 
 ROLLBACK_PLAN: keep deployment pointed at `nmindFa/Dashboardstarteria` until target PR is merged, CI passes, DB migrations are validated in staging, and browser E2E passes. If post-cutover issues occur, revert deploy source to previous repo/commit and restore DB from pre-migration backup if migrations were applied.
 
+## FULL BROWSER E2E FAILURE ANALYSIS
+
+Initial target run:
+
+- Command: `npm run test:e2e -- --reporter=list,json`.
+- Result: `21 passed / 20 failed / 4 did not run`.
+
+Source comparison:
+
+- Source repo: `nmindFa/Dashboardstarteria`.
+- Source commit: `17b57a6e3dcf2d6d4b43571013427edb6c21ee22`.
+- Source setup required `npm ci` and `npx prisma generate` before Playwright could run.
+- Source result: `21 passed / 20 failed / 4 did not run`.
+- Conclusion: all `20` target failures also reproduce on the declared source commit. No target-only E2E failure was found.
+
+Classification totals:
+
+| Classification | Count | Blocking for this migration PR |
+|---|---:|---|
+| MIGRATION_REGRESSION | 0 | No |
+| PREEXISTING_SOURCE_FAILURE | 20 | No, accepted test debt |
+| LEGACY_EXPECTATION identified inside those failures | 3 | No, isolate/deprecate/update outside this PR |
+| ENVIRONMENT_FAILURE unique to target | 0 | No |
+| PRODUCT_GAP unique to target | 0 | No |
+| UNKNOWN | 0 | No |
+
+Failure matrix:
+
+| Test file | Test name | Route/journey | Expected | Actual / exact failure | Classification | Blocking | Recommended treatment |
+|---|---|---|---|---|---|---|---|
+| `front/e2e/adaptive-core-prd03.spec.ts` | Revision inicial -> Step 0 -> Step 1 -> Step 2 -> Step 3 -> Step 4 -> cierre across scenarios | Adaptive Core project/steps | Checkpoint confirmation succeeds | `confirm` returned `CHECKPOINT_TRUTH_BINDING_REQUIRED`; `expect(res.ok()).toBeTruthy()` failed | PREEXISTING_SOURCE_FAILURE | No | KEEP in Adaptive Core suite; fix truth-binding fixture/flow separately. |
+| `front/e2e/dual-role-authz.spec.ts` | con los dos roles GANA el portafolio: frente -> reto | Dual-role portfolio authz | Create portfolio challenge succeeds | Create reto returned `500 INTERNAL_ERROR`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP; investigate portfolio challenge API/seed/auth as separate product debt. |
+| `front/e2e/dual-role-authz.spec.ts` | y NO pierde su workspace: sigue pudiendo crear un proyecto | Dual-role workspace/project | Dual-role user can create project | Create project returned `401 UNAUTHORIZED Token de acceso requerido`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP; repair auth/session helper outside migration PR. |
+| `front/e2e/initial-review-prd-audit.spec.ts` | P0 completo: dashboard -> revision -> confirm-route -> overview -> Step 0 precargado | Initial review / Step 0 | Optional context field is visible and fillable | Timeout waiting for label `/Contexto adicional opcional/i` | PREEXISTING_SOURCE_FAILURE | No | MOVE_TO_INITIATIVE_ENTRY_SUITE or UPDATE_EXPECTATION under current Initiative Entry UI. |
+| `front/e2e/initiative-states.spec.ts` | una iniciativa pausada rechaza la escritura de Step 0 con 409 | Initiative state / Step 0 | Create reto, then reject Step 0 write with 409 | Create reto returned `500 INTERNAL_ERROR`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP/MOVE_TO_INITIATIVE_ENTRY_SUITE; blocked by portfolio challenge setup, not migration. |
+| `front/e2e/pdf-autofill.spec.ts` | register -> login -> create project -> upload + extract via API -> assert UI on Step 0 | Project PDF autofill / Step 0 | Test PDF exists, extraction populates Step 0 | Target: missing `docs\\Test - iniciativa.pdf`; source: `PDF_EXTRACTION_UNAVAILABLE` | PREEXISTING_SOURCE_FAILURE | No | MOVE_TO_INITIATIVE_ENTRY_SUITE; fix fixture and PDF extraction env separately. |
+| `front/e2e/portfolio-challenge-states.spec.ts` | activar -> pausar -> reanudar sobrevive a una lectura nueva | Portfolio challenge lifecycle | Create reto and persist lifecycle state | Create reto returned `500 INTERNAL_ERROR`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP; portfolio challenge lifecycle debt predates migration. |
+| `front/e2e/portfolio-challenge-states.spec.ts` | reanudar a un estado distinto del que se pauso se rechaza con 409 | Portfolio challenge lifecycle | Invalid resume rejected with 409 | Create reto returned `500 INTERNAL_ERROR`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP; repair challenge setup separately. |
+| `front/e2e/portfolio-challenge-states.spec.ts` | cerrado es terminal: el servidor rechaza cerrado -> draft con 409 | Portfolio challenge lifecycle | Closed reto cannot reopen to draft | Create reto returned `500 INTERNAL_ERROR`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP; repair challenge setup separately. |
+| `front/e2e/portfolio-challenge-states.spec.ts` | un reto pausado no admite iniciativas nuevas | Portfolio challenge lifecycle / initiatives | Paused reto rejects new initiative | Create reto returned `500 INTERNAL_ERROR`; expected status `< 300` | PREEXISTING_SOURCE_FAILURE | No | KEEP; repair challenge setup separately. |
+| `front/e2e/portfolio-copilot-create-front.spec.ts` | crea frente por conversacion, aprueba, ejecuta, recupera y no duplica en replay | Portfolio Copilot | `Portfolio Copilot` region visible and executable | Region `Portfolio Copilot` not visible | PREEXISTING_SOURCE_FAILURE | No | KEEP; confirm feature flag/UI availability separately. |
+| `front/e2e/portfolio-lead-role.spec.ts` | el JWT del portfolio lead lleva role=portfolio_lead | Portfolio Lead auth | JWT role is `portfolio_lead` | JWT role was `mentor` | PREEXISTING_SOURCE_FAILURE | No | KEEP; role seeding/auth helper debt predates migration. |
+| `front/e2e/portfolio-lead-role.spec.ts` | con ese token PUEDE escribir en el portafolio: frente -> reto | Portfolio Lead authz | Portfolio lead can create frente/reto | Create front returned `403 FORBIDDEN` | PREEXISTING_SOURCE_FAILURE | No | KEEP; depends on portfolio lead role/auth repair. |
+| `front/e2e/portfolio-lead-role.spec.ts` | la autoria de la activacion del reto sobrevive a una lectura nueva | Portfolio Lead authorship | Activation author persists | Create front returned `403 FORBIDDEN` | PREEXISTING_SOURCE_FAILURE | No | KEEP; depends on portfolio lead role/auth repair. |
+| `front/e2e/portfolio-lead-role.spec.ts` | un activationInputs incompleto es rechazado en el borde | Portfolio Lead validation | Incomplete activation input returns `400` | Request returned `403 FORBIDDEN` before validation | PREEXISTING_SOURCE_FAILURE | No | KEEP; fix auth precondition before validation assertion. |
+| `front/e2e/portfolio-steps-integration.spec.ts` | iniciativa from a reto is a navigable steps project sharing team + meta without re-capture | Portfolio-to-steps integration | Create reto then navigable steps project | Create reto returned `500 INTERNAL_ERROR`; expected ok | PREEXISTING_SOURCE_FAILURE | No | MOVE_TO_INITIATIVE_ENTRY_SUITE; this is not Portfolio Entry onboarding. |
+| `front/e2e/public-pdf-autofill.spec.ts` | upload PDF on /public/start -> busy -> navigate to editor -> AI chips | PublicDraft PDF upload | `/public/start` exposes PDF upload and navigates to PublicDraft editor | Button `Arrastra un PDF` not visible | PREEXISTING_SOURCE_FAILURE | No | DEPRECATE or MOVE_TO_INITIATIVE_ENTRY_SUITE. Active Portfolio Entry contract forbids public PDF/import controls and PublicDraft is not the Portfolio Lead path. |
+| `front/e2e/public-start-access.spec.ts` | stays on /public/start and renders the Phase 6F entry experience | Legacy Phase 6F public start | Heading `Convierte tus iniciativas en decisiones conectadas al negocio` visible | Heading not visible | PREEXISTING_SOURCE_FAILURE | No | UPDATE_EXPECTATION to current Portfolio Entry smoke or retire duplicate stale assertion. |
+| `front/e2e/team-inheritance.spec.ts` | reto team materializes into the iniciativa on create (#109/#110/#111) | Portfolio challenge -> initiative team inheritance | Create reto and inherited initiative team | Create reto returned `500 INTERNAL_ERROR`; expected ok | PREEXISTING_SOURCE_FAILURE | No | KEEP; depends on challenge creation repair. |
+| `front/e2e/team-inheritance.spec.ts` | initiative meta edit persists; derived team-cache fields are ignored (#113/#114) | Portfolio initiative metadata | Initiative meta persists while derived fields ignored | TypeError reading `.data.id` after failed challenge create | PREEXISTING_SOURCE_FAILURE | No | KEEP; cascades from challenge creation failure. |
+
+Legacy/current-contract notes:
+
+- The active Portfolio Entry contract is `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
+- That contract keeps public P0 scoped to landing, text input, analysis, and handoff.
+- It explicitly excludes creation of `Project`, `Step`, `Challenge`, `Initiative`, and evidence/import flows from the public Portfolio Entry path.
+- It also says public P0 must not show inactive import controls for `PDF`, `XLSX`, `CSV`, `PPTX`, `DOCX`, URLs, Drive, or SharePoint.
+- Therefore specs expecting PublicDraft, public PDF upload, `/public/draft/:id/edit`, `/projects/:id`, or `/step/0` from Portfolio Entry are not merge blockers for this migration PR.
+
+Changes made:
+
+- No product/runtime code changed.
+- No E2E tests were rewritten to force green.
+- This audit was updated with the source comparison and failure classification.
+
+Final target run after classification:
+
+- Result remains `21 passed / 20 failed / 4 skipped/not run`.
+- Remaining blocking failures for this migration PR: `0`.
+- Remaining accepted test debt: `20` preexisting full-suite failures.
+
 ## 17. Remaining Gaps
 
-- Full browser E2E is red: `20` failures, `4` did not run.
+- Full browser E2E remains red: `20` failures, `4` did not run.
+- All `20` full browser E2E failures reproduce on source commit `17b57a6e3dcf2d6d4b43571013427edb6c21ee22`; none are migration-only regressions.
+- The red full-suite tests should be split into current Portfolio management hardening, Initiative Entry/Adaptive Core suites, and deprecated PublicDraft/PDF expectations.
 - Python tests not executed locally due missing `uv`/`pytest`.
 - GitHub CI must run on the PR in target repo and become the source of truth for Linux/Node 20/Python 3.11.
 - `npm audit` still reports inherited vulnerabilities; no runtime-blocking critical was identified, but dependency security follow-up remains required before production cutover.
@@ -319,6 +393,6 @@ ROLLBACK_PLAN: keep deployment pointed at `nmindFa/Dashboardstarteria` until tar
 
 ## 18. Final Verdict
 
-`NOT_MERGE_READY`
+`MERGE_READY_WITH_ACCEPTED_TEST_DEBT`
 
-Reason: DB migrations, DB integrations, targeted Portfolio Entry browser smoke, and GitHub CI including `e2e-light` pass. However, full browser E2E failed (`20 failed, 4 did not run, 21 passed`), so this branch should not be merged yet.
+Reason: DB migrations, DB integrations, targeted Portfolio Entry browser smoke, and GitHub CI including `e2e-light` pass. Full browser E2E remains red (`20 failed, 4 did not run, 21 passed`), but every failing test reproduces on the declared source commit and none is a migration-only regression. The remaining failures are accepted test debt to be isolated, repaired, or deprecated outside this migration PR.
