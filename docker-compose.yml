@@ -61,6 +61,12 @@ services:
       AI_SERVICE_URL: http://ai-service:8001
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:-dev-shared-secret-change-me}
       BRIDGE_SHARED_SECRET: ${BRIDGE_SHARED_SECRET:-dev-shared-secret-change-me}
+      PORTFOLIO_ENTRY_RUNTIME_MODE: ${PORTFOLIO_ENTRY_RUNTIME_MODE:-live}
+      PORTFOLIO_ENTRY_PROVIDER: ${PORTFOLIO_ENTRY_PROVIDER:-openai_responses}
+      PORTFOLIO_ENTRY_MODEL: ${PORTFOLIO_ENTRY_MODEL:-gpt-5.6-luna}
+      PORTFOLIO_ENTRY_API_KEY: ${PORTFOLIO_ENTRY_API_KEY:-}
+      PORTFOLIO_ENTRY_BASE_URL: ${PORTFOLIO_ENTRY_BASE_URL:-}
+      PORTFOLIO_ENTRY_TIMEOUT_MS: ${PORTFOLIO_ENTRY_TIMEOUT_MS:-30000}
       # Revisión inicial guiada (CC-02): vacío=mock, real=IA con fallback, real-strict=sin fallback.
       INITIAL_REVIEW_AI: ${INITIAL_REVIEW_AI:-}
     volumes:

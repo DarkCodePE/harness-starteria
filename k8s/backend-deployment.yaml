@@ -42,6 +42,11 @@ spec:
           value: "https://starter-ia.com"
         - name: LOG_LEVEL
           value: "info"
+        # Portfolio Entry uses the backend Responses adapter. Set
+        # PORTFOLIO_ENTRY_API_KEY in starteria-backend-secrets (envFrom above).
+        # Provider/model/URL/timeouts may be overridden in that Secret too.
+        - name: PORTFOLIO_ENTRY_RUNTIME_MODE
+          value: "live"
         # Revisión inicial guiada (CC-02/CC-03): "real" usa el ai-service
         # (/api/v1/ai/initial-review) con fallback automático al mock si falla
         # (un fallback aparece como warn "initial-review AI fallback" en logs).

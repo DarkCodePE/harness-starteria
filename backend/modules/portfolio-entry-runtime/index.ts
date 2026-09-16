@@ -18,6 +18,7 @@ export * from './model/live-model-error';
 export * from './model/retry-policy';
 export * from './model/provider-json-schemas';
 export * from './model/provider-config';
+export * from './model/live-health';
 export * from './model/fetch-structured-model-adapter';
 export * from './prompts/prompt-manifest';
 export * from './handoff/live-handoff-materializer';
