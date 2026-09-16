@@ -11,6 +11,9 @@ RUN apk add --no-cache python3 make g++
 # Copy package manifests and install ALL dependencies (including devDependencies
 # needed for build: typescript, prisma CLI, tsx, @types/*)
 COPY front/package.json front/package-lock.json ./
+# package-lock.json resolves xlsx from a vendored tarball (file:vendor/...),
+# so the vendor dir must land next to the manifests or `npm ci` fails ENOENT.
+COPY front/vendor ./vendor
 
 RUN npm ci
 
@@ -39,6 +42,9 @@ RUN apk add --no-cache python3 make g++
 
 # Copy package manifests and install production dependencies only
 COPY front/package.json front/package-lock.json ./
+# package-lock.json resolves xlsx from a vendored tarball (file:vendor/...),
+# so the vendor dir must land next to the manifests or `npm ci` fails ENOENT.
+COPY front/vendor ./vendor
 
 RUN npm ci --omit=dev && \
     npm cache clean --force

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starteria-ai-service
+  namespace: starteria
+  labels:
+    app: starteria-ai-service
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: starteria-ai-service
+  template:
+    metadata:
+      labels:
+        app: starteria-ai-service
+    spec:
+      containers:
+      - name: ai-service
+        # Image tag is overwritten at deploy time by .github/workflows/cd.yml
+        # via `kubectl set image`. The :latest placeholder keeps the manifest
+        # valid for `kubectl apply` between releases.
+        image: orlandogtp/starteria-ai-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+        envFrom:
+        # Secret created/rotated by cd.yml. Provides:
+        #   OPENROUTER_API_KEY, LANGSMITH_API_KEY,
+        #   AI_SERVICE_INTERNAL_TOKEN, BACKEND_WEBHOOK_TOKEN.
+        - secretRef:
+            name: starteria-ai-service-secrets
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: LANGSMITH_PROJECT
+          value: "starteria"
+        - name: LANGSMITH_TRACING
+          value: "true"
+        - name: BACKEND_WEBHOOK_URL
+          value: "http://starteria-backend:3001/api/v1/internal/ai/webhooks/pdf-extract/runs"
+        resources:
+          # Tight node (2 vCPU total, ~1500m allocatable). uvicorn idle is <100m;
+          # bursts handled via the higher limit. Bump requests back to 200m if the
+          # node pool grows or scheduling becomes lazy.
+          requests:
+            cpu: "50m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

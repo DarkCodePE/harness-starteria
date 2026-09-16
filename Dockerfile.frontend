@@ -5,6 +5,9 @@ WORKDIR /app
 
 # Copy package manifests first for better Docker layer caching
 COPY front/package.json front/package-lock.json ./
+# package-lock.json resolves xlsx from a vendored tarball (file:vendor/...),
+# so the vendor dir must land next to the manifests or `npm ci` fails ENOENT.
+COPY front/vendor ./vendor
 
 # Install all dependencies (including devDependencies needed for build)
 # React and react-dom are peer deps, so we install them explicitly
