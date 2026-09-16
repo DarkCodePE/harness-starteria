@@ -9,12 +9,12 @@ export type PortfolioEntryProviderConfig = {
 };
 
 export function loadPortfolioEntryProviderConfig(env: NodeJS.ProcessEnv = process.env): PortfolioEntryProviderConfig {
-  const provider = (env.PORTFOLIO_ENTRY_PROVIDER ?? env.PORTFOLIO_ENTRY_HARNESS_PROVIDER ?? 'openai_responses') as PortfolioEntryProviderConfig['provider'];
-  const model = env.PORTFOLIO_ENTRY_MODEL ?? env.PORTFOLIO_ENTRY_HARNESS_MODEL ?? 'gpt-5.6-luna';
-  const apiKey = env.PORTFOLIO_ENTRY_API_KEY ?? env.PORTFOLIO_ENTRY_HARNESS_API_KEY;
+  const provider = (nonBlank(env.PORTFOLIO_ENTRY_PROVIDER, env.PORTFOLIO_ENTRY_HARNESS_PROVIDER) ?? 'openai_responses') as PortfolioEntryProviderConfig['provider'];
+  const model = nonBlank(env.PORTFOLIO_ENTRY_MODEL, env.PORTFOLIO_ENTRY_HARNESS_MODEL) ?? 'gpt-5.6-luna';
+  const apiKey = nonBlank(env.PORTFOLIO_ENTRY_API_KEY, env.PORTFOLIO_ENTRY_HARNESS_API_KEY);
   if (!apiKey) throw new Error('PORTFOLIO_ENTRY_API_KEY is required in live mode.');
   if (provider !== 'openai_responses' && provider !== 'deepseek_responses') throw new Error('Unsupported Portfolio Entry provider.');
-  const baseUrl = env.PORTFOLIO_ENTRY_BASE_URL ?? env.PORTFOLIO_ENTRY_HARNESS_BASE_URL ?? (provider === 'openai_responses' ? 'https://api.openai.com/v1' : 'https://api.deepseek.com');
+  const baseUrl = nonBlank(env.PORTFOLIO_ENTRY_BASE_URL, env.PORTFOLIO_ENTRY_HARNESS_BASE_URL) ?? (provider === 'openai_responses' ? 'https://api.openai.com/v1' : 'https://api.deepseek.com');
   const timeoutMs = positiveNumber(env.PORTFOLIO_ENTRY_TIMEOUT_MS ?? env.PORTFOLIO_ENTRY_HARNESS_TIMEOUT_MS, 30_000);
   const temperature = env.PORTFOLIO_ENTRY_TEMPERATURE ?? env.PORTFOLIO_ENTRY_HARNESS_TEMPERATURE;
   const seed = env.PORTFOLIO_ENTRY_SEED ?? env.PORTFOLIO_ENTRY_HARNESS_SEED;
@@ -23,6 +23,10 @@ export function loadPortfolioEntryProviderConfig(env: NodeJS.ProcessEnv = proces
     ...(temperature ? { temperature: Number(temperature) } : {}),
     ...(seed ? { seed: Number.isFinite(Number(seed)) ? Number(seed) : seed } : {}),
   };
+}
+
+function nonBlank(...values: (string | undefined)[]): string | undefined {
+  return values.map((value) => value?.trim()).find((value) => Boolean(value));
 }
 
 function positiveNumber(raw: string | undefined, fallback: number): number {

@@ -21,6 +21,7 @@ import {
   LivePortfolioEntryAgentAdapter,
   LivePortfolioEntryHandoffMaterializer,
   loadPortfolioEntryProviderConfig,
+  portfolioEntryLiveHealth,
   loadResolvedPromptManifest,
 } from '../portfolio-entry-runtime';
 import type { PortfolioEntryIdempotencyRepository } from './application/portfolio-entry-idempotency.repository';
@@ -109,6 +110,8 @@ export function buildPortfolioEntryRouter(
     maxRequests: options.maxHandoffRequests ?? 10,
     scope: 'portfolio-entry:handoff',
   });
+
+  router.get('/health', (_req, res) => res.json(portfolioEntryLiveHealth()));
 
   router.post('/sessions', createLimiter, controller.createSession);
   router.get('/sessions/:sessionId', optionalAuth, submitLimiter, controller.readSession);

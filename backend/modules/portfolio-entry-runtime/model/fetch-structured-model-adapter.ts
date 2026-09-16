@@ -48,7 +48,11 @@ export class FetchStructuredModelAdapter implements StructuredModelAdapter {
           schema_errors: [],
           execution_metadata: this.metadata(input, duration, attempt - 1, retryReason, error instanceof ProviderRequestError ? error.providerRaw : undefined),
           error_type: 'TECHNICAL_ERROR',
-          technical_error: error instanceof Error ? error.message : String(error),
+          technical_error: error instanceof ProviderRequestError
+            ? error.message
+            : error instanceof Error && error.name === 'AbortError'
+              ? `Provider timeout: ${this.config.provider} ${safeEndpoint(this.config.baseUrl)} model=${this.config.model}`
+              : `Provider transport failure: ${this.config.provider} ${safeEndpoint(this.config.baseUrl)} model=${this.config.model}`,
         };
       }
     }
@@ -98,7 +102,11 @@ export class FetchStructuredModelAdapter implements StructuredModelAdapter {
       }
 
       if (!response.ok) {
-        throw new ProviderRequestError(`Provider error ${response.status}`, response.status, body);
+        throw new ProviderRequestError(
+          `Provider request failed: provider=${this.config.provider} endpoint=${safeEndpoint(this.config.baseUrl)} model=${this.config.model} status=${response.status} error=${sanitizedProviderError(body)}`,
+          response.status,
+          { status: response.status, error: sanitizedProviderError(body) },
+        );
       }
 
       return body;
@@ -153,6 +161,25 @@ export class FetchStructuredModelAdapter implements StructuredModelAdapter {
       retry_reason: retryReason,
       usage: extractUsage(providerRaw),
     };
+  }
+}
+
+function sanitizedProviderError(body: unknown): string {
+  if (!body || typeof body !== 'object') return 'unspecified';
+  const error = (body as { error?: unknown }).error;
+  if (!error || typeof error !== 'object') return 'unspecified';
+  const record = error as Record<string, unknown>;
+  const parts = [record.type, record.code]
+    .filter((value): value is string => typeof value === 'string' && /^[a-zA-Z0-9_.-]{1,80}$/.test(value));
+  return parts.length ? parts.join('/') : 'unspecified';
+}
+
+function safeEndpoint(baseUrl: string): string {
+  try {
+    const endpoint = new URL(`${baseUrl}/responses`);
+    return endpoint.origin + endpoint.pathname;
+  } catch {
+    return 'invalid-url';
   }
 }
 
