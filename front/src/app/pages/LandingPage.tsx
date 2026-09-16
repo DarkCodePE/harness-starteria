@@ -1,578 +1,313 @@
-import { ArrowRight, CheckCircle2, Lightbulb, Target, FileText } from 'lucide-react';
+import { ArrowRight, GitBranch, Layers3, LogIn, ShieldCheck, Target } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import { useApp } from '../context/AppContext';
-import { HeroTunnel } from '../components/landing/HeroTunnel';
-import dashboardImage from '../../assets/starteria-dashboard.webp';
+import { PortfolioEntryExperience } from '../../features/portfolio-entry/public';
 
-// Landing público absorbido desde la carpeta landing/ (export de Figma) — ver
-// ADR-019. Diseño 1:1; los únicos cambios respecto del original son:
-//  - el asset se importa relativo (front no usa el figmaAssetResolver),
-//  - las CTAs del piloto navegan internamente a /public/start (no al taplink),
-//  - el botón del header depende de la sesión (useApp).
-const PORTFOLIO_ENTRY_ROUTE = '/public/start';
+const PLATFORM_PATH = ['Prioridad', 'Reto', 'Iniciativa', 'Evidencia', 'Decision'];
+
+const PROBLEMS = [
+  {
+    title: 'Muchas iniciativas, poca lectura de negocio',
+    body: 'El trabajo existe, pero cuesta ver que prioridad mueve, que falta y que decision necesita habilitar.',
+  },
+  {
+    title: 'Actividad sin suficiente soporte para decidir',
+    body: 'Los equipos avanzan, reportan y ajustan, pero la evidencia no siempre queda conectada con una decision clara.',
+  },
+  {
+    title: 'Portafolio, retos y ejecucion desconectados',
+    body: 'Las conversaciones pasan entre comites, equipos y documentos sin una estructura comun para comparar y aprender.',
+  },
+];
+
+const HOW_IT_WORKS = [
+  {
+    title: 'Explicas lo que necesitas mover',
+    body: 'Empiezas con lenguaje natural: una prioridad, una duda, un bloqueo, una iniciativa o una decision pendiente.',
+  },
+  {
+    title: 'Starteria estructura el contexto',
+    body: 'La plataforma separa lo declarado, lo inferido y lo que todavia requiere aclaracion antes de formalizar trabajo.',
+  },
+  {
+    title: 'Aparecen gaps, retos y caminos',
+    body: 'La lectura ayuda a identificar donde falta foco, evidencia o conexion entre iniciativas y prioridades.',
+  },
+  {
+    title: 'Preparas decisiones con mas claridad',
+    body: 'El resultado orienta el siguiente movimiento sin convertir la IA en autoridad de decision.',
+  },
+];
+
+const IMPACT_CUES = [
+  {
+    label: 'Atencion',
+    title: 'Que requiere foco ahora',
+    body: 'Separa urgencia, incertidumbre y decision pendiente sin convertirlo en una alerta de peligro.',
+  },
+  {
+    label: 'Evidencia',
+    title: 'Que falta para sostener una decision',
+    body: 'Distingue actividad de prueba util para continuar, ajustar, pausar o escalar.',
+  },
+  {
+    label: 'Alineacion',
+    title: 'Como se conecta el trabajo',
+    body: 'Relaciona prioridades, retos e iniciativas para que el portafolio sea mas legible.',
+  },
+  {
+    label: 'Decision',
+    title: 'Que movimiento se habilita',
+    body: 'Ayuda a preparar conversaciones donde las personas deciden con mas claridad.',
+  },
+];
+
+const TRUST_PRINCIPLES = [
+  'Puedes empezar con contexto incompleto.',
+  'Nada se convierte en trabajo formal sin revision.',
+  'La IA estructura y propone; las decisiones siguen siendo humanas.',
+  'Tu entrada publica no crea iniciativas ni lanza trabajo automaticamente.',
+];
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useApp();
 
-  const goToPortfolioEntry = () => navigate(PORTFOLIO_ENTRY_ROUTE);
-  const goToApp = () => navigate(isAuthenticated ? '/dashboard' : '/auth');
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
-      <header className="border-b border-slate-200/60 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="text-2xl font-bold text-slate-900 tracking-tight">Starteria</div>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#como-funciona" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Cómo funciona</a>
-            <a href="#para-quien" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Para quién es</a>
-            <button
-              type="button"
-              onClick={goToApp}
-              className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              {isAuthenticated ? 'Ir a mi panel' : 'Iniciar sesión'}
-            </button>
-          </nav>
+    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,0.10),transparent_34%),radial-gradient(circle_at_top_right,rgba(6,182,212,0.09),transparent_32%),linear-gradient(180deg,#f8fafc_0%,#ffffff_45%,#f8fafc_100%)] text-slate-950">
+      <header className="sticky top-0 z-40 border-b border-white/70 bg-white/82 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <button
             type="button"
-            onClick={goToPortfolioEntry}
-            className="px-6 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition-all hover:shadow-lg"
+            onClick={() => navigate('/')}
+            className="text-xl font-semibold tracking-tight text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/30"
           >
-            Analizar mi situación
+            Starteria
           </button>
+          <nav className="hidden items-center gap-7 md:flex" aria-label="Navegacion principal">
+            <a href="#problema" className="text-sm font-medium text-slate-600 hover:text-slate-950">
+              Problema
+            </a>
+            <a href="#como-funciona" className="text-sm font-medium text-slate-600 hover:text-slate-950">
+              Como funciona
+            </a>
+            <a href="#confianza" className="text-sm font-medium text-slate-600 hover:text-slate-950">
+              Confianza
+            </a>
+          </nav>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate(isAuthenticated ? '/dashboard' : '/auth')}
+          >
+            <LogIn size={15} />
+            {isAuthenticated ? 'Ir al panel' : 'Iniciar sesion'}
+          </Button>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 via-white to-transparent"></div>
-        {/* Túnel de rayos WebGL (sutil, azul de marca) — ver HeroTunnel. */}
-        <HeroTunnel />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-3xl"></div>
-
-        <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-32 md:pt-24 md:pb-40">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Eyebrow Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-sm font-medium text-slate-700 mb-8 shadow-sm">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-              Guiado por IA · Validado por mentor · Alineado con sponsor
-            </div>
-
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]">
-              Convierte tus iniciativas en decisiones conectadas al negocio.
+      <main>
+        <section className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-10 sm:px-6 md:pb-16 md:pt-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(440px,0.86fr)] lg:items-center lg:px-8 lg:pb-20 lg:pt-20">
+          <div className="max-w-3xl">
+            <Badge variant="secondary" className="border-indigo-100 bg-white/80 text-slate-700 shadow-sm">
+              Plataforma de decisiones para portafolios
+            </Badge>
+            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-[1.02] tracking-tight text-slate-950 md:text-6xl">
+              Convierte iniciativas dispersas en decisiones conectadas al negocio.
             </h1>
-
-            <p className="text-xl md:text-2xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Explica que necesitas conseguir o entender de tus iniciativas. Starteria ordena tu entrada como una lectura provisional antes de crear cualquier objeto canonico.
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
+              Empieza con una explicacion en lenguaje natural. Starteria la convierte en contexto estructurado para ordenar prioridades, retos, iniciativas, evidencia y decisiones.
             </p>
 
-            <p className="hidden">
-              Starteria es un sistema que ayuda a abordar, dar trazabilidad y sustentar retos y oportunidades a los líderes de tu empresa en 4 pasos.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-              <button
-                type="button"
-                onClick={goToPortfolioEntry}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 text-white text-lg font-medium rounded-xl hover:bg-slate-800 transition-all hover:shadow-xl hover:scale-[1.02]"
-              >
-                Analizar mi situación
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <a href="#como-funciona" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 border-2 border-slate-200 text-lg font-medium rounded-xl hover:border-slate-300 transition-all">
-                Ver cómo funciona
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced Dashboard Preview with Browser Frame - Overlapping Hero */}
-        <div className="relative max-w-6xl mx-auto px-6 -mt-24 md:-mt-32 z-10">
-          {/* Browser Chrome */}
-          <div className="bg-slate-800 rounded-t-2xl px-4 py-3 flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            </div>
-            <div className="flex-1 mx-4">
-              <div className="bg-slate-700 rounded-lg px-4 py-1.5 text-slate-400 text-sm flex items-center gap-2">
-                <div className="w-3 h-3 text-slate-500">🔒</div>
-                <span>app.starteria.io/iniciativas</span>
-              </div>
+            <div className="hidden lg:block">
+              <PlatformStructure />
             </div>
           </div>
 
-          {/* Dashboard Screenshot with Annotations */}
-          <div className="bg-white rounded-b-2xl shadow-2xl shadow-slate-300/50 border-x border-b border-slate-200 overflow-hidden">
-            {/* Main Screenshot */}
-            <img
-              src={dashboardImage}
-              alt="Starteria Dashboard"
-              className="w-full h-auto"
+          <div className="space-y-6">
+            <PortfolioEntryExperience
+              variant="landing"
+              recoverExisting={false}
+              redirectAfterStart="/public/start"
             />
-          </div>
-
-        </div>
-      </section>
-
-      {/* Support System - No avanzas solo */}
-      <section className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-            No avanzas solo
-          </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            Starteria combina guía de IA, validación experta y alineamiento con sponsor para ayudarte a mover una iniciativa con más claridad y menos ruido.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200/60 rounded-2xl p-8 hover:shadow-xl transition-all group">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <Lightbulb className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-3">IA que guía</h3>
-            <p className="text-slate-700 leading-relaxed">
-              Te ayuda a ordenar cada etapa y destrabar el siguiente paso.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-200/60 rounded-2xl p-8 hover:shadow-xl transition-all group">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <CheckCircle2 className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-3">Mentor que valida</h3>
-            <p className="text-slate-700 leading-relaxed">
-              Aporta criterio experto para fortalecer la propuesta.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-50 to-white border border-green-200/60 rounded-2xl p-8 hover:shadow-xl transition-all group">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <Target className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-3">Sponsor que alinea</h3>
-            <p className="text-slate-700 leading-relaxed">
-              Conecta la iniciativa con lo que realmente importa al negocio.
-            </p>
-          </div>
-        </div>
-
-        {/* Outcomes Strip */}
-        <div className="mt-20 max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Con Starteria obtienes</p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-200">
-              {[
-                { icon: FileText, text: 'Evidencia clara' },
-                { icon: Target, text: 'Trazabilidad del avance' },
-                { icon: CheckCircle2, text: 'Revisión guiada' },
-                { icon: Lightbulb, text: 'Mayor control de la información' }
-              ].map((item, i) => (
-                <div key={i} className="p-6 text-center hover:bg-slate-50 transition-colors">
-                  <div className="flex justify-center mb-3">
-                    <item.icon className="w-6 h-6 text-slate-600" />
-                  </div>
-                  <p className="text-sm font-medium text-slate-900">{item.text}</p>
-                </div>
-              ))}
+            <div className="lg:hidden">
+              <PlatformStructure />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Transformation Section - Antes y después */}
-      <section className="bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-              Así cambia la forma de mover iniciativas internas
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              De ideas dispersas a propuestas con evidencia, criterio y dirección.
-            </p>
-          </div>
-
-          <div className="max-w-5xl mx-auto space-y-4">
-            {[
-              {
-                before: 'La idea queda dispersa en conversaciones',
-                after: 'El reto se aterriza y se convierte en iniciativa'
-              },
-              {
-                before: 'No sabes qué hacer primero',
-                after: 'Avanzas con una ruta clara paso a paso'
-              },
-              {
-                before: 'Cuesta sustentar el avance',
-                after: 'Cada etapa deja evidencia y validación'
-              },
-              {
-                before: 'La empresa no sabe si apostar',
-                after: 'El negocio puede decidir con más confianza'
-              }
-            ].map((item, i) => (
-              <div key={i} className="group">
-                <div className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg hover:border-slate-300 transition-all">
-                  <div className="flex flex-col md:flex-row items-center gap-6">
-                    {/* Before */}
-                    <div className="flex-1 text-center md:text-left">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-600 mb-2">
-                        Antes
-                      </div>
-                      <p className="text-slate-600">{item.before}</p>
-                    </div>
-
-                    {/* Arrow */}
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 bg-gradient-to-br from-slate-900 to-slate-700 rounded-lg flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                        <ArrowRight className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-
-                    {/* After */}
-                    <div className="flex-1 text-center md:text-left">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full text-xs font-semibold text-green-700 mb-2">
-                        Con Starteria
-                      </div>
-                      <p className="text-slate-900 font-semibold">{item.after}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works - Visual Flow */}
-      <section id="como-funciona" className="bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-          {/* Header */}
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-              Cómo avanzas con Starteria
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-              Detectas una oportunidad o desafío. Starteria te ayuda a estructurarlo y avanzar paso a paso hasta convertirlo en una propuesta sustentada.
-            </p>
-          </div>
-
-          {/* Desktop Flow - Progressive Journey */}
-          <div className="hidden lg:block relative max-w-6xl mx-auto">
-            {/* Progressive Arrow Path */}
-            <svg className="absolute top-[100px] left-0 w-full h-[4px]" style={{ zIndex: 0 }}>
-              <defs>
-                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#cbd5e1" />
-                  <stop offset="50%" stopColor="#94a3b8" />
-                  <stop offset="100%" stopColor="#64748b" />
-                </linearGradient>
-                <marker id="arrowhead-flow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                  <polygon points="0 0, 10 3, 0 6" fill="#64748b" />
-                </marker>
-              </defs>
-              <line x1="12%" y1="2" x2="88%" y2="2" stroke="url(#progressGradient)" strokeWidth="3" markerEnd="url(#arrowhead-flow)" />
-            </svg>
-
-            {/* Step Cards with Progressive Emphasis */}
-            <div className="grid grid-cols-4 gap-4 relative" style={{ zIndex: 1 }}>
-              {[
-                {
-                  num: '01',
-                  title: 'Claridad del desafío',
-                  desc: 'La IA te ayuda a ordenar el problema o la oportunidad.',
-                  accent: 'blue'
-                },
-                {
-                  num: '02',
-                  title: 'Diseñar solución',
-                  desc: 'Estructuras una propuesta con foco, lógica y criterios claros.',
-                  accent: 'purple'
-                },
-                {
-                  num: '03',
-                  title: 'Probar en pequeño',
-                  desc: 'Validas con evidencia antes de escalar.',
-                  accent: 'green'
-                },
-                {
-                  num: '04',
-                  title: 'Sustentar impacto',
-                  desc: 'Llegas con aprendizajes, evidencia y una propuesta más clara.',
-                  accent: 'slate'
-                }
-              ].map((step, i) => (
-                <div key={i} className="relative pt-8">
-                  {/* Step Number Badge - Positioned Above Card */}
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg ${
-                      step.accent === 'blue' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
-                      step.accent === 'purple' ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
-                      step.accent === 'green' ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                      'bg-gradient-to-br from-slate-700 to-slate-800'
-                    }`}>
-                      {step.num}
-                    </div>
-                  </div>
-
-                  {/* Card */}
-                  <div className={`bg-white rounded-2xl p-6 pt-12 border-2 transition-all hover:shadow-xl hover:-translate-y-1 ${
-                    step.accent === 'blue' ? 'border-blue-200 hover:border-blue-300' :
-                    step.accent === 'purple' ? 'border-purple-200 hover:border-purple-300' :
-                    step.accent === 'green' ? 'border-green-200 hover:border-green-300' :
-                    'border-slate-200 hover:border-slate-300'
-                  }`}>
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3 leading-snug min-h-[56px]">
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Tablet Flow */}
-          <div className="hidden md:block lg:hidden relative max-w-3xl mx-auto">
-            <div className="grid grid-cols-2 gap-8">
-              {[
-                {
-                  num: '01',
-                  title: 'Claridad del desafío',
-                  desc: 'La IA te ayuda a ordenar el problema o la oportunidad.',
-                  accent: 'blue'
-                },
-                {
-                  num: '02',
-                  title: 'Diseñar solución',
-                  desc: 'Estructuras una propuesta con foco, lógica y criterios claros.',
-                  accent: 'purple'
-                },
-                {
-                  num: '03',
-                  title: 'Probar en pequeño',
-                  desc: 'Validas con evidencia antes de escalar.',
-                  accent: 'green'
-                },
-                {
-                  num: '04',
-                  title: 'Sustentar impacto',
-                  desc: 'Llegas con aprendizajes, evidencia y una propuesta más clara.',
-                  accent: 'slate'
-                }
-              ].map((step, i) => (
-                <div key={i} className="relative">
-                  <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 hover:shadow-xl transition-all">
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white text-lg font-bold mb-4 ${
-                      step.accent === 'blue' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
-                      step.accent === 'purple' ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
-                      step.accent === 'green' ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                      'bg-gradient-to-br from-slate-700 to-slate-800'
-                    }`}>
-                      {step.num}
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      {step.desc}
-                    </p>
-                  </div>
-                  {i < 3 && i % 2 === 1 && (
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2">
-                      <ArrowRight className="w-6 h-6 text-slate-400 rotate-90" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Mobile Flow */}
-          <div className="md:hidden space-y-4">
-            {[
-              {
-                num: '01',
-                title: 'Claridad del desafío',
-                desc: 'La IA te ayuda a ordenar el problema o la oportunidad.',
-                accent: 'blue'
-              },
-              {
-                num: '02',
-                title: 'Diseñar solución',
-                desc: 'Estructuras una propuesta con foco, lógica y criterios claros.',
-                accent: 'purple'
-              },
-              {
-                num: '03',
-                title: 'Probar en pequeño',
-                desc: 'Validas con evidencia antes de escalar.',
-                accent: 'green'
-              },
-              {
-                num: '04',
-                title: 'Sustentar impacto',
-                desc: 'Llegas con aprendizajes, evidencia y una propuesta más clara.',
-                accent: 'slate'
-              }
-            ].map((step, i) => (
-              <div key={i}>
-                <div className="bg-white rounded-2xl p-6 border-2 border-slate-200 shadow-sm">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold mb-4 ${
-                    step.accent === 'blue' ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
-                    step.accent === 'purple' ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
-                    step.accent === 'green' ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                    'bg-gradient-to-br from-slate-700 to-slate-800'
-                  }`}>
-                    {step.num}
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    {step.desc}
-                  </p>
-                </div>
-                {i < 3 && (
-                  <div className="flex justify-center py-2">
-                    <ArrowRight className="w-6 h-6 text-slate-300 rotate-90" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Support Layer Badges */}
-          <div className="mt-16 flex flex-wrap items-center justify-center gap-4">
-            <div className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-blue-200 rounded-full shadow-sm hover:shadow-md transition-all">
-              <Lightbulb className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900">IA que guía</span>
-            </div>
-            <div className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-purple-200 rounded-full shadow-sm hover:shadow-md transition-all">
-              <CheckCircle2 className="w-5 h-5 text-purple-600" />
-              <span className="text-sm font-medium text-purple-900">Mentor que valida</span>
-            </div>
-            <div className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-green-200 rounded-full shadow-sm hover:shadow-md transition-all">
-              <Target className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-green-900">Sponsor que alinea</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Who It's For */}
-      <section id="para-quien" className="bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Para quién es Starteria
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-10 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all">
-              <h3 className="text-2xl font-bold mb-4">Para personas dentro de empresas</h3>
-              <p className="text-slate-200 leading-relaxed mb-6">
-                Si detectas una oportunidad de mejora pero no sabes cómo empezarla o sustentarla, Starteria te da una estructura clara para moverla.
+        <section className="px-4 pb-6 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-4 rounded-[30px] border border-slate-200/80 bg-white/72 p-4 shadow-sm shadow-slate-900/[0.03] backdrop-blur md:grid-cols-[0.8fr_1fr] md:p-5">
+            <div className="rounded-[22px] bg-slate-950 p-5 text-white">
+              <p className="text-xs font-semibold uppercase text-cyan-200">Del texto a la estructura</p>
+              <p className="mt-3 text-xl font-semibold leading-tight">
+                No es solo una respuesta de IA. Es una primera lectura para orientar atencion, evidencia y decision.
               </p>
-              <ul className="space-y-3">
-                {[
-                  'Estructura tu idea con método',
-                  'Valida antes de invertir tiempo',
-                  'Presenta con evidencia sólida'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-200">{item}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {['Prioridad desconectada', 'Evidencia insuficiente', 'Decision pendiente'].map((item) => (
+                <div key={item} className="rounded-[20px] border border-slate-200 bg-white p-4">
+                  <div className="h-1.5 w-10 rounded-full bg-indigo-500" />
+                  <p className="mt-4 text-sm font-semibold text-slate-950">{item}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Ejemplo ilustrativo de claridad operativa.</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-10 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all">
-              <h3 className="text-2xl font-bold mb-4">Para empresas</h3>
-              <p className="text-slate-200 leading-relaxed mb-6">
-                Si necesitas visibilidad sobre qué iniciativas existen, cómo avanzan y cuáles vale la pena apoyar, Starteria te ayuda a decidir con más claridad.
+        <section id="problema" className="border-y border-slate-200/70 bg-white/78">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="grid gap-10 lg:grid-cols-[0.68fr_1fr] lg:items-start">
+              <div>
+                <p className="text-xs font-semibold uppercase text-indigo-700">Que resuelve</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+                  El reto no es escribir mas. Es entender que merece atencion.
+                </h2>
+                <p className="mt-4 text-base leading-7 text-slate-600">
+                  El problema no suele ser falta de actividad. Suele ser falta de estructura para entender que mover, que evidencia mirar y que decision tomar.
+                </p>
+              </div>
+              <div className="divide-y divide-slate-200 rounded-[26px] border border-slate-200 bg-white shadow-sm shadow-slate-900/[0.03]">
+                {PROBLEMS.map((item) => (
+                  <article key={item.title} className="grid gap-3 p-5 md:grid-cols-[220px_1fr] md:p-6">
+                    <h3 className="text-base font-semibold text-slate-950">{item.title}</h3>
+                    <p className="text-sm leading-6 text-slate-600">{item.body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="como-funciona" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.74fr_1fr] lg:items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase text-indigo-700">Como funciona</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+                Una lectura guiada, no una conversacion suelta.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-slate-600">
+                La entrada libre se convierte en una estructura revisable que ayuda a conectar portafolio, ejecucion y evidencia.
               </p>
-              <ul className="space-y-3">
-                {[
-                  'Trazabilidad de iniciativas internas',
-                  'Evidencia clara para decidir',
-                  'Alineación con objetivos del negocio'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-200">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            </div>
+            <div className="grid gap-4">
+              {HOW_IT_WORKS.map((item, index) => (
+                <article key={item.title} className="grid gap-4 rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.03] sm:grid-cols-[56px_1fr]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-950">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Final CTA */}
-      <section className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 p-12 md:p-16 shadow-2xl">
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-          </div>
-
-          <div className="relative max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium text-white/90 mb-6">
-              ✨ Únete al primer grupo de testeo
+        <section className="border-y border-slate-200/70 bg-slate-950 text-white">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.76fr_1fr] lg:px-8">
+            <div>
+              <p className="text-xs font-semibold uppercase text-cyan-200">Que ayuda a mover</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+                Senales de claridad para mirar el portafolio con mas criterio.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-slate-300">
+                Starteria hace visibles areas de atencion sin convertir ejemplos en datos reales ni reemplazar la decision humana.
+              </p>
             </div>
-
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-              Empieza desde tu portafolio real, no desde un formulario de proyecto
-            </h2>
-
-            <h2 className="hidden">
-              Sé parte del primer piloto de Starteria
-            </h2>
-
-            <p className="text-xl text-purple-100 mb-10 leading-relaxed max-w-2xl mx-auto">
-              Describe objetivos, dudas, iniciativas, soluciones o decisiones pendientes. Starteria conserva la lectura como contexto pre-canonico para que puedas revisarla.
-            </p>
-
-            <p className="hidden">
-              Únete a los primeros usuarios que están transformando problemas internos en iniciativas con impacto real.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={goToPortfolioEntry}
-                className="inline-flex items-center gap-2 px-10 py-5 bg-white text-purple-700 rounded-xl hover:bg-purple-50 transition-all hover:shadow-2xl hover:scale-[1.02] text-lg font-semibold"
-              >
-                Analizar mi situación
-                <ArrowRight className="w-6 h-6" />
-              </button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {IMPACT_CUES.map((item) => (
+                <div key={item.label} className="rounded-[22px] border border-white/10 bg-white/7 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase text-cyan-200">{item.label}</span>
+                    <span className="h-2 w-2 rounded-full bg-cyan-300" />
+                  </div>
+                  <p className="mt-5 text-base font-semibold leading-6 text-white">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-2xl font-semibold text-slate-900">Starteria</div>
-            <div className="text-slate-600 text-sm">
-              © 2026 Starteria. Convierte problemas en iniciativas.
+        <section id="confianza" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.76fr_1fr] lg:items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase text-indigo-700">Por que confiar</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+                Starteria estructura tu contexto sin sustituir tu criterio.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-slate-600">
+                La plataforma esta disenada para ayudarte a pensar mejor antes de formalizar trabajo, no para decidir por ti.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {TRUST_PRINCIPLES.map((item, index) => {
+                const Icon = index % 2 === 0 ? ShieldCheck : Target;
+                return (
+                  <article key={item} className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.03]">
+                    <Icon size={19} className="text-indigo-600" />
+                    <p className="mt-4 text-sm font-semibold leading-6 text-slate-950">{item}</p>
+                  </article>
+                );
+              })}
             </div>
           </div>
-        </div>
-      </footer>
+        </section>
+
+        <section className="px-4 pb-16 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-8 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/[0.04] md:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary" className="gap-1.5">
+                  <Layers3 size={13} />
+                  Plataforma estructurada
+                </Badge>
+                <Badge variant="secondary" className="gap-1.5">
+                  <GitBranch size={13} />
+                  De intencion a decision
+                </Badge>
+              </div>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+                Empieza con lo que sabes. Starteria te ayuda a ordenar lo que falta.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                La primera entrada es publica y revisable. El trabajo formal empieza solo cuando decides continuar.
+              </p>
+            </div>
+            <Button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              Analizar mi situacion
+              <ArrowRight size={16} />
+            </Button>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function PlatformStructure() {
+  return (
+    <div className="mt-8 rounded-[24px] border border-white/80 bg-white/70 p-4 shadow-sm shadow-slate-900/[0.03] backdrop-blur lg:mt-8">
+      <p className="text-xs font-semibold uppercase text-indigo-700">Estructura Starteria</p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-5">
+        {PLATFORM_PATH.map((item, index) => (
+          <div key={item} className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-3">
+              <p className="text-sm font-semibold text-slate-950">{item}</p>
+            </div>
+            {index < PLATFORM_PATH.length - 1 ? (
+              <ArrowRight size={14} className="hidden shrink-0 text-slate-400 sm:block" />
+            ) : null}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

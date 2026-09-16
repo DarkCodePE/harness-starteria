@@ -32,8 +32,9 @@ describe('Badge', () => {
   });
 
   it('badgeVariants returns class strings for known variants', () => {
-    expect(badgeVariants({ variant: 'default' })).toMatch(/bg-primary/);
-    expect(badgeVariants({ variant: 'secondary' })).toMatch(/bg-secondary/);
-    expect(badgeVariants({ variant: 'outline' })).toMatch(/text-foreground/);
+    expect(badgeVariants({ variant: 'default' })).toMatch(/bg-brand-primary/);
+    expect(badgeVariants({ variant: 'secondary' })).toMatch(/bg-brand-primary-subtle/);
+    expect(badgeVariants({ variant: 'outline' })).toMatch(/text-text-secondary/);
+    expect(badgeVariants({ variant: 'warning' })).toMatch(/status-feedback-warning/);
   });
 });

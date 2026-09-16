@@ -165,6 +165,22 @@ describe('PortfolioEntryExperience', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps public examples editable before explicit analysis', () => {
+    renderExperience();
+
+    fireEvent.click(screen.getByRole('button', { name: /tengo varias iniciativas/i }));
+
+    const input = screen.getByLabelText(/necesitas conseguir/i);
+    expect(input).toHaveValue('Tengo varias iniciativas y necesito entender cuales realmente contribuyen a nuestros objetivos.');
+
+    fireEvent.change(input, {
+      target: { value: 'Necesito ordenar iniciativas para decidir que sigue.' },
+    });
+
+    expect(input).toHaveValue('Necesito ordenar iniciativas para decidir que sigue.');
+    expect(serviceMocks.createPortfolioEntrySession).not.toHaveBeenCalled();
+  });
+
   it('creates a session, submits the first message and renders quick clarification from backend DTO', async () => {
     serviceMocks.createPortfolioEntrySession.mockResolvedValue({
       session: makeSession(),

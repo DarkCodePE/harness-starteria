@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
@@ -36,6 +36,17 @@ import type {
   StakeholderStatus,
   StrategicFront,
 } from '../../features/portfolio-lead';
+import {
+  AISuggestionPanel,
+  ContextSummary,
+  EmptyState,
+  NextAction,
+  PageHeader,
+} from '../components/design-system/patterns';
+import { DomainStatusBadge, type DomainStatus } from '../components/design-system/status';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Progress } from '../components/ui/progress';
 import { PortfolioLeadBreadcrumbs } from '../components/portfolio/PortfolioLeadPageElements';
 
 type TabKey = 'all' | 'ready' | 'active' | 'blocked' | 'with_initiatives' | 'decision';
@@ -450,7 +461,25 @@ export function PortfolioLeadChallengesPage() {
     <div className="mx-auto max-w-7xl p-6 md:p-8">
       <PortfolioLeadBreadcrumbs items={[{ label: 'Portfolio Lead', path: '/portfolio/inicio' }, { label: 'Retos' }]} />
 
-      <ChallengesHeader onCreate={openCreateDrawer} />
+      <PageHeader
+        eyebrow="Retos"
+        title="Retos"
+        description="Crea, revisa y actualiza los retos que activan tus frentes estratégicos."
+        metadata={[
+          { label: 'Retos visibles', value: challengeCards.length },
+          { label: 'Filtrados', value: filteredCards.length },
+          { label: 'Con iniciativas', value: tabCounts.with_initiatives },
+          { label: 'Decisiones pendientes', value: tabCounts.decision },
+        ]}
+        primaryAction={{
+          id: 'create-challenge',
+          label: 'Crear nuevo reto',
+          ariaLabel: 'Crear nuevo reto',
+        }}
+        onAction={actionId => {
+          if (actionId === 'create-challenge') openCreateDrawer();
+        }}
+      />
 
       <ChallengesTabs
         activeTab={tab}
@@ -474,14 +503,20 @@ export function PortfolioLeadChallengesPage() {
         typeOptions={typeOptions}
         coverageOptions={coverageOptions}
       />
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
-        <div className="max-w-3xl">
-          <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>RETOS CREADOS</p>
-          <h2 className="mt-1 text-2xl text-slate-950" style={{ fontWeight: 700 }}>Cada reto muestra su frente estratégico, responsables, avance de iniciativas y estado de cobertura.</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Revisa la lista, filtra por contexto y despliega el detalle solo cuando necesites más contexto.
-          </p>
-        </div>
+      <section className="mt-6 rounded-ds-lg border border-border-default bg-surface-default p-5 md:p-6">
+        <ContextSummary
+          density="compact"
+          title="Retos creados"
+          description="Cada reto muestra su frente estratégico, responsables, avance de iniciativas y estado de cobertura."
+          items={[
+            { label: 'Total', value: `${challengeCards.length} retos` },
+            { label: 'Por activar', value: `${tabCounts.ready}` },
+            { label: 'Activos', value: `${tabCounts.active}` },
+            { label: 'Con bloqueos', value: `${tabCounts.blocked}` },
+            { label: 'Con iniciativas', value: `${tabCounts.with_initiatives}` },
+            { label: 'Pendientes de decision', value: `${tabCounts.decision}` },
+          ]}
+        />
 
         {filteredCards.length === 0 ? (
           <EmptyChallengesState
@@ -687,11 +722,10 @@ function ChallengeListItem({
   const metric = getChallengeMetricSnapshot(challenge, front);
   const lastUpdated = challenge.lastUpdatedAt ? formatRelativeDate(challenge.lastUpdatedAt) : formatRelativeDate(challenge.createdAt);
   const progress = getChallengeAverageProgress(initiatives);
-  const progressTone = getProgressTone(progress);
   const activeCount = initiatives.filter(initiative => !['bloqueada', 'cerrada'].includes(initiative.status)).length;
 
   return (
-    <article className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+    <article className="overflow-hidden rounded-ds-lg border border-border-default bg-surface-default">
       <div className="p-5 md:p-6">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -734,9 +768,7 @@ function ChallengeListItem({
               <span className="text-sm text-slate-900" style={{ fontWeight: 700 }}>{progress}%</span>
             </div>
             <p className="mt-1 text-xs text-slate-500">Promedio de avance de las iniciativas vinculadas a este reto. No representa todavía impacto real en la métrica.</p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-              <div className={`h-full rounded-full ${progressTone}`} style={{ width: `${progress}%` }} />
-            </div>
+            <Progress value={progress} aria-label={`Avance operativo ${progress}%`} className="mt-3" />
             <p className="mt-2 text-xs text-slate-500">
               {card.initiativesCount} iniciativas asociadas · {activeCount} activas · {card.blockedInitiativesCount} bloqueadas
             </p>
@@ -751,43 +783,38 @@ function ChallengeListItem({
           </div>
 
           <div className="flex flex-wrap gap-2 pt-1">
-            <button
+            <Button
               type="button"
               onClick={onToggleDetail}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
-              style={{ fontWeight: 700 }}
             >
               <Eye size={15} />
               {expanded ? 'Ocultar detalle' : 'Ver detalle'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={onEdit}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
-              style={{ fontWeight: 700 }}
             >
               <PencilLine size={15} />
               Editar
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={onExplore}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
-              style={{ fontWeight: 700 }}
             >
               Ver iniciativas
               <ArrowRight size={15} />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={onCreateInitiative}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 transition-colors hover:bg-indigo-100"
-              style={{ fontWeight: 700 }}
               data-testid="create-initiative-from-challenge"
             >
               Crear iniciativa{challenge.assignedSquad.length > 0 ? ' con este squad' : ''}
               <ArrowRight size={15} />
-            </button>
+            </Button>
             <details className="group relative">
               <summary className="list-none">
                 <button
@@ -824,6 +851,7 @@ function ChallengeListItem({
           onExploreInitiative={onExploreInitiative}
           onEdit={onEdit}
           onExplore={onExplore}
+          onCreateInitiative={onCreateInitiative}
         />
       ) : null}
     </article>
@@ -842,6 +870,7 @@ function ChallengeAccordionDetail({
   onExploreInitiative,
   onEdit,
   onExplore,
+  onCreateInitiative,
 }: {
   card: ReturnType<typeof getChallengeCards>[number];
   challenge: Challenge;
@@ -854,6 +883,7 @@ function ChallengeAccordionDetail({
   onExploreInitiative: (initiativeId: string) => void;
   onEdit: () => void;
   onExplore: () => void;
+  onCreateInitiative: () => void;
 }) {
   const sponsor = getChallengeSponsor(challenge, front);
   const statusTags = [
@@ -912,12 +942,21 @@ function ChallengeAccordionDetail({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => onChangeStatus('activo_interno')} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-100" style={{ fontWeight: 700 }}>Cambiar estado</button>
-              <button type="button" onClick={() => onChangeSponsorStatus('confirmado')} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-100" style={{ fontWeight: 700 }}>Cambiar sponsor</button>
-              <button type="button" onClick={() => onChangeOwnerStatus('confirmado')} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-100" style={{ fontWeight: 700 }}>Cambiar challenge owner</button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onChangeStatus('activo_interno')}>Cambiar estado</Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onChangeSponsorStatus('confirmado')}>Cambiar sponsor</Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onChangeOwnerStatus('confirmado')}>Cambiar challenge owner</Button>
             </div>
           </div>
         </section>
+
+        <ActivationInvitationHandoffPanel
+          card={card}
+          challenge={challenge}
+          front={front}
+          recommendation={recommendation}
+          onCreateInitiative={onCreateInitiative}
+          onEdit={onEdit}
+        />
 
         <ChallengeInitiativesPreview initiatives={initiatives} onExploreInitiative={onExploreInitiative} />
 
@@ -932,7 +971,7 @@ function ChallengeAccordionDetail({
                   <span className="mt-1 inline-block h-2 w-2 rounded-full bg-slate-400" />
                   <span>
                     <span className="font-semibold text-slate-900">{initiative.name}</span>
-                    {' '}→ {getInitiativeContributionToMetric(initiative)}
+                    {' '}? {getInitiativeContributionToMetric(initiative)}
                   </span>
                 </li>
               ))
@@ -1072,33 +1111,207 @@ function ChallengeRecommendationBlock({
   const ctaLabel = getRecommendationActionLabel(challenge, card, recommendation);
 
   return (
-    <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Pill tone="violet">Recomendación IA</Pill>
-        <Pill tone="slate">{recommendation.recommendedModeLabel}</Pill>
+    <AISuggestionPanel
+      title="Starteria sugiere revisar este reto"
+      suggestion={recommendation.nextSteps[0] ?? recommendation.justification}
+      why={[
+        recommendation.justification,
+        recommendation.risks[0] ?? 'El reto puede quedarse sin cobertura suficiente o perder tracción.',
+        recommendation.nextSteps[0] ?? 'Revisar la definición del reto y su modalidad de activación.',
+      ]}
+      provenance={[
+        { label: 'Modalidad sugerida', value: recommendation.recommendedModeLabel },
+        { label: 'Cobertura visible', value: card.coverageLabel },
+      ]}
+      actions={[
+        { id: 'explore', label: ctaLabel },
+        { id: 'edit', label: 'Editar reto', tone: 'secondary' },
+      ]}
+      onAction={actionId => {
+        if (actionId === 'explore') onExplore();
+        if (actionId === 'edit') onEdit();
+      }}
+    />
+  );
+}
+
+function ActivationInvitationHandoffPanel({
+  card,
+  challenge,
+  front,
+  recommendation,
+  onCreateInitiative,
+  onEdit,
+}: {
+  card: ReturnType<typeof getChallengeCards>[number];
+  challenge: Challenge;
+  front: StrategicFront | null;
+  recommendation: ReturnType<typeof getChallengeActivationRecommendation> | null;
+  onCreateInitiative: () => void;
+  onEdit: () => void;
+}) {
+  const invitationCounts = summarizeInvitations(challenge.selectedPeople);
+  const readinessStatus = activationStateStatus(card.activationState);
+  const publicationStatus: DomainStatus = challenge.visibleToParticipants ? 'active' : 'draft';
+
+  return (
+    <section className="rounded-ds-md border border-border-default bg-surface-default p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase text-text-muted">Activacion e invitacion</p>
+          <h4 className="mt-1 text-base font-semibold text-text-primary">Handoff del reto antes de crear iniciativas</h4>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">
+            La pantalla muestra la modalidad, visibilidad y personas suministradas por el estado actual del reto.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <DomainStatusBadge status={readinessStatus} label={card.activationStateLabel} />
+          <DomainStatusBadge status={publicationStatus} label={challenge.visibleToParticipants ? 'Visible' : 'No publicado'} />
+        </div>
       </div>
-      <div className="mt-3 grid gap-3">
-        <div>
-          <p className="text-sm text-violet-900" style={{ fontWeight: 700 }}>Siguiente acción recomendada</p>
-          <p className="mt-1 text-sm text-slate-700">{recommendation.nextSteps[0] ?? recommendation.justification}</p>
-        </div>
-        <div>
-          <p className="text-sm text-violet-900" style={{ fontWeight: 700 }}>Por qué importa</p>
-          <p className="mt-1 text-sm text-slate-700">{recommendation.justification}</p>
-        </div>
-        <div>
-          <p className="text-sm text-violet-900" style={{ fontWeight: 700 }}>Riesgo si no se actúa</p>
-          <p className="mt-1 text-sm text-slate-700">{recommendation.risks[0] ?? 'El reto puede quedarse sin cobertura suficiente o perder tracción.'}</p>
-        </div>
-        <div>
-          <p className="text-sm text-violet-900" style={{ fontWeight: 700 }}>Acción sugerida</p>
-          <p className="mt-1 text-sm text-slate-700">{recommendation.nextSteps[0] ?? 'Revisar la definición del reto y su modalidad de activación.'}</p>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.95fr]">
+        <ContextSummary
+          density="compact"
+          title="Contexto de activacion"
+          description="Datos existentes del reto. La presentacion no recalcula readiness ni modalidad."
+          items={[
+            { label: 'Modalidad', value: activationLabel(challenge.activationMode), metadata: recommendation ? `Starteria sugiere: ${recommendation.recommendedModeLabel}` : undefined },
+            { label: 'Estado del reto', value: challengeStatusLabel(challenge.status), metadata: card.activationStateLabel },
+            { label: 'Frente', value: front?.name ?? 'Sin frente visible', metadata: front?.mainKpi ? `KPI: ${front.mainKpi}` : undefined },
+            { label: 'Challenge owner', value: challenge.challengeOwner || 'Sin definir', metadata: stakeholderStatusLabel(challenge.challengeOwnerStatus) },
+            { label: 'Sponsor', value: getChallengeSponsor(challenge, front), metadata: stakeholderStatusLabel(challenge.sponsorStatus) },
+            { label: 'Publicacion', value: challenge.publicationNotes || 'Sin nota de publicacion', metadata: challenge.lastPublishedAt ? `Publicado: ${formatRelativeDate(challenge.lastPublishedAt)}` : undefined },
+          ]}
+        />
+
+        <div className="space-y-4">
+          <PeopleHandoffList
+            title="Personas invitadas"
+            emptyLabel="No hay personas seleccionadas para invitacion."
+            items={challenge.selectedPeople.map(person => ({
+              id: person.id,
+              value: person.value,
+              status: person.status,
+            }))}
+          />
+          <SquadHandoffList
+            title="Squad asignado"
+            emptyLabel="No hay squad asignado."
+            items={challenge.assignedSquad}
+          />
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={onExplore} className="rounded-2xl bg-violet-600 px-4 py-2.5 text-sm text-white transition-colors hover:bg-violet-700" style={{ fontWeight: 700 }}>{ctaLabel}</button>
-        <button type="button" onClick={onEdit} className="rounded-2xl border border-violet-200 bg-white px-4 py-2.5 text-sm text-violet-700 transition-colors hover:bg-violet-100" style={{ fontWeight: 700 }}>Editar reto</button>
+
+      {recommendation ? (
+        <AISuggestionPanel
+          className="mt-4"
+          title="Starteria recomienda una ruta de activacion"
+          suggestion={recommendation.recommendedModeLabel}
+          why={[
+            recommendation.justification,
+            recommendation.missingItems[0] ?? 'No hay faltantes criticos visibles en esta recomendacion.',
+            recommendation.nextSteps[0] ?? 'Revisar modalidad y contexto antes de activar.',
+          ]}
+          provenance={[
+            { label: 'Confianza', value: `${recommendation.confidenceLabel} (${Math.round(recommendation.confidenceScore * 100)}%)` },
+            { label: 'Riesgo sponsor', value: recommendation.sponsorRisk ? 'Visible' : 'Sin riesgo visible' },
+            { label: 'Invitaciones', value: `${invitationCounts.total} registradas` },
+          ]}
+          actions={[
+            { id: 'edit-activation', label: 'Revisar activacion', tone: 'secondary' },
+          ]}
+          onAction={actionId => {
+            if (actionId === 'edit-activation') onEdit();
+          }}
+        />
+      ) : null}
+
+      <NextAction
+        className="mt-4"
+        eyebrow="Handoff"
+        title="Crear iniciativa desde este reto"
+        description="Usa el flujo existente para convertir este reto en una iniciativa. La aceptacion o creacion no confirma Step 0 ni completa la alineacion estrategica."
+        context={
+          <div className="space-y-2">
+            <p>{'Ruta explicativa posterior: Overview -> Step 0 -> Step 1 -> Step 2 -> Step 3 -> Step 4.'}</p>
+            <p>Contexto heredado: {front?.name ?? 'frente no visible'} / {challenge.name} / {activationLabel(challenge.activationMode)}.</p>
+          </div>
+        }
+        status={<Badge variant="neutral">{invitationCounts.label}</Badge>}
+        primaryAction={{
+          id: 'create-initiative-from-handoff',
+          label: challenge.assignedSquad.length > 0 ? 'Crear iniciativa con este squad' : 'Crear iniciativa',
+          ariaLabel: `Crear iniciativa desde ${challenge.name}`,
+        }}
+        secondaryAction={{ id: 'edit-activation', label: 'Revisar activacion', tone: 'secondary' }}
+        onAction={actionId => {
+          if (actionId === 'create-initiative-from-handoff') onCreateInitiative();
+          if (actionId === 'edit-activation') onEdit();
+        }}
+      />
+    </section>
+  );
+}
+
+function PeopleHandoffList({
+  title,
+  emptyLabel,
+  items,
+}: {
+  title: string;
+  emptyLabel: string;
+  items: Array<{ id: string; value: string; status: Challenge['selectedPeople'][number]['status'] }>;
+}) {
+  return (
+    <section className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h5 className="text-sm font-semibold text-text-primary">{title}</h5>
+        <Badge variant="neutral">{items.length}</Badge>
       </div>
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm text-text-secondary">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {items.map(item => (
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-ds-sm border border-border-default bg-surface-default p-3">
+              <span className="min-w-0 text-sm font-medium text-text-primary">{item.value}</span>
+              <DomainStatusBadge status={invitationStatusStatus(item.status)} label={invitationStatusLabel(item.status)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function SquadHandoffList({
+  title,
+  emptyLabel,
+  items,
+}: {
+  title: string;
+  emptyLabel: string;
+  items: Challenge['assignedSquad'];
+}) {
+  return (
+    <section className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h5 className="text-sm font-semibold text-text-primary">{title}</h5>
+        <Badge variant="neutral">{items.length}</Badge>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm text-text-secondary">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {items.map(item => (
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-ds-sm border border-border-default bg-surface-default p-3">
+              <span className="min-w-0 text-sm font-medium text-text-primary">{item.value}</span>
+              <Badge variant="secondary">{item.role === 'lider' ? 'Lider' : 'Colaborador'}</Badge>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -1132,13 +1345,6 @@ function getInitiativeProgressPercent(initiative: ReturnType<typeof getInitiativ
     case 'Step 4': return 90;
     default: return 0;
   }
-}
-
-function getProgressTone(progress: number) {
-  if (progress >= 80) return 'bg-emerald-500';
-  if (progress >= 55) return 'bg-sky-500';
-  if (progress >= 30) return 'bg-amber-500';
-  return 'bg-rose-500';
 }
 
 function getChallengeMetricSnapshot(challenge: Challenge, front: StrategicFront | null) {
@@ -1608,31 +1814,18 @@ function EmptyChallengesState({
   onClear: () => void;
 }) {
   return (
-    <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-      <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>AÚN NO HAY RETOS EN ESTA VISTA</p>
-      <h3 className="mt-2 text-2xl text-slate-950" style={{ fontWeight: 700 }}>Empieza creando un reto asociado a un frente estratégico</h3>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600">
-        Así podrás bajar una prioridad a trabajo accionable, revisar responsables y seguir iniciativas desde aquí.
-      </p>
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={onCreate}
-          className="rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white transition-colors hover:bg-slate-800"
-          style={{ fontWeight: 700 }}
-        >
-          Crear nuevo reto
-        </button>
-        <button
-          type="button"
-          onClick={onClear}
-          className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
-          style={{ fontWeight: 700 }}
-        >
-          Limpiar filtros
-        </button>
-      </div>
-    </div>
+    <EmptyState
+      className="mt-6"
+      eyebrow="Vista sin retos"
+      title="Empieza creando un reto asociado a un frente estratégico"
+      description="Así podrás bajar una prioridad a trabajo accionable, revisar responsables y seguir iniciativas desde aquí."
+      primaryAction={{ id: 'create-challenge', label: 'Crear nuevo reto' }}
+      secondaryAction={{ id: 'clear-challenge-filters', label: 'Limpiar filtros' }}
+      onAction={actionId => {
+        if (actionId === 'create-challenge') onCreate();
+        if (actionId === 'clear-challenge-filters') onClear();
+      }}
+    />
   );
 }
 
@@ -2196,6 +2389,74 @@ function labelUrgency(value: ChallengeActivationInputs['urgency']) {
   return value === 'alta' ? 'Alta' : value === 'media' ? 'Media' : 'Baja';
 }
 
+function activationStateStatus(state: ReturnType<typeof getChallengeCards>[number]['activationState']): DomainStatus {
+  switch (state) {
+    case 'solo_definido':
+      return 'draft';
+    case 'listo_para_activar':
+      return 'requires_review';
+    case 'activo_interno':
+    case 'publicado':
+      return 'active';
+    default:
+      return 'info';
+  }
+}
 
+function invitationStatusStatus(status: Challenge['selectedPeople'][number]['status']): DomainStatus {
+  switch (status) {
+    case 'pendiente':
+      return 'unreviewed';
+    case 'notificado':
+      return 'requires_review';
+    case 'confirmado':
+      return 'confirmed';
+    case 'declinado':
+      return 'rejected';
+    default:
+      return 'info';
+  }
+}
 
+function invitationStatusLabel(status: Challenge['selectedPeople'][number]['status']) {
+  switch (status) {
+    case 'pendiente':
+      return 'Pendiente';
+    case 'notificado':
+      return 'Notificado';
+    case 'confirmado':
+      return 'Confirmado';
+    case 'declinado':
+      return 'Declinado';
+    default:
+      return status;
+  }
+}
 
+function stakeholderStatusLabel(status: StakeholderStatus) {
+  switch (status) {
+    case 'definido':
+      return 'Pendiente';
+    case 'notificado':
+      return 'Notificado';
+    case 'confirmado':
+      return 'Confirmado';
+    default:
+      return status;
+  }
+}
+
+function summarizeInvitations(invitations: Challenge['selectedPeople']) {
+  const confirmed = invitations.filter(item => item.status === 'confirmado').length;
+  const pending = invitations.filter(item => item.status === 'pendiente' || item.status === 'notificado').length;
+  const declined = invitations.filter(item => item.status === 'declinado').length;
+
+  if (invitations.length === 0) {
+    return { total: 0, label: 'Sin invitaciones' };
+  }
+
+  return {
+    total: invitations.length,
+    label: `${confirmed} confirmadas / ${pending} pendientes${declined > 0 ? ` / ${declined} declinadas` : ''}`,
+  };
+}

@@ -30,6 +30,13 @@ import type {
   StrategicFrontPriority,
   StrategicFrontStatus,
 } from '../../features/portfolio-lead';
+import {
+  ContextSummary,
+  EmptyState,
+  InlineInsight,
+  PageHeader,
+} from '../components/design-system/patterns';
+import { Button } from '../components/ui/button';
 import { PortfolioLeadBreadcrumbs } from '../components/portfolio/PortfolioLeadPageElements';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
@@ -285,7 +292,23 @@ export function PortfolioLeadStrategicFrontsPage() {
         ]}
       />
 
-      <StrategicFrontsHeader onCreate={openCreateDrawer} />
+      <PageHeader
+        eyebrow="Frentes estrategicos"
+        title="Frentes estrategicos"
+        description="Crea y actualiza las prioridades estrategicas que quieres mover desde Starteria."
+        metadata={[
+          { label: 'Frentes visibles', value: strategicFronts.length },
+          { label: 'Filtrados', value: filteredFronts.length },
+        ]}
+        primaryAction={{
+          id: 'create-front',
+          label: 'Crear frente estrategico',
+          ariaLabel: 'Crear frente estrategico',
+        }}
+        onAction={actionId => {
+          if (actionId === 'create-front') openCreateDrawer();
+        }}
+      />
 
       <StrategicFrontsToolbar
         search={search}
@@ -467,7 +490,7 @@ function StrategicFrontCard({
   const lastActivityLabel = formatRelativeLabel(front.lastUpdatedAt ?? front.createdAt);
 
   return (
-    <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
+    <article className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-elevation-none md:p-6">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -497,11 +520,23 @@ function StrategicFrontCard({
 
           <p className="mt-3 max-w-4xl text-sm text-slate-600 md:text-base">{front.strategicObjective}</p>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-3">
-            <FrontInfoBox label="Descripción del frente" value={front.whyNow || 'No hay lectura adicional registrada.'} />
-            <FrontInfoBox label="Señal principal" value={front.mainKpi} />
-            <FrontInfoBox label="Estado de avance del frente" value={getFrontProgressLabel(front)} helper={getFrontProgressHelper(front)} />
-          </div>
+          <ContextSummary
+            className="mt-5"
+            density="compact"
+            title="Contexto del frente"
+            items={[
+              { label: 'Descripcion', value: front.whyNow || 'No hay lectura adicional registrada.' },
+              { label: 'Senal principal', value: front.mainKpi },
+              {
+                label: 'Estado de avance',
+                value: getFrontProgressLabel(front),
+                metadata: getFrontProgressHelper(front),
+              },
+              { label: 'Sponsor', value: front.sponsor || 'Sin sponsor' },
+              { label: 'Horizonte', value: front.horizon },
+              { label: 'Area', value: front.area || 'Sin area visible' },
+            ]}
+          />
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <FrontStat label="Retos asociados" value={`${front.challengeCount}`} />
@@ -509,40 +544,35 @@ function StrategicFrontCard({
             <FrontStat label="Última actualización" value={lastActivityLabel} />
           </div>
 
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-500" style={{ fontWeight: 700 }}>
-              {front.status === 'paused' || front.status === 'draft'
-                ? 'Puntos por abordar'
-                : 'Seguimiento sugerido'}
-            </p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-700">
-              {buildFrontChecklist(front).map(item => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <InlineInsight
+            className="mt-4"
+            title={front.status === 'paused' || front.status === 'draft'
+              ? 'Starteria: puntos por abordar'
+              : 'Starteria: seguimiento sugerido'}
+            rationale={buildFrontChecklist(front)}
+          >
+            {buildFrontChecklist(front)[0] ?? 'Mantener seguimiento del frente.'}
+          </InlineInsight>
         </div>
 
         <div className="flex flex-col gap-3 xl:w-64">
-          <button
+          <Button
+            type="button"
             onClick={() => onView(front)}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white transition-colors hover:bg-slate-800"
-            style={{ fontWeight: 700 }}
+            className="w-full"
           >
             <Eye size={15} />
             Ver
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => onEdit(front)}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
-            style={{ fontWeight: 700 }}
+            className="w-full"
           >
             <PencilLine size={15} />
             Editar
-          </button>
+          </Button>
 
           <details className="group relative">
             <summary className="list-none">
@@ -1354,42 +1384,32 @@ function getFieldContextualHelp(field: ActiveFrontField) {
 
 function EmptyStrategicFrontsState({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-      <p className="text-xs text-slate-500" style={{ fontWeight: 700 }}>AÚN NO TIENES FRENTES ESTRATÉGICOS</p>
-      <h3 className="mt-2 text-2xl text-slate-950" style={{ fontWeight: 700 }}>Empieza creando una prioridad estratégica del negocio</h3>
-      <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600">
-        Después podrás convertirla en retos accionables y darle seguimiento desde Starteria.
-      </p>
-      <button
-        onClick={onCreate}
-        className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm text-white transition-colors hover:bg-slate-800"
-        style={{ fontWeight: 700 }}
-      >
-        <Plus size={16} />
-        Crear primer frente estratégico
-      </button>
-      <p className="mt-4 text-xs text-slate-500">
+    <EmptyState
+      eyebrow="Portfolio en arranque"
+      title="Empieza creando una prioridad estratégica del negocio"
+      description="Después podrás convertirla en retos accionables y darle seguimiento desde Starteria."
+      primaryAction={{ id: 'create-front', label: 'Crear primer frente estratégico' }}
+      onAction={actionId => {
+        if (actionId === 'create-front') onCreate();
+      }}
+    >
+      <p>
         Ejemplo: reducir reprocesos operativos, aumentar adopción digital o abrir un nuevo segmento.
       </p>
-    </div>
+    </EmptyState>
   );
 }
 
 function EmptyResultsState({ onClear }: { onClear: () => void }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center">
-      <p className="text-sm text-slate-700" style={{ fontWeight: 700 }}>No hay frentes con esos filtros</p>
-      <p className="mt-2 text-sm text-slate-600">
-        Ajusta la búsqueda o limpia los filtros para volver a ver el listado completo.
-      </p>
-      <button
-        onClick={onClear}
-        className="mt-4 inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-100"
-        style={{ fontWeight: 700 }}
-      >
-        Limpiar filtros
-      </button>
-    </div>
+    <EmptyState
+      title="No hay frentes con esos filtros"
+      description="Ajusta la búsqueda o limpia los filtros para volver a ver el listado completo."
+      primaryAction={{ id: 'clear-front-filters', label: 'Limpiar filtros' }}
+      onAction={actionId => {
+        if (actionId === 'clear-front-filters') onClear();
+      }}
+    />
   );
 }
 
@@ -1633,7 +1653,7 @@ function InsightLine({
       <ul className="mt-2 space-y-1.5">
         {items.map(item => (
           <li key={item} className="text-sm">
-            • {item}
+            â€¢ {item}
           </li>
         ))}
       </ul>

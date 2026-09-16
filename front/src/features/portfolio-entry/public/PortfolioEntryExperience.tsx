@@ -5,12 +5,19 @@ import {
   ArrowRight,
   CheckCircle2,
   HelpCircle,
-  Loader2,
   PencilLine,
   RefreshCcw,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '../../../app/components/ui/alert';
+import { Badge } from '../../../app/components/ui/badge';
+import { Button } from '../../../app/components/ui/button';
+import { Textarea } from '../../../app/components/ui/textarea';
+import {
+  AISuggestionPanel,
+  ContextSummary,
+  InlineInsight,
+} from '../../../app/components/design-system/patterns';
 import {
   chooseGuidedExploration,
   confirmPortfolioEntryHandoff,
@@ -73,10 +80,22 @@ type EditableField = {
 const MIN_ENTRY_LENGTH = 30;
 
 const EXAMPLES = [
-  'Tengo varias iniciativas y necesito entender cuales realmente contribuyen a nuestros objetivos.',
-  'Quiero aumentar ventas este trimestre, pero no se que iniciativas priorizar.',
-  'Tengo que presentar al comite el estado de mis iniciativas y que decisiones hacen falta.',
-  'Creo que dos equipos estan trabajando en soluciones parecidas y quiero ordenar el portafolio.',
+  {
+    label: 'Alinear iniciativas',
+    value: 'Tengo varias iniciativas y necesito entender cuales realmente contribuyen a nuestros objetivos.',
+  },
+  {
+    label: 'Entender bloqueos',
+    value: 'Necesito entender que bloqueos impiden avanzar las iniciativas mas importantes.',
+  },
+  {
+    label: 'Preparar comite',
+    value: 'Tengo que preparar comite y explicar que decisiones necesita el portafolio.',
+  },
+  {
+    label: 'Decidir prioridades',
+    value: 'Quiero decidir que prioridades deberian recibir atencion ahora y cuales pueden esperar.',
+  },
 ];
 
 const PROVENANCE_LABELS: Record<ProvenanceOrigin, string> = {
@@ -206,60 +225,6 @@ function insightForSession(session: PortfolioEntrySessionDto, handoff: Portfolio
       'Starteria esta construyendo una lectura inicial para conectar objetivo, situacion, pendientes y decisiones antes de crear cualquier objeto canonico.',
     ),
   };
-}
-
-type RouteStep = {
-  title: string;
-  description: string;
-};
-
-function routeForSession(session: PortfolioEntrySessionDto, handoff: PortfolioEntryHandoff): RouteStep[] {
-  const frame = currentFrame(session);
-  const path = handoff.starteria_path ?? [];
-  const extra = path.length > 0 ? path[0]?.description : undefined;
-
-  if (frame.includes('solution')) {
-    return [
-      { title: 'Reconectar', description: 'Solucion con resultado de negocio.' },
-      { title: 'Revisar', description: 'Evidencia existente y supuestos.' },
-      { title: 'Ubicar', description: 'Lugar dentro del portafolio real.' },
-      { title: 'Preparar decision', description: extra || 'Continuar, ajustar, pausar o escalar.' },
-    ];
-  }
-
-  if (frame.includes('report')) {
-    return [
-      { title: 'Clarificar', description: 'Que debe decidir el comite.' },
-      { title: 'Consolidar', description: 'Iniciativas relevantes del equipo.' },
-      { title: 'Senalar', description: 'Atencion, bloqueos y pendientes.' },
-      { title: 'Actualizar', description: extra || 'Mantener una lectura util para decidir.' },
-    ];
-  }
-
-  if (frame.includes('strategy') || frame.includes('strategic')) {
-    return [
-      { title: 'Aterrizar', description: 'Prioridad y senal de negocio.' },
-      { title: 'Entender', description: 'Donde actuar con el portafolio.' },
-      { title: 'Conectar', description: 'Iniciativas reales con la prioridad.' },
-      { title: 'Seguir', description: extra || 'Contribucion, gaps y decisiones.' },
-    ];
-  }
-
-  if (frame.includes('portfolio')) {
-    return [
-      { title: 'Aclarar', description: 'Criterio de negocio comun.' },
-      { title: 'Incorporar', description: 'Portafolio e iniciativas reales.' },
-      { title: 'Revisar', description: 'Relaciones, solapamientos y gaps.' },
-      { title: 'Priorizar', description: extra || 'Continuar, ajustar, escalar, pausar o cerrar.' },
-    ];
-  }
-
-  return [
-    { title: 'Alinear', description: 'Prioridad y senal de negocio.' },
-    { title: 'Conectar', description: 'Iniciativas reales del equipo.' },
-    { title: 'Detectar', description: 'Gaps, solapamientos y bloqueos.' },
-    { title: 'Decidir', description: extra || 'Continuar, ajustar, escalar, pausar o cerrar.' },
-  ];
 }
 
 function provenanceLabels(handoff: PortfolioEntryHandoff): string[] {
@@ -440,14 +405,11 @@ function StatusMessage({ pendingRequest }: { pendingRequest: PendingRequest }) {
     converting: 'Preparando la continuidad de tu portafolio...',
   };
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800"
-    >
-      <Loader2 size={16} className="animate-spin" />
-      {copy[pendingRequest]}
-    </div>
+    <AISuggestionPanel
+      state="loading"
+      loadingLabel={copy[pendingRequest]}
+      className="shadow-none"
+    />
   );
 }
 
@@ -461,29 +423,19 @@ function ErrorMessage({
   if (!error) return null;
   const terminal = ['unauthorized', 'not_found', 'expired'].includes(error.kind);
   return (
-    <div
-      role="alert"
-      aria-live="assertive"
-      className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"
-    >
-      <div className="flex items-start gap-2">
-        <AlertCircle size={17} className="mt-0.5 shrink-0" />
-        <div className="space-y-2">
-          <p className="font-semibold">{error.title}</p>
-          <p className="leading-6">{error.message}</p>
-          {terminal ? (
-            <button
-              type="button"
-              onClick={onRestart}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
-            >
-              <RefreshCcw size={14} />
-              Empezar de nuevo
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    <Alert variant="danger" aria-live="assertive">
+      <AlertCircle />
+      <AlertTitle>{error.title}</AlertTitle>
+      <AlertDescription>
+        <p>{error.message}</p>
+        {terminal ? (
+          <Button type="button" variant="secondary" size="sm" onClick={onRestart} className="mt-2">
+            <RefreshCcw size={14} />
+            Empezar de nuevo
+          </Button>
+        ) : null}
+      </AlertDescription>
+    </Alert>
   );
 }
 
@@ -492,61 +444,76 @@ function InitialComposer({
   pending,
   onChange,
   onSubmit,
+  variant = 'workspace',
 }: {
   value: string;
   pending: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  variant?: 'landing' | 'workspace';
 }) {
   const canSubmit = value.trim().length >= MIN_ENTRY_LENGTH && !pending;
+  const isLanding = variant === 'landing';
   return (
-    <section className="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section
+      className={
+        isLanding
+          ? 'rounded-[26px] border border-white/70 bg-white/90 p-4 shadow-xl shadow-slate-900/8 backdrop-blur md:p-6'
+          : 'rounded-[22px] border border-border-default bg-surface-default p-4 shadow-sm shadow-slate-900/5 md:p-5'
+      }
+    >
       <div className="space-y-2">
-        <label htmlFor="portfolio-entry-input" className="block text-sm font-semibold text-slate-900">
-          ¿Qué necesitas conseguir o entender de tus iniciativas?
+        <label htmlFor="portfolio-entry-input" className="block text-sm font-semibold text-text-primary">
+          ¿Qué necesitas conseguir o entender?
         </label>
-        <textarea
+        <Textarea
           id="portfolio-entry-input"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          rows={7}
-          className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-          placeholder="Describe el problema, oportunidad, objetivo, decision o iniciativa que quieres ordenar."
+          rows={isLanding ? 7 : 8}
+          className={
+            isLanding
+              ? 'min-h-40 resize-y border-slate-200 bg-white text-base leading-7 shadow-inner shadow-slate-900/[0.02] md:min-h-48'
+              : 'min-h-52 resize-y border-slate-200 bg-white/90 text-base leading-7 shadow-inner shadow-slate-900/[0.02]'
+          }
+          placeholder="Tengo varias iniciativas y no se cuales realmente contribuyen a nuestras prioridades..."
           disabled={pending}
         />
-        <p className="text-xs text-slate-500">
-          Escribe al menos {MIN_ENTRY_LENGTH} caracteres. No subas informacion sensible en modo publico.
+        <p className="text-xs leading-5 text-text-muted">
+          No necesitas tenerlo estructurado. Empieza con lo que sabes.
         </p>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2" aria-label="Ejemplos editables">
         {EXAMPLES.map((example) => (
-          <button
-            key={example}
+          <Button
+            key={example.label}
             type="button"
-            onClick={() => onChange(example)}
+            variant="secondary"
+            size="sm"
+            onClick={() => onChange(example.value)}
             disabled={pending}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-5 text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-auto w-full min-w-0 max-w-full shrink justify-start rounded-full border-slate-200 bg-white/80 whitespace-normal break-words text-left text-xs leading-5 sm:w-auto"
           >
-            {example}
-          </button>
+            {example.label}
+            <span className="sr-only">{example.value}</span>
+          </Button>
         ))}
       </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <ShieldCheck size={15} className="text-emerald-600" />
-          Entrada pre-canonica: nada se crea en tu portafolio todavia.
+        <div className="flex items-center gap-2 text-xs text-text-muted">
+          <ShieldCheck size={15} className="text-[var(--status-feedback-success-text)]" />
+          No se crea nada en tu portafolio hasta que lo revises.
         </div>
-        <button
+        <Button
           type="button"
           onClick={onSubmit}
           disabled={!canSubmit}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Analizar mi situación
           <ArrowRight size={16} />
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -570,65 +537,69 @@ function ConversationPanel({
   const insight = microInsight(session);
   const canSubmit = value.trim().length > 0 && !pending;
   return (
-    <section className="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-lg bg-indigo-50 p-2 text-indigo-700">
+        <div className="mt-0.5 rounded-ds-md bg-brand-primary-subtle p-2 text-brand-primary">
           <HelpCircle size={18} />
         </div>
         <div className="min-w-0 flex-1 space-y-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Esto entendi hasta ahora</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-950">{partialSummary(session)}</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">Quick clarification</Badge>
+              <Badge variant="neutral">
+                Aclaracion {session.clarification.quickQuestionsAsked} de hasta {session.clarification.quickQuestionBudget}
+              </Badge>
+            </div>
+            <h2 className="text-lg font-semibold text-text-primary">{partialSummary(session)}</h2>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">
               Hasta 3 preguntas. Puedes continuar con informacion parcial.
             </p>
           </div>
 
           {insight ? (
-            <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm leading-6 text-indigo-950">
+            <InlineInsight title="Mirada Starteria">
               {insight}
-            </div>
+            </InlineInsight>
           ) : null}
 
           {activeQuestion ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Siguiente aclaracion</p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-900">{activeQuestion.question}</p>
+            <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+              <p className="text-xs font-semibold uppercase text-text-muted">Siguiente aclaracion</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-text-primary">{activeQuestion.question}</p>
             </div>
           ) : null}
 
           <div className="space-y-2">
-            <label htmlFor="portfolio-entry-answer" className="block text-sm font-semibold text-slate-900">
+            <label htmlFor="portfolio-entry-answer" className="block text-sm font-semibold text-text-primary">
               Tu respuesta
             </label>
-            <textarea
+            <Textarea
               id="portfolio-entry-answer"
               value={value}
               onChange={(event) => onChange(event.target.value)}
               rows={4}
-              className="w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="min-h-28 resize-y bg-background-subtle text-sm leading-6"
               disabled={pending}
             />
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <button
+            <Button
               type="button"
               onClick={onSubmit}
               disabled={!canSubmit}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Enviar respuesta
               <ArrowRight size={16} />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               disabled={pending}
               onClick={() => onChange('No lo se todavia.')}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               No lo se todavia
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -644,37 +615,18 @@ function GuidedExplorationOffer({
   onChoose: (choice: 'accept' | 'reject') => void;
 }) {
   return (
-    <section className="mx-auto max-w-3xl rounded-lg border border-emerald-200 bg-emerald-50 p-5">
-      <div className="flex items-start gap-3">
-        <Sparkles size={18} className="mt-1 text-emerald-700" />
-        <div className="flex-1 space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Tengo suficiente informacion para darte una primera lectura.</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-700">
-              Puedes verla ahora o profundizar un poco mas antes de cerrar esta interpretacion inicial.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => onChoose('reject')}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Ver mi lectura
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => onChoose('accept')}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Profundizar un poco mas
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
+    <div className="mx-auto max-w-3xl">
+      <AISuggestionPanel
+        title="Tengo suficiente informacion para darte una primera lectura."
+        suggestion="Puedes verla ahora o profundizar un poco mas antes de cerrar esta interpretacion inicial."
+        why={['La aclaracion puede continuar, pero no debe convertirse en una entrevista larga.', 'La lectura sigue siendo revisable y pre-canonica.']}
+        actions={[
+          { id: 'view', label: 'Ver mi lectura', tone: 'primary', disabled: pending },
+          { id: 'deepen', label: 'Profundizar un poco mas', tone: 'secondary', disabled: pending },
+        ]}
+        onAction={(actionId) => onChoose(actionId === 'deepen' ? 'accept' : 'reject')}
+      />
+    </div>
   );
 }
 
@@ -688,16 +640,16 @@ function FieldBlock({
   badges: string[];
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-ds-md border border-border-default bg-surface-default p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-900">{label}</h3>
+        <h3 className="text-sm font-semibold text-text-primary">{label}</h3>
         {badges.map((badge) => (
-          <span key={badge} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600">
+          <Badge key={badge} variant="neutral">
             {badge}
-          </span>
+          </Badge>
         ))}
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{value}</p>
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">{value}</p>
     </div>
   );
 }
@@ -707,9 +659,9 @@ function ProvenanceChips({ handoff }: { handoff: PortfolioEntryHandoff }) {
   return (
     <div className="flex flex-wrap gap-2" aria-label="Procedencia de la lectura">
       {labels.map((label) => (
-        <span key={label} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+        <Badge key={label} variant="neutral">
           {label}
-        </span>
+        </Badge>
       ))}
     </div>
   );
@@ -718,16 +670,16 @@ function ProvenanceChips({ handoff }: { handoff: PortfolioEntryHandoff }) {
 function InsightPanel({ session, handoff }: { session: PortfolioEntrySessionDto; handoff: PortfolioEntryHandoff }) {
   const insight = insightForSession(session, handoff);
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
       <div className="space-y-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700">TU LECTURA INICIAL</p>
-          <h2 className="mt-3 text-2xl font-semibold leading-tight text-slate-950 md:text-3xl">{insight.headline}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base md:leading-7">{insight.support}</p>
+          <p className="text-xs font-semibold uppercase text-brand-primary">TU LECTURA INICIAL</p>
+          <h2 className="mt-3 text-2xl font-semibold leading-tight text-text-primary md:text-3xl">{insight.headline}</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-text-secondary md:text-base md:leading-7">{insight.support}</p>
         </div>
         <ProvenanceChips handoff={handoff} />
-        <details className="group rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-          <summary className="cursor-pointer font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">
+        <details className="group rounded-ds-md border border-border-default bg-background-subtle p-3 text-sm text-text-secondary">
+          <summary className="cursor-pointer rounded-ds-sm font-semibold text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/30">
             De donde sale esta lectura?
           </summary>
           <div className="mt-3 space-y-2 leading-6">
@@ -754,51 +706,48 @@ function BriefSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
   ].filter(Boolean);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-      <h3 className="text-lg font-semibold text-slate-950">Lo que Starteria entendio</h3>
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <BriefItem title="Objetivo" body={textFromProvenanced(handoff.desired_outcome)} />
-        <BriefItem title="Decision" body={textFromDecision(handoff.decision_to_enable)} />
-        <BriefItem title="Situacion" items={known.map((item) => item.value)} fallback={textFromProvenanced(handoff.understanding)} />
-        <BriefItem title="Pendientes" items={pending} fallback="Sin pendientes registrados en esta lectura inicial." />
-      </div>
-    </section>
-  );
-}
-
-function BriefItem({ title, body, items, fallback }: { title: string; body?: string; items?: string[]; fallback?: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{title}</p>
-      {items && items.length > 0 ? (
-        <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-800">
-          {items.slice(0, 4).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-sm leading-6 text-slate-800">{body || fallback || 'Pendiente de aclarar.'}</p>
-      )}
-    </div>
+    <ContextSummary
+      title="Lo que Starteria entendio"
+      items={[
+        { label: 'Objetivo', value: textFromProvenanced(handoff.desired_outcome) },
+        { label: 'Decision', value: textFromDecision(handoff.decision_to_enable) },
+        {
+          label: 'Situacion',
+          value: known.length > 0 ? known.map((item) => item.value).join(' ') : textFromProvenanced(handoff.understanding),
+        },
+        {
+          label: 'Pendientes',
+          value: pending.length > 0 ? pending.slice(0, 4).join(' ') : 'Sin pendientes registrados en esta lectura inicial.',
+        },
+      ]}
+    />
   );
 }
 
 function StarteriaRoute({ session, handoff }: { session: PortfolioEntrySessionDto; handoff: PortfolioEntryHandoff }) {
-  const steps = routeForSession(session, handoff);
+  void session;
+  void handoff;
+  const steps = [
+    { title: 'Portfolio', description: 'Ordenar prioridades y contexto.' },
+    { title: 'Retos', description: 'Convertir foco en trabajo gobernable.' },
+    { title: 'Iniciativas', description: 'Conectar esfuerzo real.' },
+    { title: 'Evidencia', description: 'Separar avance de prueba.' },
+    { title: 'Decisiones', description: 'Preparar el siguiente movimiento.' },
+  ];
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-ds-lg border border-white/10 bg-white/5 p-5 md:p-6">
       <div className="flex flex-col gap-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Ruta sugerida</p>
-        <h3 className="text-lg font-semibold text-slate-950">Tu ruta en Starteria</h3>
+        <p className="text-xs font-semibold uppercase text-cyan-200">Ruta explicativa</p>
+        <h3 className="text-lg font-semibold text-white">Como continuaria Starteria</h3>
       </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-4">
+      <div className="mt-5 grid gap-3 md:grid-cols-5">
         {steps.map((step, index) => (
-          <div key={step.title} className="relative rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+          <div key={step.title} className="relative rounded-ds-md border border-white/10 bg-white/7 p-4">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">
               {index + 1}
             </span>
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-slate-900">{step.title}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{step.description}</p>
+            <p className="mt-4 text-sm font-semibold uppercase text-white">{step.title}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{step.description}</p>
           </div>
         ))}
       </div>
@@ -823,41 +772,35 @@ function EarlyAccessCard({
     'Acceso anticipado al MVP.',
   ];
   return (
-    <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Early Access - Gratis</p>
-      <h3 className="mt-2 text-xl font-semibold text-slate-950">Prueba Starteria con tu portafolio real.</h3>
-      <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
+    <aside className="space-y-5 rounded-[24px] bg-slate-950 p-5 text-white shadow-xl shadow-slate-900/20 lg:sticky lg:top-6 md:p-6">
+      <div>
+        <p className="text-xs font-semibold uppercase text-cyan-200">Continua con Starteria</p>
+        <h2 className="mt-3 text-2xl font-semibold leading-tight">Convierte esta lectura en un espacio de decision.</h2>
+        <p className="mt-3 text-sm leading-6 text-slate-300">
+          Starteria conserva lo entendido, muestra pendientes y te lleva al contexto Portfolio autorizado cuando tu cuenta lo permita.
+        </p>
+      </div>
+      <ul className="space-y-3">
         {benefits.map((benefit) => (
-          <li key={benefit} className="flex gap-2">
-            <CheckCircle2 size={16} className="mt-1 shrink-0 text-emerald-700" />
+          <li key={benefit} className="flex gap-2 text-sm leading-6 text-slate-200">
+            <CheckCircle2 size={15} className="mt-1 shrink-0 text-cyan-300" />
             <span>{benefit}</span>
           </li>
         ))}
       </ul>
-      <div className="mt-5 space-y-3">
-        <p className="text-sm font-semibold text-slate-900">Guarda esta lectura y continua con tus iniciativas reales.</p>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onConfirm}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+      <StarteriaRoute session={{} as PortfolioEntrySessionDto} handoff={{} as PortfolioEntryHandoff} />
+      <div className="flex flex-col gap-2">
+        <Button type="button" onClick={onConfirm} disabled={pending} className="bg-white text-slate-950 hover:bg-slate-100">
           Continuar con mi portafolio
           <ArrowRight size={16} />
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onStartEditing}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <PencilLine size={16} />
+        </Button>
+        <Button type="button" variant="ghost" onClick={onStartEditing} disabled={pending} className="text-slate-200 hover:bg-white/10 hover:text-white">
           Ajustar lectura
-        </button>
-        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-          Al registrarte conservaras esta lectura. Todavia no estamos creando iniciativas ni activando Steps.
-        </p>
+        </Button>
       </div>
+      <p className="text-xs leading-5 text-slate-400">
+        Esta ruta es explicativa. Todavia no estamos creando iniciativas ni activando Steps.
+      </p>
     </aside>
   );
 }
@@ -894,9 +837,9 @@ function HandoffReview({
   return (
     <section className="mx-auto max-w-7xl space-y-5">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Lectura inicial lista</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-950">Starteria ya puede darte una interpretacion revisable.</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <Badge variant="success">Lectura inicial lista</Badge>
+        <h1 className="mt-3 text-2xl font-semibold text-text-primary">Starteria ya puede darte una interpretacion revisable.</h1>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
           Nada de esto crea iniciativas ni valida estrategia. Es una lectura inicial para decidir si quieres continuar con tu portafolio real.
         </p>
       </div>
@@ -912,52 +855,51 @@ function HandoffReview({
       </div>
 
       {editing ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-950">Correcciones</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
+        <div className="rounded-ds-lg border border-border-default bg-surface-default p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-text-primary">Correcciones</h3>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">
             Ajusta solo lo que no refleje tu situacion. Starteria guardara una nueva revision antes de continuar.
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             {editableFields.map((field) => (
-              <label key={field.path} className="block text-sm font-semibold text-slate-800">
+              <label key={field.path} className="block text-sm font-semibold text-text-primary">
                 {field.label}
-                <textarea
+                <Textarea
                   value={correctionDraft[field.path] ?? field.value}
                   onChange={(event) => onEditChange(field.path, event.target.value)}
                   disabled={pending}
                   rows={3}
-                  className="mt-1 w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-normal leading-6 text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="mt-1 min-h-24 resize-y bg-background-subtle text-sm font-normal leading-6"
                 />
               </label>
             ))}
           </div>
-          <label className="mt-3 block text-sm font-semibold text-slate-800">
+          <label className="mt-3 block text-sm font-semibold text-text-primary">
             Nota opcional
-            <textarea
+            <Textarea
               value={correctionNotes}
               onChange={(event) => onNotesChange(event.target.value)}
               disabled={pending}
               rows={3}
-              className="mt-1 w-full resize-y rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-normal leading-6 text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="mt-1 min-h-24 resize-y bg-background-subtle text-sm font-normal leading-6"
             />
           </label>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button
+            <Button
               type="button"
               disabled={pending}
               onClick={onCorrect}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Guardar correcciones
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               disabled={pending}
               onClick={onCancelEditing}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -981,13 +923,13 @@ function ConfirmedSummary({
   const handoff = session.handoff?.handoff;
   const isClaimed = session.ownership.state === 'CLAIMED';
   return (
-    <section className="mx-auto max-w-4xl rounded-lg border border-emerald-200 bg-emerald-50 p-5">
+    <section className="mx-auto max-w-4xl rounded-ds-lg border border-[var(--status-feedback-success-border)] bg-[var(--status-feedback-success-surface)] p-5 md:p-6">
       <div className="flex items-start gap-3">
-        <CheckCircle2 size={20} className="mt-1 text-emerald-700" />
+        <CheckCircle2 size={20} className="mt-1 text-[var(--status-feedback-success-text)]" />
         <div className="flex-1 space-y-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-950">Perfecto. Esta lectura esta lista para continuar.</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
+            <h2 className="text-xl font-semibold text-text-primary">Esta lectura esta lista para continuar.</h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
               {isClaimed
                 ? 'Tu sesion ya esta guardada en tu cuenta. Puedes continuar al contexto Portfolio sin crear Project, Step 0 ni iniciativa canonica.'
                 : 'Perfecto. Esta lectura todavia no ha creado ninguna iniciativa ni cambiado tu portafolio. Crea tu cuenta para conservar este contexto y continuar trabajando sobre el.'}
@@ -1002,31 +944,33 @@ function ConfirmedSummary({
             </div>
           ) : null}
           {conversionError ? (
-            <div role="alert" className="rounded-lg border border-amber-200 bg-white p-4 text-sm text-amber-900">
-              <p className="font-semibold">{conversionError.title}</p>
-              <p className="mt-1 leading-6">{conversionError.message}</p>
-            </div>
+            <Alert variant="warning">
+              <AlertCircle />
+              <AlertTitle>{conversionError.title}</AlertTitle>
+              <AlertDescription>
+                <p>{conversionError.message}</p>
+              </AlertDescription>
+            </Alert>
           ) : null}
           {isClaimed ? (
-            <button
+            <Button
               type="button"
               onClick={onConvert}
               disabled={conversionPending}
+              loading={conversionPending}
               aria-busy={conversionPending}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {conversionPending ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+              {!conversionPending ? <ArrowRight size={16} /> : null}
               Continuar con mi portafolio
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="button"
               onClick={onContinue}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
             >
               Crear cuenta y conservar lectura
               <ArrowRight size={16} />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -1036,22 +980,32 @@ function ConfirmedSummary({
 
 function ClaimedNotice({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <div className="mx-auto max-w-3xl rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+    <div className="mx-auto max-w-3xl rounded-ds-md border border-[var(--status-feedback-success-border)] bg-[var(--status-feedback-success-surface)] p-4 text-sm text-[var(--status-feedback-success-text)]">
       <div className="flex items-start gap-2">
         <CheckCircle2 size={17} className="mt-0.5 shrink-0" />
         <div className="flex-1">
           <p className="font-semibold">Tu sesion quedo guardada en tu cuenta.</p>
           <p className="mt-1 leading-6">Ahora puedes continuar al contexto Portfolio y revisar pendientes sin crear una iniciativa por defecto.</p>
-          <button type="button" onClick={onDismiss} className="mt-2 text-xs font-semibold underline underline-offset-2">
+          <Button type="button" variant="ghost" size="sm" onClick={onDismiss} className="mt-2 px-0">
             Ocultar mensaje
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
 }
 
-export function PortfolioEntryExperience() {
+type PortfolioEntryExperienceProps = {
+  variant?: 'landing' | 'workspace';
+  recoverExisting?: boolean;
+  redirectAfterStart?: string;
+};
+
+export function PortfolioEntryExperience({
+  variant = 'workspace',
+  recoverExisting = true,
+  redirectAfterStart,
+}: PortfolioEntryExperienceProps = {}) {
   const navigate = useNavigate();
   const [sessionRef, setSessionRef] = useState<StoredPortfolioEntrySession | null>(null);
   const [sessionDto, setSessionDto] = useState<PortfolioEntrySessionDto | null>(null);
@@ -1119,6 +1073,7 @@ export function PortfolioEntryExperience() {
   };
 
   useEffect(() => {
+    if (!recoverExisting) return;
     const stored = readPortfolioEntryCurrentSession();
     const claimed = readClaimedPortfolioEntrySession() ?? claimedNotice;
     if (!stored && !claimed) return;
@@ -1152,7 +1107,7 @@ export function PortfolioEntryExperience() {
     };
     // Run only once on mount; recovery state lives in sessionStorage.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recoverExisting]);
 
   useEffect(() => {
     statusRef.current?.focus();
@@ -1228,6 +1183,7 @@ export function PortfolioEntryExperience() {
       setSessionDto(next);
       setCurrentInput('');
       trackPortfolioEntryEvent('portfolio_entry_first_message_submitted', { sessionId: next.id });
+      if (redirectAfterStart) navigate(redirectAfterStart);
     } catch (err) {
       await handleRequestError(err);
     } finally {
@@ -1405,6 +1361,7 @@ export function PortfolioEntryExperience() {
           pending={pending}
           onChange={setCurrentInput}
           onSubmit={startFlow}
+          variant={variant}
         />
       );
     }
@@ -1455,7 +1412,7 @@ export function PortfolioEntryExperience() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className={variant === 'landing' ? 'space-y-4' : 'space-y-5'}>
       {claimedNotice ? <ClaimedNotice onDismiss={dismissClaimedNotice} /> : null}
       <div ref={statusRef} tabIndex={-1} className="mx-auto max-w-3xl outline-none">
         <StatusMessage pendingRequest={pendingRequest} />
