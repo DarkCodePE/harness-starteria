@@ -235,6 +235,14 @@ CI covers:
 - E2E light: `npm run test:e2e -- e2e/portfolio-entry-conversion.spec.ts`.
 - CI summary.
 
+GitHub CI result on commit `5885fc3099dd48cb462f29d75ec56f9827bf0966`: passed.
+
+- Node tests (vitest + coverage): success.
+- Python tests (pytest -m unit): success.
+- Lint and build: success.
+- E2E light (Portfolio Entry): success.
+- CI summary: success.
+
 CI does not fully protect browser E2E:
 
 - Full browser E2E is not enabled as a required CI job because the complete suite is currently red and materially broader than the pre-merge Portfolio Entry smoke.
@@ -313,4 +321,4 @@ ROLLBACK_PLAN: keep deployment pointed at `nmindFa/Dashboardstarteria` until tar
 
 `NOT_MERGE_READY`
 
-Reason: DB migrations, DB integrations, and the targeted Portfolio Entry browser smoke pass, and CI now includes that smoke. However, full browser E2E failed and CI has not yet re-run with the new `e2e-light` job on PR #6.
+Reason: DB migrations, DB integrations, targeted Portfolio Entry browser smoke, and GitHub CI including `e2e-light` pass. However, full browser E2E failed (`20 failed, 4 did not run, 21 passed`), so this branch should not be merged yet.
