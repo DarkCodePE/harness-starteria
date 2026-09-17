@@ -11,9 +11,8 @@ name: CI
 on:
   pull_request:
     branches: ['**']
-  # No standalone `push: main` trigger: cd.yml now runs on every push to main
-  # and its `tests` gate calls this workflow, so a separate run would be a
-  # duplicate of the exact same suite.
+  # No standalone `push: main` trigger. CD is manual for its first release and
+  # calls this workflow as its test gate.
   workflow_call:
 
 # Cancel superseded runs on the same branch/PR to save minutes.

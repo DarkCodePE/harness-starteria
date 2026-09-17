@@ -1,0 +1,229 @@
+# Manual first release. Re-enable a main push trigger only after a successful,
+# reviewed production release and confirmation of database compatibility.
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: 'Full product commit SHA to deploy; must be an ancestor of main'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: starteria-production
+  cancel-in-progress: false
+
+env:
+  DOCKERHUB_NAMESPACE: orlandogtp
+  NAMESPACE: starteria
+  ROLLOUT_TIMEOUT: 360s
+
+jobs:
+  tests:
+    name: CI gate
+    uses: ./.github/workflows/ci.yml
+
+  build-and-push:
+    name: Build and push ${{ matrix.service }}
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: backend
+            context: .
+            dockerfile: Dockerfile.backend
+          - service: frontend
+            context: .
+            dockerfile: Dockerfile.frontend
+          - service: ai-service
+            context: ./ai-service
+            dockerfile: ./ai-service/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify selected product commit
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/heads/main ]] || { echo '::error::Run CD from main only'; exit 1; }
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Enter a full 40-character lowercase SHA'; exit 1; }
+          git merge-base --is-ancestor "$SOURCE_SHA" HEAD || { echo '::error::Source commit is not on main history'; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - name: Resolve commit tag
+        id: release
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: echo "tag=main-${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build immutable release image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          build-args: |
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          tags: ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:${{ steps.release.outputs.tag }}
+
+  deploy:
+    name: Deploy to Rackspace Spot
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - name: Resolve commit tag
+        id: release
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: echo "tag=main-${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
+      - name: Check required credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          RACKSPACE_REFRESH_TOKEN: ${{ secrets.RACKSPACE_REFRESH_TOKEN }}
+          RACKSPACE_ORG_NAME: ${{ secrets.RACKSPACE_ORG_NAME }}
+          RACKSPACE_CLOUDSPACE_NAME: ${{ secrets.RACKSPACE_CLOUDSPACE_NAME }}
+          STARTERIA_JWT_SECRET: ${{ secrets.STARTERIA_JWT_SECRET }}
+          STARTERIA_DB_PASSWORD: ${{ secrets.STARTERIA_DB_PASSWORD }}
+          STARTERIA_AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
+          STARTERIA_BRIDGE_SHARED_SECRET: ${{ secrets.STARTERIA_BRIDGE_SHARED_SECRET }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PORTFOLIO_ENTRY_API_KEY: ${{ secrets.PORTFOLIO_ENTRY_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          for name in DOCKERHUB_USERNAME DOCKERHUB_TOKEN RACKSPACE_REFRESH_TOKEN RACKSPACE_ORG_NAME RACKSPACE_CLOUDSPACE_NAME STARTERIA_JWT_SECRET STARTERIA_DB_PASSWORD STARTERIA_AI_SERVICE_TOKEN STARTERIA_BRIDGE_SHARED_SECRET OPENROUTER_API_KEY PORTFOLIO_ENTRY_API_KEY GOOGLE_CLIENT_ID; do
+            [[ -n "${!name}" ]] || { echo "::error::Missing required secret $name"; exit 1; }
+          done
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+      - name: Fetch kubeconfig from Rackspace Spot
+        env:
+          RACKSPACE_REFRESH_TOKEN: ${{ secrets.RACKSPACE_REFRESH_TOKEN }}
+          RACKSPACE_ORG_NAME: ${{ secrets.RACKSPACE_ORG_NAME }}
+          RACKSPACE_CLOUDSPACE_NAME: ${{ secrets.RACKSPACE_CLOUDSPACE_NAME }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc --arg org "$RACKSPACE_ORG_NAME" --arg cs "$RACKSPACE_CLOUDSPACE_NAME" --arg rt "$RACKSPACE_REFRESH_TOKEN" '{organization_name:$org,cloudspace_name:$cs,refresh_token:$rt}')
+          response="$RUNNER_TEMP/spot-response.json"
+          status=$(curl --silent --show-error --output "$response" --write-out '%{http_code}' --request POST 'https://spot.rackspace.com/apis/auth.ngpc.rxt.io/v1/generate-kubeconfig' --header 'Content-Type: application/json' --data "$payload")
+          [[ "$status" == 200 ]] || { echo "::error::Rackspace kubeconfig request failed (HTTP $status)"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/kube"
+          jq -er '.data.kubeconfig' "$response" > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          rm -f "$response"
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+      - name: Preflight live deployment and database
+        env:
+          DB_PASSWORD: ${{ secrets.STARTERIA_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          kubectl -n "$NAMESPACE" get statefulset/starteria-db secret/cloudflared-token secret/starteria-db-secrets
+          live_password=$(kubectl -n "$NAMESPACE" get secret/starteria-db-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 --decode)
+          [[ "$live_password" == "$DB_PASSWORD" ]] || { echo '::error::GitHub database password differs from the live Kubernetes Secret; stop and resolve credential rotation separately'; exit 1; }
+          for svc in backend frontend ai-service; do
+            image=$(kubectl -n "$NAMESPACE" get "deployment/starteria-$svc" -o "jsonpath={.spec.template.spec.containers[?(@.name=='$svc')].image}")
+            [[ -n "$image" ]] || { echo "::error::No live image for $svc"; exit 1; }
+            printf '%s\n' "$image" > "$RUNNER_TEMP/previous-$svc-image"
+          done
+      - name: Sync Kubernetes secrets
+        env:
+          DB_PASSWORD: ${{ secrets.STARTERIA_DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.STARTERIA_JWT_SECRET }}
+          AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
+          BRIDGE_SHARED_SECRET: ${{ secrets.STARTERIA_BRIDGE_SHARED_SECRET }}
+          PORTFOLIO_ENTRY_API_KEY: ${{ secrets.PORTFOLIO_ENTRY_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          SMTP_HOST: ${{ secrets.STARTERIA_SMTP_HOST }}
+          SMTP_USER: ${{ secrets.STARTERIA_SMTP_USER }}
+          SMTP_PASS: ${{ secrets.STARTERIA_SMTP_PASS }}
+          PILOT_LEAD_NOTIFY_FROM: ${{ secrets.STARTERIA_PILOT_LEAD_NOTIFY_FROM }}
+        run: |
+          set -euo pipefail
+          encoded_password=$(jq -nr --arg v "$DB_PASSWORD" '$v|@uri')
+          database_url="postgresql://starteria:${encoded_password}@starteria-db:5432/starteria_db"
+          kubectl -n "$NAMESPACE" create secret generic starteria-db-secrets --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n "$NAMESPACE" create secret generic starteria-backend-secrets \
+            --from-literal=DATABASE_URL="$database_url" --from-literal=JWT_SECRET="$JWT_SECRET" \
+            --from-literal=AI_SERVICE_TOKEN="$AI_SERVICE_TOKEN" --from-literal=AI_SERVICE_URL=http://starteria-ai-service:8001 \
+            --from-literal=BRIDGE_SHARED_SECRET="$BRIDGE_SHARED_SECRET" \
+            --from-literal=PORTFOLIO_ENTRY_API_KEY="$PORTFOLIO_ENTRY_API_KEY" \
+            --from-literal=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            --from-literal=SMTP_HOST="${SMTP_HOST:-}" --from-literal=SMTP_USER="${SMTP_USER:-}" \
+            --from-literal=SMTP_PASS="${SMTP_PASS:-}" --from-literal=PILOT_LEAD_NOTIFY_FROM="${PILOT_LEAD_NOTIFY_FROM:-}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n "$NAMESPACE" create secret generic starteria-ai-service-secrets \
+            --from-literal=OPENROUTER_API_KEY="$OPENROUTER_API_KEY" --from-literal=LANGSMITH_API_KEY="${LANGSMITH_API_KEY:-}" \
+            --from-literal=AI_SERVICE_INTERNAL_TOKEN="$AI_SERVICE_TOKEN" --from-literal=BACKEND_WEBHOOK_TOKEN="$AI_SERVICE_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Apply manifests and set release images
+        id: rollout
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Use image-substituted manifests so apply never briefly rolls a service
+          # back to the old hard-coded image or :latest placeholder.
+          kubectl -n "$NAMESPACE" apply -f k8s/postgres-statefulset.yaml -f k8s/postgres-service.yaml \
+            -f k8s/backend-service.yaml -f k8s/frontend-service.yaml -f k8s/ai-service-service.yaml \
+            -f k8s/cloudflared-service.yaml
+          for svc in backend frontend ai-service; do
+            sed "s|image: orlandogtp/starteria-$svc:.*|image: ${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}|" "k8s/$svc-deployment.yaml" | kubectl -n "$NAMESPACE" apply -f -
+          done
+          kubectl -n "$NAMESPACE" apply -f k8s/cloudflared-deployment.yaml
+          for svc in backend frontend ai-service; do
+            kubectl -n "$NAMESPACE" set image "deployment/starteria-$svc" "$svc=${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}"
+          done
+          for svc in backend frontend ai-service; do
+            kubectl -n "$NAMESPACE" rollout status "deployment/starteria-$svc" --timeout="$ROLLOUT_TIMEOUT"
+          done
+      - name: Restore previous images on rollout failure
+        if: ${{ failure() && steps.rollout.outcome == 'failure' }}
+        run: |
+          failed=0
+          for svc in backend frontend ai-service; do
+            if [[ -s "$RUNNER_TEMP/previous-$svc-image" ]]; then
+              image=$(cat "$RUNNER_TEMP/previous-$svc-image")
+              kubectl -n "$NAMESPACE" set image "deployment/starteria-$svc" "$svc=$image" || failed=1
+            fi
+          done
+          for svc in backend frontend ai-service; do
+            kubectl -n "$NAMESPACE" rollout status "deployment/starteria-$svc" --timeout="$ROLLOUT_TIMEOUT" || failed=1
+          done
+          [[ "$failed" == 0 ]] || echo '::error::Automatic image restore failed; operator action required'
+          exit "$failed"
+      - name: Report release
+        if: always()
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          STATUS: ${{ steps.rollout.outcome }}
+        run: |
+          printf '## Starteria CD\n\n- Source commit: `%s`\n- Image tag: `%s`\n- Docker Hub: `%s/starteria-{backend,frontend,ai-service}:%s`\n- Namespace: `%s`\n- Rollout: `%s`\n' "${{ inputs.source_sha }}" "$TAG" "$DOCKERHUB_NAMESPACE" "$TAG" "$NAMESPACE" "$STATUS" >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove kubeconfig
+        if: always()
+        run: rm -f "$RUNNER_TEMP/kube/config" "$RUNNER_TEMP/spot-response.json"
