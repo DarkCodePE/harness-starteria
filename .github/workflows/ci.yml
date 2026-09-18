@@ -56,6 +56,11 @@ jobs:
       - name: Install dependencies (npm ci)
         run: npm ci
 
+      - name: Run Portfolio Entry v0.2 isolated validation
+        # Candidate-only deterministic validation. It does not promote v0.2,
+        # mutate product state, or replace the v0.1 consumer test surface.
+        run: npm exec -- vitest run --config vitest.backend.config.ts ../test/portfolio-entry-v02-isolated-validation/isolated-validation.test.ts
+
       - name: Run tests with coverage
         # The coverage threshold (>=80%) is enforced by vitest config (fail_under).
         # If coverage drops below the gate, this step exits non-zero and the job fails.

@@ -207,6 +207,52 @@ PORTFOLIO_ENTRY_AI_HARNESS_v0.2
         ↓
 PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.2
 ```
+## Reconciliation status
+
+```text
+installation_status: PRESENT_IN_REPO
+promotion_status: CANDIDATE_RECONCILIATION
+```
+
+The v0.2/v0.2.1 Portfolio Entry stack is physically present in the repository.
+
+This does NOT mean that all v0.1 documents are superseded.
+
+Current interpretation:
+
+- `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+  - remains the active approved Experience Contract;
+- `PORTFOLIO_ENTRY_CLARIFICATION_HANDOFF_CONTRACT_v0.2.1.md`
+  - candidate orchestration/experience subcontract;
+- `PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.2.md`
+  - candidate Agent Contract;
+- Skill 01–04 v0.2
+  - candidate Skill Contracts;
+- `PORTFOLIO_ENTRY_AI_HARNESS_v0.2.md`
+  - candidate test baseline;
+- `PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.2.md`
+  - candidate test baseline;
+- `PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2.md`
+  - evidence only.
+
+```text
+PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2
+
+role: EVIDENCE
+authority: NO
+```
+
+Promotion requires:
+
+```text
+repository reconciliation
++
+reference validation
++
+harness validation
++
+explicit authority update
+```
 
 Evidence, not authority:
 

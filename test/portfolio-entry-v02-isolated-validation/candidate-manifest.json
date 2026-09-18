@@ -1,0 +1,12 @@
+{
+  "candidate_id": "portfolio-entry-v0.2-isolated-validation",
+  "status": "CANDIDATE",
+  "promotion_status": "BLOCKED_PENDING_VALIDATION",
+  "contract_version": "portfolio-entry-contract-v0.1-reference",
+  "runtime_version": "portfolio-entry-runtime-v0.2",
+  "schema_version": "portfolio-entry-schema-v0.2",
+  "prompt_manifest_id": "portfolio-entry-prompts-v0.2",
+  "adapter_mode": "deterministic_isolated",
+  "product_side_effects": false,
+  "v01_consumers": "KEEP"
+}
