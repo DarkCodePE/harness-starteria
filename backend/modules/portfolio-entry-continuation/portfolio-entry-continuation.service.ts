@@ -12,6 +12,8 @@ export type PortfolioEntryContinuationResultDto = {
   status: 'CONTINUED';
   destinationRoute: string;
   continuedAt: string;
+  /** The grant is produced by this valid continuation, never by registration. */
+  portfolioAccessGranted: boolean;
   portfolioScope: {
     kind: 'platform_portfolio_permission';
     userId: string;
@@ -56,9 +58,6 @@ export class PortfolioEntryContinuationService {
 
   async continueToPortfolio(input: ContinuePortfolioEntryInput): Promise<PortfolioEntryContinuationResultDto> {
     if (!input.authenticatedUserId) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_AUTH_REQUIRED');
-    if (!can(input.permissions, 'portfolio:read')) {
-      throw AppError.forbidden('No tienes permiso Portfolio para continuar esta sesion.', 'PORTFOLIO_ENTRY_CONTINUATION_PORTFOLIO_PERMISSION_REQUIRED');
-    }
     if (!input.idempotencyKey) throw PortfolioEntryApiError.missingIdempotencyKey();
 
     const payload = {
@@ -68,9 +67,6 @@ export class PortfolioEntryContinuationService {
       permission: 'portfolio:read',
     };
     return this.withIdempotency(input, payload, async () => {
-      const existing = await this.findContinuationBySession(input.sessionId);
-      if (existing) return this.toDto(existing);
-
       const continuation = await this.createContinuation(input);
       logger.info({
         requestId: input.requestId,
@@ -139,7 +135,7 @@ export class PortfolioEntryContinuationService {
           }),
           tx.user.findUnique({
             where: { id: input.authenticatedUserId },
-            select: { id: true, organizationId: true },
+            select: { id: true, organizationId: true, role: true, roles: true },
           }),
         ]);
         if (!user) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_AUTH_REQUIRED');
@@ -149,6 +145,16 @@ export class PortfolioEntryContinuationService {
         }
         if (confirmation.handoffId !== handoff.id) {
           throw AppError.conflict('La confirmacion ya no corresponde al handoff vigente.', 'PORTFOLIO_ENTRY_CONTINUATION_STALE_CONFIRMATION');
+        }
+
+        // Portfolio access is a consequence of this validated continuation. Registration
+        // remains participant-only, and the primary role is deliberately preserved.
+        const effectiveRoles = user.roles.length > 0 ? user.roles : [user.role];
+        if (!effectiveRoles.includes('portfolio_lead')) {
+          await tx.user.update({
+            where: { id: input.authenticatedUserId },
+            data: { roles: [...effectiveRoles, 'portfolio_lead'] },
+          });
         }
 
         const continuationId = randomUUID();
@@ -275,6 +281,7 @@ export class PortfolioEntryContinuationService {
       destinationRoute: row.destinationRoute,
       continuedAt: row.continuedAt.toISOString(),
       portfolioScope: scope,
+      portfolioAccessGranted: true,
       context: {
         understanding: handoff.understanding,
         desiredOutcome: handoff.desired_outcome,
