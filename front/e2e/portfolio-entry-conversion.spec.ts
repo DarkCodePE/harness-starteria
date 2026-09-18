@@ -217,8 +217,12 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
       }
       await answer.fill(scenario.answer);
+      const clarificationResponse = page.waitForResponse((response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/v1\/public\/portfolio-entry\/sessions\/[^/]+\/messages$/.test(response.url()),
+      );
       await page.getByRole('button', { name: /Enviar respuesta/i }).click();
-      await page.waitForTimeout(800);
+      await clarificationResponse;
       continue;
     }
 
@@ -264,9 +268,10 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await expect(page.getByText(/Cómo Starteria convierte esto en trabajo/i)).toBeVisible();
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
-      const recommendedApproach = page.locator('section').filter({
-        has: page.getByRole('heading', { name: /Qué haría Starteria primero/i }),
-      });
+      const recommendedApproach = page
+        .getByRole('heading', { name: 'Qué haría Starteria primero', exact: true })
+        .locator('xpath=ancestor::section[1]');
+      await expect(recommendedApproach).toHaveCount(1);
       await expect(recommendedApproach.getByText('Propuesta de Starteria', { exact: true })).toBeVisible();
       await expect(page.getByText(/Crear iniciativa y continuar/i)).toHaveCount(0);
       await expect(page.getByText(/\bProject\b/i)).toHaveCount(0);
