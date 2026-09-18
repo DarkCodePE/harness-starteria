@@ -265,7 +265,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
       const recommendedApproach = page.locator('section').filter({
-        has: page.getByText(/Así abordaría tu situación/i),
+        has: page.getByRole('heading', { name: /Qué haría Starteria primero/i }),
       });
       await expect(recommendedApproach.getByText('Propuesta de Starteria', { exact: true })).toBeVisible();
       await expect(page.getByText(/Crear iniciativa y continuar/i)).toHaveCount(0);
