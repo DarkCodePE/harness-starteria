@@ -14,6 +14,28 @@ Este repositorio es actualmente mixto: conserva harness/documentacion publica y 
 
 El codigo presente en el arbol no redefine Starteria ni autoriza incorporacion productiva por si solo. La evolucion frontend puede ocurrir solo con decision explicita de slice, autoridad leida, alcance documentado y reporte. Backend, Prisma, IA productiva, Core y cambios de semantica de producto requieren autorizacion especifica adicional.
 
+## Manifest operativo V2
+
+La reconciliación Starteria V2 utiliza como índice operativo:
+
+`../STARTERIA_V2_MANIFEST.md`
+
+El Manifest NO reemplaza:
+
+- Core;
+- ADRs;
+- Experience Contracts;
+- Agent Contracts;
+- Skill Contracts.
+
+Su función es declarar qué versión y estado corresponde actualmente a cada slice y distinguir:
+
+```text
+logic status
+implementation status
+visual status
+evidence status
+
 ## 2. Jerarquia de autoridad
 
 Cuando dos fuentes entren en conflicto, aplicar este orden:

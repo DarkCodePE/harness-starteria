@@ -12,6 +12,40 @@ No debe leerse como runtime productivo certificado por defecto. La presencia de 
 
 La autoridad actual permite cambios frontend de producto solo cuando exista decision explicita y documentada de slice, con alcance acotado y sin modificar Core, AI, permisos, esquemas, rutas ni semantica de producto salvo autorizacion especifica. DS-05 y DS-06 son evidencia documental de pilotos frontend autorizados por slice.
 
+## Starteria V2 — baseline de reconciliación
+
+Starteria se encuentra actualmente en proceso explícito de consolidación hacia V2.
+
+El índice operativo de esta migración es:
+
+`STARTERIA_V2_MANIFEST.md`
+
+El Manifest separa para cada slice:
+
+- `logic_status`;
+- `implementation_status`;
+- `visual_status`;
+- `evidence_status`.
+
+La presencia de código legacy no implica que dicho comportamiento siga siendo autoridad de producto.
+
+### Política V2-only
+
+A partir de esta consolidación:
+
+```text
+V1 ACTIVE PRODUCT
+→ en retirada progresiva
+
+V1 AUTHORITY
+→ no permitida para comportamiento nuevo
+
+V1 INFRASTRUCTURE
+→ reutilizable únicamente cuando sea compatible con V2
+
+V1 LEGACY
+→ debe clasificarse, aislarse y retirarse por slice
+
 ## E2E
 
 El E2E de producto fue originalmente validado en un checkout productivo/autorizado. Este repositorio ahora conserva harness, estado documental y una superficie ejecutable de tests/E2E bajo `front/`.

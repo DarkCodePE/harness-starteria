@@ -1,0 +1,605 @@
+# STARTERIA_V2_MANIFEST
+
+**Versión:** v0.1  
+**Estado:** Baseline de consolidación propuesto para reconciliación  
+**Fecha:** 2026-09-18  
+**Propósito:** establecer una única lectura verificable de Starteria V2 separando autoridad de producto, experiencia, IA, diseño, implementación y evidencia.
+
+---
+
+# 1. Regla principal
+
+Starteria V2 no se define por un número de versión aislado ni por el archivo más reciente.
+
+La baseline vigente se determina por:
+
+```text
+AUTORIDAD
++ ESTADO DEL ARTEFACTO
++ IMPLEMENTACIÓN REAL
++ TESTS / EVIDENCIA
++ MIGRACIÓN VISUAL
+```
+
+Nunca asumir:
+
+```text
+archivo más nuevo = autoridad
+código existente = decisión aprobada
+implementado = V2 visual
+hallazgo = solución validada
+documento presente = baseline activo
+```
+
+---
+
+# 2. Taxonomía de estados V2
+
+## Logic status
+
+```text
+STABLE_INVARIANT
+ACTIVE_V2_BASELINE
+SUPPORTED_FINDING
+TESTABLE_HYPOTHESIS
+CANDIDATE
+SUPERSEDED
+HISTORICAL
+UNKNOWN
+```
+
+## Implementation status
+
+```text
+NOT_IMPLEMENTED
+EXPERIMENTAL_IMPLEMENTATION
+PARTIAL_IMPLEMENTATION
+IMPLEMENTED_UNVERIFIED
+IMPLEMENTED_VERIFIED
+PRODUCTIVE
+UNKNOWN
+```
+
+## Visual status
+
+```text
+V2_MIGRATED
+V2_PILOT
+V2_TARGET_DEFINED
+V2_TARGET_UNRESOLVED
+V1_LEGACY
+MIXED
+NOT_APPLICABLE
+UNKNOWN
+```
+
+## Evidence status
+
+```text
+NO_EVIDENCE
+OBSERVED
+SUPPORTED
+TESTING
+VERIFIED
+CONTRADICTED
+UNKNOWN
+```
+
+---
+
+# 3. Jerarquía de autoridad objetivo
+
+```text
+STARTERIA_AUTHORITY
+        ↓
+CORE LOGIC CONTRACT
+        ↓
+APPROVED ADRs
+        ↓
+EXPERIENCE LOGIC CONTRACTS
+        ↓
+EXPERIENCE / ORCHESTRATION SUBCONTRACTS
+        ↓
+AGENT CONTRACTS
+        ↓
+SKILL CONTRACTS
+        ↓
+TECH SPECS
+        ↓
+SCHEMAS + TESTS + HARNESS
+        ↓
+IMPLEMENTATION
+```
+
+El Design System no redefine esta jerarquía funcional.
+
+Su relación es:
+
+```text
+EXPERIENCE CONTRACT
+        +
+DESIGN SYSTEM V2
+        ↓
+IMPLEMENTATION SPEC
+        ↓
+SCREEN / FRONTEND
+```
+
+---
+
+# 4. Referencias transversales
+
+## Crazy 8s E2E
+
+`STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
+
+- north star E2E;
+- protege orientación Portfolio Lead;
+- conecta intención → iniciativas → evidencia → decisión;
+- Steps no es puerta de entrada automática del Portfolio Lead.
+
+## Design System V2
+
+`STARTERIA_DESIGN_SYSTEM_V2_RESTRUCTURE_BASELINE.md`
+
+Clasificación:
+
+```text
+logic_status: ACTIVE_V2_BASELINE
+implementation_status: PARTIAL_IMPLEMENTATION
+visual_status: V2_TARGET_DEFINED
+evidence_status: SUPPORTED
+```
+
+Gobierna foundations, semantic states, primitives, patterns y semántica visual AI/Human. No contiene autoridad de negocio.
+
+## Landing V4
+
+`STARTERIA_LANDING_V4_IMPLEMENTATION_SPEC.md`
+
+Clasificación:
+
+```text
+logic_status: ACTIVE_V2_BASELINE (visual/experience implementation)
+implementation_status: VERIFY_IN_REPO
+visual_status: V2_TARGET_DEFINED
+evidence_status: SUPPORTED
+```
+
+Representa y activa Portfolio Entry, pero no redefine su lógica.
+
+## Step Design System Standby Audit
+
+`STARTERIA_STEP_DESIGN_SYSTEM_STANDBY_AUDIT_PROMPT.md`
+
+Clasificación:
+
+```text
+logic_status: HISTORICAL / EXECUTION_AID
+implementation_status: NOT_APPLICABLE
+visual_status: NOT_APPLICABLE
+evidence_status: SUPPORTED_BOUNDARY_REFERENCE
+```
+
+Sirve para auditar el boundary de migración y no es contrato funcional.
+
+---
+
+# 5. Portfolio Entry — baseline V2 consolidada
+
+```text
+STARTERIA_CORE_LOGIC_CONTRACT
+        ↓
+Approved ADRs
+        ↓
+PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1
+        ↓
+PORTFOLIO_ENTRY_CLARIFICATION_HANDOFF_CONTRACT_v0.2.1
+        ↓
+PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.2
+        ↓
+entry-01-intent-detection v0.2
+entry-02-context-extraction v0.2
+entry-03-reverse-alignment v0.2
+entry-04-question-planner v0.2
+        ↓
+PORTFOLIO_ENTRY_AI_HARNESS_v0.2
+        ↓
+PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.2
+```
+
+Evidence, not authority:
+
+```text
+PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2
+```
+
+## Supported findings to preserve
+
+- FND-001: `portfolio_governance ≠ initiative_governance`.
+- FND-002: preserve `initial_entry_state`, allow `current_frame` to evolve.
+- FND-003: preserve `operating_context` and `existing ≠ desired`.
+- FND-004: support `success_conditions` and `quality_guardrails` when material.
+- FND-005: support late reverse alignment.
+- FND-006: session governance is needed above Question Planner.
+- FND-007: handoff must show Starteria-specific value.
+- FND-008: Portfolio Entry identifies what needs clarification/evidence but must not design detailed Step experiments.
+- FND-009: keep `USER_DECLARED`, `EXTRACTED_FROM_USER_TEXT`, `AI_INFERRED`, `AI_SUGGESTED` separate.
+
+## Active hypotheses — not validated rules yet
+
+```text
+HYP-001 Quick Clarification + Guided Exploration
+HYP-002 Recommended Approach + Alternatives
+HYP-003 GapResolutionMap
+HYP-004 Program / accelerator support experience
+```
+
+---
+
+# 6. V2 E2E slice map
+
+| Slice | Logic status | Implementation status | Visual status | Evidence status | Treatment |
+|---|---|---|---|---|---|
+| Authority / Governance | ACTIVE_V2_BASELINE but stale index | IMPLEMENTED | NOT_APPLICABLE | SUPPORTED | UPDATE |
+| Core | CANDIDATE v0.3 | PARTIAL / PRODUCTIVE dependencies | NOT_APPLICABLE | REQUIRES_RETEST | KEEP + DECIDE |
+| Crazy 8s E2E | ACTIVE_V2_BASELINE / reference | NOT_APPLICABLE | NOT_APPLICABLE | SUPPORTED | KEEP |
+| Landing V4 | ACTIVE_V2_BASELINE visual spec | VERIFY_IN_REPO | V2_TARGET_DEFINED | SUPPORTED | RECONCILE |
+| Portfolio Entry logic | ACTIVE_V2_BASELINE | PARTIAL_IMPLEMENTATION | V2_PILOT / VERIFY | SUPPORTED | PROMOTE STACK |
+| Clarification | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
+| Handoff | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
+| Registration / continuation | CANDIDATE | PARTIAL_IMPLEMENTATION | MIXED | UNKNOWN | AUDIT |
+| Portfolio Bootstrap | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED / VERIFY | VERIFIED reported | RECONCILE |
+| Portfolio Home | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED DS-06 | VERIFIED reported | RECONCILE |
+| Strategic Front | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
+| Challenge | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
+| Activation / Invitation | TARGET CONTRACT | PARTIAL / PILOT | V2_PILOT DS-08 | SUPPORTED | VERIFY |
+| Initiative Overview | CANDIDATE / unresolved | EXISTING LEGACY RUNTIME | V2_TARGET_UNRESOLVED | UNKNOWN | AUDIT FIRST |
+| Step 0 | STABLE CORE FUNCTION | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
+| Step 1 | STABLE CORE FUNCTION | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
+| Step 2 | STABLE CORE FUNCTION / candidate refinements | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
+| Step 3 | STABLE CORE FUNCTION | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
+| Step 4 | STABLE CORE FUNCTION | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
+| Step Workspace V2 | TESTABLE_HYPOTHESIS | NOT_IMPLEMENTED | V2_TARGET_UNRESOLVED | NO_EVIDENCE | EXPLORE |
+| Harness V2 | ACTIVE TEST BASELINE candidate | VERIFY_REAL_TREE | NOT_APPLICABLE | TESTING | RECONCILE |
+| Findings | SUPPORTED_FINDING + hypotheses | NOT_APPLICABLE | NOT_APPLICABLE | SUPPORTED | KEEP / INDEX |
+| Design System | ACTIVE_V2_BASELINE | PARTIAL_IMPLEMENTATION | V2_MIGRATED THROUGH DS-08 BOUNDARY | SUPPORTED | PROMOTE / INDEX |
+
+---
+
+# 7. Visual migration boundary
+
+```text
+Landing / Portfolio Entry
+        ↓
+Handoff
+        ↓
+Portfolio Home
+        ↓
+Strategic Front
+        ↓
+Challenge
+        ↓
+Activation / Invitation
+        ↓
+==============================
+CURRENT V2 VISUAL BOUNDARY
+==============================
+        ↓
+Initiative Overview
+        ↓
+Step 0
+        ↓
+Step 1
+        ↓
+Step 2
+        ↓
+Step 3
+        ↓
+Step 4
+```
+
+Interpretation:
+
+```text
+ABOVE BOUNDARY
+= V2 visual direction exists and has been migrated/piloted to varying degrees
+
+BELOW BOUNDARY
+= runtime/domain may exist
+= UI is not V2 visual authority
+= target workspace architecture is exploratory
+```
+
+---
+
+# 8. Step platform rule
+
+Until the Step audit is completed:
+
+```text
+CORE LOGIC = preserve
+DOMAIN LOGIC = inspect before changes
+LEGACY UI = not visual authority
+STEP WORKSPACE CONCEPT = hypothesis
+DESIGN SYSTEM = available building blocks
+```
+
+Working principle only:
+
+```text
+conversation for work
+structure for memory
+```
+
+`Step/Nav | Workspace | Copilot` is a conceptual target, not frozen architecture.
+
+---
+
+# 9. Version cleanup rules
+
+## PROMOTE / INDEX
+
+- `STARTERIA_DESIGN_SYSTEM_V2_RESTRUCTURE_BASELINE.md`
+- `STARTERIA_LANDING_V4_IMPLEMENTATION_SPEC.md`
+- `PORTFOLIO_ENTRY_CLARIFICATION_HANDOFF_CONTRACT_v0.2.1.md`
+- `PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.2.md`
+- canonical Skill 01 v0.2
+- canonical Skill 02 v0.2
+- canonical Skill 03 v0.2
+- canonical Skill 04 v0.2
+- `PORTFOLIO_ENTRY_AI_HARNESS_v0.2.md`
+- `PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.2.md`
+- `PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2.md`
+
+## KEEP
+
+- `STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
+- `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- Core candidate pending explicit decision
+- relevant approved ADRs
+- implementation reports as evidence
+
+## SUPERSEDE / HISTORICAL
+
+- Agent v0.1
+- Skills v0.1 after canonical v0.2 promotion
+- Clarification/Handoff v0.2 after v0.2.1 installation
+- Harness v0.1 as regression/history
+- Findings v0.1 after v0.2 installation
+- obsolete public Initiative-first PRDs as authority
+
+Do not delete historical documents. Add status banners and replacement links.
+
+---
+
+# 10. Non-authority artefacts
+
+These may be evidence/reference/execution aids only:
+
+```text
+audit prompts
+Codex prompts
+current-state audits
+implementation reports
+mockups
+old PRDs
+code behavior
+test output
+```
+
+---
+
+# 11. V2 change governance
+
+## Experimental UX change
+
+```text
+hypothesis
+→ experiment
+→ evidence
+→ supported/rejected
+→ update baseline if supported
+```
+
+## Contract change
+
+```text
+supported finding
+→ version contract
+→ tests
+→ implementation
+→ manifest update
+```
+
+## Structural/Core change
+
+```text
+new evidence
+→ ADR
+→ Core decision
+→ subordinate contracts
+→ implementation
+```
+
+---
+
+# 12. Definition of consolidated V2
+
+Starteria V2 is reconciled when:
+
+- one active authority tree is documented;
+- every active document has one canonical repo path;
+- no v0.1 file is silently consumed when a promoted v0.2 exists;
+- findings and hypotheses are separated;
+- implementation does not grant authority;
+- visual migration state is explicit;
+- Portfolio Lead remains the initial corporate user orientation;
+- Initiative Owner begins only after the appropriate handoff;
+- Landing V4 represents Portfolio Entry without redefining it;
+- Design System is canonical through the Portfolio/Activation boundary;
+- Initiative Overview / Steps are not falsely labeled V2;
+- every active slice links authority → implementation → tests/evidence;
+- legacy removal is dependency-driven, not name-driven.
+
+---
+
+# 13. Execution checklist
+
+## Phase 0 — Freeze and snapshot
+
+- [ ] Freeze new product feature work temporarily.
+- [ ] Record product repo, harness repo, default branches and current commit SHAs.
+- [ ] List open PRs touching contracts, Portfolio, DS or Steps.
+- [ ] Confirm no unmerged branch contains the only copy of candidate authority docs.
+
+## Phase 1 — Document reconciliation
+
+- [ ] Verify `STARTERIA_AUTHORITY.md`.
+- [ ] Verify Core version/status.
+- [ ] Verify approved ADR index.
+- [ ] Verify Crazy 8s canonical path.
+- [ ] Install/index Portfolio Entry v0.2 stack.
+- [ ] Select exactly one canonical Skill 04 v0.2.
+- [ ] Install/index Findings v0.2.
+- [ ] Install/index Harness v0.2 + Execution Spec v0.2.
+- [ ] Install/index Design System V2 Baseline.
+- [ ] Install/index Landing V4 Implementation Spec.
+- [ ] Index Step DS Standby Audit Prompt as execution aid only.
+- [ ] Mark superseded documents with explicit banners.
+- [ ] Do not delete historical versions.
+
+## Phase 2 — Authority index
+
+- [ ] Create/update `STARTERIA_V2_MANIFEST.md`.
+- [ ] Add canonical path for every active document.
+- [ ] Add `logic_status`.
+- [ ] Add `implementation_status`.
+- [ ] Add `visual_status`.
+- [ ] Add `evidence_status`.
+- [ ] Add supersedes/superseded_by links.
+- [ ] Add affected slice.
+- [ ] Add linked findings/hypotheses.
+- [ ] Update `STARTERIA_AUTHORITY.md` only after canonical paths exist.
+
+## Phase 3 — Product/runtime truth reconciliation
+
+- [ ] Audit Landing `/`.
+- [ ] Audit `/public/start`.
+- [ ] Compare Landing V4 vs current implementation.
+- [ ] Compare Portfolio Entry contracts vs runtime.
+- [ ] Verify provisional vs canonical persistence.
+- [ ] Verify registration/continuation behavior.
+- [ ] Verify Portfolio Bootstrap implementation reports against code.
+- [ ] Verify Portfolio Home reports against code.
+- [ ] Verify Strategic Front / Challenge runtime against contracts.
+- [ ] Verify Activation / Invitation against handoff contract.
+- [ ] Classify every mismatch: KEEP / ADAPT / CONSOLIDATE / DEPRECATE / REMOVE / UNKNOWN.
+
+## Phase 4 — Design System reconciliation
+
+- [ ] Verify DS-01 Foundations.
+- [ ] Verify DS-02 Primitives.
+- [ ] Verify DS-03 AI/Human/Review patterns.
+- [ ] Verify DS-04 Page patterns.
+- [ ] Verify DS-05 Portfolio Entry/Handoff consumers.
+- [ ] Verify DS-06 Portfolio Home consumers.
+- [ ] Verify DS-07 Strategic Front/Challenge consumers.
+- [ ] Verify DS-08 Activation/Invitation consumers.
+- [ ] Identify duplicate primitives/patterns.
+- [ ] Mark actual visual state per route.
+- [ ] Confirm Initiative Overview and Steps are outside migrated V2 boundary.
+
+## Phase 5 — Harness and evidence reconciliation
+
+- [ ] Verify actual Harness v0.2 code exists where indexes claim.
+- [ ] Verify fixtures version.
+- [ ] Verify session controller.
+- [ ] Verify late reverse alignment tests.
+- [ ] Verify `initial_entry_state` preservation.
+- [ ] Verify `portfolio_governance`.
+- [ ] Verify `operating_context`.
+- [ ] Verify provenance separation.
+- [ ] Verify Step boundary.
+- [ ] Run Contract Conformance separately from Hypothesis Validation.
+- [ ] Do not mark HYP-001..004 supported without new evidence.
+
+## Phase 6 — Portfolio Lead E2E check
+
+- [ ] Landing starts from business/portfolio reality.
+- [ ] Portfolio Entry does not drift to Initiative Owner.
+- [ ] `solution_first` triggers reverse alignment, not Step activation.
+- [ ] Handoff can lead to portfolio work, governance, alignment, import or initiative analysis.
+- [ ] Registration does not silently force `create Initiative → Step 0`.
+- [ ] Portfolio Home answers “what needs attention?”.
+- [ ] Portfolio → Initiative activation has an explicit boundary.
+- [ ] Initiative Owner starts only after invitation/acceptance/handoff where applicable.
+
+## Phase 7 — Step Platform truth audit
+
+- [ ] Run `STARTERIA_STEP_DESIGN_SYSTEM_STANDBY_AUDIT_PROMPT.md`.
+- [ ] Produce `STARTERIA_STEP_PLATFORM_V2_CURRENT_STATE_TRUTH_MAP.md`.
+- [ ] Map routes.
+- [ ] Map domain actions.
+- [ ] Map persistence.
+- [ ] Map Step gating.
+- [ ] Map evidence/reviews.
+- [ ] Map AI/Copilot.
+- [ ] Map files/MCP if present.
+- [ ] Map invitation/pre-start/overview.
+- [ ] Identify legacy UI vs reusable domain logic.
+- [ ] Do not redesign yet.
+
+## Phase 8 — Step V2 exploration
+
+- [ ] Compare Guided Workspace.
+- [ ] Compare Conversation-First Workspace.
+- [ ] Compare Hybrid Workspace.
+- [ ] Evaluate structured memory.
+- [ ] Evaluate evidence capture.
+- [ ] Evaluate Copilot usefulness.
+- [ ] Evaluate enterprise traceability.
+- [ ] Evaluate implementation complexity.
+- [ ] Produce DS gap analysis.
+- [ ] Human selects target architecture.
+- [ ] Only then create Step Experience Contract.
+
+## Phase 9 — Cleanup plan
+
+- [ ] Classify legacy as SAFE_NOW.
+- [ ] AFTER_ADAPTER.
+- [ ] AFTER_ROUTE_MIGRATION.
+- [ ] AFTER_DB_MIGRATION.
+- [ ] KEEP_FOR_COMPATIBILITY.
+- [ ] DO_NOT_TOUCH.
+- [ ] Remove only after consumer/test evidence.
+- [ ] Avoid big-bang deletion.
+
+## Phase 10 — Implementation readiness gate
+
+Do not resume feature implementation until:
+
+- [ ] Authority tree is canonical.
+- [ ] Manifest is current.
+- [ ] Product/runtime truth map is current.
+- [ ] Design System boundary is verified.
+- [ ] Harness baseline is verified.
+- [ ] Findings vs hypotheses are separated.
+- [ ] No unresolved authority conflict affects the next slice.
+- [ ] Next implementation slice has a named authority source.
+- [ ] Acceptance tests are defined before implementation.
+
+---
+
+# 14. Recommended implementation sequence after reconciliation
+
+```text
+1. reconcile Landing V4
+2. reconcile Portfolio Entry V2 runtime
+3. reconcile Handoff / registration continuation
+4. validate Bootstrap / Portfolio Home
+5. validate Activation / Invitation
+6. only then decide Initiative Overview / Step Workspace V2
+```
+
+This preserves the Portfolio Lead journey and prevents Initiative Owner drift.

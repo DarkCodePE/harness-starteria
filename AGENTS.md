@@ -1,4 +1,4 @@
-# AGENTS.md
+git  AGENTS.md
 
 Entrada neutral para Codex y otros agentes que trabajen sobre este repositorio.
 
@@ -73,13 +73,57 @@ Si el reemplazo vigente no existe, indicarlo de forma explicita en el banner.
 
 ## Antes de modificar
 
-1. Leer `CURRENT_STATE.md`.
-2. Leer `docs/STARTERIA_AUTHORITY.md`.
-3. Leer el contrato afectado y verificar su estado.
-4. Identificar si el cambio es documental o productivo.
-5. Si es productivo, detenerse salvo que exista decision explicita.
-6. Revisar secretos/datos sensibles antes de preparar commit porque el repositorio es publico.
+Todo cambio de Starteria debe comenzar leyendo, en este orden:
 
+1. `CURRENT_STATE.md`.
+2. `STARTERIA_V2_MANIFEST.md`.
+3. `docs/STARTERIA_AUTHORITY.md`.
+4. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
+5. ADRs de producto aprobados relevantes.
+6. Experience Contract del slice afectado.
+7. Agent / Skill Contracts aplicables.
+8. Tech Spec aplicable, si existe.
+9. `docs/design-system/STARTERIA_DESIGN_SYSTEM_V2_RESTRUCTURE_BASELINE.md` si el cambio afecta frontend o experiencia visual.
+10. `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`.
+11. `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
+12. Implementación actual y tests existentes.
+
+### Regla V2-only
+
+Todo desarrollo nuevo debe corresponder a un slice registrado en `STARTERIA_V2_MANIFEST.md`.
+
+Un artefacto marcado como:
+
+- `HISTORICAL`
+- `SUPERSEDED`
+- `DEPRECATED`
+- `V1_LEGACY`
+
+no puede utilizarse para definir comportamiento nuevo.
+
+Puede consultarse únicamente para:
+
+- dependencias de migración;
+- compatibilidad;
+- infraestructura reusable;
+- comprensión de regresiones;
+- trazabilidad histórica.
+
+La infraestructura V1 puede reutilizarse cuando corresponda.
+
+La semántica V1 no puede recuperar autoridad por el hecho de estar implementada.
+
+Antes de reutilizar código legacy debe clasificarse:
+
+```text
+SEMANTIC_OWNER:
+V2
+LEGACY_COMPAT
+UNKNOWN
+
+MAY_DEFINE_NEW_BEHAVIOR:
+YES
+NO
 ## Protocolo de conflicto
 
 Si una fuente contradice una autoridad superior, reportar:
@@ -97,3 +141,36 @@ Requires ADR: yes/no
 ```
 
 No resolver conflictos de producto de forma silenciosa.
+## Starteria V2 — baseline de reconciliación
+
+Starteria se encuentra actualmente en proceso explícito de consolidación hacia V2.
+
+El índice operativo de esta migración es:
+
+`STARTERIA_V2_MANIFEST.md`
+
+El Manifest separa para cada slice:
+
+- `logic_status`;
+- `implementation_status`;
+- `visual_status`;
+- `evidence_status`.
+
+La presencia de código legacy no implica que dicho comportamiento siga siendo autoridad de producto.
+
+### Política V2-only
+
+A partir de esta consolidación:
+
+```text
+V1 ACTIVE PRODUCT
+→ en retirada progresiva
+
+V1 AUTHORITY
+→ no permitida para comportamiento nuevo
+
+V1 INFRASTRUCTURE
+→ reutilizable únicamente cuando sea compatible con V2
+
+V1 LEGACY
+→ debe clasificarse, aislarse y retirarse por slice
