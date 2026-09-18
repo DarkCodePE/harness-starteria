@@ -159,6 +159,35 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 - `docs/agents/portfolio-entry/skills/entry-01-intent-detection/SKILL.md` a `entry-04-question-planner/SKILL.md` - propuestos
 - `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md` - harness propuesto/ejecutable segun su propio estado
 
+#### Candidate reconciliation stack
+
+The following Portfolio Entry documents are installed in the repository as a candidate reconciliation stack:
+
+- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_CLARIFICATION_HANDOFF_CONTRACT_v0.2.1.md`
+- `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.2.md`
+- `docs/agents/portfolio-entry/skills/entry-01-intent-detection/SKILL_v0.2.md`
+- `docs/agents/portfolio-entry/skills/entry-02-context-extraction/SKILL_v0.2.md`
+- `docs/agents/portfolio-entry/skills/entry-03-reverse-alignment/SKILL_v0.2.md`
+- `docs/agents/portfolio-entry/skills/entry-04-question-planner/SKILL_v0.2.md`
+- `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_AI_HARNESS_v0.2.md`
+- `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.2.md`
+
+Evidence:
+
+- `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2.md`
+
+This stack is present for reconciliation and validation.
+
+Its presence does NOT automatically supersede:
+
+- `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`;
+- current v0.1 Agent/Skill/Harness documents;
+- any approved Experience Contract.
+
+Promotion to active authority requires repository validation and an explicit authority update.
+
+`PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2.md` is evidence and does not define product authority.
+
 Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El Experience Contract v0.1 sigue siendo el contrato activo aprobado para Pantalla 1. Los documentos Agent/Skill conservan su estado propio hasta ratificacion explicita.
 
 ### Portfolio Lead / Activation-Handoff
