@@ -1,13 +1,25 @@
-# Manual first release. Re-enable a main push trigger only after a successful,
-# reviewed production release and confirmation of database compatibility.
+# CD: automatic on merge to main, on a vX.Y.Z tag push, and manual for
+# redeploy/rollback. The only thing between a merge and production is the human
+# approval gate on the `production` environment in the `deploy` job.
+# Do not remove `environment: production`: without required reviewers there, it
+# is a label, not a gate.
 name: CD
 
 on:
+  push:
+    branches: [main]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
   workflow_dispatch:
     inputs:
       source_sha:
-        description: 'Full product commit SHA to deploy; must be an ancestor of main'
-        required: true
+        description: 'Full 40-hex commit SHA to deploy (rollback/redeploy). Empty = tip of the selected ref.'
+        required: false
+        default: ''
+        type: string
+      reason:
+        description: 'Why this manual run (shown in the run summary)'
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -23,13 +35,101 @@ env:
   ROLLOUT_TIMEOUT: 360s
 
 jobs:
+  # Single source of truth for "which commit ships, under which tag".
+  # Runs once, before the CI gate and before three parallel builds, so a
+  # malformed target fails in seconds instead of after the whole suite.
+  resolve:
+    name: Resolve release target
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      tag: ${{ steps.target.outputs.tag }}
+      channel: ${{ steps.target.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve and verify release target
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_SHA: ${{ github.sha }}
+          INPUT_SHA: ${{ inputs.source_sha }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          semver='^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+          # Replaces the old `$GITHUB_REF == refs/heads/main` check, which broke
+          # on tag pushes. Still a closed allowlist, now enumerating every
+          # supported entry point instead of just one.
+          case "$EVENT_NAME:$REF" in
+            push:refs/heads/main)
+              channel=auto ;;
+            push:refs/tags/*)
+              channel=release ;;
+            workflow_dispatch:refs/heads/main|workflow_dispatch:refs/tags/*)
+              channel=manual ;;
+            *)
+              echo "::error::CD accepts only: push to main, push of a vX.Y.Z tag, or a manual dispatch from main or such a tag (got $EVENT_NAME on $REF)"
+              exit 1 ;;
+          esac
+
+          # The `on:` glob is laxer than it looks; validate the tag name for real.
+          if [[ "$REF" == refs/tags/* ]]; then
+            [[ "$REF_NAME" =~ $semver ]] || { echo "::error::Tag $REF_NAME is not vMAJOR.MINOR.PATCH"; exit 1; }
+          fi
+
+          # One resolution rule for all three events: on push events the `inputs`
+          # context renders empty, so no per-event branching is needed.
+          sha="${INPUT_SHA:-$HEAD_SHA}"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Resolved commit must be a full 40-character lowercase SHA'; exit 1; }
+
+          # Anchored on origin/main rather than the event's own HEAD, where the
+          # check was a tautology. This now rejects a tag cut on a branch that
+          # was never merged to main.
+          git fetch --no-tags --quiet origin +refs/heads/main:refs/remotes/origin/main
+          git cat-file -e "${sha}^{commit}" 2>/dev/null \
+            || { echo "::error::Commit $sha is not in this repository's history"; exit 1; }
+          git merge-base --is-ancestor "$sha" origin/main \
+            || { echo "::error::Commit $sha is not reachable from origin/main; refusing to deploy"; exit 1; }
+
+          # One tag rule: a semver tag ships under its own name unless the
+          # operator overrode the SHA; everything else ships as main-<7sha>.
+          if [[ "$REF" == refs/tags/* && -z "${INPUT_SHA:-}" ]]; then
+            tag="$REF_NAME"
+          else
+            tag="main-${sha:0:7}"
+          fi
+
+          {
+            echo "sha=$sha"
+            echo "tag=$tag"
+            echo "channel=$channel"
+          } >> "$GITHUB_OUTPUT"
+
+          # Written here on purpose: `resolve` finishes before the `production`
+          # approval request is raised, so whoever approves can read exactly
+          # which commit and tag they are approving.
+          {
+            printf '## CD target\n\n'
+            printf -- '- Trigger: `%s` on `%s` (channel `%s`)\n' "$EVENT_NAME" "$REF" "$channel"
+            printf -- '- Commit: `%s`\n' "$sha"
+            printf -- '- Image tag: `%s`\n' "$tag"
+            if [[ -n "${REASON:-}" ]]; then printf -- '- Reason: %s\n' "$REASON"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   tests:
     name: CI gate
+    needs: resolve
     uses: ./.github/workflows/ci.yml
 
   build-and-push:
     name: Build and push ${{ matrix.service }}
-    needs: tests
+    needs: [tests, resolve]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -48,23 +148,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Verify selected product commit
-        env:
-          SOURCE_SHA: ${{ inputs.source_sha }}
-        run: |
-          set -euo pipefail
-          [[ "$GITHUB_REF" == refs/heads/main ]] || { echo '::error::Run CD from main only'; exit 1; }
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Enter a full 40-character lowercase SHA'; exit 1; }
-          git merge-base --is-ancestor "$SOURCE_SHA" HEAD || { echo '::error::Source commit is not on main history'; exit 1; }
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.source_sha }}
-      - name: Resolve commit tag
-        id: release
-        env:
-          SOURCE_SHA: ${{ inputs.source_sha }}
-        run: echo "tag=main-${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          ref: ${{ needs.resolve.outputs.sha }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -81,23 +165,22 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           build-args: |
             VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          tags: ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:${{ steps.release.outputs.tag }}
+          tags: ${{ env.DOCKERHUB_NAMESPACE }}/starteria-${{ matrix.service }}:${{ needs.resolve.outputs.tag }}
 
   deploy:
     name: Deploy to Rackspace Spot
-    needs: build-and-push
+    # `resolve` is listed explicitly: needs.<job>.outputs is NOT inherited
+    # transitively through build-and-push.
+    needs: [build-and-push, resolve]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # The human approval gate lives here, via required reviewers on this
+    # environment. It is the only thing between a merge and production.
     environment: production
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
-      - name: Resolve commit tag
-        id: release
-        env:
-          SOURCE_SHA: ${{ inputs.source_sha }}
-        run: echo "tag=main-${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          ref: ${{ needs.resolve.outputs.sha }}
       - name: Check required credentials
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -141,9 +224,18 @@ jobs:
           DB_PASSWORD: ${{ secrets.STARTERIA_DB_PASSWORD }}
         run: |
           set -euo pipefail
-          kubectl -n "$NAMESPACE" get statefulset/starteria-db secret/cloudflared-token secret/starteria-db-secrets
-          live_password=$(kubectl -n "$NAMESPACE" get secret/starteria-db-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 --decode)
-          [[ "$live_password" == "$DB_PASSWORD" ]] || { echo '::error::GitHub database password differs from the live Kubernetes Secret; stop and resolve credential rotation separately'; exit 1; }
+          kubectl -n "$NAMESPACE" get statefulset/starteria-db secret/cloudflared-token
+          # The live password's source of truth is the StatefulSet's own env. It is an
+          # inline literal there, not secret/starteria-db-secrets, which does not exist
+          # in this cluster. Requiring that secret made the preflight fail before it
+          # could check anything. Read the secret when present, fall back to the
+          # StatefulSet literal otherwise.
+          live_password=$(kubectl -n "$NAMESPACE" get secret/starteria-db-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' 2>/dev/null | base64 --decode || true)
+          if [[ -z "$live_password" ]]; then
+            live_password=$(kubectl -n "$NAMESPACE" get statefulset/starteria-db -o "jsonpath={.spec.template.spec.containers[0].env[?(@.name=='POSTGRES_PASSWORD')].value}")
+          fi
+          [[ -n "$live_password" ]] || { echo '::error::Could not read the live database password from either the Secret or the StatefulSet'; exit 1; }
+          [[ "$live_password" == "$DB_PASSWORD" ]] || { echo '::error::GitHub database password differs from the live cluster; stop and resolve credential rotation separately'; exit 1; }
           for svc in backend frontend ai-service; do
             image=$(kubectl -n "$NAMESPACE" get "deployment/starteria-$svc" -o "jsonpath={.spec.template.spec.containers[?(@.name=='$svc')].image}")
             [[ -n "$image" ]] || { echo "::error::No live image for $svc"; exit 1; }
@@ -173,6 +265,9 @@ jobs:
             --from-literal=AI_SERVICE_TOKEN="$AI_SERVICE_TOKEN" --from-literal=AI_SERVICE_URL=http://starteria-ai-service:8001 \
             --from-literal=BRIDGE_SHARED_SECRET="$BRIDGE_SHARED_SECRET" \
             --from-literal=PORTFOLIO_ENTRY_API_KEY="$PORTFOLIO_ENTRY_API_KEY" \
+            --from-literal=PORTFOLIO_ENTRY_PROVIDER=openai_responses \
+            --from-literal=PORTFOLIO_ENTRY_MODEL=openai/gpt-5.6-luna \
+            --from-literal=PORTFOLIO_ENTRY_BASE_URL=https://openrouter.ai/api/v1 \
             --from-literal=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
             --from-literal=SMTP_HOST="${SMTP_HOST:-}" --from-literal=SMTP_USER="${SMTP_USER:-}" \
             --from-literal=SMTP_PASS="${SMTP_PASS:-}" --from-literal=PILOT_LEAD_NOTIFY_FROM="${PILOT_LEAD_NOTIFY_FROM:-}" \
@@ -184,16 +279,32 @@ jobs:
       - name: Apply manifests and set release images
         id: rollout
         env:
-          TAG: ${{ steps.release.outputs.tag }}
+          TAG: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
           # Use image-substituted manifests so apply never briefly rolls a service
           # back to the old hard-coded image or :latest placeholder.
-          kubectl -n "$NAMESPACE" apply -f k8s/postgres-statefulset.yaml -f k8s/postgres-service.yaml \
+          # The database is deliberately NOT applied here. k8s/postgres-statefulset.yaml
+          # declares POSTGRES_PASSWORD via secretKeyRef while the live StatefulSet
+          # carries it as an inline literal, so applying it changes the pod template
+          # and restarts production Postgres on every first-time run. An application
+          # deploy pipeline should not redeploy the database; manage the StatefulSet
+          # deliberately and out of band.
+          kubectl -n "$NAMESPACE" apply \
             -f k8s/backend-service.yaml -f k8s/frontend-service.yaml -f k8s/ai-service-service.yaml \
             -f k8s/cloudflared-service.yaml
           for svc in backend frontend ai-service; do
-            sed "s|image: orlandogtp/starteria-$svc:.*|image: ${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}|" "k8s/$svc-deployment.yaml" | kubectl -n "$NAMESPACE" apply -f -
+            manifest="k8s/$svc-deployment.yaml"
+            # Match any registry/namespace on the left. The old pattern hardcoded
+            # `orlandogtp` while the replacement used $DOCKERHUB_NAMESPACE, so
+            # changing the namespace made the substitution stop matching in
+            # silence: apply would ship the manifest's old image and `set image`
+            # would correct it a moment later, which is exactly the intermediate
+            # rollout the comment above says to avoid. Fail loudly instead.
+            substituted=$(sed -E "s|image: [^[:space:]]+/starteria-$svc:[^[:space:]]+|image: ${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}|" "$manifest")
+            printf '%s\n' "$substituted" | grep -q "image: ${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}" \
+              || { echo "::error::Image substitution did not match in $manifest; refusing to apply"; exit 1; }
+            printf '%s\n' "$substituted" | kubectl -n "$NAMESPACE" apply -f -
           done
           kubectl -n "$NAMESPACE" apply -f k8s/cloudflared-deployment.yaml
           for svc in backend frontend ai-service; do
@@ -219,11 +330,16 @@ jobs:
           exit "$failed"
       - name: Report release
         if: always()
+        # Every value goes through `env`. The previous version interpolated
+        # the source_sha input inside the script body, which is a minor
+        # expression-injection surface.
         env:
-          TAG: ${{ steps.release.outputs.tag }}
+          SOURCE_SHA: ${{ needs.resolve.outputs.sha }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          CHANNEL: ${{ needs.resolve.outputs.channel }}
           STATUS: ${{ steps.rollout.outcome }}
         run: |
-          printf '## Starteria CD\n\n- Source commit: `%s`\n- Image tag: `%s`\n- Docker Hub: `%s/starteria-{backend,frontend,ai-service}:%s`\n- Namespace: `%s`\n- Rollout: `%s`\n' "${{ inputs.source_sha }}" "$TAG" "$DOCKERHUB_NAMESPACE" "$TAG" "$NAMESPACE" "$STATUS" >> "$GITHUB_STEP_SUMMARY"
+          printf '## Starteria CD\n\n- Channel: `%s`\n- Source commit: `%s`\n- Image tag: `%s`\n- Docker Hub: `%s/starteria-{backend,frontend,ai-service}:%s`\n- Namespace: `%s`\n- Rollout: `%s`\n' "$CHANNEL" "$SOURCE_SHA" "$TAG" "$DOCKERHUB_NAMESPACE" "$TAG" "$NAMESPACE" "$STATUS" >> "$GITHUB_STEP_SUMMARY"
       - name: Remove kubeconfig
         if: always()
         run: rm -f "$RUNNER_TEMP/kube/config" "$RUNNER_TEMP/spot-response.json"
