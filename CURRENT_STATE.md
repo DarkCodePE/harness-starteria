@@ -14,9 +14,9 @@ La autoridad actual permite cambios frontend de producto solo cuando exista deci
 
 ## Starteria V2 — baseline de reconciliación
 
-Starteria se encuentra actualmente en proceso explícito de consolidación hacia V2.
+Starteria se encuentra actualmente en proceso explicito de consolidacion hacia V2.
 
-El índice operativo de esta migración es:
+El indice operativo de esta migracion es:
 
 `STARTERIA_V2_MANIFEST.md`
 
@@ -27,23 +27,11 @@ El Manifest separa para cada slice:
 - `visual_status`;
 - `evidence_status`.
 
+La presencia de codigo legacy no implica que dicho comportamiento siga siendo autoridad de producto.
 
-Y después añade:
+### Politica V2-only
 
-```md
-Cuando exista una discrepancia entre:
-
-```text
-documentación
-implementación
-tests
-visual migration
-
-La presencia de código legacy no implica que dicho comportamiento siga siendo autoridad de producto.
-
-### Política V2-only
-
-A partir de esta consolidación:
+A partir de esta consolidacion:
 
 ```text
 V1 ACTIVE PRODUCT
@@ -53,16 +41,13 @@ V1 AUTHORITY
 → no permitida para comportamiento nuevo
 
 V1 INFRASTRUCTURE
-→ reutilizable únicamente cuando sea compatible con V2
+→ reutilizable unicamente cuando sea compatible con V2
 
 V1 LEGACY
 → debe clasificarse, aislarse y retirarse por slice
+```
 
-
-Luego, antes de `## E2E`, añade lo que falta:
-
-```md
-Los documentos obligatorios para cualquier migración son:
+Los documentos obligatorios para cualquier migracion son:
 
 - `STARTERIA_V2_MANIFEST.md`;
 - `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`;
@@ -70,7 +55,7 @@ Los documentos obligatorios para cualquier migración son:
 
 No debe declararse un slice como `V2_MIGRATED` solo porque haya cambiado visualmente.
 
-La migración requiere:
+La migracion requiere:
 
 ```text
 V2 authority
@@ -80,6 +65,34 @@ V2 active behavior
 V2 tests
 +
 no undocumented V1 consumers
+```
+
+### Boundary visual actual
+
+La migracion visual V2 alcanzo conceptualmente:
+
+```text
+Portfolio Entry
+→ Handoff
+→ Portfolio Home
+→ Strategic Front / Challenge
+→ Activation / Invitation
+```
+
+La superficie:
+
+```text
+Initiative Overview
+→ Step 0
+→ Step 1
+→ Step 2
+→ Step 3
+→ Step 4
+```
+
+NO debe considerarse automaticamente V2.
+
+Su logica existente debe auditarse antes de cualquier rediseno o limpieza.
 
 ## E2E
 

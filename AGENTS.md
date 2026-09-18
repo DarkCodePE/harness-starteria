@@ -86,7 +86,7 @@ Todo cambio de Starteria debe comenzar leyendo, en este orden:
 9. `docs/design-system/STARTERIA_DESIGN_SYSTEM_V2_RESTRUCTURE_BASELINE.md` si el cambio afecta frontend o experiencia visual.
 10. `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`.
 11. `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
-12. Implementación actual y tests existentes.
+12. Implementacion actual y tests existentes.
 
 ### Regla V2-only
 
@@ -101,19 +101,19 @@ Un artefacto marcado como:
 
 no puede utilizarse para definir comportamiento nuevo.
 
-Puede consultarse únicamente para:
+Puede consultarse unicamente para:
 
-- dependencias de migración;
+- dependencias de migracion;
 - compatibilidad;
 - infraestructura reusable;
-- comprensión de regresiones;
-- trazabilidad histórica.
+- comprension de regresiones;
+- trazabilidad historica.
 
 La infraestructura V1 puede reutilizarse cuando corresponda.
 
-La semántica V1 no puede recuperar autoridad por el hecho de estar implementada.
+La semantica V1 no puede recuperar autoridad por el hecho de estar implementada.
 
-Antes de reutilizar código legacy debe clasificarse:
+Antes de reutilizar codigo legacy debe clasificarse:
 
 ```text
 SEMANTIC_OWNER:
@@ -124,19 +124,26 @@ UNKNOWN
 MAY_DEFINE_NEW_BEHAVIOR:
 YES
 NO
+```
 
-Es decir, debe quedar:
+`UNKNOWN` bloquea cambios funcionales hasta realizar auditoria.
 
-```md
+### Cambio productivo
+
+Antes de editar codigo productivo, producir el check definido en:
+
+`docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`
+
 ```text
-SEMANTIC_OWNER:
-V2
-LEGACY_COMPAT
-UNKNOWN
+V2_CHANGE_GUARDRAIL_CHECK
+```
 
-MAY_DEFINE_NEW_BEHAVIOR:
-YES
-NO
+y seguir el proceso de slice de:
+
+`docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
+
+Una migracion visual por si sola NO significa que el slice haya migrado a V2.
+
 ## Protocolo de conflicto
 
 Si una fuente contradice una autoridad superior, reportar:
@@ -154,36 +161,3 @@ Requires ADR: yes/no
 ```
 
 No resolver conflictos de producto de forma silenciosa.
-## Starteria V2 — baseline de reconciliación
-
-Starteria se encuentra actualmente en proceso explícito de consolidación hacia V2.
-
-El índice operativo de esta migración es:
-
-`STARTERIA_V2_MANIFEST.md`
-
-El Manifest separa para cada slice:
-
-- `logic_status`;
-- `implementation_status`;
-- `visual_status`;
-- `evidence_status`.
-
-La presencia de código legacy no implica que dicho comportamiento siga siendo autoridad de producto.
-
-### Política V2-only
-
-A partir de esta consolidación:
-
-```text
-V1 ACTIVE PRODUCT
-→ en retirada progresiva
-
-V1 AUTHORITY
-→ no permitida para comportamiento nuevo
-
-V1 INFRASTRUCTURE
-→ reutilizable únicamente cuando sea compatible con V2
-
-V1 LEGACY
-→ debe clasificarse, aislarse y retirarse por slice
