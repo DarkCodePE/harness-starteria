@@ -111,8 +111,10 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   - Este es el unico `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` que debe usarse como autoridad activa para Pantalla 1.
   - SHA-256 observado: `D34FDEA9A5E5BE843105DDC2A3CED4970144AE2596AC8BF5AB897A95B2A54E8A`.
 - Portfolio Post-Entry Continuation:
-  - `docs/experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md`.
-  - Estado: propuesto para revision, no implementado.
+  - El contrato propuesto de continuación no está presente en este checkout.
+  - Estado de implementación de esta slice: `IMPLEMENTED_UNVERIFIED` en
+    `feat/portfolio-entry-portfolio-access`; la regla de concesión de acceso procede
+    del requerimiento explícito de la slice y queda pendiente de validación E2E.
 
 ## ADRs
 

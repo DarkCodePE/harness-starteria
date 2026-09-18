@@ -294,7 +294,7 @@ HYP-004 Program / accelerator support experience
 | Portfolio Entry logic | ACTIVE_V2_BASELINE | PARTIAL_IMPLEMENTATION | V2_PILOT / VERIFY | SUPPORTED | PROMOTE STACK |
 | Clarification | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
 | Handoff | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
-| Registration / continuation | CANDIDATE | PARTIAL_IMPLEMENTATION | MIXED | UNKNOWN | AUDIT |
+| Registration / continuation | CANDIDATE | IMPLEMENTED_UNVERIFIED | MIXED | TESTING | VERIFY grant and full E2E |
 | Portfolio Bootstrap | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED / VERIFY | VERIFIED reported | RECONCILE |
 | Portfolio Home | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED DS-06 | VERIFIED reported | RECONCILE |
 | Strategic Front | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { authService } from '../../../app/services/auth.service';
 import {
   AlertCircle,
   ArrowRight,
@@ -1325,6 +1326,15 @@ export function PortfolioEntryExperience({
       });
       clearPortfolioEntryConversionState();
       trackPortfolioEntryEvent('portfolio_entry_overview_opened', { continuationId: result.continuationId });
+      // The continuation grants the capability in the database. Rotate the access
+      // token before entering Portfolio so the current request context sees it too.
+      // A full navigation also rehydrates AppContext with the newly granted roles;
+      // an SPA navigate would retain the pre-continuation participant permissions.
+      if (result.portfolioAccessGranted) {
+        await authService.refreshToken();
+        window.location.assign(result.destinationRoute);
+        return;
+      }
       navigate(result.destinationRoute);
     } catch (err) {
       const apiError = normalizePortfolioEntryApiError(err);

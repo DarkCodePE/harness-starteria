@@ -211,6 +211,7 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
     expect(first.body.data).toMatchObject({
       sessionId: seeded.sessionId,
       status: 'CONTINUED',
+      portfolioAccessGranted: true,
     });
     expect(first.body.data.continuationId).toBeTruthy();
     expect(first.body.data.destinationRoute).toBe(`/portfolio/inicio?portfolioEntryContinuationId=${encodeURIComponent(first.body.data.continuationId)}`);
@@ -275,7 +276,7 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
     expect(await canonicalCounts()).toEqual(before);
   });
 
-  it('rejects Portfolio continuation with stale handoff confirmation or missing Portfolio permission', async () => {
+  it('grants Portfolio capability to a participant only after valid continuation, and rejects stale confirmation', async () => {
     const app = makeApp();
     const unauthorized = await seedConfirmedClaimedSession({
       ownerUserId: ownerId,
@@ -283,14 +284,19 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
       profile: 'PORTFOLIO_LEAD_ENTRY',
     });
     const before = await canonicalCounts();
-
-    await request(app)
+    const granted = await request(app)
       .post(`${base}/sessions/${unauthorized.sessionId}/continue-portfolio`)
       .set('Authorization', `Bearer ${ownerId}`)
-      .set('Idempotency-Key', 'continue-without-permission')
+      .set('Idempotency-Key', 'continue-grants-portfolio-access')
       .send({ expectedRevision: unauthorized.revision })
-      .expect(403);
-    expect(await prisma.portfolioEntryPortfolioContinuation.count({ where: { sessionId: unauthorized.sessionId } })).toBe(0);
+      .expect(200);
+    expect(granted.body.data).toMatchObject({
+      sessionId: unauthorized.sessionId,
+      status: 'CONTINUED',
+      portfolioAccessGranted: true,
+    });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: ownerId }, select: { role: true, roles: true } }))
+      .toEqual({ role: 'participante', roles: ['participante', 'portfolio_lead'] });
 
     const stale = await seedConfirmedClaimedSession({
       ownerUserId: portfolioLeadId,

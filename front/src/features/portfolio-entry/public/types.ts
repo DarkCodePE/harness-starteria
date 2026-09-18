@@ -160,6 +160,7 @@ export type PortfolioEntryContinuationResult = {
   status: 'CONTINUED';
   destinationRoute: string;
   continuedAt: string;
+  portfolioAccessGranted: boolean;
   portfolioScope: {
     kind: 'platform_portfolio_permission';
     userId: string;

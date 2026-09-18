@@ -48,15 +48,56 @@ async function registerPortfolioUser(api: APIRequestContext) {
     data: { email, password, name: `E2E Portfolio Entry ${stamp}`, role: 'participante' },
     failOnStatusCode: false,
   });
-  expect([200, 201, 409], `register ${email}: ${await reg.text()}`).toContain(reg.status());
-  await prisma.user.update({
-    where: { email },
-    data: { role: 'portfolio_lead', roles: ['portfolio_lead'], isActive: true },
-  });
+  expect(reg.status(), `register ${email}: ${await reg.text()}`).toBe(201);
   const login = await api.post('/api/v1/auth/login', { data: { email, password }, failOnStatusCode: false });
   expect(login.status(), `login ${email}: ${await login.text()}`).toBe(200);
-  expect(extractToken(await login.json())).toBeTruthy();
-  return { email, password };
+  const loginBody = await login.json();
+  expect(extractToken(loginBody)).toBeTruthy();
+  expect(loginBody.data.user).toMatchObject({
+    role: 'participante',
+    roles: ['participante'],
+  });
+  expect(loginBody.data.user.permissions).not.toContain('portfolio:read');
+  return { email, password, userId: loginBody.data.user.id };
+}
+
+async function expectPortfolioGrant(page: Page, api: APIRequestContext, user: { email: string; password: string; userId: string }) {
+  // Verify the browser can rehydrate the newly granted capability from the
+  // refresh cookie, rather than relying only on the in-memory access token.
+  await page.reload();
+  await expect(page).toHaveURL(/\/portfolio\/inicio\?portfolioEntryContinuationId=/);
+
+  const persisted = await prisma.user.findUniqueOrThrow({
+    where: { id: user.userId },
+    select: { role: true, roles: true },
+  });
+  expect(persisted).toEqual({
+    role: 'participante',
+    roles: ['participante', 'portfolio_lead'],
+  });
+
+  const login = await api.post('/api/v1/auth/login', {
+    data: { email: user.email, password: user.password },
+    failOnStatusCode: false,
+  });
+  expect(login.status(), `post-grant login ${user.email}: ${await login.text()}`).toBe(200);
+  const loginBody = await login.json();
+  const accessToken = extractToken(loginBody);
+  expect(loginBody.data.user).toMatchObject({
+    role: 'participante',
+    roles: ['participante', 'portfolio_lead'],
+  });
+  expect(loginBody.data.user.permissions).toContain('portfolio:read');
+
+  const me = await api.get('/api/v1/auth/me', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    failOnStatusCode: false,
+  });
+  expect(me.status(), `post-grant /auth/me ${user.email}: ${await me.text()}`).toBe(200);
+  expect((await me.json()).data).toMatchObject({
+    role: 'participante',
+    roles: ['participante', 'portfolio_lead'],
+  });
 }
 
 async function loginThroughUi(page: Page, email: string, password: string) {
@@ -261,6 +302,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await page.getByRole('button', { name: /Continuar con mi portafolio/i }).click();
 
       await expect(page).toHaveURL(/\/portfolio\/inicio\?portfolioEntryContinuationId=/, { timeout: 30_000 });
+      await expectPortfolioGrant(page, api, user);
       const continuationId = currentContinuationId(page);
       await expect(page.getByText(/Portfolio Bootstrap|Ya tenemos un punto de partida/i)).toBeVisible();
       await expect(page.getByText(/Esto entendimos/i)).toBeVisible();
@@ -424,6 +466,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await expect(page.getByText(/Tu sesion quedo guardada/i)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: /Continuar con mi portafolio/i }).click();
     await expect(page).toHaveURL(/\/portfolio\/inicio\?portfolioEntryContinuationId=/, { timeout: 30_000 });
+    await expectPortfolioGrant(page, api, user);
 
     const confirmAnchor = page.getByRole('button', { name: /Confirmar punto de partida/i });
     if (await confirmAnchor.isVisible().catch(() => false)) {
@@ -543,6 +586,7 @@ async function startPortfolioBootstrapFromEntry(page: Page, testInfo: TestInfo) 
   await expect(page.getByText(/Tu sesion quedo guardada/i)).toBeVisible({ timeout: 30_000 });
   await page.getByRole('button', { name: /Continuar con mi portafolio/i }).click();
   await expect(page).toHaveURL(/\/portfolio\/inicio\?portfolioEntryContinuationId=/, { timeout: 30_000 });
+  await expectPortfolioGrant(page, api, user);
 
   const continuationId = currentContinuationId(page);
   let dbState = await expectOneBootstrapSession(continuationId);
