@@ -5,8 +5,28 @@ import { createInitialSessionContext } from '../domain/session.types';
 import type { PortfolioEntryAnalysisV2 } from '../domain/analysis.schema';
 import type { SessionExecutionResult } from '../domain/session.types';
 import { applyQuestionBudget } from '../session/question-budget';
+import { DeterministicPortfolioEntryAgentAdapter } from '../../portfolio-entry/application/portfolio-entry-experimental-session.service';
 
 describe('Portfolio Entry value handoff cognition', () => {
+  it('preserves an explicit decision from a deterministic entry turn', async () => {
+    const result = await new DeterministicPortfolioEntryAgentAdapter().analyzeTurn({
+      entryId: 'entry-1',
+      sessionId: 'session-1',
+      rawInput: 'Tengo 18 iniciativas y necesito decidir cuales continuar.',
+      sessionContext: createInitialSessionContext({ initial_mode: 'quick_clarification', quick_question_budget: 3 }),
+    });
+
+    expect(result.analysis.extracted_context.decision_to_enable).toBe('Decidir cuales continuar');
+
+    const handoff = await new DeterministicPortfolioEntryHandoffMaterializer().materialize({
+      sessionId: 'session-1',
+      runId: 'run-1',
+      analysis: result.analysis,
+      context: createInitialSessionContext({ initial_mode: 'quick_clarification', quick_question_budget: 3 }),
+    });
+    expect(handoff.handoff.decision_to_enable).toEqual(expect.objectContaining({ value: 'Decidir cuales continuar' }));
+  });
+
   it('turns contextual analysis into a recommendation, rationale, mapped gaps and one Starteria path', async () => {
     const analysis = makeAnalysis();
     const context = createInitialSessionContext({ initial_mode: 'quick_clarification', quick_question_budget: 3 });
