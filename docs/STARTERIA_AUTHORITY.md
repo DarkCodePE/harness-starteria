@@ -14,6 +14,42 @@ Este repositorio es actualmente mixto: conserva harness/documentacion publica y 
 
 El codigo presente en el arbol no redefine Starteria ni autoriza incorporacion productiva por si solo. La evolucion frontend puede ocurrir solo con decision explicita de slice, autoridad leida, alcance documentado y reporte. Backend, Prisma, IA productiva, Core y cambios de semantica de producto requieren autorizacion especifica adicional.
 
+## 1.1. Manifest operativo V2
+
+La reconciliacion Starteria V2 utiliza como indice operativo:
+
+`../STARTERIA_V2_MANIFEST.md`
+
+El Manifest NO reemplaza:
+
+- Core;
+- ADRs;
+- Experience Contracts;
+- Agent Contracts;
+- Skill Contracts.
+
+Su funcion es declarar que version y estado corresponde actualmente a cada slice y distinguir:
+
+```text
+logic status
+implementation status
+visual status
+evidence status
+```
+
+Cuando exista una discrepancia entre:
+
+```text
+documentacion
+implementacion
+tests
+visual migration
+```
+
+no debe elegirse silenciosamente una fuente.
+
+Debe registrarse el conflicto y reconciliarse segun esta Authority Map.
+
 ## 2. Jerarquia de autoridad
 
 Cuando dos fuentes entren en conflicto, aplicar este orden:
@@ -111,6 +147,8 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 ### Gobernanza de desarrollo
 
 - `docs/governance/STARTERIA_DEVELOPMENT_HARNESS_v0.1.md`
+- `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`
+- `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`
 
 ### Portfolio Entry
 
@@ -141,15 +179,18 @@ Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El 
 Antes de modificar producto:
 
 1. leer `../CURRENT_STATE.md`;
-2. leer este archivo;
-3. leer Core y conservar su estado factual;
-4. identificar el Experience Contract afectado;
-5. revisar ADRs relevantes;
-6. revisar Agent/Skill Contracts si existen;
-7. revisar Tech Spec si existe;
-8. inspeccionar la implementacion actual como evidencia factual y superficie tecnica cuando la slice autorice cambios;
-9. ejecutar baseline tests en el checkout autorizado cuando aplique;
-10. reportar conflictos antes de editar.
+2. leer `../STARTERIA_V2_MANIFEST.md`;
+3. leer este archivo;
+4. leer `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` y conservar su estado factual;
+5. identificar el Experience Contract afectado;
+6. revisar ADRs relevantes;
+7. revisar Agent/Skill Contracts;
+8. revisar Tech Spec si existe;
+9. revisar `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`;
+10. seguir `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`;
+11. inspeccionar la implementacion actual;
+12. ejecutar baseline tests;
+13. reportar conflictos antes de editar.
 
 ## 9. Conflicto contrato / codigo
 

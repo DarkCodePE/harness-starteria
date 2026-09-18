@@ -12,6 +12,88 @@ No debe leerse como runtime productivo certificado por defecto. La presencia de 
 
 La autoridad actual permite cambios frontend de producto solo cuando exista decision explicita y documentada de slice, con alcance acotado y sin modificar Core, AI, permisos, esquemas, rutas ni semantica de producto salvo autorizacion especifica. DS-05 y DS-06 son evidencia documental de pilotos frontend autorizados por slice.
 
+## Starteria V2 — baseline de reconciliación
+
+Starteria se encuentra actualmente en proceso explicito de consolidacion hacia V2.
+
+El indice operativo de esta migracion es:
+
+`STARTERIA_V2_MANIFEST.md`
+
+El Manifest separa para cada slice:
+
+- `logic_status`;
+- `implementation_status`;
+- `visual_status`;
+- `evidence_status`.
+
+La presencia de codigo legacy no implica que dicho comportamiento siga siendo autoridad de producto.
+
+### Politica V2-only
+
+A partir de esta consolidacion:
+
+```text
+V1 ACTIVE PRODUCT
+→ en retirada progresiva
+
+V1 AUTHORITY
+→ no permitida para comportamiento nuevo
+
+V1 INFRASTRUCTURE
+→ reutilizable unicamente cuando sea compatible con V2
+
+V1 LEGACY
+→ debe clasificarse, aislarse y retirarse por slice
+```
+
+Los documentos obligatorios para cualquier migracion son:
+
+- `STARTERIA_V2_MANIFEST.md`;
+- `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`;
+- `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
+
+No debe declararse un slice como `V2_MIGRATED` solo porque haya cambiado visualmente.
+
+La migracion requiere:
+
+```text
+V2 authority
++
+V2 active behavior
++
+V2 tests
++
+no undocumented V1 consumers
+```
+
+### Boundary visual actual
+
+La migracion visual V2 alcanzo conceptualmente:
+
+```text
+Portfolio Entry
+→ Handoff
+→ Portfolio Home
+→ Strategic Front / Challenge
+→ Activation / Invitation
+```
+
+La superficie:
+
+```text
+Initiative Overview
+→ Step 0
+→ Step 1
+→ Step 2
+→ Step 3
+→ Step 4
+```
+
+NO debe considerarse automaticamente V2.
+
+Su logica existente debe auditarse antes de cualquier rediseno o limpieza.
+
 ## E2E
 
 El E2E de producto fue originalmente validado en un checkout productivo/autorizado. Este repositorio ahora conserva harness, estado documental y una superficie ejecutable de tests/E2E bajo `front/`.

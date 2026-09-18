@@ -73,12 +73,76 @@ Si el reemplazo vigente no existe, indicarlo de forma explicita en el banner.
 
 ## Antes de modificar
 
-1. Leer `CURRENT_STATE.md`.
-2. Leer `docs/STARTERIA_AUTHORITY.md`.
-3. Leer el contrato afectado y verificar su estado.
-4. Identificar si el cambio es documental o productivo.
-5. Si es productivo, detenerse salvo que exista decision explicita.
-6. Revisar secretos/datos sensibles antes de preparar commit porque el repositorio es publico.
+Todo cambio de Starteria debe comenzar leyendo, en este orden:
+
+1. `CURRENT_STATE.md`.
+2. `STARTERIA_V2_MANIFEST.md`.
+3. `docs/STARTERIA_AUTHORITY.md`.
+4. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
+5. ADRs de producto aprobados relevantes.
+6. Experience Contract del slice afectado.
+7. Agent / Skill Contracts aplicables.
+8. Tech Spec aplicable, si existe.
+9. `docs/design-system/STARTERIA_DESIGN_SYSTEM_V2_RESTRUCTURE_BASELINE.md` si el cambio afecta frontend o experiencia visual.
+10. `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`.
+11. `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
+12. Implementacion actual y tests existentes.
+
+### Regla V2-only
+
+Todo desarrollo nuevo debe corresponder a un slice registrado en `STARTERIA_V2_MANIFEST.md`.
+
+Un artefacto marcado como:
+
+- `HISTORICAL`
+- `SUPERSEDED`
+- `DEPRECATED`
+- `V1_LEGACY`
+
+no puede utilizarse para definir comportamiento nuevo.
+
+Puede consultarse unicamente para:
+
+- dependencias de migracion;
+- compatibilidad;
+- infraestructura reusable;
+- comprension de regresiones;
+- trazabilidad historica.
+
+La infraestructura V1 puede reutilizarse cuando corresponda.
+
+La semantica V1 no puede recuperar autoridad por el hecho de estar implementada.
+
+Antes de reutilizar codigo legacy debe clasificarse:
+
+```text
+SEMANTIC_OWNER:
+V2
+LEGACY_COMPAT
+UNKNOWN
+
+MAY_DEFINE_NEW_BEHAVIOR:
+YES
+NO
+```
+
+`UNKNOWN` bloquea cambios funcionales hasta realizar auditoria.
+
+### Cambio productivo
+
+Antes de editar codigo productivo, producir el check definido en:
+
+`docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`
+
+```text
+V2_CHANGE_GUARDRAIL_CHECK
+```
+
+y seguir el proceso de slice de:
+
+`docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
+
+Una migracion visual por si sola NO significa que el slice haya migrado a V2.
 
 ## Protocolo de conflicto
 
