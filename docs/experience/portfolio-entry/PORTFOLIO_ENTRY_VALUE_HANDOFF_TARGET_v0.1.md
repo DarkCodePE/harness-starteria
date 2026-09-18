@@ -1,11 +1,11 @@
 # Starteria — Portfolio Entry Value Handoff Target
 
-**Documento:** `PORTFOLIO_ENTRY_VALUE_HANDOFF_TARGET_v0.1.md`  
-**Versión:** v0.1  
-**Estado:** CANDIDATE / V2_TARGET_DEFINED / TESTABLE_HYPOTHESIS  
-**Fecha:** 2026-09-18  
-**Tipo:** Experience target / pre-implementation specification  
-**Slice:** Portfolio Entry → Handoff  
+**Documento:** `PORTFOLIO_ENTRY_VALUE_HANDOFF_TARGET_v0.1.md`
+**Versión:** v0.1
+**Estado:** CANDIDATE / V2_TARGET_DEFINED / TESTABLE_HYPOTHESIS
+**Fecha:** 2026-09-18
+**Tipo:** Experience target / pre-implementation specification
+**Slice:** Portfolio Entry → Handoff
 **Authority:** subordinado a `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`; no reemplaza contratos, ADRs ni Core.
 
 > Este documento define un target verificable a partir de evidencia de testing. No autoriza implementación por sí mismo y no convierte las hipótesis HYP-002/HYP-003 en reglas aprobadas.
