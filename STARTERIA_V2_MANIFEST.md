@@ -293,7 +293,7 @@ HYP-004 Program / accelerator support experience
 | Landing V4 | ACTIVE_V2_BASELINE visual spec | VERIFY_IN_REPO | V2_TARGET_DEFINED | SUPPORTED | RECONCILE |
 | Portfolio Entry logic | ACTIVE_V2_BASELINE | PARTIAL_IMPLEMENTATION | V2_PILOT / VERIFY | SUPPORTED | PROMOTE STACK |
 | Clarification | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
-| Handoff | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
+| Handoff / Value Handoff Cognition | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
 | Registration / continuation | CANDIDATE | IMPLEMENTED_UNVERIFIED | MIXED | TESTING | VERIFY grant and full E2E |
 | Portfolio Bootstrap | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED / VERIFY | VERIFIED reported | RECONCILE |
 | Portfolio Home | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED DS-06 | VERIFIED reported | RECONCILE |

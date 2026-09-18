@@ -22,3 +22,4 @@ export * from './model/live-health';
 export * from './model/fetch-structured-model-adapter';
 export * from './prompts/prompt-manifest';
 export * from './handoff/live-handoff-materializer';
+export * from './handoff/value-handoff-evidence';
