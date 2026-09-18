@@ -66,14 +66,27 @@ function makeHandoff(overrides: Partial<PortfolioEntryHandoff> = {}): PortfolioE
     },
     recommended_approach: {
       description: 'Separar primero claridad de objetivo, iniciativas activas e incertidumbre.',
+      rationale: 'Así la decisión parte del portfolio real y no de trabajo nuevo sin foco.',
+      assumption: 'La actividad y la evidencia disponibles permiten comparar las iniciativas.',
       origin: 'AI_SUGGESTED',
       review_disposition: 'UNREVIEWED',
     },
-    alternative_approaches: [],
+    alternative_approaches: [{
+      description: 'Empezar por la decisión más próxima si el tiempo del comité es limitado.',
+      rationale: 'Reduce el alcance inicial, pero deja fuera parte del portfolio.',
+      origin: 'AI_SUGGESTED',
+      review_disposition: 'UNREVIEWED',
+    }],
     known_context: [],
     unresolved_context: [{ gap_id: 'gap-1', description: 'Aun falta confirmar la metrica principal.' }],
+    gap_resolution_map: [{
+      gap_id: 'gap-1',
+      gap_description: 'Aun falta confirmar la metrica principal.',
+      resolution_type: 'REQUIRES_EXTERNAL_EVIDENCE',
+      resolution_stage: 'PORTFOLIO',
+    }],
     evidence_or_clarity_needed: [{ value: 'Metrica o senal de exito pendiente.' }],
-    starteria_path: [],
+    starteria_path: [{ action: 'structure', description: 'Estructurar las iniciativas y sus señales relevantes.' }],
     recommended_cta: 'Crear una lectura revisada antes de pasar a una cuenta.',
     provenance_summary: [],
     handoff_status: 'ready_with_uncertainty',
@@ -279,12 +292,21 @@ describe('PortfolioEntryExperience', () => {
 
     renderExperience();
 
-    expect(await screen.findByText(/TU LECTURA INICIAL/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Starteria interpreta/i).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Así abordaría tu situación/i)).toBeInTheDocument();
+    expect(screen.getByText(/Por qué empezaría por ahí/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lo que todavía puede cambiar la decisión/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cómo Starteria convierte esto en trabajo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Propuesta de Starteria/i)).toBeInTheDocument();
+    expect(screen.getByText(/Otras formas de empezar/i)).toBeInTheDocument();
+    expect(screen.getByText(/Requiere evidencia que Starteria puede registrar/i)).toBeInTheDocument();
+    expect(screen.queryByText('source_path')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /continuar con mi portafolio/i }));
 
     expect(await screen.findByText(/Esta lectura esta lista para continuar/i)).toBeInTheDocument();
+    expect(screen.getByText('Propuesta de Starteria', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText(/Así la decisión parte del portfolio real/i)).toBeInTheDocument();
+    expect(screen.getByText(/Decidir que iniciativas requieren continuidad/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /crear cuenta y conservar lectura/i }));
     expect(readPendingPortfolioEntryClaim()).toEqual({
       sessionId: '11111111-1111-4111-8111-111111111111',
@@ -312,7 +334,7 @@ describe('PortfolioEntryExperience', () => {
 
     renderExperience();
 
-    fireEvent.click(await screen.findByRole('button', { name: /ajustar lectura/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ajustar esta lectura/i }));
     const fields = screen.getAllByLabelText(/que entendio Starteria/i);
     fireEvent.change(fields[0], { target: { value: 'Correccion del usuario' } });
     fireEvent.click(screen.getByRole('button', { name: /guardar correcciones/i }));
@@ -326,6 +348,24 @@ describe('PortfolioEntryExperience', () => {
         }),
       );
     });
+  });
+
+  it('keeps an unresolved decision visible as uncertainty and renders a resolution-less gap safely', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    const session = sessionWithHandoff();
+    session.handoff!.handoff = makeHandoff({
+      decision_to_enable: 'unresolved',
+      gap_resolution_map: [],
+      alternative_approaches: [],
+      starteria_path: [],
+    });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(session);
+
+    renderExperience();
+
+    expect(await screen.findByText(/Pendiente de aclarar antes de decidir/i)).toBeInTheDocument();
+    expect(screen.getByText(/No hay un tratamiento definido todavía para este pendiente/i)).toBeInTheDocument();
+    expect(screen.getByText(/La ruta de trabajo todavía se está preparando/i)).toBeInTheDocument();
   });
 
   it('clears expired anonymous sessions and offers restart', async () => {
