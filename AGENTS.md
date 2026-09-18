@@ -1,4 +1,4 @@
-git  AGENTS.md
+# AGENTS.md
 
 Entrada neutral para Codex y otros agentes que trabajen sobre este repositorio.
 
@@ -115,6 +115,19 @@ La semántica V1 no puede recuperar autoridad por el hecho de estar implementada
 
 Antes de reutilizar código legacy debe clasificarse:
 
+```text
+SEMANTIC_OWNER:
+V2
+LEGACY_COMPAT
+UNKNOWN
+
+MAY_DEFINE_NEW_BEHAVIOR:
+YES
+NO
+
+Es decir, debe quedar:
+
+```md
 ```text
 SEMANTIC_OWNER:
 V2

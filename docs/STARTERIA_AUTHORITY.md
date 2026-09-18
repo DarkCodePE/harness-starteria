@@ -163,15 +163,18 @@ Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El 
 Antes de modificar producto:
 
 1. leer `../CURRENT_STATE.md`;
-2. leer este archivo;
-3. leer Core y conservar su estado factual;
-4. identificar el Experience Contract afectado;
-5. revisar ADRs relevantes;
-6. revisar Agent/Skill Contracts si existen;
-7. revisar Tech Spec si existe;
-8. inspeccionar la implementacion actual como evidencia factual y superficie tecnica cuando la slice autorice cambios;
-9. ejecutar baseline tests en el checkout autorizado cuando aplique;
-10. reportar conflictos antes de editar.
+2. leer `../STARTERIA_V2_MANIFEST.md`;
+3. leer este archivo;
+4. leer `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` y conservar su estado factual;
+5. identificar el Experience Contract afectado;
+6. revisar ADRs relevantes;
+7. revisar Agent/Skill Contracts;
+8. revisar Tech Spec si existe;
+9. revisar `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`;
+10. seguir `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`;
+11. inspeccionar la implementación actual;
+12. ejecutar baseline tests;
+13. reportar conflictos antes de editar.
 
 ## 9. Conflicto contrato / codigo
 

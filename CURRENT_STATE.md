@@ -27,6 +27,18 @@ El Manifest separa para cada slice:
 - `visual_status`;
 - `evidence_status`.
 
+
+Y después añade:
+
+```md
+Cuando exista una discrepancia entre:
+
+```text
+documentación
+implementación
+tests
+visual migration
+
 La presencia de código legacy no implica que dicho comportamiento siga siendo autoridad de producto.
 
 ### Política V2-only
@@ -45,6 +57,29 @@ V1 INFRASTRUCTURE
 
 V1 LEGACY
 → debe clasificarse, aislarse y retirarse por slice
+
+
+Luego, antes de `## E2E`, añade lo que falta:
+
+```md
+Los documentos obligatorios para cualquier migración son:
+
+- `STARTERIA_V2_MANIFEST.md`;
+- `docs/governance/STARTERIA_V2_MIGRATION_GUARDRAILS.md`;
+- `docs/governance/STARTERIA_V2_IMPLEMENTATION_PLAYBOOK.md`.
+
+No debe declararse un slice como `V2_MIGRATED` solo porque haya cambiado visualmente.
+
+La migración requiere:
+
+```text
+V2 authority
++
+V2 active behavior
++
+V2 tests
++
+no undocumented V1 consumers
 
 ## E2E
 
