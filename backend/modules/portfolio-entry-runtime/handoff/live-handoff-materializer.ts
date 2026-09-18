@@ -9,6 +9,7 @@ import { composeHandoffSystemPrompt, type ResolvedPromptManifest } from '../prom
 import { portfolioEntryHandoffV2Schema, type PortfolioEntryHandoffV2 } from '../domain/handoff.schema';
 import type { SessionExecutionResult } from '../domain/session.types';
 import { buildPortfolioEntryHandoffV2 } from './handoff-builder';
+import type { ValueHandoffEvidenceV2 } from './value-handoff-evidence';
 
 export type LiveHandoffGenerationOutput = ReturnType<typeof buildPortfolioEntryHandoffV2> & {
   model_execution: ModelExecutionResult<PortfolioEntryHandoffV2>;
@@ -107,7 +108,7 @@ export class LivePortfolioEntryHandoffMaterializer implements PortfolioEntryHand
     private readonly promptManifest: ResolvedPromptManifest,
   ) {}
 
-  async materialize(input: { sessionId: string; runId: string; analysis: PortfolioEntryAnalysisV2; context: SessionContext }): Promise<{ handoff: PortfolioEntryHandoffV2; modelExecution?: ModelExecutionResult<unknown> }> {
+  async materialize(input: { sessionId: string; runId: string; analysis: PortfolioEntryAnalysisV2; context: SessionContext }): Promise<{ handoff: PortfolioEntryHandoffV2; modelExecution?: ModelExecutionResult<unknown>; valueDeltaEvidence?: ValueHandoffEvidenceV2 }> {
     const execution = this.syntheticExecution(input);
     const generated = await generateLivePortfolioEntryHandoffV2({
       model: this.model,
@@ -116,7 +117,7 @@ export class LivePortfolioEntryHandoffMaterializer implements PortfolioEntryHand
       execution,
     });
     if (!generated.handoff || !generated.schema_valid) throw new Error('Live handoff output was not schema-valid.');
-    return { handoff: generated.handoff, modelExecution: generated.model_execution };
+    return { handoff: generated.handoff, modelExecution: generated.model_execution, valueDeltaEvidence: generated.value_delta_evidence ?? undefined };
   }
 
   private syntheticExecution(input: { sessionId: string; runId: string; analysis: PortfolioEntryAnalysisV2; context: SessionContext }): SessionExecutionResult {

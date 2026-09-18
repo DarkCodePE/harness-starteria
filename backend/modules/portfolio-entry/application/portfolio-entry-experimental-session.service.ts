@@ -401,6 +401,7 @@ export class UnconfiguredPortfolioEntryAgentAdapter implements PortfolioEntryAge
 export class DeterministicPortfolioEntryAgentAdapter implements PortfolioEntryAgentAdapterV2 {
   async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
     const ready = input.rawInput.length > 40;
+    const explicitDecision = extractExplicitDecision(input.rawInput);
     return {
       analysis: {
         entry_id: input.entryId,
@@ -409,7 +410,10 @@ export class DeterministicPortfolioEntryAgentAdapter implements PortfolioEntryAg
         secondary_intents: [],
         initial_entry_state: 'initiative_first',
         current_frame: ready ? 'portfolio_first' : 'initiative_first',
-        extracted_context: { summary: input.rawInput },
+        extracted_context: {
+          summary: input.rawInput,
+          ...(explicitDecision ? { decision_to_enable: explicitDecision } : {}),
+        },
         ambiguities: ready ? [] : ['decision_to_enable'],
         contradictions: [],
         reverse_alignment: {
@@ -429,6 +433,23 @@ export class DeterministicPortfolioEntryAgentAdapter implements PortfolioEntryAg
       },
     };
   }
+}
+
+/**
+ * Preserve a decision the user stated directly in a deterministic turn.
+ * The handoff may suggest framing, but it must not lose an explicit human
+ * decision merely because the lightweight adapter has no model extraction.
+ */
+export function extractExplicitDecision(rawInput: string): string | null {
+  const normalized = rawInput.trim().replace(/\s+/g, ' ');
+  if (!normalized) return null;
+
+  const match = normalized.match(/\b(?:necesito|quiero|queremos|debemos)\s+decidir\s+(.+)$/i)
+    ?? normalized.match(/\bdecidir\s+(.+)$/i);
+  if (!match?.[1]) return null;
+
+  const subject = match[1].trim().replace(/[.!?]+$/, '');
+  return subject ? `Decidir ${subject}` : null;
 }
 
 function contextFromSession(session: PortfolioEntrySession, turns?: PortfolioEntryTurn[]): SessionContext {

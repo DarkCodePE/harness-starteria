@@ -15,7 +15,12 @@ export function applyQuestionBudget(
 ): QuestionBudgetApplication {
   const available = getAvailableQuestionBudget(context);
   const received = questionPlan.question_count;
-  const emitted = questionPlan.questions.slice(0, available).map<QuestionRecord>((question) => ({
+  const emitted = questionPlan.questions
+    .filter((question) => !context.previous_questions.some((previous) => (
+      previous.id === question.id || normalizeQuestion(previous.question) === normalizeQuestion(question.question)
+    )))
+    .slice(0, available)
+    .map<QuestionRecord>((question) => ({
     id: question.id,
     question: question.question,
     question_type: question.question_type,
@@ -32,6 +37,10 @@ export function applyQuestionBudget(
     emitted_questions: emitted,
     overflow: received > available,
   };
+}
+
+function normalizeQuestion(value: string): string {
+  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 export function consumeQuestionBudget(context: SessionContext, emittedQuestionCount: number): SessionContext {
