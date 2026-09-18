@@ -1,0 +1,39 @@
+{
+  "contract_cases": [
+    {
+      "id": "PE2-ST-GOV-01",
+      "type": "single_turn",
+      "input": "Tenemos un programa interno y no sabemos qué ideas pasan a piloto, reciben presupuesto o escalan.",
+      "expected": { "initial_entry_state": "portfolio_first", "current_frame": "portfolio_first", "primary_intent": "portfolio_governance" }
+    },
+    {
+      "id": "PE2-ST-CF-01",
+      "type": "multi_turn",
+      "input": "Los equipos pierden tiempo haciendo escaneos.",
+      "follow_up": "Ya estamos probando una solución concreta para resolverlo.",
+      "expected": { "initial_entry_state": "problem_first", "current_frame": "initiative_first", "primary_intent": "initiative_governance" }
+    },
+    {
+      "id": "PE2-MT-QC-01",
+      "type": "quick_clarification",
+      "input": "Tenemos varias iniciativas y necesito entender cuál debería continuar.",
+      "expected": { "quick_questions_max": 3 }
+    },
+    {
+      "id": "PE2-MT-GE-01",
+      "type": "guided_exploration",
+      "input": "Tenemos muchas ideas y todavía no sabemos cómo gobernar su evolución.",
+      "exploration_choice": "accept",
+      "expected": { "guided_exploration_requires_consent": true }
+    }
+  ],
+  "hypothesis_cases": [
+    { "id": "PE2-HYP-RA-01", "hypothesis_id": "HYP-001", "input": "Quiero entender mejor el problema antes de decidir una ruta." },
+    { "id": "PE2-HYP-GAP-01", "hypothesis_id": "HYP-003", "input": "Nos falta evidencia externa para decidir." },
+    { "id": "PE2-HYP-ACC-01", "hypothesis_id": "HYP-004", "input": "Tenemos una aceleradora interna con criterios poco claros." }
+  ],
+  "regression_v01": [
+    { "id": "PE1-REG-01", "input": "Quiero aumentar las ventas este trimestre.", "expected_entry_state": "strategy_first", "expected_intent": "strategic_goal" },
+    { "id": "PE1-REG-02", "input": "Mañana presento el estado de mis iniciativas al comité.", "expected_entry_state": "reporting_first", "expected_intent": "portfolio_reporting" }
+  ]
+}
