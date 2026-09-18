@@ -198,7 +198,7 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
   await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    if (await visible(page.getByText(/TU LECTURA INICIAL/i))) return;
+    if (await visible(page.getByText(/Así abordaría tu situación/i))) return;
 
     const seeReading = page.getByRole('button', { name: /Ver mi lectura/i });
     if (await seeReading.isVisible().catch(() => false)) {
@@ -217,15 +217,19 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
       }
       await answer.fill(scenario.answer);
+      const clarificationResponse = page.waitForResponse((response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/v1\/public\/portfolio-entry\/sessions\/[^/]+\/messages$/.test(response.url()),
+      );
       await page.getByRole('button', { name: /Enviar respuesta/i }).click();
-      await page.waitForTimeout(800);
+      await clarificationResponse;
       continue;
     }
 
     await page.waitForTimeout(1000);
   }
 
-  await expect(page.getByText(/TU LECTURA INICIAL/i)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Así abordaría tu situación/i)).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
@@ -246,7 +250,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await expect(page.getByText(/Hasta 3 preguntas/i)).toBeVisible();
     await expect(page.getByLabel(/Tu respuesta/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toBeVisible();
-    await expect(page.getByText(/TU LECTURA INICIAL/i)).toHaveCount(0);
+      await expect(page.getByText(/Así abordaría tu situación/i)).toHaveCount(0);
 
     await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
   });
@@ -257,14 +261,18 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await reachHandoff(page, scenario, testInfo);
 
       await expect(page.getByText(/Lectura inicial lista/i)).toBeVisible();
-      await expect(page.getByText(/Continua con Starteria/i)).toBeVisible();
-      await expect(page.getByText(/Portfolio/i).first()).toBeVisible();
-      await expect(page.getByText(/Retos/i).first()).toBeVisible();
-      await expect(page.getByText(/Iniciativas/i).first()).toBeVisible();
-      await expect(page.getByText(/Evidencia/i).first()).toBeVisible();
-      await expect(page.getByText(/Decisiones/i).first()).toBeVisible();
+      await expect(page.getByText(/Esto entendí de tu situación/i)).toBeVisible();
+      await expect(page.getByText(/Así abordaría tu situación/i)).toBeVisible();
+      await expect(page.getByText(/Por qué empezaría por ahí/i)).toBeVisible();
+      await expect(page.getByText(/Lo que todavía puede cambiar la decisión/i)).toBeVisible();
+      await expect(page.getByText(/Cómo Starteria convierte esto en trabajo/i)).toBeVisible();
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
-      await expect(page.getByRole('button', { name: /Ajustar lectura/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
+      const recommendedApproach = page
+        .getByRole('heading', { name: 'Qué haría Starteria primero', exact: true })
+        .locator('xpath=ancestor::section[1]');
+      await expect(recommendedApproach).toHaveCount(1);
+      await expect(recommendedApproach.getByText('Propuesta de Starteria', { exact: true })).toBeVisible();
       await expect(page.getByText(/Crear iniciativa y continuar/i)).toHaveCount(0);
       await expect(page.getByText(/\bProject\b/i)).toHaveCount(0);
       await expect(page.getByText(/Step0/i)).toHaveCount(0);
@@ -277,7 +285,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-handoff-mobile.png'), fullPage: true });
         await page.setViewportSize({ width: 1280, height: 900 });
 
-        await page.getByRole('button', { name: /Ajustar lectura/i }).click();
+        await page.getByRole('button', { name: /Ajustar esta lectura/i }).click();
         await expect(page.getByRole('heading', { name: /^Correcciones$/i })).toBeVisible();
         await page.getByRole('button', { name: /Cancelar/i }).click();
       }

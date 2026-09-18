@@ -16,7 +16,6 @@ import { Button } from '../../../app/components/ui/button';
 import { Textarea } from '../../../app/components/ui/textarea';
 import {
   AISuggestionPanel,
-  ContextSummary,
   InlineInsight,
 } from '../../../app/components/design-system/patterns';
 import {
@@ -47,9 +46,10 @@ import type {
   PortfolioEntryHandoff,
   PortfolioEntryQuestion,
   PortfolioEntrySessionDto,
+  GapResolution,
+  GapResolutionType,
   ProvenancedText,
   ProvenanceOrigin,
-  ReviewDisposition,
   StoredPortfolioEntrySession,
   SuggestedApproach,
 } from './types';
@@ -100,17 +100,10 @@ const EXAMPLES = [
 ];
 
 const PROVENANCE_LABELS: Record<ProvenanceOrigin, string> = {
-  USER_DECLARED: 'Tu nos dijiste',
-  EXTRACTED_FROM_USER_TEXT: 'Tu nos dijiste',
-  AI_INFERRED: 'Starteria interpreta',
-  AI_SUGGESTED: 'Starteria propone',
-};
-
-const REVIEW_LABELS: Record<ReviewDisposition, string> = {
-  UNREVIEWED: 'Pendiente de tu revision',
-  USER_CONFIRMED: 'Confirmado por ti',
-  USER_REJECTED: 'Rechazado por ti',
-  SUPERSEDED: 'Actualizado por una version posterior',
+  USER_DECLARED: 'Lo indicaste tu',
+  EXTRACTED_FROM_USER_TEXT: 'Lo que nos contaste',
+  AI_INFERRED: 'Interpretado por Starteria',
+  AI_SUGGESTED: 'Propuesta de Starteria',
 };
 
 function latestQuestions(session: PortfolioEntrySessionDto | null): PortfolioEntryQuestion[] {
@@ -120,10 +113,6 @@ function latestQuestions(session: PortfolioEntrySessionDto | null): PortfolioEnt
     if (questions.length > 0) return questions;
   }
   return [];
-}
-
-function asText(value: unknown): string {
-  return typeof value === 'string' ? value : '';
 }
 
 function textFromProvenanced(value: ProvenancedText | 'unresolved' | undefined): string {
@@ -140,26 +129,9 @@ function textFromDecision(value: PortfolioEntryHandoff['decision_to_enable']): s
   return value === 'unresolved' ? 'Pendiente de aclarar antes de decidir.' : textFromProvenanced(value);
 }
 
-function shortText(value: string, fallback: string, maxLength = 190): string {
-  const clean = value.replace(/\s+/g, ' ').trim();
-  if (!clean) return fallback;
-  if (clean.length <= maxLength) return clean;
-  return `${clean.slice(0, maxLength - 1).trim()}...`;
-}
-
 function originIsUser(value: ProvenancedText | undefined): boolean {
   const origin = value?.provenance?.origin;
   return origin === 'USER_DECLARED' || origin === 'EXTRACTED_FROM_USER_TEXT';
-}
-
-function needsCarefulLanguage(handoff: PortfolioEntryHandoff): boolean {
-  const origins = [
-    handoff.understanding.provenance?.origin,
-    handoff.desired_outcome.provenance?.origin,
-    handoff.decision_to_enable !== 'unresolved' ? handoff.decision_to_enable.provenance?.origin : undefined,
-    handoff.recommended_approach?.origin,
-  ];
-  return origins.some((origin) => origin === 'AI_INFERRED' || origin === 'AI_SUGGESTED');
 }
 
 function currentFrame(session: PortfolioEntrySessionDto): string {
@@ -171,68 +143,17 @@ function currentFrame(session: PortfolioEntrySessionDto): string {
   );
 }
 
-function insightForSession(session: PortfolioEntrySessionDto, handoff: PortfolioEntryHandoff): { headline: string; support: string } {
-  const frame = currentFrame(session);
-  const careful = needsCarefulLanguage(handoff);
-  const prefix = careful ? 'Tu principal reto parece ser' : 'Tu principal reto es';
-  const outcome = textFromProvenanced(handoff.desired_outcome);
-  const knownContext = handoff.known_context.map((item) => item.value).filter(Boolean).slice(0, 2).join(' ');
-  const supportSource = [outcome, knownContext].filter((item) => item && item !== 'Aun por aclarar').join(' ');
-
-  if (frame.includes('solution')) {
-    return {
-      headline: `${prefix} conectar esta solucion con una decision de negocio clara, antes de tratarla como iniciativa lista para ejecutar.`,
-      support: shortText(
-        supportSource || textFromProvenanced(handoff.understanding),
-        'Starteria necesita distinguir que se sabe de la solucion, que resultado deberia justificarla y que evidencia falta revisar.',
-      ),
-    };
-  }
-
-  if (frame.includes('report')) {
-    return {
-      headline: `${prefix} convertir el reporte en una lectura que habilite decisiones, no solo mostrar estado.`,
-      support: shortText(
-        supportSource || textFromProvenanced(handoff.understanding),
-        'La lectura ordena que debe entender el comite, que iniciativas son relevantes y que informacion sigue pendiente.',
-      ),
-    };
-  }
-
-  if (frame.includes('strategy') || frame.includes('strategic')) {
-    return {
-      headline: `${prefix} aterrizar la prioridad de negocio en iniciativas y criterios comparables.`,
-      support: shortText(
-        supportSource || textFromProvenanced(handoff.understanding),
-        'Starteria separa la prioridad declarada de las iniciativas concretas y de la evidencia necesaria para gobernarlas.',
-      ),
-    };
-  }
-
-  if (frame.includes('initiative')) {
-    return {
-      headline: `${prefix} revisar una iniciativa dentro de una decision de portafolio, no saltar directo a ejecucion.`,
-      support: shortText(
-        supportSource || textFromProvenanced(handoff.understanding),
-        'La iniciativa mencionada queda como contexto inicial; todavia falta confirmar como se relaciona con prioridad, evidencia y decision.',
-      ),
-    };
-  }
-
-  return {
-    headline: `${prefix} decidir que iniciativas merecen atencion y bajo que criterio de negocio.`,
-    support: shortText(
-      supportSource || textFromProvenanced(handoff.understanding),
-      'Starteria esta construyendo una lectura inicial para conectar objetivo, situacion, pendientes y decisiones antes de crear cualquier objeto canonico.',
-    ),
-  };
-}
-
 function provenanceLabels(handoff: PortfolioEntryHandoff): string[] {
   const labels = new Set<string>();
   for (const item of handoff.provenance_summary ?? []) labels.add(PROVENANCE_LABELS[item.origin]);
-  if (originIsUser(handoff.understanding) || originIsUser(handoff.desired_outcome)) labels.add('Tu nos dijiste');
-  if (needsCarefulLanguage(handoff)) labels.add('Starteria interpreta');
+  if (originIsUser(handoff.understanding)) labels.add(PROVENANCE_LABELS.USER_DECLARED);
+  if (originIsUser(handoff.desired_outcome)) labels.add(PROVENANCE_LABELS.EXTRACTED_FROM_USER_TEXT);
+  const hasInferredContext = [
+    handoff.understanding.provenance?.origin,
+    handoff.desired_outcome.provenance?.origin,
+    handoff.decision_to_enable !== 'unresolved' ? handoff.decision_to_enable.provenance?.origin : undefined,
+  ].includes('AI_INFERRED');
+  if (hasInferredContext) labels.add(PROVENANCE_LABELS.AI_INFERRED);
   if (
     handoff.handoff_status !== 'ready' ||
     handoff.decision_to_enable === 'unresolved' ||
@@ -262,21 +183,6 @@ function microInsight(session: PortfolioEntrySessionDto): string | null {
     return 'Hay algo importante aqui: un buen reporte no solo muestra estado; debe dejar claro que decision necesita habilitar.';
   }
   return null;
-}
-
-function fieldBadge(value: ProvenancedText | SuggestedApproach | undefined): string[] {
-  const labels: string[] = [];
-  if (!value) return ['Aun por aclarar'];
-  if ('provenance' in value && value.provenance?.origin) {
-    labels.push(PROVENANCE_LABELS[value.provenance.origin]);
-  }
-  if ('origin' in value) {
-    labels.push(PROVENANCE_LABELS[value.origin]);
-  }
-  if ('review_disposition' in value) {
-    labels.push(REVIEW_LABELS[value.review_disposition]);
-  }
-  return labels.length ? labels : ['Pendiente de tu revision'];
 }
 
 function getEditableFields(handoff: PortfolioEntryHandoff): EditableField[] {
@@ -668,90 +574,181 @@ function ProvenanceChips({ handoff }: { handoff: PortfolioEntryHandoff }) {
   );
 }
 
-function InsightPanel({ session, handoff }: { session: PortfolioEntrySessionDto; handoff: PortfolioEntryHandoff }) {
-  const insight = insightForSession(session, handoff);
+function UnderstandingSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
   return (
     <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <div className="space-y-4">
+      <div className="mb-4">
+        <p className="text-xs font-semibold uppercase text-brand-primary">01</p>
+        <h2 className="mt-2 text-xl font-semibold text-text-primary">Esto entendí de tu situación</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">Una síntesis breve para confirmar que partimos del mismo punto.</p>
+      </div>
+      <dl className="grid gap-4 md:grid-cols-3">
         <div>
-          <p className="text-xs font-semibold uppercase text-brand-primary">TU LECTURA INICIAL</p>
-          <h2 className="mt-3 text-2xl font-semibold leading-tight text-text-primary md:text-3xl">{insight.headline}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-text-secondary md:text-base md:leading-7">{insight.support}</p>
+          <dt className="text-xs font-medium uppercase text-text-muted">Situación</dt>
+          <dd className="mt-1 text-sm leading-6 text-text-primary">{textFromProvenanced(handoff.understanding)}</dd>
         </div>
+        <div>
+          <dt className="text-xs font-medium uppercase text-text-muted">Lo que quieres conseguir</dt>
+          <dd className="mt-1 text-sm leading-6 text-text-primary">{textFromProvenanced(handoff.desired_outcome)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium uppercase text-text-muted">Decisión a habilitar</dt>
+          <dd className="mt-1 text-sm leading-6 text-text-primary">{textFromDecision(handoff.decision_to_enable)}</dd>
+        </div>
+      </dl>
+      <div className="mt-5">
         <ProvenanceChips handoff={handoff} />
-        <details className="group rounded-ds-md border border-border-default bg-background-subtle p-3 text-sm text-text-secondary">
-          <summary className="cursor-pointer rounded-ds-sm font-semibold text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/30">
-            De donde sale esta lectura?
-          </summary>
-          <div className="mt-3 space-y-2 leading-6">
-            {(handoff.provenance_summary.length > 0 ? handoff.provenance_summary : [{ origin: 'AI_INFERRED' as ProvenanceOrigin }]).map(
-              (item, index) => (
-                <p key={`${item.origin}-${index}`}>
-                  <span className="font-semibold">{PROVENANCE_LABELS[item.origin]}:</span>{' '}
-                  {item.source_text || item.source_path || 'A partir de tu entrada y de la interpretacion provisional de Starteria.'}
-                </p>
-              ),
-            )}
-          </div>
-        </details>
       </div>
     </section>
   );
 }
 
-function BriefSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
-  const known = handoff.known_context.filter((item) => item.value).slice(0, 4);
-  const pending = [
-    ...handoff.unresolved_context.map((item) => item.description),
-    ...handoff.evidence_or_clarity_needed.map((item) => item.value),
-  ].filter(Boolean);
+function RecommendedApproachSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const approach = handoff.recommended_approach;
 
   return (
-    <ContextSummary
-      title="Lo que Starteria entendio"
-      items={[
-        { label: 'Objetivo', value: textFromProvenanced(handoff.desired_outcome) },
-        { label: 'Decision', value: textFromDecision(handoff.decision_to_enable) },
-        {
-          label: 'Situacion',
-          value: known.length > 0 ? known.map((item) => item.value).join(' ') : textFromProvenanced(handoff.understanding),
-        },
-        {
-          label: 'Pendientes',
-          value: pending.length > 0 ? pending.slice(0, 4).join(' ') : 'Sin pendientes registrados en esta lectura inicial.',
-        },
-      ]}
-    />
+    <section className="rounded-ds-lg border-2 border-[var(--ai-suggested-border)] bg-[var(--ai-suggested-surface)] p-5 shadow-md md:p-7">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline" className="border-[var(--ai-suggested-border)] bg-surface-default text-[var(--ai-suggested-text)]">
+          02 · Así abordaría tu situación
+        </Badge>
+        {approach?.origin === 'AI_SUGGESTED' ? <Badge variant="neutral">Propuesta de Starteria</Badge> : null}
+      </div>
+      <h2 className="mt-4 text-2xl font-semibold leading-tight text-text-primary md:text-3xl">Qué haría Starteria primero</h2>
+      <p className="mt-4 whitespace-pre-wrap text-base leading-8 text-text-primary md:text-lg">
+        {approach?.description || 'Starteria todavía no tiene una propuesta suficiente para esta situación. Conviene aclarar un poco más el contexto antes de recomendar un primer paso.'}
+      </p>
+      {approach ? <p className="mt-5 text-sm text-text-muted">Propuesta pendiente de revisión humana.</p> : null}
+      {handoff.alternative_approaches.length > 0 ? (
+        <div className="mt-6 border-t border-[var(--ai-suggested-border)] pt-5">
+          <p className="text-xs font-semibold uppercase text-text-muted">Otras formas de empezar</p>
+          <div className="mt-3 space-y-3">
+            {handoff.alternative_approaches.map((alternative, index) => (
+              <div key={`${alternative.description}-${index}`} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                <p className="text-sm leading-6 text-text-primary">{alternative.description}</p>
+                {alternative.rationale ? <p className="mt-2 text-xs leading-5 text-text-secondary">{alternative.rationale}</p> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
-function StarteriaRoute({ session, handoff }: { session: PortfolioEntrySessionDto; handoff: PortfolioEntryHandoff }) {
-  void session;
-  void handoff;
-  const steps = [
-    { title: 'Portfolio', description: 'Ordenar prioridades y contexto.' },
-    { title: 'Retos', description: 'Convertir foco en trabajo gobernable.' },
-    { title: 'Iniciativas', description: 'Conectar esfuerzo real.' },
-    { title: 'Evidencia', description: 'Separar avance de prueba.' },
-    { title: 'Decisiones', description: 'Preparar el siguiente movimiento.' },
-  ];
+function RationaleSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const approach = handoff.recommended_approach;
   return (
-    <section className="rounded-ds-lg border border-white/10 bg-white/5 p-5 md:p-6">
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-semibold uppercase text-cyan-200">Ruta explicativa</p>
-        <h3 className="text-lg font-semibold text-white">Como continuaria Starteria</h3>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-5">
-        {steps.map((step, index) => (
-          <div key={step.title} className="relative rounded-ds-md border border-white/10 bg-white/7 p-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">
-              {index + 1}
-            </span>
-            <p className="mt-4 text-sm font-semibold uppercase text-white">{step.title}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{step.description}</p>
-          </div>
-        ))}
-      </div>
+    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">03</p>
+      <h2 className="mt-2 text-xl font-semibold text-text-primary">Por qué empezaría por ahí</h2>
+      <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-secondary md:text-base">
+        {approach?.rationale || 'Todavía no hay una justificación suficiente para explicar por qué conviene empezar de una forma concreta.'}
+      </p>
+      {approach?.assumption?.trim() ? (
+        <div className="mt-5 rounded-ds-md border border-border-default bg-background-subtle p-4">
+          <p className="text-xs font-semibold uppercase text-text-muted">Supuesto que todavía conviene validar</p>
+          <p className="mt-2 text-sm leading-6 text-text-secondary">{approach.assumption}</p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+const RESOLUTION_COPY: Record<GapResolutionType, string> = {
+  STARTERIA_CAN_STRUCTURE: 'Starteria puede estructurar esta información para hacerla comparable y visible.',
+  STARTERIA_CAN_GUIDE: 'Starteria puede guiar la aclaración y dejar explícito qué criterio falta.',
+  STARTERIA_CAN_TRACK: 'Starteria puede registrar y seguir este pendiente junto con la decisión.',
+  REQUIRES_ORGANIZATIONAL_INPUT: 'Requiere información o criterio de tu organización.',
+  REQUIRES_EXTERNAL_EVIDENCE: 'Requiere evidencia que Starteria puede registrar y conectar, pero no inventar.',
+  OUT_OF_SCOPE: 'Este punto queda fuera del alcance de esta lectura.',
+};
+
+function resolutionForGap(gap: GapResolution | undefined): string {
+  if (!gap) return 'No hay un tratamiento definido todavía para este pendiente.';
+  return gap.starteria_capability?.trim() && gap.resolution_type.startsWith('STARTERIA_')
+    ? gap.starteria_capability
+    : RESOLUTION_COPY[gap.resolution_type];
+}
+
+function MaterialGapsSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const resolutions = new Map((handoff.gap_resolution_map ?? []).map((gap) => [gap.gap_id, gap]));
+  const unresolvedIds = new Set(handoff.unresolved_context.map((gap) => gap.gap_id));
+  const gaps = [
+    ...handoff.unresolved_context.map((gap) => ({
+      id: gap.gap_id,
+      description: gap.description,
+      resolution: resolutionForGap(resolutions.get(gap.gap_id)),
+    })),
+    ...(handoff.gap_resolution_map ?? [])
+      .filter((gap) => !unresolvedIds.has(gap.gap_id))
+      .map((gap) => ({
+        id: gap.gap_id,
+        description: gap.gap_description,
+        resolution: resolutionForGap(gap),
+      })),
+  ];
+  const evidence = handoff.evidence_or_clarity_needed.filter((item) => item.value);
+
+  return (
+    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">04</p>
+      <h2 className="mt-2 text-xl font-semibold text-text-primary">Lo que todavía puede cambiar la decisión</h2>
+      <p className="mt-1 text-sm leading-6 text-text-secondary">Mostramos lo que falta sin convertirlo en una conclusión ni inventar evidencia.</p>
+      {gaps.length > 0 ? (
+        <div className="mt-5 space-y-3">
+          {gaps.map((gap) => (
+            <div key={gap.id} className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+              <p className="text-sm font-semibold text-text-primary">{gap.description}</p>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">{gap.resolution}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {evidence.length > 0 ? (
+        <div className="mt-5 rounded-ds-md border border-[var(--status-feedback-warning-border)] bg-[var(--status-feedback-warning-surface)] p-4">
+          <p className="text-xs font-semibold uppercase text-[var(--status-feedback-warning-text)]">Claridad o evidencia que falta</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-text-secondary">
+            {evidence.map((item, index) => <li key={`${item.value}-${index}`}>{item.value}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      {gaps.length === 0 && evidence.length === 0 ? (
+        <p className="mt-4 text-sm leading-6 text-text-secondary">No hay pendientes materiales registrados en esta lectura inicial.</p>
+      ) : null}
+    </section>
+  );
+}
+
+const PATH_LABELS: Record<string, string> = {
+  structure: 'Estructurar',
+  make_visible: 'Hacer visible',
+  compare_or_follow: 'Comparar y seguir',
+  resolve_gaps: 'Resolver pendientes',
+  prepare_decision: 'Preparar una decisión',
+};
+
+function StarteriaPathSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  return (
+    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">05</p>
+      <h2 className="mt-2 text-xl font-semibold text-text-primary">Cómo Starteria convierte esto en trabajo</h2>
+      <p className="mt-1 text-sm leading-6 text-text-secondary">Un camino contextual para continuar trabajando sobre esta situación.</p>
+      {handoff.starteria_path.length > 0 ? (
+        <ol className="mt-5 grid gap-3 md:grid-cols-2">
+          {handoff.starteria_path.map((item, index) => (
+            <li key={`${item.action}-${index}`} className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-semibold text-white">{index + 1}</span>
+                <p className="text-sm font-semibold text-text-primary">{PATH_LABELS[item.action] ?? 'Siguiente trabajo'}</p>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">{item.description}</p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-4 text-sm leading-6 text-text-secondary">La ruta de trabajo todavía se está preparando para esta situación.</p>
+      )}
     </section>
   );
 }
@@ -773,36 +770,33 @@ function EarlyAccessCard({
     'Acceso anticipado al MVP.',
   ];
   return (
-    <aside className="space-y-5 rounded-[24px] bg-slate-950 p-5 text-white shadow-xl shadow-slate-900/20 lg:sticky lg:top-6 md:p-6">
+    <section className="space-y-5 rounded-ds-lg border border-border-default bg-background-subtle p-5 md:p-6">
       <div>
-        <p className="text-xs font-semibold uppercase text-cyan-200">Continua con Starteria</p>
-        <h2 className="mt-3 text-2xl font-semibold leading-tight">Convierte esta lectura en un espacio de decision.</h2>
-        <p className="mt-3 text-sm leading-6 text-slate-300">
-          Starteria conserva lo entendido, muestra pendientes y te lleva al contexto Portfolio autorizado cuando tu cuenta lo permita.
+        <p className="text-xs font-semibold uppercase text-brand-primary">07 · Continua con Starteria</p>
+        <h2 className="mt-3 text-xl font-semibold leading-tight text-text-primary">Lleva esta lectura a tu portafolio.</h2>
+        <p className="mt-3 text-sm leading-6 text-text-secondary">
+          Conserva lo entendido y continúa trabajando sobre los pendientes cuando tu cuenta lo permita.
         </p>
       </div>
       <ul className="space-y-3">
         {benefits.map((benefit) => (
-          <li key={benefit} className="flex gap-2 text-sm leading-6 text-slate-200">
-            <CheckCircle2 size={15} className="mt-1 shrink-0 text-cyan-300" />
+          <li key={benefit} className="flex gap-2 text-sm leading-6 text-text-secondary">
+            <CheckCircle2 size={15} className="mt-1 shrink-0 text-[var(--status-feedback-success-text)]" />
             <span>{benefit}</span>
           </li>
         ))}
       </ul>
-      <StarteriaRoute session={{} as PortfolioEntrySessionDto} handoff={{} as PortfolioEntryHandoff} />
       <div className="flex flex-col gap-2">
-        <Button type="button" onClick={onConfirm} disabled={pending} className="bg-white text-slate-950 hover:bg-slate-100">
+        <Button type="button" onClick={onConfirm} disabled={pending}>
           Continuar con mi portafolio
           <ArrowRight size={16} />
         </Button>
-        <Button type="button" variant="ghost" onClick={onStartEditing} disabled={pending} className="text-slate-200 hover:bg-white/10 hover:text-white">
-          Ajustar lectura
+        <Button type="button" variant="ghost" onClick={onStartEditing} disabled={pending}>
+          Ajustar esta lectura
         </Button>
       </div>
-      <p className="text-xs leading-5 text-slate-400">
-        Esta ruta es explicativa. Todavia no estamos creando iniciativas ni activando Steps.
-      </p>
-    </aside>
+      <p className="text-xs leading-5 text-text-muted">Esta continuidad no crea iniciativas ni activa Steps.</p>
+    </section>
   );
 }
 
@@ -845,13 +839,12 @@ function HandoffReview({
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-5">
-          <InsightPanel session={session} handoff={handoff} />
-          <BriefSection handoff={handoff} />
-          <StarteriaRoute session={session} handoff={handoff} />
-        </div>
-
+      <div className="space-y-5">
+        <UnderstandingSection handoff={handoff} />
+        <RecommendedApproachSection handoff={handoff} />
+        <RationaleSection handoff={handoff} />
+        <MaterialGapsSection handoff={handoff} />
+        <StarteriaPathSection handoff={handoff} />
         <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
       </div>
 
@@ -938,6 +931,12 @@ function ConfirmedSummary({
           </div>
           {handoff ? (
             <div className="grid gap-3 md:grid-cols-2">
+              {handoff.recommended_approach ? (
+                <FieldBlock label="Propuesta de Starteria" value={handoff.recommended_approach.description} badges={['Pendiente de tu revision']} />
+              ) : null}
+              {handoff.recommended_approach?.rationale ? (
+                <FieldBlock label="Por qué empezar por ahí" value={handoff.recommended_approach.rationale} badges={['Explicación de la propuesta']} />
+              ) : null}
               <FieldBlock label="Que entendio" value={textFromProvenanced(handoff.understanding)} badges={['Confirmado por ti']} />
               <FieldBlock label="Foco" value={textFromProvenanced(handoff.desired_outcome)} badges={['Confirmado por ti']} />
               <FieldBlock label="Decision a habilitar" value={textFromDecision(handoff.decision_to_enable)} badges={['Confirmado por ti']} />

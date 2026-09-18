@@ -43,6 +43,10 @@ test.describe('VD-02 public entry reset screenshots', () => {
       await page.goto('/public/start', { waitUntil: 'networkidle' });
 
       await expect(page.getByText(/lectura inicial lista/i)).toBeVisible();
+      await expect(page.getByText(/así abordaría tu situación/i)).toBeVisible();
+      await expect(page.getByText(/cómo starteria convierte esto en trabajo/i)).toBeVisible();
+      await expect(page.getByText(/estructurar las iniciativas y su contexto/i)).toBeVisible();
+      await expect(page.getByRole('button', { name: /continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByText(/continua con starteria/i)).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await page.screenshot({ path: path.join(OUTPUT_DIR, `handoff-result-${viewport.name}.png`), fullPage: true });
@@ -122,6 +126,8 @@ function handoffSession() {
         },
         recommended_approach: {
           description: 'Separar prioridad, retos, iniciativas y evidencia antes de continuar.',
+          rationale: 'Así la decisión parte del contexto real antes de abrir trabajo nuevo.',
+          assumption: 'La información disponible permite comparar las iniciativas.',
           origin: 'AI_SUGGESTED',
           review_disposition: 'UNREVIEWED',
         },
@@ -132,10 +138,22 @@ function handoffSession() {
         unresolved_context: [
           { gap_id: 'gap-1', description: 'Falta confirmar que prioridad de negocio gobierna la decision.' },
         ],
+        gap_resolution_map: [
+          {
+            gap_id: 'gap-1',
+            gap_description: 'Falta confirmar que prioridad de negocio gobierna la decision.',
+            resolution_type: 'STARTERIA_CAN_GUIDE',
+            starteria_capability: 'Starteria puede ayudar a explicitar el criterio de prioridad.',
+            resolution_stage: 'PORTFOLIO',
+          },
+        ],
         evidence_or_clarity_needed: [
           { value: 'Senales de impacto o criterios de comparacion entre iniciativas.' },
         ],
-        starteria_path: [],
+        starteria_path: [
+          { action: 'structure', description: 'Estructurar las iniciativas y su contexto.' },
+          { action: 'prepare_decision', description: 'Preparar la decisión que requiere atención.' },
+        ],
         recommended_cta: 'Continuar hacia un espacio Portfolio para revisar la lectura con mas contexto.',
         provenance_summary: [{ origin: 'AI_INFERRED' }],
         handoff_status: 'ready_with_uncertainty',

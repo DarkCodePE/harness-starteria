@@ -91,6 +91,32 @@ export type SuggestedApproach = {
   assumption?: string;
   origin: 'AI_SUGGESTED';
   review_disposition: 'UNREVIEWED';
+  provenance?: Array<{
+    origin: ProvenanceOrigin;
+    source_path?: string;
+    source_text?: string;
+  }>;
+};
+
+export type GapResolutionType =
+  | 'STARTERIA_CAN_STRUCTURE'
+  | 'STARTERIA_CAN_GUIDE'
+  | 'STARTERIA_CAN_TRACK'
+  | 'REQUIRES_ORGANIZATIONAL_INPUT'
+  | 'REQUIRES_EXTERNAL_EVIDENCE'
+  | 'OUT_OF_SCOPE';
+
+export type GapResolution = {
+  gap_id: string;
+  gap_description: string;
+  resolution_type: GapResolutionType;
+  starteria_capability?: string;
+  resolution_stage: string;
+  provenance?: {
+    origin: ProvenanceOrigin;
+    source_path?: string;
+    source_text?: string;
+  };
 };
 
 export type PortfolioEntryHandoff = {
@@ -101,6 +127,7 @@ export type PortfolioEntryHandoff = {
   alternative_approaches: SuggestedApproach[];
   known_context: Array<{ key: string; value: string; provenance?: ProvenancedText['provenance'] }>;
   unresolved_context: Array<{ gap_id: string; description: string; provenance?: ProvenancedText['provenance'] }>;
+  gap_resolution_map: GapResolution[];
   evidence_or_clarity_needed: ProvenancedText[];
   starteria_path: Array<{ action: string; description: string }>;
   recommended_cta: string;
