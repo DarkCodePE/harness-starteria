@@ -87,6 +87,7 @@ function deterministicHandoffCandidate(analysis: PortfolioEntryAnalysisV2): Port
   const approach = decision
     ? `Empezar por ordenar la situación alrededor de la decisión «${decision}», relacionando el contexto disponible con las señales y la evidencia que ya existen antes de abrir trabajo nuevo.`
     : 'Empezar por ordenar la situación y hacer explícita la decisión que se quiere habilitar, relacionando las iniciativas o señales mencionadas con la evidencia disponible antes de abrir trabajo nuevo.';
+  const approachWithContext = `${approach} Contexto considerado: ${sourceText}`;
   return {
     understanding: {
       value: sourceText || 'El usuario quiere ordenar una iniciativa dentro de un portafolio.',
@@ -98,7 +99,7 @@ function deterministicHandoffCandidate(analysis: PortfolioEntryAnalysisV2): Port
     },
     decision_to_enable: decision ? { value: decision, provenance } : 'unresolved',
     recommended_approach: {
-      description: approach,
+      description: approachWithContext,
       rationale: `Esta secuencia aborda ${decision ? `la decisión de ${decision}` : 'la falta de una decisión explícita'} y permite comparar actividad, relación con el objetivo y evidencia sin afirmar causalidad.`,
       assumption: decision
         ? 'El criterio de atención todavía requiere revisión humana y puede cambiar con nueva evidencia.'
