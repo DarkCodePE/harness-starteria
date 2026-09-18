@@ -1,7 +1,7 @@
 # Portfolio Lead Documentation Index
 
 Status: canonical documentation index
-Date: 2026-09-15
+Date: 2026-09-18
 Repository scope: public documentation/harness snapshot, not certified production runtime
 
 This folder is the starting point for Portfolio Lead documentation. It indexes authority, current contracts, target candidates, implementation reports, known legacy risks, and the next bounded context without relying on conversational history.
@@ -75,6 +75,8 @@ Primary authority map:
 | Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
 The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
+
+Portfolio Entry version status: v0.1 remains the declared current executable/reference baseline, and its Experience Contract remains the approved authority. The v0.2/v0.2.1 documents installed in `eef32d6` are candidates pending validation and explicit promotion. See the [Entry index](02-entry/README.md). The target governance paths under `docs/...` are not materialized for several v0.1 artifacts, while equivalent/current legacy sources under `doc/...` remain present with active consumers. Reconcile paths and consumers before promotion; v0.2 does not supersede v0.1.
 
 ## D. Channel-Independent Architecture
 
@@ -210,11 +212,7 @@ Architecture:
 
 Entry:
 
-- [Portfolio Entry logic contract](../experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md)
-- [Portfolio Entry acceptance checklist](../experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md)
-- [Portfolio Post-Entry Continuation contract](../experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md)
-- [Portfolio Entry agent contract](../agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md)
-- [Portfolio Entry AI harness](../ai-harness/portfolio-entry/PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md)
+- [Portfolio Entry version and document index](02-entry/README.md) — v0.1 baseline, installed v0.2/v0.2.1 candidates, evidence, and path validation gap.
 
 Bootstrap/Home:
 
