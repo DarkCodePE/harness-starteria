@@ -16,7 +16,7 @@ Este documento es un **subcontrato de experiencia de Portfolio Entry**. Está su
 
 1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
 2. ADRs aprobados
-3. `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+3. `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 Para las responsabilidades de **sesión, aclaración, exploración guiada y handoff**, este contrato gobierna la orquestación que deben respetar el Agent Contract y las Skill Contracts.
 
@@ -184,6 +184,8 @@ Puede terminar antes.
 
 Tres es el máximo de este modo, no el objetivo.
 
+La salida user-facing por turno es siempre `0..1` active question. El planner puede detectar varios gaps internamente, pero no puede presentarlos agrupados.
+
 ## 3.2. Guided Exploration
 
 Modo opcional cuando, después de la aclaración rápida, todavía existe ambigüedad material y el usuario quiere profundizar.
@@ -211,7 +213,7 @@ Reformular mi necesidad
 Cada ronda de Guided Exploration debe:
 
 1. tener un propósito visible;
-2. usar un nuevo Question Plan de máximo 0–3 preguntas;
+2. usar un nuevo Question Plan de máximo 0–1 pregunta user-facing;
 3. detenerse para sintetizar lo aprendido;
 4. mostrar qué incertidumbre se redujo;
 5. permitir al usuario decidir si quiere continuar.
@@ -242,6 +244,8 @@ ClarificationSession
 ├── exploration_round
 ├── questions_asked_current_round
 ├── questions_answered
+├── previous_questions
+├── answered_gaps
 ├── current_question_plan
 ├── stop_reason
 ├── unresolved_critical_context
@@ -293,6 +297,8 @@ Exploración guiada · ronda 1
 
 El usuario debe saber que eligió profundizar.
 
+`quick_questions_asked` cuenta preguntas efectivamente presentadas, no candidatos del planner ni preguntas almacenadas en un batch legacy. Una pregunta respondida se retira aunque su gap permanezca sin resolver.
+
 ---
 
 # 7. Actualización después de cada respuesta
@@ -318,6 +324,8 @@ session controller decide:
 ```
 
 `initial_entry_state` se preserva.
+
+La respuesta debe identificar como máximo una pregunta mediante `matchedQuestionIds`. `respondedResolves` puede ser vacío: `QUESTION ANSWERED != GAP RESOLVED`. Solo los resolve targets validados se incorporan a `answered_gaps`.
 
 ---
 
@@ -348,6 +356,8 @@ y el usuario elige:
 - handoff provisional;
 - Guided Exploration;
 - reformulación.
+
+Si la ronda no puede producir una pregunta nueva materialmente distinta, debe converger a checkpoint o stop técnico/de seguridad. Nunca se reactiva una pregunta presentada ni se busca una pregunta activa en turnos históricos cuando el latest turn no tiene ninguna.
 
 ### CH-QSTOP-03 — Noncritical gaps only
 
@@ -1007,7 +1017,7 @@ El usuario elige:
 Esperado:
 
 - nuevo Question Plan;
-- máximo 0–3 preguntas en la ronda;
+- máximo 0–1 pregunta user-facing por turno;
 - propósito visible;
 - síntesis al final;
 - opción de continuar o avanzar.
@@ -1218,6 +1228,11 @@ Antes de pasar a Harness v0.2:
 - [ ] budget de hasta 3 preguntas rápidas aceptado;
 - [ ] Guided Exploration opt-in aceptado;
 - [ ] checkpoint entre rondas aceptado;
+- [ ] una sola active question por turno;
+- [ ] answer identity 0..1 y separación entre pregunta respondida y gap resuelto;
+- [ ] `answered_gaps` contiene solo gaps resueltos;
+- [ ] no existe fallback histórico para active question;
+- [ ] cada respuesta converge a nueva pregunta, checkpoint o stop técnico/de seguridad;
 - [ ] recommended approach aceptado;
 - [ ] alternative approaches aceptado;
 - [ ] GapResolutionMap aceptado;
