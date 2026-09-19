@@ -1,5 +1,6 @@
 ﻿import type { PortfolioEntryAgentAdapterV2, PortfolioEntryAnalyzeTurnOutputV2 } from '../agent/portfolio-entry-agent-adapter';
 import { applyQuestionBudget, consumeQuestionBudget, getAvailableQuestionBudget } from './question-budget';
+import { applyAnswerResolution } from './single-turn-result';
 import { SESSION_SAFETY_LIMITS } from './session-safety-limits';
 import type {
   ClarificationStatus,
@@ -113,6 +114,9 @@ export class PortfolioEntrySessionController {
       if (budgetApplication.emitted_questions.length > 0 && !terminalStatuses.has(context.clarification_status)) {
         scriptedResponseResult = input.followUpResponder?.(budgetApplication.emitted_questions, context);
         if (scriptedResponseResult?.response) {
+          const answer = applyAnswerResolution(context, budgetApplication.emitted_questions[0] ?? null, scriptedResponseResult.matched_question_ids, scriptedResponseResult.response);
+          context = answer.context;
+          scriptedResponseResult = { ...scriptedResponseResult, matched_question_ids: answer.matchedQuestionIds, responded_resolves: answer.respondedResolves };
           nextUserInput = scriptedResponseResult.response;
         }
       }
@@ -224,7 +228,7 @@ function transitionFromStructuredOutput(
   }
 
   if (budgetOverflow && budgetBefore === 0 && context.interaction_mode === 'quick_clarification') {
-    return createTransition(fromStatus, 'exploration_offered', fromMode, fromMode, 'quick_budget_exhausted', 'budget', budgetBefore, budgetAfter);
+    return createTransition(fromStatus, 'exploration_offered', fromMode, fromMode, 'no_new_material_question', 'checkpoint', budgetBefore, budgetAfter);
   }
 
   if (plan.status === 'questions_required' && emittedQuestions.length === 0 && context.interaction_mode === 'quick_clarification') {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PortfolioEntryAgentAdapterV2, PortfolioEntryAnalyzeTurnInputV2, PortfolioEntryAnalyzeTurnOutputV2 } from '../agent/portfolio-entry-agent-adapter';
 import { createInitialSessionContext, type SessionContext } from '../domain/session.types';
+import { applyAnswerResolution } from '../session/single-turn-result';
 import { PortfolioEntrySessionController } from '../session/session-controller';
 
 class ScriptedAdapter implements PortfolioEntryAgentAdapterV2 {
@@ -58,6 +59,16 @@ const materialQuestion = output({
     expected_answer_type: 'decision',
   }],
   question_count: 1,
+  status: 'questions_required',
+});
+
+const batchedQuestions = output({
+  questions: [
+    { id: 'q1', question: 'Primera pregunta material', reason_to_ask: 'r', resolves: ['gap-1'], priority: 1, expected_answer_type: 'text' },
+    { id: 'q2', question: 'Segunda pregunta material', reason_to_ask: 'r', resolves: ['gap-2'], priority: 2, expected_answer_type: 'text' },
+    { id: 'q3', question: 'Tercera pregunta material', reason_to_ask: 'r', resolves: ['gap-3'], priority: 3, expected_answer_type: 'text' },
+  ],
+  question_count: 3,
   status: 'questions_required',
 });
 
@@ -219,5 +230,64 @@ describe('Portfolio Entry session controller', () => {
 
     expect(result.trace.turns[0]?.questions_asked).toEqual([]);
     expect(result.trace.questions_total).toBe(0);
+  });
+
+  it('normalizes a provider batch to one question and consumes one budget slot', async () => {
+    const adapter = new ScriptedAdapter([batchedQuestions]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-batch', candidateId: 'test' }).execute({
+      caseId: 'case-batch', runId: 'run-batch', candidateId: 'test',
+      initialUserInput: 'Hay varios gaps materiales.', initialContext: context(),
+    });
+
+    expect(result.trace.turns[0]?.questions_asked).toHaveLength(1);
+    expect(result.trace.turns[0]?.questions_asked[0]?.id).toBe('q1');
+    expect(result.final_context.quick_questions_asked).toBe(1);
+    expect(result.violations).toContain('question_budget_overflow');
+  });
+
+  it('answers a question without resolving its gap for an unknown response', async () => {
+    const adapter = new ScriptedAdapter([materialQuestion, sufficient]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-unknown', candidateId: 'test' }).execute({
+      caseId: 'case-unknown', runId: 'run-unknown', candidateId: 'test',
+      initialUserInput: 'Necesito aclarar una decision.', initialContext: context(),
+      followUpResponder: (questions) => ({
+        response: 'No lo sé todavía.', matched_question_ids: [questions[0].id], response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves, unmatched_questions: [], fallback_used: false, consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.trace.turns[0]?.scripted_response_result?.matched_question_ids).toEqual(['decision-gap']);
+    expect(result.trace.turns[0]?.scripted_response_result?.responded_resolves).toEqual([]);
+    expect(result.final_context.answered_gaps).toEqual([]);
+  });
+
+  it('derives a supported resolution from post-answer structured analysis, not client resolves', () => {
+    const question = { id: 'decision-gap', question: '¿Qué decisión?', resolves: ['decision_to_enable'] };
+    const answer = applyAnswerResolution(
+      context(),
+      { ...question, turn_index: 1, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 3 },
+      ['decision-gap'],
+      'La gerencia debe decidir qué iniciativas financiar primero.',
+      output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' }).analysis,
+    );
+
+    expect(answer.matchedQuestionIds).toEqual(['decision-gap']);
+    expect(answer.respondedResolves).toEqual(['decision_to_enable']);
+    expect(answer.context.answered_gaps).toEqual(['decision_to_enable']);
+  });
+
+  it.each(['No lo sé todavía.', 'Ya te respondí.', 'No entendí.', 'No estoy seguro.', 'Puede ser.'])('keeps low-information answer unresolved: %s', (response) => {
+    const question = { id: 'decision-gap', question: '¿Qué decisión?', resolves: ['decision_to_enable'] };
+    const answer = applyAnswerResolution(
+      context(),
+      { ...question, turn_index: 1, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 3 },
+      ['decision-gap'],
+      response,
+      output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' }).analysis,
+    );
+
+    expect(answer.matchedQuestionIds).toEqual(['decision-gap']);
+    expect(answer.respondedResolves).toEqual([]);
+    expect(answer.context.answered_gaps).toEqual([]);
   });
 });

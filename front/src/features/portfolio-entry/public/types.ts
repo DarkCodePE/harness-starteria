@@ -48,6 +48,7 @@ export type PortfolioEntrySessionDto = {
     turnIndex: number;
     userInput: string;
     emittedQuestions: PortfolioEntryQuestion[];
+    matchedQuestionIds?: string[];
     respondedResolves: string[];
     createdAt: string;
   }>;

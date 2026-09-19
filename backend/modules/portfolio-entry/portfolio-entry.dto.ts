@@ -21,6 +21,7 @@ export type PortfolioEntrySessionClientDto = {
     turnIndex: number;
     userInput: string;
     emittedQuestions: PortfolioEntryTurn['emittedQuestions'];
+    matchedQuestionIds: string[];
     respondedResolves: string[];
     createdAt: string;
   }>;
@@ -87,6 +88,7 @@ export function toPortfolioEntrySessionClientDto(
       turnIndex: turn.turnIndex,
       userInput: turn.userInput,
       emittedQuestions: turn.emittedQuestions,
+      matchedQuestionIds: turn.matchedQuestionIds,
       respondedResolves: turn.respondedResolves,
       createdAt: turn.createdAt.toISOString(),
     })),
@@ -107,7 +109,7 @@ export function toPortfolioEntrySessionClientDto(
       ambiguities: session.semanticState.ambiguities,
       contradictions: session.semanticState.contradictions,
     },
-    nextAction: deriveNextAction(session),
+    nextAction: deriveNextAction(session, turns),
     handoff: session.latestHandoff ? toHandoffClientDto(session.latestHandoff) : undefined,
     confirmation: session.confirmation ? toConfirmationClientDto(session.confirmation) : undefined,
   };
@@ -138,11 +140,10 @@ function toConfirmationClientDto(confirmation: PortfolioEntryConfirmation): Port
   };
 }
 
-function deriveNextAction(session: PortfolioEntrySession): PortfolioEntrySessionClientDto['nextAction'] {
+function deriveNextAction(session: PortfolioEntrySession, turns: PortfolioEntryTurn[]): PortfolioEntrySessionClientDto['nextAction'] {
   if (session.semanticState.runtimeClarificationStatus === 'exploration_offered') return 'offer_guided_exploration';
   if (session.lifecycleStatus === 'ENTRY_CAPTURED' || session.lifecycleStatus === 'CLARIFYING') {
-    const lastTransition = session.semanticState.previousQuestions.at(-1);
-    return lastTransition ? 'answer_clarification' : 'submit_message';
+    return (turns.at(-1)?.emittedQuestions.length ?? 0) > 0 ? 'answer_clarification' : 'submit_message';
   }
   if (session.lifecycleStatus === 'HANDOFF_ELIGIBLE') return 'generate_handoff';
   if (session.lifecycleStatus === 'HANDOFF_READY' || session.lifecycleStatus === 'AWAITING_CONFIRMATION') return 'review_handoff';
