@@ -41,11 +41,18 @@ vi.mock('../../../shared/db/prisma', () => ({ default: {}, prisma: {} }));
 
 const upsertInitiativeMeta = vi.fn();
 const listStrategicFronts = vi.fn();
+const getHome = vi.fn();
 
 vi.mock('../portfolio.service', () => ({
   PortfolioService: class {
     upsertInitiativeMeta = upsertInitiativeMeta;
     listStrategicFronts = listStrategicFronts;
+  },
+}));
+
+vi.mock('../portfolio-home.read-service', () => ({
+  PortfolioHomeReadService: class {
+    getHome = getHome;
   },
 }));
 
@@ -74,6 +81,7 @@ describe('portfolio.router — autorización de escrituras (ADR-028)', () => {
     vi.clearAllMocks();
     upsertInitiativeMeta.mockResolvedValue({ projectId: 'p-1' });
     listStrategicFronts.mockResolvedValue([]);
+    getHome.mockResolvedValue({ strategicUnits: [], pendingDecisions: [] });
   });
 
   it('un portfolio_lead PUEDE escribir la meta de una iniciativa', async () => {
@@ -127,5 +135,14 @@ describe('portfolio.router — autorización de escrituras (ADR-028)', () => {
     const res = await request(makeApp()).get('/api/v1/portfolio/strategic-fronts');
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
+  });
+
+  it('expone Portfolio Home como lectura autenticada sin permiso de escritura', async () => {
+    currentUser = { id: 'u-par', email: 'par@starteria.io', role: 'participante' };
+
+    const res = await request(makeApp()).get('/api/v1/portfolio/home');
+
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(getHome).toHaveBeenCalledWith('u-par');
   });
 });

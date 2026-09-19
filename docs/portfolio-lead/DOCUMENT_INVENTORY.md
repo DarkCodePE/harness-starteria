@@ -21,8 +21,9 @@ Actions:
 | --- | --- | --- | --- | --- | --- | --- |
 | `STARTERIA_AUTHORITY.md` | `docs/STARTERIA_AUTHORITY.md` | v0.1 | CURRENT_AUTHORITY | Authority map | Defines hierarchy and repo rules. | KEEP_IN_PLACE |
 | `CURRENT_STATE.md` | `CURRENT_STATE.md` | current | CURRENT_AUTHORITY | Repository state | Declares repo as public docs/harness snapshot. | KEEP_IN_PLACE |
-| `STARTERIA_CORE_LOGIC_CONTRACT.md` | `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` | v0.3 candidate | TARGET_CANDIDATE | Core Contract | Highest logical reference, but factual state is candidate/re-test. | KEEP_IN_PLACE |
-| `ADR-INDEX.md` | `docs/product-adr/ADR-INDEX.md` | current | REFERENCE | Approved/proposed ADR index | Product ADR entry point. | KEEP_IN_PLACE |
+| `CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` | `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` | v0.2 | FACTUAL_CURRENT | Core Contract | Current factual Core; `Base fundacional revisada / Por validar`. | KEEP_IN_PLACE |
+| `STARTERIA_CORE_LOGIC_CONTRACT.md` | external candidate; not materialized under `docs/core/` | v0.3 | EXTERNAL_RECONCILIATION_CANDIDATE | Core candidate | Not current authority; requires ADR, original evidence and re-test before promotion. See CORE-0 report. | KEEP_EXTERNAL / DO_NOT_PROMOTE |
+| `ADR-INDEX.md` | `doc/product-adr/ADR-INDEX.md` | current | REFERENCE | Approved/proposed ADR index | Product ADR entry point in the factual tree. | KEEP_AND_RECONCILE |
 | `ADR-028-portfolio-lead-platform-role.md` | `backend/docs/adr/ADR-028-portfolio-lead-platform-role.md` | ADR-028 | REFERENCE | Product/auth reference | Defines `portfolio_lead` role history. | KEEP_IN_PLACE |
 | `ADR-029-permission-based-authorization.md` | `backend/docs/adr/ADR-029-permission-based-authorization.md` | ADR-029 | REFERENCE | Product/auth reference | Permission and multi-role background for PG-4. | KEEP_IN_PLACE |
 | `ADR-030-challenge-and-initiative-state-machine.md` | `backend/docs/adr/ADR-030-challenge-and-initiative-state-machine.md` | ADR-030 | REFERENCE | Product lifecycle reference | Legacy state machine context; not Activation/Handoff completion. | KEEP_IN_PLACE |

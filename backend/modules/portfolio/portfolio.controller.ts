@@ -2,13 +2,33 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../shared/types/auth.types';
 import { PortfolioService } from './portfolio.service';
 import { ApiResponse } from '../../shared/types/api.types';
+import { PortfolioHomeReadService } from './portfolio-home.read-service';
 import {
   dryRunProjectionReadFailure,
   shouldFailStrategicFrontProjectionRead,
 } from '../copilot/application/copilot-dry-run-failure-injection';
 
 export class PortfolioController {
-  constructor(private service: PortfolioService) {}
+  constructor(
+    private service: PortfolioService,
+    private readonly homeReadService?: PortfolioHomeReadService,
+  ) {}
+
+  getHome = async (
+    req: AuthenticatedRequest,
+    res: Response<ApiResponse>,
+    next: NextFunction,
+  ) => {
+    try {
+      if (!this.homeReadService || !req.user?.id) {
+        throw new Error('Portfolio Home read service is not configured');
+      }
+      const data = await this.homeReadService.getHome(req.user.id);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  };
 
   // ─── Strategic Fronts ────────────────────────────────────────────────────────
 

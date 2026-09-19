@@ -103,11 +103,14 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
 ## Autoridad vigente
 
 - Authority map: `docs/STARTERIA_AUTHORITY.md`.
-- Core Contract: `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
-  - Estado factual real: `v0.3 candidata`, `Candidata de gobernanza / Requiere re-test`.
+- Core Contract: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`.
+  - Estado factual real: `v0.2`, `Base fundacional revisada / Por validar`.
+  - `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` no esta materializado ni promovido.
+  - Core v0.3 es un candidate externo no autoritativo; requiere ADR, evidencia original y re-test antes de promocionarse.
+  - Evidencia: `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`.
   - Su presencia aqui no lo convierte en aprobado.
 - Portfolio Entry Experience Contract aprobado:
-  - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
+  - `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
   - Este es el unico `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` que debe usarse como autoridad activa para Pantalla 1.
   - SHA-256 observado: `D34FDEA9A5E5BE843105DDC2A3CED4970144AE2596AC8BF5AB897A95B2A54E8A`.
 - Portfolio Post-Entry Continuation:
@@ -115,6 +118,8 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   - Estado de implementación de esta slice: `IMPLEMENTED_UNVERIFIED` en
     `feat/portfolio-entry-portfolio-access`; la regla de concesión de acceso procede
     del requerimiento explícito de la slice y queda pendiente de validación E2E.
+
+- Portfolio Home Governance: PH-0 target freeze at `docs/portfolio-lead/06-portfolio-home-governance/`; runtime not certified.
 
 ## ADRs
 
