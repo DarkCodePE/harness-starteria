@@ -279,6 +279,8 @@ describe('PortfolioEntryExperience', () => {
 
     renderExperience();
 
+    expect(await screen.findByText('Tu punto de partida')).toBeInTheDocument();
+    expect(screen.getByText('Lo que estamos aclarando ahora')).toBeInTheDocument();
     fireEvent.click(await screen.findByText('Ver conversación'));
     expect(screen.getByText(/Tenemos 18 iniciativas/)).toBeInTheDocument();
     expect(screen.getByText(/Qué decisión necesita habilitar/)).toBeInTheDocument();
@@ -344,6 +346,7 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.getByText(/Por qué empezar por ahí/i)).toBeInTheDocument();
     expect(screen.getByText(/Lo que todavía puede cambiar la decisión/i)).toBeInTheDocument();
     expect(screen.getByText(/Cómo lo llevamos a trabajo/i)).toBeInTheDocument();
+    expect(screen.getByText(/05 · Continúa con Starteria/i)).toBeInTheDocument();
     expect(screen.getByText(/Propuesta de Starteria/i)).toBeInTheDocument();
     expect(screen.getByText(/Otras formas de empezar/i)).toBeInTheDocument();
     expect(screen.getByText(/Requiere evidencia que Starteria puede registrar/i)).toBeInTheDocument();

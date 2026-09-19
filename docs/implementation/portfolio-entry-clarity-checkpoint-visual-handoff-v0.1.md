@@ -24,6 +24,9 @@ core_change: NO
 steps_change: NO
 canonical_domain_change: NO
 prisma_change: NO
+prisma_schema_change: NO
+canonical_domain_schema_change: NO
+public_api_request_schema_change: YES — additive `provisional_route` enum option
 permissions_change: NO
 routes_change: NO
 
@@ -39,7 +42,7 @@ The implementation follows the factual Portfolio Entry clarity/handoff audit sup
 
 - Added a reusable `Ver conversación` disclosure backed only by `session.conversation`.
 - Removed taxonomy-based intermediate interpretation from Quick Clarification. The UI now shows the user-declared context and the current clarification point.
-- Added specificity guidance to the Question Planner and handoff prompts without changing schemas.
+- Added specificity guidance to the Question Planner and handoff prompts without changing persistence or canonical domain schemas.
 - Replaced the ambiguous Guided Exploration reject path with `provisional_route`, preserving the existing session architecture and producing `ready_for_handoff`.
 - Reorganized the handoff around situation, approach, path, material gaps and continuation.
 - Compacted `ConfirmedSummary` while retaining the approach, rationale, decision/focus and CTA.
@@ -60,6 +63,7 @@ Added or updated coverage for:
 - The clarification UI does not invent a semantic diagnosis when the DTO exposes only frame-level semantics.
 - Conversation history is reconstructed from existing persisted turns; no parallel chat model or persistence was added.
 - `provisional_route` extends the existing guided-exploration action contract rather than creating a new lifecycle.
+- The public request contract adds only the `provisional_route` enum option; this is not a Prisma schema or canonical domain schema change.
 - Handoff data remains model/backend-owned; frontend only composes the existing DTO fields.
 
 ## Unresolved issues
@@ -73,7 +77,9 @@ Added or updated coverage for:
 Core changed: NO
 Steps changed: NO
 Canonical objects created: NO
-Prisma/schema changed: NO
+Prisma schema changed: NO
+Canonical domain schema changed: NO
+Public API request schema changed: YES — additive `provisional_route` enum option
 Permissions/auth semantics changed: NO
 Continuation routes changed: NO
 New persistence added: NO

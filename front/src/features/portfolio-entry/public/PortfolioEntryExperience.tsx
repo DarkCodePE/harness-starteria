@@ -463,7 +463,7 @@ function ConversationPanel({
           <ConversationTrace session={session} />
 
           <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
-            <p className="text-xs font-semibold uppercase text-text-muted">Lo que tengo claro hasta ahora</p>
+            <p className="text-xs font-semibold uppercase text-text-muted">Tu punto de partida</p>
             <p className="mt-2 text-sm leading-6 text-text-secondary">
               {session.conversation[0]?.userInput || 'Todavía no hay contexto declarado.'}
             </p>
@@ -471,7 +471,7 @@ function ConversationPanel({
 
           {activeQuestion ? (
             <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
-              <p className="text-xs font-semibold uppercase text-text-muted">Lo que necesito aclarar</p>
+              <p className="text-xs font-semibold uppercase text-text-muted">Lo que estamos aclarando ahora</p>
               <p className="mt-2 text-sm font-semibold leading-6 text-text-primary">{activeQuestion.question}</p>
             </div>
           ) : null}
@@ -774,7 +774,7 @@ function EarlyAccessCard({
   return (
     <section className="space-y-5 rounded-ds-lg border border-border-default bg-background-subtle p-5 md:p-6">
       <div>
-        <p className="text-xs font-semibold uppercase text-brand-primary">07 · Continua con Starteria</p>
+        <p className="text-xs font-semibold uppercase text-brand-primary">05 · Continúa con Starteria</p>
         <h2 className="mt-3 text-xl font-semibold leading-tight text-text-primary">Lleva esta lectura a tu portafolio.</h2>
         <p className="mt-3 text-sm leading-6 text-text-secondary">
           Conserva lo entendido y continúa trabajando sobre los pendientes cuando tu cuenta lo permita.

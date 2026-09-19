@@ -206,6 +206,19 @@ function transitionFromStructuredOutput(
   budgetOverflow: boolean,
 ): SessionTransition {
   const plan = output.question_plan;
+  if (context.interaction_mode === 'quick_clarification' && plan.stop_reason === 'sufficient_context') {
+    return createTransition(
+      fromStatus,
+      'exploration_offered',
+      fromMode,
+      fromMode,
+      'sufficient_context_checkpoint',
+      'agent_output',
+      budgetBefore,
+      budgetAfter,
+    );
+  }
+
   if (isReadySignal(plan.status, plan.stop_reason)) {
     return createTransition(fromStatus, 'ready_for_handoff', fromMode, fromMode, plan.stop_reason ?? 'structured_no_questions_required', 'agent_output', budgetBefore, budgetAfter);
   }

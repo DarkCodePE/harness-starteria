@@ -77,7 +77,7 @@ describe('Portfolio Entry session controller', () => {
     expect(result.completed).toBe(false);
   });
 
-  it('reaches handoff readiness only from an explicit sufficient-context signal', async () => {
+  it('offers an explicit checkpoint after sufficient context', async () => {
     const adapter = new ScriptedAdapter([sufficient]);
     const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-2', candidateId: 'test' }).execute({
       caseId: 'case-2',
@@ -87,8 +87,55 @@ describe('Portfolio Entry session controller', () => {
       initialContext: context(),
     });
 
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.final_context.stop_reason).toBeNull();
+    expect(result.completed).toBe(false);
+  });
+
+  it('moves from the sufficient-context checkpoint to a provisional handoff', async () => {
+    const adapter = new ScriptedAdapter([sufficient]);
+    const offered = await new PortfolioEntrySessionController(adapter, { runId: 'run-2a', candidateId: 'test' }).execute({
+      caseId: 'case-2a',
+      runId: 'run-2a',
+      candidateId: 'test',
+      initialUserInput: 'Tenemos 18 iniciativas comerciales y una decisión de seguimiento pendiente.',
+      initialContext: context(),
+    });
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-2a', candidateId: 'test' }).execute({
+      caseId: 'case-2a',
+      runId: 'run-2a',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: offered.final_context,
+      guidedExplorationChoice: 'provisional_route',
+    });
+
     expect(result.final_context.clarification_status).toBe('ready_for_handoff');
-    expect(result.stop_reason).toBe('sufficient_context');
+    expect(result.final_context.user_exploration_choice).toBe('provisional_route');
+    expect(result.stop_reason).toBe('user_chose_provisional_route');
+  });
+
+  it('moves from the sufficient-context checkpoint to guided exploration on accept', async () => {
+    const adapter = new ScriptedAdapter([sufficient, materialQuestion]);
+    const offered = await new PortfolioEntrySessionController(adapter, { runId: 'run-2b', candidateId: 'test' }).execute({
+      caseId: 'case-2b',
+      runId: 'run-2b',
+      candidateId: 'test',
+      initialUserInput: 'Tenemos 18 iniciativas comerciales y una decisión de seguimiento pendiente.',
+      initialContext: context(),
+    });
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-2b', candidateId: 'test' }).execute({
+      caseId: 'case-2b',
+      runId: 'run-2b',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: offered.final_context,
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(result.final_context.clarification_status).toBe('guided_exploration');
+    expect(result.final_context.interaction_mode).toBe('guided_exploration');
+    expect(result.final_context.exploration_round).toBe(1);
   });
 
   it('does not treat an unqualified no-questions status as sufficient context', async () => {

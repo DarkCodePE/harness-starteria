@@ -249,7 +249,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
     await expect(page.getByText(/Quick clarification/i)).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText(/Lo que necesito aclarar/i)).toBeVisible();
+    await expect(page.getByText(/Lo que estamos aclarando ahora/i)).toBeVisible();
     await expect(page.getByText(/Ver conversación/i)).toBeVisible();
     await expect(page.getByLabel(/Tu respuesta/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toBeVisible();
