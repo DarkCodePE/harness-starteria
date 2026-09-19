@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { PortfolioEntryExperience } from '../PortfolioEntryExperience';
 import type { PortfolioEntryHandoff, PortfolioEntrySessionDto } from '../types';
@@ -208,7 +208,10 @@ describe('PortfolioEntryExperience', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /analizar mi situaci[oó]n/i }));
 
-    expect(await screen.findByText(/que decision necesitas habilitar/i)).toBeInTheDocument();
+    const currentClarification = within(
+      screen.getByText('Lo que estamos aclarando ahora').parentElement as HTMLElement,
+    );
+    expect(await currentClarification.findByText(/que decision necesitas habilitar/i)).toBeInTheDocument();
     expect(serviceMocks.submitPortfolioEntryMessage).toHaveBeenCalledWith(
       '11111111-1111-4111-8111-111111111111',
       'entry-token',
@@ -282,9 +285,10 @@ describe('PortfolioEntryExperience', () => {
     expect(await screen.findByText('Tu punto de partida')).toBeInTheDocument();
     expect(screen.getByText('Lo que estamos aclarando ahora')).toBeInTheDocument();
     fireEvent.click(await screen.findByText('Ver conversación'));
-    expect(screen.getByText(/Tenemos 18 iniciativas/)).toBeInTheDocument();
-    expect(screen.getByText(/Qué decisión necesita habilitar/)).toBeInTheDocument();
-    expect(screen.getByText(/qué iniciativas deben recibir seguimiento/)).toBeInTheDocument();
+    const trace = within(screen.getByTestId('portfolio-entry-conversation-trace'));
+    expect(trace.getByText(/Tenemos 18 iniciativas/)).toBeInTheDocument();
+    expect(trace.getByText(/Qué decisión necesita habilitar/)).toBeInTheDocument();
+    expect(trace.getByText(/qué iniciativas deben recibir seguimiento/)).toBeInTheDocument();
     expect(screen.queryByText('q-1')).not.toBeInTheDocument();
     expect(screen.queryByText('decision_to_enable')).not.toBeInTheDocument();
   });
