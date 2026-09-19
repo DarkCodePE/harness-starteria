@@ -36,12 +36,14 @@ Esta versión incorpora hallazgos observados en tests con casos de Portfolio Lea
 
 Cambios contractuales:
 
+ADR-002 alignment: the accumulated Quick Clarification budget remains 0–3, but the productive question plan exposes 0–1 active user-facing question per turn. The agent may identify multiple gaps internally; it must select only the highest-priority unresolved material gap and must not batch or retry an answered “No lo sé todavía” question.
+
 - se añade `portfolio_governance` como intent;
 - `entry_state` se separa en `initial_entry_state` y `current_frame`;
 - `initial_entry_state` conserva el origen de entrada;
 - `current_frame` puede evolucionar con nueva información;
 - reverse alignment puede activarse de forma tardía cuando aparece una solución o iniciativa durante la aclaración;
-- el límite 0–3 se mantiene como **question plan inicial**, no como autorización para loops conversacionales indefinidos.
+- el budget acumulado puede ser 0–3, pero el question plan productivo expone 0–1 active question user-facing por turno; no se autoriza batching ni loops indefinidos.
 
 No se modifica todavía:
 
@@ -413,8 +415,10 @@ Objetivo:
 Límite inicial:
 
 ```text
-0–3 preguntas
+0–1 active question user-facing por turno
 ```
+
+El agente puede identificar múltiples gaps, pero el plan productivo expone solo la pregunta única de mayor prioridad no resuelta cuyo resultado pueda cambiar materialmente el abordaje recomendado, el framing de decisión, la ruta Starteria o la secuencia de trabajo. No se permite batching.
 
 Prioridad:
 
@@ -446,7 +450,7 @@ Secuencia lógica recomendada:
 4. Detect ambiguities + contradictions
 5. Evaluate reverse alignment need
 6. Determine missing critical context
-7. Plan 0–3 questions
+7. Plan 0–1 user-facing question (o cero si existe suficiente claridad, no hay gap material o el budget está agotado)
 8. Assemble PortfolioEntryAnalysis
 9. Validate contract invariants
 10. Return structured result
@@ -497,7 +501,7 @@ No evalúa viabilidad ni éxito.
 
 Produce:
 
-- 0–3 preguntas;
+- 0–1 pregunta user-facing;
 - orden de prioridad;
 - reason-to-ask si el schema posterior lo contempla.
 
@@ -911,6 +915,8 @@ Antes de pasar a Skill Contracts:
 - [ ] provenance aprobada;
 - [ ] reverse alignment aprobado;
 - [ ] question planning aprobado;
+- [ ] el agente separa gaps internos de la única active question user-facing;
+- [ ] protege preguntas ya presentadas y no reintenta “No lo sé todavía”;
 - [ ] boundary IA/backend/humano aprobada;
 - [ ] no-canonicalization aprobada;
 - [ ] edge cases aprobados;

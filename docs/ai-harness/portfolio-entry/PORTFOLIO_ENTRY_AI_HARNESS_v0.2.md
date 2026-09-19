@@ -50,6 +50,8 @@ Fuente de evidencia, **no autoridad**:
 
 - `PORTFOLIO_ENTRY_TEST_FINDINGS_REGISTER_v0.2.md`
 
+Acceptance expectations for ADR-002 are recorded in `PORTFOLIO_ENTRY_CLARIFICATION_CONVERGENCE_ACCEPTANCE_v0.1.md`.
+
 Regla:
 
 > Si el Harness revela un conflicto con un contrato, el test no puede “corregir” silenciosamente el contrato. Debe registrarse el fallo y decidirse si cambia implementación, prompt, skill, agent, experience contract o una hipótesis.
@@ -469,6 +471,10 @@ Las siguientes dimensiones son principalmente contractuales.
 | Reverse Alignment | activación y gaps correctos |
 | Question Planning | preguntas mínimas y no redundantes |
 | Session Governance | budget/modo/checkpoints |
+| Active Question | `max_questions_per_turn = 1`; una respuesta mapea como máximo a una pregunta activa |
+| Answer Resolution | separar pregunta respondida de gap resuelto; `answered_gaps` solo contiene gaps resueltos |
+| Historical Safety | no fallback histórico para active question; turnos legacy con `questions[]` > 1 siguen siendo legibles |
+| Convergence | cada respuesta produce una nueva pregunta materialmente distinta, checkpoint o stop técnico/de seguridad |
 | Authority | IA no confirma ni decide fuera de autoridad |
 | Step Boundary | no invade Steps |
 | Canonicalization | no crea objetos canónicos |
@@ -580,6 +586,8 @@ o viceversa.
 ## HF-09 — Quick clarification overflow
 
 Hace cuarta pregunta dentro de Quick Clarification sin checkpoint/cambio explícito de modo.
+
+También es failure si un solo turno presenta más de una pregunta user-facing o si una respuesta intenta mapear más de un `matchedQuestionId`.
 
 ## HF-10 — Silent guided exploration
 
@@ -1060,6 +1068,10 @@ Esperado:
 
 ```text
 quick_questions_total <= 3
+max_questions_per_turn = 1
+one response -> max 1 matchedQuestionId
+answered question != resolved gap
+active question never uses historical fallback
 handoff_ready = true
 guided_exploration_not_required
 ```
@@ -1724,6 +1736,11 @@ El diseño del Harness está listo para implementación cuando:
 - [ ] existe política anti-test-fitting;
 - [ ] existe holdout;
 - [ ] hard failures v0.2 están definidos;
+- [ ] `max_questions_per_turn = 1`;
+- [ ] `max_quick_questions_total = 3`;
+- [ ] se valida answer identity 0..1;
+- [ ] se distingue pregunta respondida de gap resuelto;
+- [ ] se verifica no stale fallback y convergencia tras cada respuesta;
 - [ ] session trace está definido;
 - [ ] Quick Clarification está testeado;
 - [ ] Guided Exploration está testeado;

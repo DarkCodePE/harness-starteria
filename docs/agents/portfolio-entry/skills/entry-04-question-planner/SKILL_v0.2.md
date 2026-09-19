@@ -38,7 +38,7 @@ Esta versión incorpora hallazgos derivados del testing de Portfolio Entry.
 
 Cambios contractuales:
 
-- mantiene `0–3` como máximo por planificación;
+- mantiene `questions[]` por compatibilidad, pero retorna `0..1` pregunta user-facing por turno;
 - deja explícito que el skill debe respetar el budget disponible que le entregue el session controller;
 - soporta dos contextos de uso:
   - `quick_clarification`;
@@ -129,6 +129,8 @@ exploration_goal
 0..3
 ```
 
+El presupuesto total puede ser 0..3, pero el output productivo de un turno nunca supera una pregunta.
+
 Lo calcula y entrega el session controller.
 
 `previous_questions`:
@@ -206,14 +208,14 @@ El skill nunca puede producir más preguntas que el budget recibido.
 Regla:
 
 ```text
-question_count <= min(3, available_question_budget)
+question_count <= min(1, available_question_budget)
 ```
 
 Ejemplos:
 
 ```text
 available_question_budget = 3
-→ output posible: 0, 1, 2 o 3
+→ output posible: 0 o 1
 ```
 
 ```text
@@ -257,6 +259,8 @@ No utilizar Quick Clarification para:
 Principio:
 
 > Quick Clarification busca suficiente claridad para orientar, no comprensión exhaustiva.
+
+La pregunta elegida debe ser la única de mayor prioridad entre los gaps materiales no resueltos y debe poder cambiar materialmente el recommended approach, el decision framing, la Starteria path o la work sequence. No hacer batching.
 
 ---
 
@@ -326,6 +330,8 @@ No volver a preguntar:
 - lo ya respondido;
 - la misma pregunta reformulada;
 - un gap ya suficientemente resuelto.
+
+Una respuesta explícita como “No lo sé todavía” cuenta como pregunta respondida, no como gap resuelto, y no habilita repetir la misma pregunta.
 
 Si una respuesta anterior fue ambigua, puede reformularse solo si la ambigüedad sigue siendo material.
 
@@ -809,7 +815,7 @@ El skill cumple si:
 
 - respeta `interaction_mode`;
 - respeta `available_question_budget`;
-- devuelve 0–3 preguntas;
+- devuelve 0–1 pregunta user-facing;
 - evita repetir preguntas;
 - Quick Clarification mantiene foco crítico;
 - Guided Exploration mantiene foco en `exploration_goal`;

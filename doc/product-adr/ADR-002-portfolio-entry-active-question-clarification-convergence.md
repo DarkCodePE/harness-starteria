@@ -1,8 +1,8 @@
 # ADR-002: Portfolio Entry active question, answer resolution and clarification convergence
 
-> PROPOSED: decision for review. This ADR does not authorize runtime implementation by itself.
+> ACCEPTED: approved product decision. This ADR does not authorize runtime implementation by itself.
 
-Estado: Propuesto para revisión  
+Estado: Aceptado  
 Fecha: 2026-09-19  
 Relaciona: `docs/implementation/portfolio-entry-active-question-loop-audit-v0.1.md`; `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_CLARIFICATION_HANDOFF_CONTRACT_v0.2.1.md`; `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_VALUE_HANDOFF_TARGET_v0.1.md`; `docs/agents/portfolio-entry/skills/entry-04-question-planner/SKILL_v0.2.md`
 
@@ -448,8 +448,12 @@ Rollback must preserve persisted evidence and avoid reactivating retired questio
 ## Decision status
 
 ```text
-STATUS: PROPOSED
+STATUS: ACCEPTED
 IMPLEMENTATION AUTHORIZED: NO
 RUNTIME CHANGED: NO
 PRODUCT TARGET CHANGED: NO
 ```
+
+## Acceptance record
+
+Accepted on 2026-09-19 after final consistency review against the canonical Portfolio Entry Experience Contract, the current authority map and the factual Core Contract state. No conflict was found: this decision is subordinate to Core, does not modify Core or Steps, preserves `questions[]` for compatibility, and introduces no persistence model or breaking schema change.
