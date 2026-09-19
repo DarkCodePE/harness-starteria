@@ -107,7 +107,7 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   - Estado factual real: `v0.3 candidata`, `Candidata de gobernanza / Requiere re-test`.
   - Su presencia aqui no lo convierte en aprobado.
 - Portfolio Entry Experience Contract aprobado:
-  - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
+  - `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
   - Este es el unico `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` que debe usarse como autoridad activa para Pantalla 1.
   - SHA-256 observado: `D34FDEA9A5E5BE843105DDC2A3CED4970144AE2596AC8BF5AB897A95B2A54E8A`.
 - Portfolio Post-Entry Continuation:
