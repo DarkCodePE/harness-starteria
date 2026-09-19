@@ -92,12 +92,12 @@ describe('portfolioEntryPublicService', () => {
     });
   });
 
-  it('uses the Guided Exploration endpoint for accept/reject choice', async () => {
+  it('uses the Guided Exploration endpoint for accept/provisional-route choice', async () => {
     server.use(
       http.post('*/public/portfolio-entry/sessions/:sessionId/guided-exploration', async ({ request }) => {
         const body = await request.json();
         expect(request.headers.get('Idempotency-Key')).toBe('guided-key');
-        expect(body).toEqual({ expectedRevision: 2, choice: 'accept' });
+        expect(body).toEqual({ expectedRevision: 2, choice: 'provisional_route' });
         return HttpResponse.json({ success: true, data: makeSession({ revision: 3, lifecycleStatus: 'CLARIFYING' }) });
       }),
     );
@@ -105,7 +105,7 @@ describe('portfolioEntryPublicService', () => {
     await chooseGuidedExploration('11111111-1111-4111-8111-111111111111', 'entry-token', {
       expectedRevision: 2,
       idempotencyKey: 'guided-key',
-      choice: 'accept',
+      choice: 'provisional_route',
     });
   });
 

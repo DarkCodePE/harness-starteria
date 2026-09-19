@@ -6,7 +6,7 @@ export type PortfolioEntryAnalyticsEvent =
   | 'clarification_answered'
   | 'guided_exploration_offered'
   | 'guided_exploration_accepted'
-  | 'guided_exploration_rejected'
+  | 'guided_provisional_route_selected'
   | 'handoff_generated'
   | 'handoff_corrected'
   | 'handoff_confirmed'

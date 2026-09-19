@@ -21,7 +21,7 @@ export const submitMessageBodySchema = expectedRevisionSchema.extend({
 export const materializeHandoffBodySchema = expectedRevisionSchema.strict();
 
 export const guidedExplorationBodySchema = expectedRevisionSchema.extend({
-  choice: z.enum(['accept', 'reject']),
+  choice: z.enum(['accept', 'provisional_route', 'reject']),
 }).strict();
 
 export const confirmationBodySchema = expectedRevisionSchema.extend({
