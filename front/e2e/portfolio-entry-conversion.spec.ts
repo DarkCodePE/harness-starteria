@@ -263,13 +263,13 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       const legacyNavigation = watchForbiddenPortfolioEntryNavigation(page);
       await reachHandoff(page, scenario, testInfo);
 
-      await expect(page.getByText(/Lectura inicial lista/i)).toBeVisible();
-      await expect(page.getByText(/Tu situación/i)).toBeVisible();
-      await expect(page.getByText(/Qué haría Starteria primero/i)).toBeVisible();
-      await expect(page.getByText(/Por qué empezar por ahí/i)).toBeVisible();
-      await expect(page.getByText(/Lo que todavía puede cambiar la decisión/i)).toBeVisible();
-      await expect(page.getByText(/Cómo lo llevamos a trabajo/i)).toBeVisible();
-      await expect(page.getByText(/Ver conversación/i)).toBeVisible();
+      await expect(page.getByText('Lectura inicial lista', { exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Tu situación', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Qué haría Starteria primero', exact: true })).toBeVisible();
+      await expect(page.getByText('Por qué empezar por ahí', { exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Lo que todavía puede cambiar la decisión', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Cómo lo llevamos a trabajo', exact: true })).toBeVisible();
+      await expect(page.getByText('Ver conversación', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
       const recommendedApproach = page

@@ -115,7 +115,7 @@ describe('Portfolio Entry Experimental Session API', () => {
 
     const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
     const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
-    const second = await request(app)
+    const checkpoint = await request(app)
       .post(`${base}/sessions/${created.sessionId}/messages`)
       .set('X-Starteria-Entry-Token', created.token)
       .set('Idempotency-Key', 'clarify-live-like-2')
@@ -127,11 +127,21 @@ describe('Portfolio Entry Experimental Session API', () => {
       })
       .expect(200);
 
-    expect(second.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
-    expect(second.body.data.nextAction).toBe('generate_handoff');
-    expect(second.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
-    expect(second.body.data.semanticProjection.initialEntryState).toBe('portfolio_first');
-    expect(second.body.data.semanticProjection.currentFrame).toBe('portfolio_first');
+    expect(checkpoint.body.data.lifecycleStatus).toBe('CLARIFYING');
+    expect(checkpoint.body.data.nextAction).toBe('offer_guided_exploration');
+    expect(checkpoint.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
+
+    const handoff = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/guided-exploration`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'clarify-live-like-provisional')
+      .send({ expectedRevision: checkpoint.body.data.revision, choice: 'provisional_route' })
+      .expect(200);
+
+    expect(handoff.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    expect(handoff.body.data.nextAction).toBe('generate_handoff');
+    expect(handoff.body.data.semanticProjection.initialEntryState).toBe('portfolio_first');
+    expect(handoff.body.data.semanticProjection.currentFrame).toBe('portfolio_first');
   });
 
   it('offers Guided Exploration without automatic opt-in and accepts through the explicit HTTP contract', async () => {
@@ -305,9 +315,10 @@ describe('Portfolio Entry Experimental Session API', () => {
       .send({ expectedRevision: 0, message: 'Necesitamos ordenar iniciativas comerciales para decidir foco y financiamiento trimestral.' })
       .expect(200);
 
-    expect(response.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    expect(response.body.data.lifecycleStatus).toBe('CLARIFYING');
+    expect(response.body.data.nextAction).toBe('offer_guided_exploration');
     const stored = await repository.findSessionById(created.sessionId);
-    expect(stored?.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    expect(stored?.lifecycleStatus).toBe('CLARIFYING');
     expect(stored?.revision).toBe(1);
   });
 
@@ -606,7 +617,19 @@ async function readySession(app: express.Express): Promise<{ sessionId: string; 
     .set('Idempotency-Key', `ready-${created.sessionId}`)
     .send({ expectedRevision: 0, message: 'Queremos ordenar el portafolio de iniciativas comerciales para decidir inversion y foco del trimestre.' })
     .expect(200);
-  return { ...created, revision: submitted.body.data.revision };
+  expect(submitted.body.data.lifecycleStatus).toBe('CLARIFYING');
+  expect(submitted.body.data.nextAction).toBe('offer_guided_exploration');
+
+  const provisional = await request(app)
+    .post(`${base}/sessions/${created.sessionId}/guided-exploration`)
+    .set('X-Starteria-Entry-Token', created.token)
+    .set('Idempotency-Key', `ready-provisional-${created.sessionId}`)
+    .send({ expectedRevision: submitted.body.data.revision, choice: 'provisional_route' })
+    .expect(200);
+  expect(provisional.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+  expect(provisional.body.data.nextAction).toBe('generate_handoff');
+
+  return { ...created, revision: provisional.body.data.revision };
 }
 
 async function offerGuidedExploration(app: express.Express): Promise<{
