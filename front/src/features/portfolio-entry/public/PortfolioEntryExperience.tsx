@@ -1201,7 +1201,6 @@ export function PortfolioEntryExperience({
         idempotencyKey: createIdempotencyKey('portfolio-entry:message'),
         message,
         matchedQuestionIds: activeQuestion ? [activeQuestion.id] : undefined,
-        respondedResolves: activeQuestion ? activeQuestion.resolves : undefined,
       });
       setSessionDto(next);
       setCurrentInput('');

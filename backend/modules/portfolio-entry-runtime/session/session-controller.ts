@@ -114,7 +114,7 @@ export class PortfolioEntrySessionController {
       if (budgetApplication.emitted_questions.length > 0 && !terminalStatuses.has(context.clarification_status)) {
         scriptedResponseResult = input.followUpResponder?.(budgetApplication.emitted_questions, context);
         if (scriptedResponseResult?.response) {
-          const answer = applyAnswerResolution(context, budgetApplication.emitted_questions[0] ?? null, scriptedResponseResult.matched_question_ids, scriptedResponseResult.responded_resolves, scriptedResponseResult.response);
+          const answer = applyAnswerResolution(context, budgetApplication.emitted_questions[0] ?? null, scriptedResponseResult.matched_question_ids, scriptedResponseResult.response);
           context = answer.context;
           scriptedResponseResult = { ...scriptedResponseResult, matched_question_ids: answer.matchedQuestionIds, responded_resolves: answer.respondedResolves };
           nextUserInput = scriptedResponseResult.response;

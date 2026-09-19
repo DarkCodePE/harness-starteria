@@ -92,7 +92,6 @@ export class PortfolioEntryExperimentalSessionService {
         contextFromSession(session, turnsBefore),
         activeQuestion,
         body.matchedQuestionIds,
-        body.respondedResolves,
         body.message,
       );
       const runtimeContext = answer.context;
@@ -116,6 +115,14 @@ export class PortfolioEntryExperimentalSessionService {
       }
       const runtimeTurn = result.trace.turns.at(-1);
       if (!runtimeTurn) throw PortfolioEntryApiError.schemaFailure();
+      const resolvedAnswer = applyAnswerResolution(
+        result.final_context,
+        activeQuestion,
+        answer.matchedQuestionIds,
+        body.message,
+        runtimeTurn.analysis,
+      );
+      result.final_context = resolvedAnswer.context;
       const runtimeTurnForPersistence = normalizePortfolioEntryTurnForPersistence(runtimeTurn, turnsBefore.length + 1);
       if (result.modelExecution) await this.recordExecution(sessionId, result.modelExecution);
       await this.storeRecovery(context, {
@@ -128,8 +135,8 @@ export class PortfolioEntryExperimentalSessionService {
         sessionId,
         runtimeTurn: runtimeTurnForPersistence,
         runtimeContextAfter: result.final_context,
-        matchedQuestionIds: answer.matchedQuestionIds,
-        respondedResolves: answer.respondedResolves,
+        matchedQuestionIds: resolvedAnswer.matchedQuestionIds,
+        respondedResolves: resolvedAnswer.respondedResolves,
         expectedRevision: body.expectedRevision,
         now: this.now(),
       });

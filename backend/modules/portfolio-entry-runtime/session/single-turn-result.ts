@@ -1,4 +1,5 @@
 import { createInitialSessionContext } from '../domain/session.types';
+import type { PortfolioEntryAnalysisV2 } from '../domain/analysis.schema';
 import type { ClarificationStatus, InteractionMode, QuestionRecord, SessionContext, SessionTurnTrace } from '../domain/session.types';
 
 export function latestActiveQuestion(turns: Array<{ emittedQuestions: QuestionRecord[] }>): QuestionRecord | null {
@@ -11,15 +12,17 @@ export function applyAnswerResolution(
   context: SessionContext,
   question: QuestionRecord | null,
   matchedQuestionIds: string[] | undefined,
-  respondedResolves: string[] | undefined,
   response: string,
+  analysis?: PortfolioEntryAnalysisV2,
 ): { context: SessionContext; matchedQuestionIds: string[]; respondedResolves: string[] } {
   if (!question || matchedQuestionIds?.length !== 1 || matchedQuestionIds[0] !== question.id) {
     return { context, matchedQuestionIds: [], respondedResolves: [] };
   }
   if (isUnknownAnswer(response)) return { context, matchedQuestionIds: [question.id], respondedResolves: [] };
-  const allowed = new Set(question.resolves);
-  const resolved = [...new Set((respondedResolves ?? []).filter((gap) => allowed.has(gap)))];
+  // The client may identify the answered question, but it cannot declare a
+  // gap resolved. Resolution requires a supported structured value in the
+  // post-answer analysis; otherwise remain conservative and unresolved.
+  const resolved = deriveSupportedResolves(question, analysis);
   return {
     context: resolved.length === 0 ? context : { ...context, answered_gaps: [...new Set([...context.answered_gaps, ...resolved])] },
     matchedQuestionIds: [question.id],
@@ -27,9 +30,48 @@ export function applyAnswerResolution(
   };
 }
 
+function deriveSupportedResolves(question: QuestionRecord, analysis?: PortfolioEntryAnalysisV2): string[] {
+  if (!analysis) return [];
+  return question.resolves.filter((resolve) => resolveIsSupported(resolve, analysis));
+}
+
+function resolveIsSupported(resolve: string, analysis: PortfolioEntryAnalysisV2): boolean {
+  const normalized = resolve.replace(/^analysis\./, '');
+  const candidates = [normalized];
+  if (!normalized.includes('.')) candidates.push(`extracted_context.${normalized}`);
+  if (normalized.includes('decision_to_enable')) candidates.push('extracted_context.decision_need');
+  return candidates.some((path) => hasMeaningfulValue(readPath(analysis, path)));
+}
+
+function readPath(value: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (!current || typeof current !== 'object') return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, value);
+}
+
+function hasMeaningfulValue(value: unknown): boolean {
+  if (typeof value === 'string') return value.trim().length > 0 && !isUnknownAnswer(value);
+  if (Array.isArray(value)) return value.some(hasMeaningfulValue);
+  return value !== null && value !== undefined && typeof value === 'object'
+    ? Object.values(value as Record<string, unknown>).some(hasMeaningfulValue)
+    : value !== undefined && value !== null;
+}
+
 export function isUnknownAnswer(response: string): boolean {
   const normalized = response.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?]/g, '').replace(/\s+/g, ' ').trim();
-  return ['no lo se', 'no lo se todavia', 'no tengo esa informacion', 'todavia no lo se'].includes(normalized);
+  return [
+    'no lo se',
+    'no lo se todavia',
+    'no tengo esa informacion',
+    'todavia no lo se',
+    'ya te respondi',
+    'no entendi',
+    'no estoy seguro',
+    'puede ser',
+  ].includes(normalized)
+    || normalized.startsWith('no entendi ')
+    || normalized.startsWith('no estoy seguro ');
 }
 
 export function createSessionContextFromPersistedProjection(input: {

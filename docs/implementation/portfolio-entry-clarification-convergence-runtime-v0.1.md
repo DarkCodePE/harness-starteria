@@ -32,15 +32,15 @@ canonical_domain_change: NO
 - The planner prompt explicitly requests zero or one question and prohibits batching.
 - API request validation accepts at most one `matchedQuestionIds` value.
 - The service derives the active question only from the latest turn; legacy multi-question turns are reduced deterministically for matching and remain unchanged in history.
-- DTOs expose matched IDs and resolved targets for traceability without exposing internal model metadata.
+- DTOs expose matched IDs and server-derived resolved targets for traceability without exposing internal model metadata.
 
 ## Answer-resolution semantics
 
 `QUESTION ANSWERED != GAP RESOLVED`.
 
-- A valid answer carries exactly the active question ID.
-- `respondedResolves` is intersected with that question's `resolves` list.
-- Only that validated intersection is unioned into `answered_gaps`.
+- A valid answer carries exactly the active question ID; the frontend does not declare resolved targets.
+- The server derives `respondedResolves` only from the active question plus meaningful values in the post-answer structured analysis, with a small deterministic low-information guard.
+- If analysis cannot support the resolution, `respondedResolves` remains empty and the gap stays unresolved.
 - “No lo sé todavía” keeps the active question's ID as answered/retired but produces no `respondedResolves` and does not update `answered_gaps`.
 - Context reconstruction carries `answered_gaps` into the next planner call, so resolved gaps are not re-asked.
 
@@ -57,14 +57,14 @@ Added/updated coverage for provider batch normalization, one-slot budget consump
 ## Remaining risks
 
 - Live provider behavior still needs an environment-backed E2E run with the configured model/provider.
-- The requested historical audit path `docs/implementation/portfolio-entry-active-question-loop-audit-v0.1.md` is absent from this checkout; this is documented as an authority/documentation conflict and was not recreated.
+- The exact factual audit document was restored from commit `9ba083c` at `docs/implementation/portfolio-entry-active-question-loop-audit-v0.1.md`; it is evidence only and does not define new behavior.
 - Full CI may include unrelated suites requiring external services or databases.
 
 ## Manual test checklist
 
 - Start with “Tengo 5 desafíos internos detectados por una auditoría y no sé cuál abordar primero.”
 - Confirm one active card at a time and a distinct question after each usable answer.
-- Confirm the request payload contains one `matchedQuestionIds` value and only active-question resolves.
+- Confirm the request payload contains one `matchedQuestionIds` value and no client-declared `respondedResolves`.
 - Use “No lo sé todavía”; confirm the question disappears, the gap remains unresolved, and it is not re-asked.
 - Confirm no fourth Quick Clarification question appears.
 - Confirm `Ver conversación` retains historical questions without activating them.

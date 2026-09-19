@@ -244,7 +244,6 @@ describe('PortfolioEntryExperience', () => {
         'entry-token',
         expect.objectContaining({
           matchedQuestionIds: ['q-1'],
-          respondedResolves: ['decision_need'],
         }),
       );
     });
