@@ -208,9 +208,9 @@ describe('PortfolioEntryExperience', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /analizar mi situaci[oó]n/i }));
 
-    const currentClarification = within(
-      screen.getByText('Lo que estamos aclarando ahora').parentElement as HTMLElement,
-    );
+    await screen.findByText('Aclaración breve');
+    const clarificationLabel = await screen.findByText('Lo que estamos aclarando ahora');
+    const currentClarification = within(clarificationLabel.parentElement as HTMLElement);
     expect(await currentClarification.findByText(/que decision necesitas habilitar/i)).toBeInTheDocument();
     expect(serviceMocks.submitPortfolioEntryMessage).toHaveBeenCalledWith(
       '11111111-1111-4111-8111-111111111111',
