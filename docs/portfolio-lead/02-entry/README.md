@@ -4,7 +4,7 @@
 
 ## Current baseline (v0.1)
 
-- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` — active approved Experience Contract.
+- `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` — active approved Experience Contract.
 - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md` — acceptance reference.
 - `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md` and `docs/agents/portfolio-entry/skills/entry-01-intent-detection/SKILL.md` through `entry-04-question-planner/SKILL.md` — current Agent/Skill reference baseline.
 - `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md` and `PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.1.md` — current harness reference baseline.
