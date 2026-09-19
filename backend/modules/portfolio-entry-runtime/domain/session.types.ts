@@ -139,7 +139,7 @@ export type PortfolioEntrySessionRunInput = {
   initialUserInput: string;
   initialContext: SessionContext;
   sessionId?: string;
-  guidedExplorationChoice?: 'accept' | 'reject';
+  guidedExplorationChoice?: 'accept' | 'provisional_route' | 'reject';
   followUpResponder?: (questions: QuestionRecord[], context: SessionContext) => FollowUpResponseResult;
 };
 

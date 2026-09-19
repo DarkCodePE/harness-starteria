@@ -14,10 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '../../../app/components/ui/
 import { Badge } from '../../../app/components/ui/badge';
 import { Button } from '../../../app/components/ui/button';
 import { Textarea } from '../../../app/components/ui/textarea';
-import {
-  AISuggestionPanel,
-  InlineInsight,
-} from '../../../app/components/design-system/patterns';
+import { AISuggestionPanel } from '../../../app/components/design-system/patterns';
 import {
   chooseGuidedExploration,
   confirmPortfolioEntryHandoff,
@@ -134,15 +131,6 @@ function originIsUser(value: ProvenancedText | undefined): boolean {
   return origin === 'USER_DECLARED' || origin === 'EXTRACTED_FROM_USER_TEXT';
 }
 
-function currentFrame(session: PortfolioEntrySessionDto): string {
-  return (
-    session.semanticProjection.currentFrame ??
-    session.semanticProjection.initialEntryState ??
-    session.semanticProjection.primaryIntent ??
-    'portfolio_first'
-  );
-}
-
 function provenanceLabels(handoff: PortfolioEntryHandoff): string[] {
   const labels = new Set<string>();
   for (const item of handoff.provenance_summary ?? []) labels.add(PROVENANCE_LABELS[item.origin]);
@@ -165,24 +153,34 @@ function provenanceLabels(handoff: PortfolioEntryHandoff): string[] {
   return [...labels].slice(0, 4);
 }
 
-function partialSummary(session: PortfolioEntrySessionDto): string {
-  const frame = currentFrame(session);
-  if (frame.includes('solution')) return 'Veo una solucion o herramienta como punto de entrada.';
-  if (frame.includes('report')) return 'Veo una necesidad de preparar lectura para reporte o comite.';
-  if (frame.includes('strategy')) return 'Veo una prioridad de negocio que todavia necesita bajar a decisiones.';
-  if (frame.includes('portfolio')) return 'Veo una necesidad de ordenar varias iniciativas bajo un criterio comun.';
-  return 'Tengo una primera lectura, pero falta una pieza para darte una interpretacion util.';
-}
+function ConversationTrace({ session }: { session: PortfolioEntrySessionDto }) {
+  if (session.conversation.length === 0) return null;
 
-function microInsight(session: PortfolioEntrySessionDto): string | null {
-  const frame = currentFrame(session);
-  if (frame.includes('solution')) {
-    return 'Hay algo importante aqui: ya tienes una solucion, pero todavia necesitamos entender que resultado de negocio deberia justificar que siga recibiendo inversion.';
-  }
-  if (frame.includes('report')) {
-    return 'Hay algo importante aqui: un buen reporte no solo muestra estado; debe dejar claro que decision necesita habilitar.';
-  }
-  return null;
+  return (
+    <details className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-text-primary">
+        Ver conversación
+      </summary>
+      <div className="mt-4 space-y-4" data-testid="portfolio-entry-conversation-trace">
+        {session.conversation.map((turn, index) => (
+          <div key={turn.id} className="space-y-3 border-l-2 border-border-default pl-4">
+            <div>
+              <p className="text-xs font-semibold uppercase text-text-muted">
+                {index === 0 ? 'Tu contexto inicial' : 'Tu respuesta'}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-text-secondary">{turn.userInput}</p>
+            </div>
+            {turn.emittedQuestions.map((question) => (
+              <div key={`${turn.id}-${question.question}`}>
+                <p className="text-xs font-semibold uppercase text-brand-primary">Starteria</p>
+                <p className="mt-1 text-sm leading-6 text-text-primary">{question.question}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 function getEditableFields(handoff: PortfolioEntryHandoff): EditableField[] {
@@ -441,7 +439,6 @@ function ConversationPanel({
 }) {
   const questions = latestQuestions(session);
   const activeQuestion = questions[0];
-  const insight = microInsight(session);
   const canSubmit = value.trim().length > 0 && !pending;
   return (
     <section className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
@@ -457,21 +454,24 @@ function ConversationPanel({
                 Aclaracion {session.clarification.quickQuestionsAsked} de hasta {session.clarification.quickQuestionBudget}
               </Badge>
             </div>
-            <h2 className="text-lg font-semibold text-text-primary">{partialSummary(session)}</h2>
+            <h2 className="text-lg font-semibold text-text-primary">Aclaración breve</h2>
             <p className="mt-1 text-sm leading-6 text-text-secondary">
-              Hasta 3 preguntas. Puedes continuar con informacion parcial.
+              Estoy recogiendo el contexto declarado y el siguiente punto que conviene aclarar. Puedes continuar con información parcial.
             </p>
           </div>
 
-          {insight ? (
-            <InlineInsight title="Mirada Starteria">
-              {insight}
-            </InlineInsight>
-          ) : null}
+          <ConversationTrace session={session} />
+
+          <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+            <p className="text-xs font-semibold uppercase text-text-muted">Lo que tengo claro hasta ahora</p>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              {session.conversation[0]?.userInput || 'Todavía no hay contexto declarado.'}
+            </p>
+          </div>
 
           {activeQuestion ? (
             <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
-              <p className="text-xs font-semibold uppercase text-text-muted">Siguiente aclaracion</p>
+              <p className="text-xs font-semibold uppercase text-text-muted">Lo que necesito aclarar</p>
               <p className="mt-2 text-sm font-semibold leading-6 text-text-primary">{activeQuestion.question}</p>
             </div>
           ) : null}
@@ -516,23 +516,28 @@ function ConversationPanel({
 
 function GuidedExplorationOffer({
   pending,
+  session,
   onChoose,
 }: {
   pending: boolean;
-  onChoose: (choice: 'accept' | 'reject') => void;
+  session: PortfolioEntrySessionDto;
+  onChoose: (choice: 'accept' | 'provisional_route') => void;
 }) {
   return (
     <div className="mx-auto max-w-3xl">
       <AISuggestionPanel
-        title="Tengo suficiente informacion para darte una primera lectura."
-        suggestion="Puedes verla ahora o profundizar un poco mas antes de cerrar esta interpretacion inicial."
-        why={['La aclaracion puede continuar, pero no debe convertirse en una entrevista larga.', 'La lectura sigue siendo revisable y pre-canonica.']}
+        title="Ya tengo suficiente claridad para proponerte un primer abordaje"
+        suggestion="Entiendo qué estás intentando conseguir, qué está dificultando la decisión y qué aspectos siguen abiertos. Podemos seguir aterrizando algunos puntos o convertir lo que tenemos en una propuesta concreta."
+        why={['La aclaración puede continuar sin convertirse en una entrevista larga.', 'La propuesta será provisional y conservará la incertidumbre explícita.']}
         actions={[
-          { id: 'view', label: 'Ver mi lectura', tone: 'primary', disabled: pending },
-          { id: 'deepen', label: 'Profundizar un poco mas', tone: 'secondary', disabled: pending },
+          { id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending },
+          { id: 'deepen', label: 'Seguir aterrizando mi necesidad', tone: 'secondary', disabled: pending },
         ]}
-        onAction={(actionId) => onChoose(actionId === 'deepen' ? 'accept' : 'reject')}
+        onAction={(actionId) => onChoose(actionId === 'deepen' ? 'accept' : 'provisional_route')}
       />
+      <div className="mt-4">
+        <ConversationTrace session={session} />
+      </div>
     </div>
   );
 }
@@ -575,22 +580,25 @@ function ProvenanceChips({ handoff }: { handoff: PortfolioEntryHandoff }) {
 }
 
 function UnderstandingSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const tension = handoff.unresolved_context[0]?.description;
   return (
     <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
       <div className="mb-4">
         <p className="text-xs font-semibold uppercase text-brand-primary">01</p>
-        <h2 className="mt-2 text-xl font-semibold text-text-primary">Esto entendí de tu situación</h2>
-        <p className="mt-1 text-sm leading-6 text-text-secondary">Una síntesis breve para confirmar que partimos del mismo punto.</p>
+        <h2 className="mt-2 text-xl font-semibold text-text-primary">Tu situación</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">Una lectura breve y revisable de lo que has puesto sobre la mesa.</p>
       </div>
       <dl className="grid gap-4 md:grid-cols-3">
         <div>
           <dt className="text-xs font-medium uppercase text-text-muted">Situación</dt>
           <dd className="mt-1 text-sm leading-6 text-text-primary">{textFromProvenanced(handoff.understanding)}</dd>
         </div>
-        <div>
-          <dt className="text-xs font-medium uppercase text-text-muted">Lo que quieres conseguir</dt>
-          <dd className="mt-1 text-sm leading-6 text-text-primary">{textFromProvenanced(handoff.desired_outcome)}</dd>
-        </div>
+        {tension ? (
+          <div>
+            <dt className="text-xs font-medium uppercase text-text-muted">Punto abierto</dt>
+            <dd className="mt-1 text-sm leading-6 text-text-primary">{tension}</dd>
+          </div>
+        ) : null}
         <div>
           <dt className="text-xs font-medium uppercase text-text-muted">Decisión a habilitar</dt>
           <dd className="mt-1 text-sm leading-6 text-text-primary">{textFromDecision(handoff.decision_to_enable)}</dd>
@@ -618,7 +626,19 @@ function RecommendedApproachSection({ handoff }: { handoff: PortfolioEntryHandof
       <p className="mt-4 whitespace-pre-wrap text-base leading-8 text-text-primary md:text-lg">
         {approach?.description || 'Starteria todavía no tiene una propuesta suficiente para esta situación. Conviene aclarar un poco más el contexto antes de recomendar un primer paso.'}
       </p>
-      {approach ? <p className="mt-5 text-sm text-text-muted">Propuesta pendiente de revisión humana.</p> : null}
+      {approach?.rationale ? (
+        <div className="mt-5 border-t border-[var(--ai-suggested-border)] pt-5">
+          <p className="text-xs font-semibold uppercase text-text-muted">Por qué empezar por ahí</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-text-secondary">{approach.rationale}</p>
+        </div>
+      ) : null}
+      {approach?.assumption?.trim() ? (
+        <div className="mt-4 rounded-ds-md border border-border-default bg-surface-default p-3">
+          <p className="text-xs font-semibold uppercase text-text-muted">Supuesto todavía abierto</p>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">{approach.assumption}</p>
+        </div>
+      ) : null}
+      {approach ? <p className="mt-4 text-xs text-text-muted">Propuesta pendiente de revisión humana.</p> : null}
       {handoff.alternative_approaches.length > 0 ? (
         <div className="mt-6 border-t border-[var(--ai-suggested-border)] pt-5">
           <p className="text-xs font-semibold uppercase text-text-muted">Otras formas de empezar</p>
@@ -630,25 +650,6 @@ function RecommendedApproachSection({ handoff }: { handoff: PortfolioEntryHandof
               </div>
             ))}
           </div>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function RationaleSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
-  const approach = handoff.recommended_approach;
-  return (
-    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase text-brand-primary">03</p>
-      <h2 className="mt-2 text-xl font-semibold text-text-primary">Por qué empezaría por ahí</h2>
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-text-secondary md:text-base">
-        {approach?.rationale || 'Todavía no hay una justificación suficiente para explicar por qué conviene empezar de una forma concreta.'}
-      </p>
-      {approach?.assumption?.trim() ? (
-        <div className="mt-5 rounded-ds-md border border-border-default bg-background-subtle p-4">
-          <p className="text-xs font-semibold uppercase text-text-muted">Supuesto que todavía conviene validar</p>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">{approach.assumption}</p>
         </div>
       ) : null}
     </section>
@@ -688,11 +689,12 @@ function MaterialGapsSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
         resolution: resolutionForGap(gap),
       })),
   ];
-  const evidence = handoff.evidence_or_clarity_needed.filter((item) => item.value);
+  const gapDescriptions = new Set(gaps.map((gap) => gap.description));
+  const evidence = handoff.evidence_or_clarity_needed.filter((item) => item.value && !gapDescriptions.has(item.value));
 
   return (
     <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase text-brand-primary">04</p>
+      <p className="text-xs font-semibold uppercase text-brand-primary">03</p>
       <h2 className="mt-2 text-xl font-semibold text-text-primary">Lo que todavía puede cambiar la decisión</h2>
       <p className="mt-1 text-sm leading-6 text-text-secondary">Mostramos lo que falta sin convertirlo en una conclusión ni inventar evidencia.</p>
       {gaps.length > 0 ? (
@@ -731,15 +733,15 @@ const PATH_LABELS: Record<string, string> = {
 function StarteriaPathSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
   return (
     <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase text-brand-primary">05</p>
-      <h2 className="mt-2 text-xl font-semibold text-text-primary">Cómo Starteria convierte esto en trabajo</h2>
-      <p className="mt-1 text-sm leading-6 text-text-secondary">Un camino contextual para continuar trabajando sobre esta situación.</p>
+      <p className="text-xs font-semibold uppercase text-brand-primary">04</p>
+      <h2 className="mt-2 text-xl font-semibold text-text-primary">Cómo lo llevamos a trabajo</h2>
+      <p className="mt-1 text-sm leading-6 text-text-secondary">La ruta contextual disponible para continuar.</p>
       {handoff.starteria_path.length > 0 ? (
-        <ol className="mt-5 grid gap-3 md:grid-cols-2">
+        <ol className="mt-5 space-y-3 border-l-2 border-brand-primary/30 pl-5">
           {handoff.starteria_path.map((item, index) => (
-            <li key={`${item.action}-${index}`} className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+            <li key={`${item.action}-${index}`} className="relative rounded-ds-md border border-border-default bg-background-subtle p-4">
+              <span className="absolute -left-[2.05rem] top-4 flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white">{index + 1}</span>
               <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-semibold text-white">{index + 1}</span>
                 <p className="text-sm font-semibold text-text-primary">{PATH_LABELS[item.action] ?? 'Siguiente trabajo'}</p>
               </div>
               <p className="mt-3 text-sm leading-6 text-text-secondary">{item.description}</p>
@@ -840,9 +842,9 @@ function HandoffReview({
       </div>
 
       <div className="space-y-5">
+        <ConversationTrace session={session} />
         <UnderstandingSection handoff={handoff} />
         <RecommendedApproachSection handoff={handoff} />
-        <RationaleSection handoff={handoff} />
         <MaterialGapsSection handoff={handoff} />
         <StarteriaPathSection handoff={handoff} />
         <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
@@ -929,17 +931,16 @@ function ConfirmedSummary({
                 : 'Perfecto. Esta lectura todavia no ha creado ninguna iniciativa ni cambiado tu portafolio. Crea tu cuenta para conservar este contexto y continuar trabajando sobre el.'}
             </p>
           </div>
+          <ConversationTrace session={session} />
           {handoff ? (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-3">
               {handoff.recommended_approach ? (
                 <FieldBlock label="Propuesta de Starteria" value={handoff.recommended_approach.description} badges={['Pendiente de tu revision']} />
               ) : null}
               {handoff.recommended_approach?.rationale ? (
                 <FieldBlock label="Por qué empezar por ahí" value={handoff.recommended_approach.rationale} badges={['Explicación de la propuesta']} />
               ) : null}
-              <FieldBlock label="Que entendio" value={textFromProvenanced(handoff.understanding)} badges={['Confirmado por ti']} />
-              <FieldBlock label="Foco" value={textFromProvenanced(handoff.desired_outcome)} badges={['Confirmado por ti']} />
-              <FieldBlock label="Decision a habilitar" value={textFromDecision(handoff.decision_to_enable)} badges={['Confirmado por ti']} />
+              <FieldBlock label="Decision y foco" value={`${textFromDecision(handoff.decision_to_enable)} ${textFromProvenanced(handoff.desired_outcome)}`} badges={['Confirmado por ti']} />
               <FieldBlock label="Siguiente paso conceptual" value={handoff.recommended_cta} badges={['Pre-canonico']} />
             </div>
           ) : null}
@@ -1213,7 +1214,7 @@ export function PortfolioEntryExperience({
     }
   };
 
-  const chooseGuided = async (choice: 'accept' | 'reject') => {
+  const chooseGuided = async (choice: 'accept' | 'provisional_route') => {
     if (!sessionDto || !sessionRef || pending) return;
     setError(null);
     setPendingRequest('guided');
@@ -1224,7 +1225,7 @@ export function PortfolioEntryExperience({
         choice,
       });
       setSessionDto(next);
-      trackPortfolioEntryEvent(choice === 'accept' ? 'guided_exploration_accepted' : 'guided_exploration_rejected', {
+      trackPortfolioEntryEvent(choice === 'accept' ? 'guided_exploration_accepted' : 'guided_provisional_route_selected', {
         sessionId: next.id,
       });
     } catch (err) {
@@ -1388,7 +1389,7 @@ export function PortfolioEntryExperience({
     }
 
     if (sessionDto.nextAction === 'offer_guided_exploration') {
-      return <GuidedExplorationOffer pending={pending} onChoose={chooseGuided} />;
+      return <GuidedExplorationOffer session={sessionDto} pending={pending} onChoose={chooseGuided} />;
     }
 
     if (sessionDto.nextAction === 'review_handoff' || sessionDto.nextAction === 'claim_or_close') {

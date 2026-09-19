@@ -27,6 +27,20 @@ describe('Portfolio Entry value handoff cognition', () => {
     expect(handoff.handoff.decision_to_enable).toEqual(expect.objectContaining({ value: 'Decidir cuales continuar' }));
   });
 
+  it('keeps specific situation anchors in understanding instead of falling back to frame taxonomy', async () => {
+    const analysis = makeAnalysis();
+    const result = await new DeterministicPortfolioEntryHandoffMaterializer().materialize({
+      sessionId: 'session-specific',
+      runId: 'run-specific',
+      analysis,
+      context: createInitialSessionContext({ initial_mode: 'quick_clarification', quick_question_budget: 3 }),
+    });
+
+    expect(result.handoff.understanding.value).toContain('iniciativas inactivas');
+    expect(result.handoff.understanding.value).toContain('usuarios impactados');
+    expect(result.handoff.understanding.value).not.toBe('Situación de portfolio first.');
+  });
+
   it('turns contextual analysis into a recommendation, rationale, mapped gaps and one Starteria path', async () => {
     const analysis = makeAnalysis();
     const context = createInitialSessionContext({ initial_mode: 'quick_clarification', quick_question_budget: 3 });

@@ -163,24 +163,24 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(adapter.calls[2].sessionContext.interaction_mode).toBe('guided_exploration');
   });
 
-  it('rejects Guided Exploration through Runtime state without hardcoding handoff readiness', async () => {
+  it('chooses a provisional route through Runtime and reaches handoff readiness', async () => {
     const adapter = new GuidedExplorationAdapter();
     const { app, repository } = makeApp({ adapter });
     const offered = await offerGuidedExploration(app);
 
-    const rejected = await request(app)
+    const provisional = await request(app)
       .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
       .set('X-Starteria-Entry-Token', offered.token)
-      .set('Idempotency-Key', 'guided-reject-1')
-      .send({ expectedRevision: offered.response.body.data.revision, choice: 'reject' })
+      .set('Idempotency-Key', 'guided-provisional-1')
+      .send({ expectedRevision: offered.response.body.data.revision, choice: 'provisional_route' })
       .expect(200);
 
-    expect(rejected.body.data.lifecycleStatus).toBe('CLARIFYING');
-    expect(rejected.body.data.lifecycleStatus).not.toBe('HANDOFF_ELIGIBLE');
+    expect(provisional.body.data.lifecycleStatus).toBe('HANDOFF_ELIGIBLE');
+    expect(provisional.body.data.nextAction).toBe('generate_handoff');
     expect(adapter.calls).toHaveLength(2);
     const stored = await repository.findSessionById(offered.sessionId);
-    expect(stored?.semanticState.runtimeClarificationStatus).toBe('ended_with_uncertainty');
-    expect(stored?.semanticState.userExplorationChoice).toBe('reject');
+    expect(stored?.semanticState.runtimeClarificationStatus).toBe('ready_for_handoff');
+    expect(stored?.semanticState.userExplorationChoice).toBe('provisional_route');
   });
 
   it('protects Guided Exploration choice with CAS, idempotency, credentials, expiry, owner auth, and lifecycle guards', async () => {
@@ -221,7 +221,7 @@ describe('Portfolio Entry Experimental Session API', () => {
       .post(`${base}/sessions/${offered.sessionId}/guided-exploration`)
       .set('X-Starteria-Entry-Token', offered.token)
       .set('Idempotency-Key', 'guided-replay')
-      .send({ expectedRevision: revision, choice: 'reject' })
+      .send({ expectedRevision: revision, choice: 'provisional_route' })
       .expect(409);
 
     const invalid = await createSession(app);
@@ -246,7 +246,7 @@ describe('Portfolio Entry Experimental Session API', () => {
       .post(`${base}/sessions/${expired.sessionId}/guided-exploration`)
       .set('X-Starteria-Entry-Token', expired.token)
       .set('Idempotency-Key', 'guided-expired')
-      .send({ expectedRevision: expiredStored!.revision + 1, choice: 'reject' })
+      .send({ expectedRevision: expiredStored!.revision + 1, choice: 'provisional_route' })
       .expect(410);
   });
 

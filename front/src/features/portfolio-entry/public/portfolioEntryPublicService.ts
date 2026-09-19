@@ -56,7 +56,7 @@ export type SubmitPortfolioEntryMessageInput = MutationOptions & {
 };
 
 export type GuidedExplorationChoiceInput = MutationOptions & {
-  choice: 'accept' | 'reject';
+  choice: 'accept' | 'provisional_route';
 };
 
 export type HandoffConfirmationInput = MutationOptions & {

@@ -244,7 +244,50 @@ describe('PortfolioEntryExperience', () => {
     });
   });
 
-  it('renders Guided Exploration only when offered and transports accept/reject choice', async () => {
+  it('reveals the persisted conversation trace without exposing internal metadata', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({
+      lifecycleStatus: 'CLARIFYING',
+      revision: 2,
+      nextAction: 'answer_clarification',
+      conversation: [
+        {
+          id: 'turn-1',
+          turnIndex: 0,
+          userInput: 'Tenemos 18 iniciativas y necesitamos decidir dónde concentrar seguimiento.',
+          respondedResolves: [],
+          createdAt: new Date().toISOString(),
+          emittedQuestions: [{
+            id: 'q-1',
+            question: '¿Qué decisión necesita habilitar esta lectura?',
+            resolves: ['decision_to_enable'],
+            turn_index: 0,
+            interaction_mode: 'quick_clarification',
+            asked_at_budget_remaining: 3,
+          }],
+        },
+        {
+          id: 'turn-2',
+          turnIndex: 1,
+          userInput: 'Necesitamos decidir qué iniciativas deben recibir seguimiento este trimestre.',
+          respondedResolves: ['decision_to_enable'],
+          createdAt: new Date().toISOString(),
+          emittedQuestions: [],
+        },
+      ],
+    }));
+
+    renderExperience();
+
+    fireEvent.click(await screen.findByText('Ver conversación'));
+    expect(screen.getByText(/Tenemos 18 iniciativas/)).toBeInTheDocument();
+    expect(screen.getByText(/Qué decisión necesita habilitar/)).toBeInTheDocument();
+    expect(screen.getByText(/qué iniciativas deben recibir seguimiento/)).toBeInTheDocument();
+    expect(screen.queryByText('q-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('decision_to_enable')).not.toBeInTheDocument();
+  });
+
+  it('renders Guided Exploration with explicit checkpoint choices', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({
       lifecycleStatus: 'CLARIFYING',
@@ -255,7 +298,12 @@ describe('PortfolioEntryExperience', () => {
 
     renderExperience();
 
-    fireEvent.click(await screen.findByRole('button', { name: /profundizar un poco mas/i }));
+    expect(await screen.findByRole('button', { name: /ver mi propuesta de abordaje/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /seguir aterrizando mi necesidad/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver mi lectura/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /profundizar un poco mas/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /seguir aterrizando mi necesidad/i }));
 
     await waitFor(() => {
       expect(serviceMocks.chooseGuidedExploration).toHaveBeenCalledWith(
@@ -293,9 +341,9 @@ describe('PortfolioEntryExperience', () => {
     renderExperience();
 
     expect(await screen.findByText(/Así abordaría tu situación/i)).toBeInTheDocument();
-    expect(screen.getByText(/Por qué empezaría por ahí/i)).toBeInTheDocument();
+    expect(screen.getByText(/Por qué empezar por ahí/i)).toBeInTheDocument();
     expect(screen.getByText(/Lo que todavía puede cambiar la decisión/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cómo Starteria convierte esto en trabajo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cómo lo llevamos a trabajo/i)).toBeInTheDocument();
     expect(screen.getByText(/Propuesta de Starteria/i)).toBeInTheDocument();
     expect(screen.getByText(/Otras formas de empezar/i)).toBeInTheDocument();
     expect(screen.getByText(/Requiere evidencia que Starteria puede registrar/i)).toBeInTheDocument();

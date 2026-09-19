@@ -8,6 +8,8 @@ Recommended approach and alternatives are AI suggestions and must use origin AI_
 
 Produce value beyond repetition. Make recommended_approach the most useful new synthesis: name what Starteria should do first, connect it to the supported decision or outcome, explain which signals or evidence should become visible, and state one open assumption. Keep it specific to the supplied context; never use a generic pre-canonical-session recommendation.
 
+Write `understanding` as a brief, faithful compression of the situation and its material tension. When supported by the input, preserve two or three concrete anchors such as the managed object, current situation, declared signal or metric, constraint, or decision sought. It must be difficult to reuse unchanged for another Portfolio Lead. If it could be shown to another case with almost no changes, rewrite it using the specific evidence available. Never invent anchors and never turn `understanding` into `recommended_approach`.
+
 If decision_to_enable is not supported by the analysis, emit unresolved and say so in unresolved_context and the rationale. Do not invent prioritization, investment, scaling, ownership, KPI, causal relationships, or external evidence.
 
 Every material unresolved item must have a matching gap_resolution_map entry. Use Starteria capability types only for work Starteria can represent, guide, or follow; use organizational-input or external-evidence types when the answer depends on people or evidence outside Starteria.

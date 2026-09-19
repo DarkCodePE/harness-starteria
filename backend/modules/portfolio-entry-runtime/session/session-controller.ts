@@ -225,7 +225,7 @@ function transitionFromStructuredOutput(
   return createTransition(fromStatus, context.interaction_mode === 'guided_exploration' ? 'guided_exploration' : 'in_progress', fromMode, fromMode, 'questions_emitted', 'agent_output', budgetBefore, budgetAfter);
 }
 
-function applyExplorationChoice(context: SessionContext, choice: 'accept' | 'reject'): SessionTransition {
+function applyExplorationChoice(context: SessionContext, choice: 'accept' | 'provisional_route' | 'reject'): SessionTransition {
   if (choice === 'accept') {
     return createTransition(
       context.clarification_status,
@@ -238,12 +238,24 @@ function applyExplorationChoice(context: SessionContext, choice: 'accept' | 'rej
       3,
     );
   }
+  if (choice === 'reject') {
+    return createTransition(
+      context.clarification_status,
+      'ended_with_uncertainty',
+      context.interaction_mode,
+      context.interaction_mode,
+      'user_rejected_guided_exploration',
+      'user_choice',
+      getAvailableQuestionBudget(context),
+      getAvailableQuestionBudget(context),
+    );
+  }
   return createTransition(
     context.clarification_status,
-    'ended_with_uncertainty',
+    'ready_for_handoff',
     context.interaction_mode,
     context.interaction_mode,
-    'user_rejected_guided_exploration',
+    'user_chose_provisional_route',
     'user_choice',
     getAvailableQuestionBudget(context),
     getAvailableQuestionBudget(context),
@@ -253,7 +265,7 @@ function applyExplorationChoice(context: SessionContext, choice: 'accept' | 'rej
 function applyExplorationTransition(
   context: SessionContext,
   transition: SessionTransition,
-  choice: 'accept' | 'reject',
+  choice: 'accept' | 'provisional_route' | 'reject',
 ): SessionContext {
   return {
     ...context,
@@ -267,9 +279,8 @@ function applyExplorationTransition(
   };
 }
 
-function isReadySignal(status: string | undefined, stopReason: string | undefined): boolean {
-  return status === 'no_questions_required'
-    || stopReason === 'sufficient_context'
+function isReadySignal(_status: string | undefined, stopReason: string | undefined): boolean {
+  return stopReason === 'sufficient_context'
     || stopReason === 'noncritical_gaps_only'
     || stopReason === 'exploration_goal_satisfied'
     || stopReason === 'later_stage_detail'
