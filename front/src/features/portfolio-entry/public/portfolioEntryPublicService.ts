@@ -53,6 +53,7 @@ type MutationOptions = {
 export type SubmitPortfolioEntryMessageInput = MutationOptions & {
   message: string;
   matchedQuestionIds?: string[];
+  respondedResolves?: string[];
 };
 
 export type GuidedExplorationChoiceInput = MutationOptions & {
@@ -110,6 +111,7 @@ export async function submitPortfolioEntryMessage(
       expectedRevision: input.expectedRevision,
       message: input.message,
       ...(input.matchedQuestionIds?.length ? { matchedQuestionIds: input.matchedQuestionIds } : {}),
+      ...(input.respondedResolves?.length ? { respondedResolves: input.respondedResolves } : {}),
     },
     { headers: authHeaders(credential, input.idempotencyKey) },
   );

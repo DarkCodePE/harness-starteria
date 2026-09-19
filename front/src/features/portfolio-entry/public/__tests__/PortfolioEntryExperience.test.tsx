@@ -242,7 +242,10 @@ describe('PortfolioEntryExperience', () => {
       expect(serviceMocks.submitPortfolioEntryMessage).toHaveBeenCalledWith(
         '11111111-1111-4111-8111-111111111111',
         'entry-token',
-        expect.not.objectContaining({ respondedResolves: expect.anything() }),
+        expect.objectContaining({
+          matchedQuestionIds: ['q-1'],
+          respondedResolves: ['decision_need'],
+        }),
       );
     });
   });
@@ -283,7 +286,7 @@ describe('PortfolioEntryExperience', () => {
     renderExperience();
 
     expect(await screen.findByText('Tu punto de partida')).toBeInTheDocument();
-    expect(screen.getByText('Lo que estamos aclarando ahora')).toBeInTheDocument();
+    expect(screen.queryByText('Lo que estamos aclarando ahora')).not.toBeInTheDocument();
     fireEvent.click(await screen.findByText('Ver conversación'));
     const trace = within(screen.getByTestId('portfolio-entry-conversation-trace'));
     expect(trace.getByText(/Tenemos 18 iniciativas/)).toBeInTheDocument();

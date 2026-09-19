@@ -105,11 +105,7 @@ const PROVENANCE_LABELS: Record<ProvenanceOrigin, string> = {
 
 function latestQuestions(session: PortfolioEntrySessionDto | null): PortfolioEntryQuestion[] {
   const turns = session?.conversation ?? [];
-  for (let index = turns.length - 1; index >= 0; index -= 1) {
-    const questions = turns[index]?.emittedQuestions ?? [];
-    if (questions.length > 0) return questions;
-  }
-  return [];
+  return turns.at(-1)?.emittedQuestions.slice(0, 1) ?? [];
 }
 
 function textFromProvenanced(value: ProvenancedText | 'unresolved' | undefined): string {
@@ -1026,6 +1022,7 @@ export function PortfolioEntryExperience({
   const trackedConversionCtaRef = useRef<string | null>(null);
 
   const questions = useMemo(() => latestQuestions(sessionDto), [sessionDto]);
+  const activeQuestion = questions[0];
   const pending = pendingRequest !== null;
 
   const restart = () => {
@@ -1203,6 +1200,8 @@ export function PortfolioEntryExperience({
         expectedRevision: sessionDto.revision,
         idempotencyKey: createIdempotencyKey('portfolio-entry:message'),
         message,
+        matchedQuestionIds: activeQuestion ? [activeQuestion.id] : undefined,
+        respondedResolves: activeQuestion ? activeQuestion.resolves : undefined,
       });
       setSessionDto(next);
       setCurrentInput('');

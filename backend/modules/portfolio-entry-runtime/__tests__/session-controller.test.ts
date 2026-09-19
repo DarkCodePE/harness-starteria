@@ -61,6 +61,16 @@ const materialQuestion = output({
   status: 'questions_required',
 });
 
+const batchedQuestions = output({
+  questions: [
+    { id: 'q1', question: 'Primera pregunta material', reason_to_ask: 'r', resolves: ['gap-1'], priority: 1, expected_answer_type: 'text' },
+    { id: 'q2', question: 'Segunda pregunta material', reason_to_ask: 'r', resolves: ['gap-2'], priority: 2, expected_answer_type: 'text' },
+    { id: 'q3', question: 'Tercera pregunta material', reason_to_ask: 'r', resolves: ['gap-3'], priority: 3, expected_answer_type: 'text' },
+  ],
+  question_count: 3,
+  status: 'questions_required',
+});
+
 describe('Portfolio Entry session controller', () => {
   it('keeps clarification open when the planner requires a material question', async () => {
     const adapter = new ScriptedAdapter([materialQuestion]);
@@ -219,5 +229,34 @@ describe('Portfolio Entry session controller', () => {
 
     expect(result.trace.turns[0]?.questions_asked).toEqual([]);
     expect(result.trace.questions_total).toBe(0);
+  });
+
+  it('normalizes a provider batch to one question and consumes one budget slot', async () => {
+    const adapter = new ScriptedAdapter([batchedQuestions]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-batch', candidateId: 'test' }).execute({
+      caseId: 'case-batch', runId: 'run-batch', candidateId: 'test',
+      initialUserInput: 'Hay varios gaps materiales.', initialContext: context(),
+    });
+
+    expect(result.trace.turns[0]?.questions_asked).toHaveLength(1);
+    expect(result.trace.turns[0]?.questions_asked[0]?.id).toBe('q1');
+    expect(result.final_context.quick_questions_asked).toBe(1);
+    expect(result.violations).toContain('question_budget_overflow');
+  });
+
+  it('answers a question without resolving its gap for an unknown response', async () => {
+    const adapter = new ScriptedAdapter([materialQuestion, sufficient]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-unknown', candidateId: 'test' }).execute({
+      caseId: 'case-unknown', runId: 'run-unknown', candidateId: 'test',
+      initialUserInput: 'Necesito aclarar una decision.', initialContext: context(),
+      followUpResponder: (questions) => ({
+        response: 'No lo sé todavía.', matched_question_ids: [questions[0].id], response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves, unmatched_questions: [], fallback_used: false, consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.trace.turns[0]?.scripted_response_result?.matched_question_ids).toEqual(['decision-gap']);
+    expect(result.trace.turns[0]?.scripted_response_result?.responded_resolves).toEqual([]);
+    expect(result.final_context.answered_gaps).toEqual([]);
   });
 });

@@ -197,6 +197,8 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
   await page.getByLabel(/necesitas conseguir/i).fill(scenario.input);
   await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
+  let clarificationAnswers = 0;
+  const activeQuestionWording = new Set<string>();
   for (let attempt = 0; attempt < 6; attempt += 1) {
     if (await visible(page.getByText(/Qué haría Starteria primero/i))) return;
 
@@ -212,6 +214,13 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
 
     const answer = page.getByLabel(/Tu respuesta/i);
     if (await answer.isVisible().catch(() => false)) {
+      await expect(page.getByText(/Lo que estamos aclarando ahora/i)).toHaveCount(1);
+      const activeCard = page.getByText(/Lo que estamos aclarando ahora/i).locator('..');
+      const wording = (await activeCard.locator('p').nth(1).innerText()).trim();
+      expect(activeQuestionWording.has(wording), `Repeated active question: ${wording}`).toBe(false);
+      activeQuestionWording.add(wording);
+      clarificationAnswers += 1;
+      expect(clarificationAnswers).toBeLessThanOrEqual(3);
       if (!(await answer.isEnabled().catch(() => false))) {
         await page.waitForTimeout(500);
         continue;
@@ -249,7 +258,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
     await expect(page.getByText(/Quick clarification/i)).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText(/Lo que estamos aclarando ahora/i)).toBeVisible();
+    await expect(page.getByText(/Lo que estamos aclarando ahora/i)).toHaveCount(1);
     await expect(page.getByText(/Ver conversación/i)).toBeVisible();
     await expect(page.getByLabel(/Tu respuesta/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toBeVisible();

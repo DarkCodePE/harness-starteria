@@ -7,7 +7,9 @@ import type {
   SessionContext,
 } from '../../portfolio-entry-runtime';
 import {
+  applyAnswerResolution,
   createSessionContextFromPersistedProjection,
+  latestActiveQuestion,
   normalizePortfolioEntryTurnForPersistence,
   PortfolioEntrySessionController,
 } from '../../portfolio-entry-runtime';
@@ -85,7 +87,15 @@ export class PortfolioEntryExperimentalSessionService {
       assertNotConverted(session);
       this.assertExpectedRevision(session, body.expectedRevision);
       const turnsBefore = await this.sessionRepository.listTurns(sessionId);
-      const runtimeContext = contextFromSession(session, turnsBefore);
+      const activeQuestion = latestActiveQuestion(turnsBefore);
+      const answer = applyAnswerResolution(
+        contextFromSession(session, turnsBefore),
+        activeQuestion,
+        body.matchedQuestionIds,
+        body.respondedResolves,
+        body.message,
+      );
+      const runtimeContext = answer.context;
       const controller = new PortfolioEntrySessionController(this.agentAdapter, {
         runId: context.requestId ?? randomUUID(),
         candidateId: 'portfolio-entry-api-v1',
@@ -118,8 +128,8 @@ export class PortfolioEntryExperimentalSessionService {
         sessionId,
         runtimeTurn: runtimeTurnForPersistence,
         runtimeContextAfter: result.final_context,
-        matchedQuestionIds: body.matchedQuestionIds,
-        respondedResolves: body.respondedResolves,
+        matchedQuestionIds: answer.matchedQuestionIds,
+        respondedResolves: answer.respondedResolves,
         expectedRevision: body.expectedRevision,
         now: this.now(),
       });
