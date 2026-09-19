@@ -466,9 +466,17 @@ function ConversationPanel({
           </div>
 
           {activeQuestion ? (
-            <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
+            <div
+              className="rounded-ds-md border border-border-default bg-background-subtle p-4"
+              data-testid="portfolio-entry-active-question"
+            >
               <p className="text-xs font-semibold uppercase text-text-muted">Lo que estamos aclarando ahora</p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-text-primary">{activeQuestion.question}</p>
+              <p
+                className="mt-2 text-sm font-semibold leading-6 text-text-primary"
+                data-testid="portfolio-entry-active-question-text"
+              >
+                {activeQuestion.question}
+              </p>
             </div>
           ) : null}
 
