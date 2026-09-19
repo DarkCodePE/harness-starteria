@@ -197,6 +197,7 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
   await page.getByLabel(/necesitas conseguir/i).fill(scenario.input);
   await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
+  const activeQuestionWording = new Set<string>();
   for (let attempt = 0; attempt < 6; attempt += 1) {
     if (await visible(page.getByText(/Qué haría Starteria primero/i))) return;
 
@@ -210,15 +211,23 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       continue;
     }
 
-    const answer = page.getByLabel(/Tu respuesta/i);
-    if (await answer.isVisible().catch(() => false)) {
-      if (!(await answer.isEnabled().catch(() => false))) {
-        await page.waitForTimeout(500);
-        continue;
-      }
+    const activeQuestion = page.getByTestId('portfolio-entry-active-question');
+    if (await activeQuestion.isVisible().catch(() => false)) {
+      const answer = page.getByLabel(/Tu respuesta/i);
+      await expect(activeQuestion).toHaveCount(1);
+      await expect(page.getByTestId('portfolio-entry-active-question-text')).toHaveCount(1);
+      await expect(answer).toBeVisible();
+      await expect(answer).toBeEnabled();
+
       if (scenario.id === 'portfolio-first' && attempt === 0) {
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
       }
+      const wording = (await page.getByTestId('portfolio-entry-active-question-text').innerText()).trim();
+      expect(
+        activeQuestionWording.has(wording),
+        `Repeated active question: ${wording}`
+      ).toBe(false);
+      activeQuestionWording.add(wording);
       await answer.fill(scenario.answer);
       const clarificationResponse = page.waitForResponse((response) =>
         response.request().method() === 'POST' &&
@@ -229,7 +238,14 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       continue;
     }
 
-    await page.waitForTimeout(1000);
+    await expect
+      .poll(async () => {
+        if (await page.getByText(/Qué haría Starteria primero/i).isVisible().catch(() => false)) return 'handoff';
+        if (await provisionalRoute.isVisible().catch(() => false)) return 'guided-offer';
+        if (await activeQuestion.isVisible().catch(() => false)) return 'active-question';
+        return 'transitioning';
+      })
+      .not.toBe('transitioning');
   }
 
   await expect(page.getByText(/Qué haría Starteria primero/i)).toBeVisible({ timeout: 30_000 });
@@ -249,7 +265,8 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
     await expect(page.getByText(/Quick clarification/i)).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText(/Lo que estamos aclarando ahora/i)).toBeVisible();
+    await expect(page.getByTestId('portfolio-entry-active-question')).toBeVisible();
+    await expect(page.getByTestId('portfolio-entry-active-question-text')).toHaveCount(1);
     await expect(page.getByText(/Ver conversación/i)).toBeVisible();
     await expect(page.getByLabel(/Tu respuesta/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toBeVisible();
