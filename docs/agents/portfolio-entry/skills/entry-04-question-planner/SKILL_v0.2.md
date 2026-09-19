@@ -15,9 +15,9 @@
 
 Este skill está subordinado a:
 
-1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+1. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 2. ADRs aprobados
-3. `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+3. `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 4. `PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.2.md`
 5. `entry-01-intent-detection/SKILL_v0.2.md`
 6. `entry-02-context-extraction/SKILL_v0.2.md`
@@ -237,6 +237,7 @@ Cuando:
 ```text
 interaction_mode = quick_clarification
 ```
+
 
 las preguntas deben limitarse a:
 

@@ -32,7 +32,7 @@ Portfolio Lead does not execute Steps, does not replace Initiative Core, and doe
 Use this order when documents disagree:
 
 ```text
-Core Contract
+Core v0.2 factual
 -> Authority / approved ADRs
 -> Experience Contracts
 -> Agent/Skill Contracts
@@ -47,13 +47,15 @@ Important:
 - Target candidates are not automatically authority.
 - Current implementation does not invalidate higher authority.
 - Implementation prompts are historical execution aids, not source of truth.
+- Core v0.3 is an external reconciliation candidate only. Candidate gaps do
+  not authorize implementation without ADR, original evidence and re-test.
 - The repo may contain historical runtime folders; they do not authorize product evolution by themselves.
 
 Primary authority map:
 
 - [Starteria Authority](../STARTERIA_AUTHORITY.md)
 - [Current State](../../CURRENT_STATE.md)
-- [Core Logic Contract](../core/STARTERIA_CORE_LOGIC_CONTRACT.md)
+- [Core Logic Contract](../../doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md) — factual v0.2, por validar
 
 ## C. Current Implementation Status
 
@@ -68,13 +70,16 @@ Primary authority map:
 | Provisional Structuring | GO |
 | Human Material Review | GO |
 | PortfolioReading | GO |
-| HOME_D / HOME_E | GO |
+| HOME_D / HOME_E | implementation evidence; runtime certification pending |
 | PG-1 Projection | GO |
 | PG-2 Events / interaction_channel | GO |
 | PG-4 Permissions | GO |
+| Portfolio Home Governance PH-0 | GO documentation freeze; runtime not certified |
 | Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
-The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
+The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority. Portfolio Home
+Governance is now a PH-0 target/documentation freeze; its runtime remains
+uncertified and is not a PH-1 result.
 
 Portfolio Entry version status: v0.1 remains the declared current executable/reference baseline, and its Experience Contract remains the approved authority. The v0.2/v0.2.1 documents installed in `eef32d6` are candidates pending validation and explicit promotion. See the [Entry index](02-entry/README.md). The target governance paths under `docs/...` are not materialized for several v0.1 artifacts, while equivalent/current legacy sources under `doc/...` remain present with active consumers. Reconcile paths and consumers before promotion; v0.2 does not supersede v0.1.
 
@@ -170,7 +175,7 @@ Authority relationship:
 STARTERIA_AUTHORITY
         |
         v
-STARTERIA_CORE_LOGIC_CONTRACT
+CORE v0.2 FACTUAL
         |
         v
 PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT
@@ -195,14 +200,49 @@ ADR candidates still unresolved:
 
 Activation/Handoff is not implemented by this documentation freeze.
 
+## H.1 Portfolio Home Governance Pack
+
+Portfolio Home V2 is documented in the PH-0 frozen pack:
+
+- [Governance Pack](06-portfolio-home-governance/README_PORTFOLIO_HOME_GOVERNANCE_PACK_v0.1.md)
+- [Governance Target](06-portfolio-home-governance/PORTFOLIO_HOME_GOVERNANCE_TARGET_v0.1.md)
+- [Read Model Contract](06-portfolio-home-governance/PORTFOLIO_HOME_READ_MODEL_CONTRACT_v0.1.md)
+- [Activation/Handoff Traceability](06-portfolio-home-governance/PORTFOLIO_HOME_TO_INITIATIVE_HANDOFF_TRACEABILITY_v0.1.md)
+- [Acceptance Checklist](06-portfolio-home-governance/PORTFOLIO_HOME_ACCEPTANCE_CHECKLIST_v0.1.md)
+- [Implementation Sequence](06-portfolio-home-governance/PORTFOLIO_HOME_IMPLEMENTATION_SEQUENCE_v0.1.md)
+
+The pack is target authority for planning only. It makes the relationship to
+Activation/Handoff explicit and does not claim that H-1/H-2 or Portfolio Home
+runtime is implemented.
+
+### PH-0 semantic classification
+
+Compatible with current Core v0.2 and retained as target/Experience-level
+specification:
+
+- Portfolio Home is not the Initiative workspace and does not write Steps.
+- AI recommends; a human/domain authority decides.
+- Sponsor is contextual and is not assumed to be universal decision authority.
+- Expected, observed and attributed contribution remain distinct.
+- Governance, attention, decision visibility and projection-based tracking are
+  read/governance concerns, not a second source of truth.
+
+`CANDIDATE DEPENDENCY / ADR-RETEST REQUIRED`:
+
+- exact Activation Readiness lifecycle and state transitions;
+- canonical ownership and new Decision Authority semantics;
+- exact Challenge coverage/cardinality rules;
+- exact `pre_start` lifecycle and technical representation;
+- exact moment of Step materialization.
+
 ## I. Document Map
 
 Authority:
 
 - [Starteria Authority](../STARTERIA_AUTHORITY.md)
 - [Current State](../../CURRENT_STATE.md)
-- [Core Logic Contract](../core/STARTERIA_CORE_LOGIC_CONTRACT.md)
-- [Product ADR index](../product-adr/ADR-INDEX.md)
+- [Core Logic Contract](../../doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md)
+- [Product ADR index](../../doc/product-adr/ADR-INDEX.md)
 
 Architecture:
 
@@ -221,6 +261,14 @@ Bootstrap/Home:
 - [Bootstrap/Home tech spec](03-bootstrap-home/PORTFOLIO_BOOTSTRAP_HOME_TECH_SPEC_v0.1.md)
 - [Bootstrap/Home E2E validation report](../../PORTFOLIO_BOOTSTRAP_HOME_E2E_VALIDATION_REPORT_v0.1.md)
 - [Bootstrap import validation report](../../PORTFOLIO_BOOTSTRAP_IMPORT_VALIDATION_REPORT_v0.1.md)
+
+Portfolio Home Governance:
+
+- [Governance Pack](06-portfolio-home-governance/README_PORTFOLIO_HOME_GOVERNANCE_PACK_v0.1.md)
+- [Read Model Contract](06-portfolio-home-governance/PORTFOLIO_HOME_READ_MODEL_CONTRACT_v0.1.md)
+- [Handoff Traceability](06-portfolio-home-governance/PORTFOLIO_HOME_TO_INITIATIVE_HANDOFF_TRACEABILITY_v0.1.md)
+- [Acceptance Checklist](06-portfolio-home-governance/PORTFOLIO_HOME_ACCEPTANCE_CHECKLIST_v0.1.md)
+- [Implementation Sequence](06-portfolio-home-governance/PORTFOLIO_HOME_IMPLEMENTATION_SEQUENCE_v0.1.md)
 
 Channel Independence / PG:
 

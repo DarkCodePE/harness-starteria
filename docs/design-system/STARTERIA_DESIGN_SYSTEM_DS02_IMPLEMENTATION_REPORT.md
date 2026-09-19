@@ -10,7 +10,7 @@
 Leido antes de editar codigo:
 
 1. `docs/STARTERIA_AUTHORITY.md`
-2. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+2. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 3. `docs/product-adr/ADR-INDEX.md`
 4. `docs/product-adr/ADR-031-portfolio-entry-continuation-to-portfolio.md`
 5. `docs/design-system/STARTERIA_E2E_VISUAL_EXPERIENCE_ARCHITECTURE_v0.1.md`

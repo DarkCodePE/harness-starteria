@@ -3,7 +3,7 @@
 **Documento:** `docs/STARTERIA_AUTHORITY.md`
 **Version:** v0.1
 **Estado:** Base de gobernanza para repositorio mixto documental + implementacion controlada
-**Fecha:** 2026-09-09
+**Fecha:** 2026-09-19
 **Estado del repositorio:** ver `../CURRENT_STATE.md`
 
 ## 1. Proposito
@@ -54,28 +54,66 @@ Debe registrarse el conflicto y reconciliarse segun esta Authority Map.
 
 Cuando dos fuentes entren en conflicto, aplicar este orden:
 
-1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
-2. ADRs de producto aprobados en `docs/product-adr/`
+1. Core v0.2 factual: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+2. ADRs de producto aprobados en `doc/product-adr/`
 3. Experience Logic Contracts aprobados
 4. Agent Contracts
 5. Skill Contracts
 6. Tech Specs
 7. PRDs
 8. Prototipos, mockups, prompts experimentales y reportes historicos
-9. Implementacion historica presente en el arbol
+9. Implementacion
 
 Regla: si dos fuentes entran en conflicto, gobierna la de mayor autoridad y debe conservarse el estado factual declarado por cada documento.
 
+Separately, the external Core v0.3 candidate remains outside this hierarchy:
+
+```text
+Core v0.3 candidate
+        ↓
+candidate target / reconciliation evidence
+        ↓
+NO authority until ratified
+```
+
 ## 3. Estado factual del Core Contract
 
-Core Contract:
+Core Contract factual encontrado en este checkout:
 
-`docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+`doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 
 Estado declarado actual:
 
-- Version: `v0.3 candidata`
-- Estado: `Candidata de gobernanza / Requiere re-test`
+- Version: `v0.2`
+- Estado: `Base fundacional revisada / Por validar`
+
+`docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` is not materialized or promoted in
+this checkout. It is not created or used as authority by PH-0B.
+
+### Core v0.3 candidate - no autoritativo
+
+- **Source:** external candidate referenced by `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`.
+- **Status:** `External / reconciliation candidate`.
+- **Authority:** `Not current authority`.
+- **Promotion gate:** `Requires ADR / evidence / re-test before promotion`.
+- **Treatment:** preserve the proposal and its gaps; do not materialize a
+  `docs/core/` canonical copy or implement its semantics.
+
+### CORE AUTHORITY NORMALIZATION
+
+- **Contract:** este Authority Map y el reporte CORE-0.
+- **Requirement:** una única ruta factual y un estado explícito para Core.
+- **Current document/code:** el checkout contiene solamente el Core v0.2 bajo
+  `doc/`.
+- **Observed mismatch:** historical references pointed to an unmaterialized
+  `docs/core/` path while the factual Core lives under `doc/`.
+- **Risk:** definir comportamiento nuevo sobre una versión no disponible o
+  mezclar semántica v0.2/v0.3.
+- **Recommended treatment:** `KEEP` el Core v0.2 como autoridad factual por
+  defecto y `UPDATE` las referencias rotas. Un Core moderno requiere decisión
+  documental explícita.
+- **Requires ADR:** `yes` si la reconciliación cambia invariantes Core;
+  `no` para corregir rutas y estado factual sin cambiar semántica.
 
 La presencia de este contrato en el repositorio no lo convierte en aprobado. Cualquier cambio que dependa de tratarlo como aprobado requiere ratificacion explicita.
 
@@ -83,7 +121,7 @@ La presencia de este contrato en el repositorio no lo convierte en aprobado. Cua
 
 Para el vertical slice `Pantalla 1 - Portfolio Entry / Landing publica`, el Experience Contract activo es:
 
-`docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+`doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 Estado declarado:
 
@@ -108,7 +146,7 @@ el Experience Contract de referencia para implementacion posterior es:
 
 Este contrato:
 
-- no reemplaza `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`;
+- no reemplaza `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`;
 - no reemplaza este Authority Map;
 - gobierna especificamente la experiencia y lifecycle del bounded context Portfolio -> Initiative Activation/Handoff;
 - termina en la frontera `Start` y no autoriza modificar Steps 0-4.
@@ -119,7 +157,7 @@ La relacion de autoridad para este bounded context es:
 STARTERIA_AUTHORITY
         |
         v
-STARTERIA_CORE_LOGIC_CONTRACT
+CORE v0.2 FACTUAL
         |
         v
 PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT
@@ -141,8 +179,8 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 
 ### Core
 
-- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
-- `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+- `doc/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
 
 ### Gobernanza de desarrollo
 
@@ -152,7 +190,7 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 
 ### Portfolio Entry
 
-- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`
 - `docs/experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md` - propuesto para revision, no implementado
 - `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md` - propuesto
@@ -197,11 +235,24 @@ Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El 
 - `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md` - checklist de aceptacion H-0.
 - `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md` - evidencia factual; no autoridad funcional.
 
+### Portfolio Home Governance
+
+The PH-0 frozen pack is indexed at:
+
+`docs/portfolio-lead/06-portfolio-home-governance/README_PORTFOLIO_HOME_GOVERNANCE_PACK_v0.1.md`
+
+It is below Portfolio Governance and Activation/Handoff in the authority
+chain. It defines the target/read-model boundary and does not certify runtime.
+The acceptance checklist is:
+
+`docs/portfolio-lead/06-portfolio-home-governance/PORTFOLIO_HOME_ACCEPTANCE_CHECKLIST_v0.1.md`
+
 ## 7. ADRs
 
 - ADRs de harness/documentacion: `docs/adr/`.
-- ADRs de producto: `docs/product-adr/ADR-INDEX.md`.
+- ADRs de producto: `doc/product-adr/ADR-INDEX.md`.
 - No mezclar la serie de producto con `docs/adr/ADR-001...007`.
+
 
 ## 8. Reglas obligatorias
 
@@ -210,7 +261,7 @@ Antes de modificar producto:
 1. leer `../CURRENT_STATE.md`;
 2. leer `../STARTERIA_V2_MANIFEST.md`;
 3. leer este archivo;
-4. leer `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` y conservar su estado factual;
+4. leer `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` y conservar su estado factual;
 5. identificar el Experience Contract afectado;
 6. revisar ADRs relevantes;
 7. revisar Agent/Skill Contracts;

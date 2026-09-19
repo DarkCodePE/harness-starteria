@@ -1,5 +1,11 @@
 # Starteria - Authority Map
 
+> **SUPERSEDED:** This historical `doc/` authority map is retained for
+> traceability. Use [`docs/STARTERIA_AUTHORITY.md`](../docs/STARTERIA_AUTHORITY.md)
+> as the current repository authority map. The factual Core file remains
+> `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`; no modern Core v0.3
+> file is present in this checkout.
+
 **Documento:** `doc/STARTERIA_AUTHORITY.md`
 **Version:** v0.1
 **Estado:** Base de gobernanza para harness/documentacion

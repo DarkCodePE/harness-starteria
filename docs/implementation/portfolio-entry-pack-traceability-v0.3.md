@@ -18,7 +18,7 @@ Limite: no instala el pack 00-14 literal, no aprueba contratos propuestos y no h
 
 | Artefacto | Ruta | Estado real |
 |---|---|---|
-| Core global | `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` | v0.3 candidata; gobierna invariantes solo cuando sea ratificada por el proceso vigente |
+| Core global | `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` | v0.2 factual current; external v0.3 remains candidate-only and requires ADR/evidence/re-test |
 | Authority map | `docs/STARTERIA_AUTHORITY.md` | base de gobernanza; actualizado para reflejar documentos existentes sin aprobarlos |
 | Experience Contract activo | `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` | aprobado como base de experiencia para Pantalla 1 |
 | Agent Contract | `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md` | propuesto para revision; parcialmente implementado por runtime/prompts |

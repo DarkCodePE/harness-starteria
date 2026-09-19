@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../../shared/db/prisma';
 import { PortfolioController } from './portfolio.controller';
 import { PortfolioService } from './portfolio.service';
+import { PortfolioHomeController } from './portfolio-home.controller';
+import { PortfolioHomeReadService } from './portfolio-home.read-service';
 import { validate } from '../../shared/middleware/validate';
 import { authenticate, requirePermission } from '../auth/auth.middleware';
 import { requireEntitlement } from '../billing/entitlement.middleware';
@@ -25,10 +27,15 @@ import {
 
 const service = new PortfolioService(prisma);
 const controller = new PortfolioController(service);
+const homeController = new PortfolioHomeController(new PortfolioHomeReadService(prisma));
 
 export const portfolioRouter = Router();
 
 portfolioRouter.use(authenticate);
+
+// PH-2: consolidated read-only composition. This endpoint has no write-capable
+// service dependency and must remain separate from lifecycle commands.
+portfolioRouter.get('/home', homeController.getHome);
 
 // ADR-028: las escrituras son `admin` + `portfolio_lead`. `mentor` las tenía por no
 // existir el rol correcto, no por decisión de producto; se le retiran aquí.

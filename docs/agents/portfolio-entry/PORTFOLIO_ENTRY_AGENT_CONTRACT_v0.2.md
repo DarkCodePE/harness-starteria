@@ -14,9 +14,9 @@
 
 Este contrato está subordinado a:
 
-1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+1. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 2. ADRs aprobados
-3. `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+3. `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 Y gobierna sobre:
 

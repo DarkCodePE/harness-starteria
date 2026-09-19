@@ -4,13 +4,13 @@
 
 ## Current baseline (v0.1)
 
-- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` — active approved Experience Contract.
+- `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` — active approved Experience Contract.
 - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md` — acceptance reference.
 - `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md` and `docs/agents/portfolio-entry/skills/entry-01-intent-detection/SKILL.md` through `entry-04-question-planner/SKILL.md` — current Agent/Skill reference baseline.
 - `docs/ai-harness/portfolio-entry/PORTFOLIO_ENTRY_AI_HARNESS_v0.1.md` and `PORTFOLIO_ENTRY_HARNESS_EXECUTION_SPEC_v0.1.md` — current harness reference baseline.
 - `docs/experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md` — proposed, not implemented.
 
-The target `docs/...` v0.1 paths are not materialized in this branch. Equivalent/legacy v0.1 artifacts remain present under `doc/...` and still have active consumers. Path and consumer reconciliation is required before any promotion or supersession.
+The canonical v0.1 Logic Contract is materialized under `doc/experience/...`. The `docs/experience/...` directory contains the candidate v0.2/v0.2.1 clarification stack and does not duplicate the v0.1 Logic Contract.
 
 ## Installed candidate stack (v0.2/v0.2.1)
 

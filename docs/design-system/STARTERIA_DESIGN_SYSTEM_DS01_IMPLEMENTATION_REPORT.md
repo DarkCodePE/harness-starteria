@@ -30,7 +30,7 @@ Antes de DS-01 se leyeron:
 
 - `CURRENT_STATE.md`
 - `docs/STARTERIA_AUTHORITY.md`
-- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 - `docs/product-adr/ADR-INDEX.md`
 - `docs/product-adr/ADR-031-portfolio-entry-continuation-to-portfolio.md`
 - `STARTERIA_DESIGN_SYSTEM_CURRENT_STATE_AUDIT.md`

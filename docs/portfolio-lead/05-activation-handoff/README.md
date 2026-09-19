@@ -23,7 +23,7 @@ The authority chain for this bounded context is:
 STARTERIA_AUTHORITY
         |
         v
-STARTERIA_CORE_LOGIC_CONTRACT
+CORE v0.2 FACTUAL
         |
         v
 PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT
@@ -42,6 +42,26 @@ Portfolio -> Initiative Activation/Handoff.
 The Current State Audit in this folder is not functional authority. It is factual
 evidence used to classify existing implementation as KEEP / ADAPT / NEW /
 DEPRECATE / ADR CANDIDATE.
+
+## PH-0B semantic classification
+
+Compatible with current Core v0.2 as an Experience target:
+
+- `Invitation != Initiative`.
+- `Accept != Start`.
+- `Accept != Step 0 active`.
+- Portfolio must not silently activate Steps.
+- The handoff preserves lineage, provenance and explicit human action.
+
+`CANDIDATE DEPENDENCY / ADR-RETEST REQUIRED`:
+
+- technical representation of `pre_start`;
+- exact activation lifecycle and ownership transitions;
+- exact Challenge coverage/cardinality rule;
+- canonical Decision Authority semantics;
+- exact moment of Step materialization.
+
+These proposals remain visible but are not approved Core semantics.
 
 ## Contract Set
 
@@ -65,8 +85,9 @@ Target lifecycle:
 Invitation -> Accept -> pre_start -> Start -> Initiative Core
 ```
 
-Do not freeze the technical representation of `pre_start` in H-0. The functional
-definition is:
+Do not freeze the technical representation of `pre_start` in H-0. The following
+is a target experience definition pending candidate-Core ratification, not an
+approved v0.2 technical lifecycle:
 
 ```text
 Initiative exists + responsibility accepted + Core not started

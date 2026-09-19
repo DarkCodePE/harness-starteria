@@ -14,9 +14,9 @@
 
 Este documento es un **subcontrato de experiencia de Portfolio Entry**. Está subordinado únicamente a:
 
-1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+1. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 2. ADRs aprobados
-3. `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+3. `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 Para las responsabilidades de **sesión, aclaración, exploración guiada y handoff**, este contrato gobierna la orquestación que deben respetar el Agent Contract y las Skill Contracts.
 
@@ -334,6 +334,7 @@ Existe suficiente contexto para un handoff útil.
 ```text
 quick_questions_asked = 3
 ```
+
 
 No hacer una cuarta pregunta dentro de Quick Clarification.
 

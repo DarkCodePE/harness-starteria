@@ -11,7 +11,7 @@ Leido antes de editar codigo:
 
 1. `CURRENT_STATE.md`
 2. `docs/STARTERIA_AUTHORITY.md`
-3. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+3. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 4. `docs/product-adr/ADR-INDEX.md`
 5. `docs/portfolio-lead/README.md`
 6. `docs/portfolio-lead/DOCUMENT_INVENTORY.md`

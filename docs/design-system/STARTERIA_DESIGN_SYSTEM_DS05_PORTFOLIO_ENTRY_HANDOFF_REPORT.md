@@ -11,10 +11,10 @@ Leido antes de editar producto:
 
 1. `CURRENT_STATE.md`
 2. `docs/STARTERIA_AUTHORITY.md`
-3. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+3. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 4. `docs/product-adr/ADR-INDEX.md`
 5. `docs/product-adr/ADR-031-portfolio-entry-continuation-to-portfolio.md`
-6. `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+6. `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 7. `docs/experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md`
 8. `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md`
 9. `docs/agents/portfolio-entry/skills/entry-01-intent-detection/SKILL.md`

@@ -9,6 +9,7 @@ Este indice no reemplaza `docs/adr/`, que queda reservado para ADRs del harness.
 | ID | Titulo | Ruta | Estado | Notas |
 |---|---|---|---|---|
 | ADR-001 | Portfolio Entry continuation to Portfolio | `ADR-001-portfolio-entry-continuation-to-portfolio.md` | Propuesto / no aprobado | Candidato de producto; no implementa runtime. |
+| ADR-002 | Portfolio Entry active question, answer resolution and clarification convergence | `ADR-002-portfolio-entry-active-question-clarification-convergence.md` | Propuesto / no aprobado | Formaliza interacción secuencial; no implementa runtime. |
 
 ## Reglas
 

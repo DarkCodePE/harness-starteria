@@ -9,9 +9,9 @@ Read before editing product code:
 - `AGENTS.md`
 - `CURRENT_STATE.md`
 - `docs/STARTERIA_AUTHORITY.md`
-- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 - applicable product ADR index and current approved/proposed ADR state
-- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 - Portfolio Lead / Governance contracts present under `docs/experience/portfolio-lead/`
 - `docs/design-system/STARTERIA_E2E_VISUAL_EXPERIENCE_ARCHITECTURE_v0.1.md`
 - `docs/design-system/STARTERIA_PAGE_ANATOMY_SYSTEM_v0.1.md`

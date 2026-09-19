@@ -92,7 +92,7 @@ UNKNOWN
 ```text
 STARTERIA_AUTHORITY
         ↓
-CORE LOGIC CONTRACT
+CORE v0.2 FACTUAL
         ↓
 APPROVED ADRs
         ↓
@@ -109,6 +109,17 @@ TECH SPECS
 SCHEMAS + TESTS + HARNESS
         ↓
 IMPLEMENTATION
+```
+
+The external Core v0.3 candidate remains outside this authority chain until
+ratified:
+
+```text
+Core v0.3 candidate
+        ↓
+candidate target / reconciliation evidence
+        ↓
+NO authority until ratified
 ```
 
 El Design System no redefine esta jerarquía funcional.
@@ -188,7 +199,7 @@ Sirve para auditar el boundary de migración y no es contrato funcional.
 # 5. Portfolio Entry — baseline V2 consolidada
 
 ```text
-STARTERIA_CORE_LOGIC_CONTRACT
+CORE v0.2 FACTUAL
         ↓
 Approved ADRs
         ↓
@@ -288,7 +299,7 @@ HYP-004 Program / accelerator support experience
 | Slice | Logic status | Implementation status | Visual status | Evidence status | Treatment |
 |---|---|---|---|---|---|
 | Authority / Governance | ACTIVE_V2_BASELINE but stale index | IMPLEMENTED | NOT_APPLICABLE | SUPPORTED | UPDATE |
-| Core | CANDIDATE v0.3 | PARTIAL / PRODUCTIVE dependencies | NOT_APPLICABLE | REQUIRES_RETEST | KEEP + DECIDE |
+| Core | v0.2 factual current / v0.3 external reconciliation candidate | PARTIAL / PRODUCTIVE dependencies | NOT_APPLICABLE | REQUIRES_RETEST | KEEP v0.2 + ADR/re-test candidate |
 | Crazy 8s E2E | ACTIVE_V2_BASELINE / reference | NOT_APPLICABLE | NOT_APPLICABLE | SUPPORTED | KEEP |
 | Landing V4 | ACTIVE_V2_BASELINE visual spec | VERIFY_IN_REPO | V2_TARGET_DEFINED | SUPPORTED | RECONCILE |
 | Portfolio Entry logic | ACTIVE_V2_BASELINE | PARTIAL_IMPLEMENTATION | V2_PILOT / VERIFY | SUPPORTED | PROMOTE STACK |
@@ -296,10 +307,10 @@ HYP-004 Program / accelerator support experience
 | Handoff / Value Handoff Cognition | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
 | Registration / continuation | CANDIDATE | IMPLEMENTED_UNVERIFIED | MIXED | TESTING | VERIFY grant and full E2E |
 | Portfolio Bootstrap | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED / VERIFY | VERIFIED reported | RECONCILE |
-| Portfolio Home | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED DS-06 | VERIFIED reported | RECONCILE |
+| Portfolio Home | TARGET AUTHORITY FROZEN PH-0 / CANDIDATE | IMPLEMENTED_VERIFIED reported, runtime not certified | V2_TARGET_DEFINED; DS-06 evidence only | VERIFIED reported, reconcile required | RECONCILE |
 | Strategic Front | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
 | Challenge | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
-| Activation / Invitation | TARGET CONTRACT | PARTIAL / PILOT | V2_PILOT DS-08 | SUPPORTED | VERIFY |
+| Activation / Invitation | TARGET CONTRACT / H-0 documentation freeze | PARTIAL / PILOT; H-1/H-2 not implemented by PH-0 | V2_PILOT DS-08 | SUPPORTED | VERIFY |
 | Initiative Overview | CANDIDATE / unresolved | EXISTING LEGACY RUNTIME | V2_TARGET_UNRESOLVED | UNKNOWN | AUDIT FIRST |
 | Step 0 | STABLE CORE FUNCTION | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
 | Step 1 | STABLE CORE FUNCTION | PRODUCTIVE / VERIFY | V1_LEGACY | MIXED | DO NOT MIGRATE YET |
@@ -402,7 +413,9 @@ structure for memory
 
 - `STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
 - `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
-- Core candidate pending explicit decision
+- Core v0.2 factual current: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`.
+- Core v0.3 external reconciliation candidate: `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`.
+- No candidate gap authorizes implementation without ADR, original evidence and re-test.
 - relevant approved ADRs
 - implementation reports as evidence
 

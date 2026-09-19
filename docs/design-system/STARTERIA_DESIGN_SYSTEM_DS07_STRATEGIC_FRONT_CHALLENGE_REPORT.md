@@ -8,7 +8,7 @@ Date: 2026-09-16
 Read before product edits:
 
 - `docs/STARTERIA_AUTHORITY.md`
-- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 - `docs/product-adr/ADR-INDEX.md` (no approved product ADR found for this slice; ADR-031 remains proposed)
 - `docs/portfolio-lead/README.md`
 - `docs/portfolio-lead/DOCUMENT_INVENTORY.md`

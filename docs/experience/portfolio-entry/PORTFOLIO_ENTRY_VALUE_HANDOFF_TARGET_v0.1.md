@@ -379,9 +379,9 @@ implementation_authorized: NO
 
 ```text
 CONFLICT
-Contract: STARTERIA_AUTHORITY.md references docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md
+Contract: STARTERIA_AUTHORITY.md must reference the factual Core at doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md
 Requirement: leer la autoridad Core antes de definir un target dependiente de ella
-Current document/code: la ruta docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md no existe en este checkout; CURRENT_STATE.md y STARTERIA_V2_MANIFEST.md declaran el Core como candidata / requiere re-test
+Current document/code: the factual Core v0.2 is materialized under doc/; the external v0.3 candidate remains non-authoritative and requires ADR/evidence/re-test
 Observed mismatch: la autoridad referenciada no está disponible en la ruta indicada
 Risk: no debe tratarse la ausencia como aprobación ni inferir semántica Core desde la implementación
 Recommended treatment: KEEP el target documental y BLOCK cualquier promoción de autoridad hasta reconciliar la ruta y el estado del Core

@@ -12,7 +12,7 @@ Found and read before implementation analysis:
 
 - `AGENTS.md`
 - `docs/STARTERIA_AUTHORITY.md`
-- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 - `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
 - `docs/governance/STARTERIA_DEVELOPMENT_HARNESS_v0.1.md`
 - `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`

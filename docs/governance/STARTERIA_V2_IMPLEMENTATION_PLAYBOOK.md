@@ -34,7 +34,7 @@ Leer en este orden:
 1. `CURRENT_STATE.md`
 2. `STARTERIA_V2_MANIFEST.md`
 3. `docs/STARTERIA_AUTHORITY.md`
-4. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+4. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 5. ADRs aprobados del slice
 6. Experience Contract afectado
 7. Agent / Skill Contracts aplicables

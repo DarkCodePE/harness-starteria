@@ -703,7 +703,7 @@ Debe definir:
 Auditar al menos:
 
 ```text
-STARTERIA_CORE_LOGIC_CONTRACT.md
+doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md
 STARTERIA_AUTHORITY.md
 Portfolio Lead V.2
 Actualización v1

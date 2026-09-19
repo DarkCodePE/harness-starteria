@@ -1,9 +1,17 @@
 # PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1
 
-**Status:** Draft for implementation
+**Status:** H-0 experience target; v0.2-compatible invariants preserved; candidate lifecycle dependencies unresolved
 **Scope:** Portfolio/Challenge â†’ Invitation â†’ Accept â†’ Initiative Overview â†’ Start
 **Out of scope:** Internal logic of Initiative Core / Steps 0â€“4
 **Primary purpose:** Freeze the user experience, domain semantics and handoff boundary before implementation.
+
+**Authority note:** Current Core authority is v0.2 at
+`doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`. The external Core v0.3
+candidate is not authoritative. The invariants `INVITE != ACCEPT != START`,
+`Invitation != Initiative` and `Accept != Step active` are retained as
+Experience-level targets. The `pre_start` representation, ownership/activation
+state machine, Challenge coverage rule and Decision Authority semantics are
+`CANDIDATE DEPENDENCY / ADR-RETEST REQUIRED`.
 
 ---
 
@@ -86,7 +94,7 @@ Invitation
    â†“
 Accept
    â†“
-Create Initiative in pre_start
+   Create Initiative in pre_start (target semantics; candidate dependency)
    â†“
 Accepted owner
    â†“
@@ -248,7 +256,7 @@ On Accept:
 
 ### Challenge-only invitation
 
-On Accept:
+On Accept (target experience; exact lifecycle remains candidate-dependent):
 
 - materialize one Initiative shell if one does not yet exist for this accepted invitation;
 - assign the accepted owner/participant;

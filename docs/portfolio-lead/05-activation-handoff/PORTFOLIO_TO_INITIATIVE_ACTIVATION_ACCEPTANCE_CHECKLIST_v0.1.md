@@ -4,10 +4,17 @@
 **Scope:** Portfolio / Challenge -> Invitation -> Accept -> Initiative Overview -> Start
 **Out of scope:** Internal Initiative Core / Steps 0-4 behavior after Start
 
+**Core status:** Core v0.2 is factual current. The external v0.3 candidate is
+not authority. The handoff invariants below are Experience targets compatible
+with v0.2; `pre_start` representation, ownership transitions, Challenge
+coverage/cardinality and Decision Authority semantics are
+`CANDIDATE DEPENDENCY / ADR-RETEST REQUIRED`.
+
 This checklist protects implementation conformance to:
 
 - `PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md`
-- `STARTERIA_CORE_LOGIC_CONTRACT.md`, especially Portfolio -> Initiative activation readiness
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`, especially the
+  Portfolio -> Initiative boundary; no `docs/core/` copy is assumed.
 - `PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT_v0.1.md`
 
 The current-state audit is evidence only. It is not functional authority.
