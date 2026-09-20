@@ -1122,7 +1122,7 @@ esperado:
 
 - `interaction_mode = guided_exploration`;
 - `exploration_goal` explícito;
-- 0–3 preguntas en la ronda;
+- 0–2 preguntas en la única ronda;
 - síntesis al terminar;
 - no abrir temas no relacionados.
 
@@ -1761,3 +1761,14 @@ El diseño del Harness está listo para implementación cuando:
 Y:
 
 > Primero validamos comportamiento; después congelamos arquitectura productiva.
+
+## Guided Exploration acceptance alignment
+
+```text
+quick_questions_total <= 3
+guided_questions_total <= 2
+guided_rounds <= 1
+total_questions_before_proposal <= 5
+```
+
+The accepted path must expose a second proposal checkpoint, retain conversation history, prevent a third Guided question/round, and keep proposal CTA sequencing downstream of analysis and review.

@@ -435,6 +435,7 @@ function ConversationPanel({
 }) {
   const questions = latestQuestions(session);
   const activeQuestion = questions[0];
+  const guided = session.clarification.interactionMode === 'guided_exploration';
   const canSubmit = value.trim().length > 0 && !pending;
   return (
     <section className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
@@ -445,12 +446,14 @@ function ConversationPanel({
         <div className="min-w-0 flex-1 space-y-3">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Quick clarification</Badge>
+              <Badge variant="secondary">{guided ? 'Exploración guiada' : 'Quick clarification'}</Badge>
               <Badge variant="neutral">
-                Aclaracion {session.clarification.quickQuestionsAsked} de hasta {session.clarification.quickQuestionBudget}
+                {guided
+                  ? `Profundizando · ${session.clarification.questionsAskedCurrentRound} de hasta 2`
+                  : `Aclaración ${session.clarification.quickQuestionsAsked} de hasta ${session.clarification.quickQuestionBudget}`}
               </Badge>
             </div>
-            <h2 className="text-lg font-semibold text-text-primary">Aclaración breve</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{guided ? 'Exploración guiada' : 'Aclaración breve'}</h2>
             {session.semanticProjection.understanding ? (
               <div className="mt-3 rounded-ds-md border border-brand-primary/20 bg-brand-primary-subtle p-4" data-testid="portfolio-entry-understanding">
                 <p className="text-xs font-semibold uppercase text-brand-primary">Así estoy entendiendo lo que me dices</p>
@@ -539,13 +542,19 @@ function GuidedExplorationOffer({
   return (
     <div className="mx-auto max-w-3xl">
       <AISuggestionPanel
-        title="Ya tengo suficiente claridad para proponerte un primer abordaje"
-        suggestion="Entiendo qué estás intentando conseguir, qué está dificultando la decisión y qué aspectos siguen abiertos. Podemos seguir aterrizando algunos puntos o convertir lo que tenemos en una propuesta concreta."
+        title={session.clarification.checkpoint === 'guided'
+          ? 'Con lo que acabamos de profundizar, ya puedo convertir esta lectura en una propuesta de abordaje.'
+          : 'Ya tengo suficiente claridad para proponerte un primer abordaje'}
+        suggestion={session.clarification.checkpoint === 'guided'
+          ? 'La exploración guiada queda cerrada y la propuesta seguirá mostrando qué está claro y qué conserva incertidumbre.'
+          : 'Entiendo qué estás intentando conseguir, qué está dificultando la decisión y qué aspectos siguen abiertos. Podemos seguir aterrizando algunos puntos o convertir lo que tenemos en una propuesta concreta.'}
         why={['La aclaración puede continuar sin convertirse en una entrevista larga.', 'La propuesta será provisional y conservará la incertidumbre explícita.']}
-        actions={[
-          { id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending },
-          { id: 'deepen', label: 'Seguir aterrizando mi necesidad', tone: 'secondary', disabled: pending },
-        ]}
+        actions={session.clarification.checkpoint === 'guided'
+          ? [{ id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending }]
+          : [
+            { id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending },
+            { id: 'deepen', label: 'Seguir aterrizando mi necesidad', tone: 'secondary', disabled: pending },
+          ]}
         onAction={(actionId) => onChoose(actionId === 'deepen' ? 'accept' : 'provisional_route')}
       />
       <div className="mt-4">

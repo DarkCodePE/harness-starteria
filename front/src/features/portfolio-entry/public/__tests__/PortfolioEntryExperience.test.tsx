@@ -322,6 +322,64 @@ describe('PortfolioEntryExperience', () => {
     });
   });
 
+  it('renders the second checkpoint without offering another Guided Exploration round', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({
+      lifecycleStatus: 'CLARIFYING',
+      revision: 4,
+      nextAction: 'offer_guided_exploration',
+      clarification: {
+        interactionMode: 'guided_exploration',
+        quickQuestionBudget: 3,
+        quickQuestionsAsked: 3,
+        explorationRound: 1,
+        questionsAskedCurrentRound: 2,
+        previousQuestions: [],
+        answeredGaps: [],
+        checkpoint: 'guided',
+      },
+    }));
+    serviceMocks.chooseGuidedExploration.mockResolvedValue(sessionWithHandoff({
+      lifecycleStatus: 'HANDOFF_READY',
+      revision: 5,
+      nextAction: 'review_handoff',
+    }));
+
+    renderExperience();
+
+    expect(await screen.findByText(/Con lo que acabamos de profundizar/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ver mi propuesta de abordaje/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /seguir aterrizando mi necesidad/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ver mi propuesta de abordaje/i }));
+    await waitFor(() => {
+      expect(serviceMocks.chooseGuidedExploration).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        'entry-token',
+        expect.objectContaining({ expectedRevision: 4, choice: 'provisional_route' }),
+      );
+    });
+  });
+
+  it('labels the active Guided Exploration question as deepening, not Quick Clarification', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    const session = sessionWithQuestion();
+    session.clarification = {
+      ...session.clarification,
+      interactionMode: 'guided_exploration',
+      quickQuestionsAsked: 3,
+      explorationRound: 1,
+      questionsAskedCurrentRound: 1,
+    };
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(session);
+
+    renderExperience();
+
+    expect((await screen.findAllByText('Exploración guiada')).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Profundizando · 1 de hasta 2/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/tu respuesta/i)).toBeInTheDocument();
+  });
+
   it('does not render an answer composer when the backend has no active question', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({

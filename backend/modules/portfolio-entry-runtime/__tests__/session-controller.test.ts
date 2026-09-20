@@ -15,6 +15,10 @@ class ScriptedAdapter implements PortfolioEntryAgentAdapterV2 {
   }
 }
 
+function adapterWith(outputs: PortfolioEntryAnalyzeTurnOutputV2[]): ScriptedAdapter {
+  return new ScriptedAdapter(outputs);
+}
+
 function context(overrides: Partial<SessionContext> = {}): SessionContext {
   return { ...createInitialSessionContext({ initial_mode: 'quick_clarification', quick_question_budget: 3 }), ...overrides };
 }
@@ -55,6 +59,19 @@ const materialQuestion = output({
     question: '¿Qué decisión necesita habilitar esta lectura?',
     reason_to_ask: 'Puede cambiar el enfoque recomendado.',
     resolves: ['decision_to_enable'],
+    priority: 1,
+    expected_answer_type: 'decision',
+  }],
+  question_count: 1,
+  status: 'questions_required',
+});
+
+const guidedQuestion = output({
+  questions: [{
+    id: 'guided-gap',
+    question: '¿Qué resultado concreto cambiaría tu siguiente decisión?',
+    reason_to_ask: 'Define el foco de la profundización.',
+    resolves: ['guided_goal'],
     priority: 1,
     expected_answer_type: 'decision',
   }],
@@ -146,6 +163,82 @@ describe('Portfolio Entry session controller', () => {
 
     expect(result.final_context.clarification_status).toBe('guided_exploration');
     expect(result.final_context.interaction_mode).toBe('guided_exploration');
+    expect(result.final_context.exploration_round).toBe(1);
+  });
+
+  it('converges guided exploration to the second checkpoint after sufficient context', async () => {
+    const result = await new PortfolioEntrySessionController(adapterWith([output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' })]), { runId: 'run-guided-sufficient', candidateId: 'test' }).execute({
+      caseId: 'case-guided-sufficient',
+      runId: 'run-guided-sufficient',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered' }),
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(result.final_context.interaction_mode).toBe('guided_exploration');
+    expect(result.final_context.exploration_round).toBe(1);
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.trace.turns[0]?.transition.reason).toBe('guided_checkpoint_reached');
+  });
+
+  it('limits guided exploration to two questions and then shows the second checkpoint', async () => {
+    const guidedQuestions = [
+      output({ ...guidedQuestion.question_plan, questions: [{ ...guidedQuestion.question_plan.questions[0], id: 'guided-1', question: '¿Qué resultado concreto cambiaría tu siguiente decisión?' , resolves: ['guided-1'] }] }),
+      output({ ...guidedQuestion.question_plan, questions: [{ ...guidedQuestion.question_plan.questions[0], id: 'guided-2', question: '¿Qué señal usarías para revisar esa decisión?' , resolves: ['guided-2'] }] }),
+      output({ ...guidedQuestion.question_plan, questions: [{ ...guidedQuestion.question_plan.questions[0], id: 'guided-3', question: '¿Qué restricción podría cambiar el orden?' , resolves: ['guided-3'] }] }),
+    ];
+    const result = await new PortfolioEntrySessionController(adapterWith(guidedQuestions), { runId: 'run-guided-budget', candidateId: 'test' }).execute({
+      caseId: 'case-guided-budget',
+      runId: 'run-guided-budget',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered', quick_questions_asked: 3 }),
+      guidedExplorationChoice: 'accept',
+      followUpResponder: (questions) => ({
+        response: 'La respuesta concreta es priorizar las iniciativas que llegan al comité.',
+        matched_question_ids: [questions[0].id],
+        response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves,
+        unmatched_questions: [],
+        fallback_used: false,
+        consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.trace.questions_total).toBe(2);
+    expect(result.final_context.quick_questions_asked).toBe(3);
+    expect(result.final_context.questions_asked_current_round).toBe(2);
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.trace.turns.at(-1)?.questions_asked).toEqual([]);
+  });
+
+  it('does not open a third guided round', async () => {
+    const result = await new PortfolioEntrySessionController(adapterWith([]), { runId: 'run-guided-no-third', candidateId: 'test' }).execute({
+      caseId: 'case-guided-no-third',
+      runId: 'run-guided-no-third',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered', interaction_mode: 'guided_exploration', exploration_round: 1 }),
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(result.final_context.clarification_status).toBe('ready_for_handoff');
+    expect(result.final_context.exploration_round).toBe(1);
+    expect(result.trace.turns).toHaveLength(0);
+  });
+
+  it('uses the second checkpoint proposal action to become handoff-ready', async () => {
+    const result = await new PortfolioEntrySessionController(adapterWith([]), { runId: 'run-guided-proposal', candidateId: 'test' }).execute({
+      caseId: 'case-guided-proposal',
+      runId: 'run-guided-proposal',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered', interaction_mode: 'guided_exploration', exploration_round: 1 }),
+      guidedExplorationChoice: 'provisional_route',
+    });
+
+    expect(result.final_context.clarification_status).toBe('ready_for_handoff');
     expect(result.final_context.exploration_round).toBe(1);
   });
 

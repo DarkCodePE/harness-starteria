@@ -60,6 +60,7 @@ export type PortfolioEntrySessionDto = {
     questionsAskedCurrentRound: number;
     previousQuestions: PortfolioEntryQuestion[];
     answeredGaps: string[];
+    checkpoint?: 'quick' | 'guided';
   };
   semanticProjection: {
     initialEntryState?: string;

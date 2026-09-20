@@ -1,11 +1,13 @@
 ﻿import type { QuestionPlanV2 } from '../domain/analysis.schema';
 import type { QuestionBudgetApplication, QuestionRecord, SessionContext } from '../domain/session.types';
 
+export const GUIDED_QUESTION_BUDGET = 2;
+
 export function getAvailableQuestionBudget(context: SessionContext): number {
   if (context.interaction_mode === 'quick_clarification') {
     return Math.max(0, context.quick_question_budget - context.quick_questions_asked);
   }
-  return Math.max(0, 3 - context.questions_asked_current_round);
+  return Math.max(0, GUIDED_QUESTION_BUDGET - context.questions_asked_current_round);
 }
 
 export function applyQuestionBudget(

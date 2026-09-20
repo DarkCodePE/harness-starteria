@@ -157,6 +157,9 @@ export class PortfolioEntryExperimentalSessionService {
       if (runtimeContext.clarification_status !== 'exploration_offered') {
         throw PortfolioEntrySessionError.invalidTransition('Guided Exploration is not currently offered.');
       }
+      if (body.choice === 'accept' && runtimeContext.interaction_mode !== 'quick_clarification') {
+        throw PortfolioEntrySessionError.invalidTransition('Guided Exploration can only be accepted from the first checkpoint.');
+      }
       const controller = new PortfolioEntrySessionController(this.agentAdapter, {
         runId: context.requestId ?? randomUUID(),
         candidateId: 'portfolio-entry-api-v1',

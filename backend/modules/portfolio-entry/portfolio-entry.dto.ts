@@ -33,6 +33,7 @@ export type PortfolioEntrySessionClientDto = {
     questionsAskedCurrentRound: number;
     previousQuestions: PortfolioEntrySession['semanticState']['previousQuestions'];
     answeredGaps: string[];
+    checkpoint?: 'quick' | 'guided';
   };
   semanticProjection: {
     initialEntryState?: PortfolioEntrySession['semanticState']['initialEntryState'];
@@ -104,6 +105,9 @@ export function toPortfolioEntrySessionClientDto(
       questionsAskedCurrentRound: session.questionBudget.questionsAskedCurrentRound,
       previousQuestions: session.semanticState.previousQuestions,
       answeredGaps: session.semanticState.answeredGaps,
+      checkpoint: session.semanticState.runtimeClarificationStatus === 'exploration_offered'
+        ? session.interactionMode === 'guided_exploration' ? 'guided' : 'quick'
+        : undefined,
     },
     semanticProjection: {
       initialEntryState: session.semanticState.initialEntryState,
