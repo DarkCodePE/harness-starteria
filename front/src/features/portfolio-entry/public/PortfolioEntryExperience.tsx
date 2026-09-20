@@ -754,7 +754,7 @@ const PATH_LABELS: Record<string, string> = {
 
 function StarteriaPathSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
   return (
-    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+    <section data-testid="handoff-starteria-path-secondary" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
       <p className="text-xs font-semibold uppercase text-brand-primary">04</p>
       <h2 className="mt-2 text-xl font-semibold text-text-primary">Cómo lo llevamos a trabajo</h2>
       <p className="mt-1 text-sm leading-6 text-text-secondary">La ruta contextual disponible para continuar.</p>
@@ -824,6 +824,67 @@ function EarlyAccessCard({
   );
 }
 
+function Vh1UnderstandingSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const understanding = textFromProvenanced(handoff.understanding);
+  const outcome = textFromProvenanced(handoff.desired_outcome);
+  const visibleText = outcome !== 'Aun por aclarar' && !understanding.includes(outcome)
+    ? `${understanding} ${outcome}`
+    : understanding;
+  return (
+    <section data-testid="handoff-understanding" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">Esto estoy entendiendo</p>
+      <p className="mt-3 max-w-3xl text-base leading-7 text-text-primary">{visibleText}</p>
+      <div className="mt-4"><ProvenanceChips handoff={handoff} /></div>
+    </section>
+  );
+}
+
+function Vh1DecisionSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  return (
+    <section data-testid="handoff-decision" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">Decisión que necesitas habilitar</p>
+      <p className="mt-3 max-w-3xl text-base leading-7 text-text-primary">{textFromDecision(handoff.decision_to_enable)}</p>
+    </section>
+  );
+}
+
+function Vh1ApproachSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const steps = handoff.starteria_path
+    .filter((step) => step.action.trim() || step.description.trim())
+    .slice(0, 3)
+    .map((step) => ({ title: step.action || 'Siguiente movimiento', description: step.description }));
+  const visibleSteps = steps.length > 0
+    ? steps
+    : [{ title: 'Foco inicial', description: handoff.recommended_approach?.description || 'Aun por aclarar.' }];
+  return (
+    <section data-testid="handoff-approach" className="rounded-ds-lg border border-cyan-300/30 bg-slate-950 p-5 text-white shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-cyan-200">Cómo lo abordaría Starteria</p>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        {visibleSteps.map((step, index) => (
+          <div key={`${step.title}-${index}`} data-testid="handoff-approach-step" className="rounded-ds-md border border-white/10 bg-white/7 p-4">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">{index + 1}</span>
+            <p className="mt-4 text-sm font-semibold text-white">{step.title}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{step.description}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Vh1GapsSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const gaps = [
+    ...handoff.unresolved_context.map((item) => item.description),
+    ...handoff.evidence_or_clarity_needed.map((item) => item.value),
+  ].filter(Boolean).slice(0, 3);
+  return (
+    <section data-testid="handoff-gaps" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">Lo que todavía puede cambiar la decisión</p>
+      {gaps.length > 0 ? <ul className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">{gaps.map((gap, index) => <li key={`${gap}-${index}`}>{gap}</li>)}</ul> : <p className="mt-3 text-sm leading-6 text-text-secondary">No hay pendientes materiales registrados en esta lectura inicial.</p>}
+    </section>
+  );
+}
+
 function HandoffReview({
   session,
   correctionDraft,
@@ -865,11 +926,16 @@ function HandoffReview({
 
       <div className="space-y-5">
         <ConversationTrace session={session} />
-        <UnderstandingSection handoff={handoff} />
-        <RecommendedApproachSection handoff={handoff} />
-        <MaterialGapsSection handoff={handoff} />
-        <StarteriaPathSection handoff={handoff} />
-        <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
+        <div data-testid="handoff-first-view" className="space-y-4">
+          <Vh1UnderstandingSection handoff={handoff} />
+          <Vh1DecisionSection handoff={handoff} />
+          <Vh1ApproachSection handoff={handoff} />
+          <Vh1GapsSection handoff={handoff} />
+        </div>
+        <div data-testid="handoff-secondary-content" className="space-y-4">
+          <StarteriaPathSection handoff={handoff} />
+          <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
+        </div>
       </div>
 
       {editing ? (
