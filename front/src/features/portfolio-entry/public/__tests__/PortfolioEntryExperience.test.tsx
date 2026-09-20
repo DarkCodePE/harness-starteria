@@ -322,6 +322,47 @@ describe('PortfolioEntryExperience', () => {
     });
   });
 
+  it('does not render an answer composer when the backend has no active question', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({
+      lifecycleStatus: 'CLARIFYING',
+      revision: 2,
+      nextAction: 'answer_clarification',
+      conversation: [{
+        id: 'turn-1',
+        turnIndex: 0,
+        userInput: 'Tenemos varias iniciativas.',
+        respondedResolves: [],
+        createdAt: new Date().toISOString(),
+        emittedQuestions: [],
+      }],
+    }));
+
+    renderExperience();
+
+    expect(await screen.findByTestId('portfolio-entry-inconsistent-state')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/tu respuesta/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enviar respuesta/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /no lo se todavia/i })).not.toBeInTheDocument();
+  });
+
+  it('renders structured conversational understanding before an active question', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(sessionWithQuestion());
+    const session = sessionWithQuestion();
+    session.semanticProjection.understanding = {
+      value: 'Así estoy entendiendo lo que me dices: portafolio: 40 iniciativas; decisión: priorizar esfuerzo. También aparece situación: comité de negocio.',
+      source: 'latestAnalysis.extracted_context',
+    };
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(session);
+
+    renderExperience();
+
+    expect(await screen.findByTestId('portfolio-entry-understanding')).toHaveTextContent('40 iniciativas');
+    expect(screen.getByTestId('portfolio-entry-active-question')).toBeInTheDocument();
+    expect(screen.getByLabelText(/tu respuesta/i)).toBeInTheDocument();
+  });
+
   it('materializes handoff, displays provenance language and confirms explicitly', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({

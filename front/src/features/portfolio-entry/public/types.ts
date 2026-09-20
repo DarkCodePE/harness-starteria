@@ -68,6 +68,10 @@ export type PortfolioEntrySessionDto = {
     reverseAlignment?: unknown;
     ambiguities?: unknown[];
     contradictions?: unknown[];
+    understanding?: {
+      value: string;
+      source: 'latestAnalysis.extracted_context';
+    };
   };
   nextAction: PortfolioEntryNextAction;
   handoff?: PortfolioEntryHandoffDto;
