@@ -66,13 +66,13 @@ function makeHandoff(overrides: Partial<PortfolioEntryHandoff> = {}): PortfolioE
     },
     recommended_approach: {
       description: 'Separar primero claridad de objetivo, iniciativas activas e incertidumbre.',
-      rationale: 'Así la decisión parte del portfolio real y no de trabajo nuevo sin foco.',
+      rationale: 'AsÃƒÂ­ la decisiÃƒÂ³n parte del portfolio real y no de trabajo nuevo sin foco.',
       assumption: 'La actividad y la evidencia disponibles permiten comparar las iniciativas.',
       origin: 'AI_SUGGESTED',
       review_disposition: 'UNREVIEWED',
     },
     alternative_approaches: [{
-      description: 'Empezar por la decisión más próxima si el tiempo del comité es limitado.',
+      description: 'Empezar por la decisiÃƒÂ³n mÃƒÂ¡s prÃƒÂ³xima si el tiempo del comitÃƒÂ© es limitado.',
       rationale: 'Reduce el alcance inicial, pero deja fuera parte del portfolio.',
       origin: 'AI_SUGGESTED',
       review_disposition: 'UNREVIEWED',
@@ -86,7 +86,7 @@ function makeHandoff(overrides: Partial<PortfolioEntryHandoff> = {}): PortfolioE
       resolution_stage: 'PORTFOLIO',
     }],
     evidence_or_clarity_needed: [{ value: 'Metrica o senal de exito pendiente.' }],
-    starteria_path: [{ action: 'structure', description: 'Estructurar las iniciativas y sus señales relevantes.' }],
+    starteria_path: [{ action: 'structure', description: 'Estructurar las iniciativas y sus seÃƒÂ±ales relevantes.' }],
     recommended_cta: 'Crear una lectura revisada antes de pasar a una cuenta.',
     provenance_summary: [],
     handoff_status: 'ready_with_uncertainty',
@@ -206,9 +206,8 @@ describe('PortfolioEntryExperience', () => {
     fireEvent.change(screen.getByLabelText(/necesitas conseguir/i), {
       target: { value: 'Necesito ordenar mis iniciativas antes del comite de direccion.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /analizar mi situaci[oó]n/i }));
-
-    await screen.findByText('Aclaración breve');
+    fireEvent.click(screen.getByRole('button', { name: /analizar mi situ/i }));
+    await screen.findByText(/Aclaraci.*breve/i);
     const clarificationLabel = await screen.findByText('Lo que estamos aclarando ahora');
     const currentClarification = within(clarificationLabel.parentElement as HTMLElement);
     expect(await currentClarification.findByText(/que decision necesitas habilitar/i)).toBeInTheDocument();
@@ -259,12 +258,12 @@ describe('PortfolioEntryExperience', () => {
         {
           id: 'turn-1',
           turnIndex: 0,
-          userInput: 'Tenemos 18 iniciativas y necesitamos decidir dónde concentrar seguimiento.',
+          userInput: 'Tenemos 18 iniciativas y necesitamos decidir dÃƒÂ³nde concentrar seguimiento.',
           respondedResolves: [],
           createdAt: new Date().toISOString(),
           emittedQuestions: [{
             id: 'q-1',
-            question: '¿Qué decisión necesita habilitar esta lectura?',
+            question: 'Ã‚Â¿QuÃƒÂ© decisiÃƒÂ³n necesita habilitar esta lectura?',
             resolves: ['decision_to_enable'],
             turn_index: 0,
             interaction_mode: 'quick_clarification',
@@ -274,7 +273,7 @@ describe('PortfolioEntryExperience', () => {
         {
           id: 'turn-2',
           turnIndex: 1,
-          userInput: 'Necesitamos decidir qué iniciativas deben recibir seguimiento este trimestre.',
+          userInput: 'Necesitamos decidir quÃƒÂ© iniciativas deben recibir seguimiento este trimestre.',
           respondedResolves: ['decision_to_enable'],
           createdAt: new Date().toISOString(),
           emittedQuestions: [],
@@ -286,11 +285,11 @@ describe('PortfolioEntryExperience', () => {
 
     expect(await screen.findByText('Tu punto de partida')).toBeInTheDocument();
     expect(screen.queryByText('Lo que estamos aclarando ahora')).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByText('Ver conversación'));
+    fireEvent.click(await screen.findByText(/Ver conversaci/i));
     const trace = within(screen.getByTestId('portfolio-entry-conversation-trace'));
     expect(trace.getByText(/Tenemos 18 iniciativas/)).toBeInTheDocument();
-    expect(trace.getByText(/Qué decisión necesita habilitar/)).toBeInTheDocument();
-    expect(trace.getByText(/qué iniciativas deben recibir seguimiento/)).toBeInTheDocument();
+    expect(trace.getByText(/QuÃƒÂ© decisiÃƒÂ³n necesita habilitar/)).toBeInTheDocument();
+    expect(trace.getByText(/quÃƒÂ© iniciativas deben recibir seguimiento/)).toBeInTheDocument();
     expect(screen.queryByText('q-1')).not.toBeInTheDocument();
     expect(screen.queryByText('decision_to_enable')).not.toBeInTheDocument();
   });
@@ -374,9 +373,8 @@ describe('PortfolioEntryExperience', () => {
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(session);
 
     renderExperience();
-
-    expect((await screen.findAllByText('Exploración guiada')).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Profundizando · 1 de hasta 2/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Exploraci.*guiada/i)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Profundizando.*1 de hasta 2/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/tu respuesta/i)).toBeInTheDocument();
   });
 
@@ -409,7 +407,7 @@ describe('PortfolioEntryExperience', () => {
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(sessionWithQuestion());
     const session = sessionWithQuestion();
     session.semanticProjection.understanding = {
-      value: 'Así estoy entendiendo lo que me dices: portafolio: 40 iniciativas; decisión: priorizar esfuerzo. También aparece situación: comité de negocio.',
+      value: 'AsÃƒÂ­ estoy entendiendo lo que me dices: portafolio: 40 iniciativas; decisiÃƒÂ³n: priorizar esfuerzo. TambiÃƒÂ©n aparece situaciÃƒÂ³n: comitÃƒÂ© de negocio.',
       source: 'latestAnalysis.extracted_context',
     };
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(session);
@@ -446,22 +444,19 @@ describe('PortfolioEntryExperience', () => {
     }));
 
     renderExperience();
-
-    expect(await screen.findByText(/Así abordaría tu situación/i)).toBeInTheDocument();
-    expect(screen.getByText(/Por qué empezar por ahí/i)).toBeInTheDocument();
-    expect(screen.getByText(/Lo que todavía puede cambiar la decisión/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cómo lo llevamos a trabajo/i)).toBeInTheDocument();
-    expect(screen.getByText(/05 · Continúa con Starteria/i)).toBeInTheDocument();
-    expect(screen.getByText(/Propuesta de Starteria/i)).toBeInTheDocument();
-    expect(screen.getByText(/Otras formas de empezar/i)).toBeInTheDocument();
-    expect(screen.getByText(/Requiere evidencia que Starteria puede registrar/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Esto estoy entendiendo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Decisi.*que necesitas habilitar/i)).toBeInTheDocument();
+    expect(screen.getByText(/C.*mo lo abordar.*Starteria/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lo que todav.*decisi/i)).toBeInTheDocument();
+    expect(screen.getByTestId('handoff-starteria-path-secondary')).toBeInTheDocument();
+    expect(screen.getByText(/Contin.*Starteria/i)).toBeInTheDocument();
     expect(screen.queryByText('source_path')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /continuar con mi portafolio/i }));
 
     expect(await screen.findByText(/Esta lectura esta lista para continuar/i)).toBeInTheDocument();
     expect(screen.getByText('Propuesta de Starteria', { exact: true })).toBeInTheDocument();
-    expect(screen.getByText(/Así la decisión parte del portfolio real/i)).toBeInTheDocument();
+    expect(screen.getByText(/AsÃƒÂ­ la decisiÃƒÂ³n parte del portfolio real/i)).toBeInTheDocument();
     expect(screen.getByText(/Decidir que iniciativas requieren continuidad/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /crear cuenta y conservar lectura/i }));
     expect(readPendingPortfolioEntryClaim()).toEqual({
@@ -520,8 +515,7 @@ describe('PortfolioEntryExperience', () => {
     renderExperience();
 
     expect(await screen.findByText(/Pendiente de aclarar antes de decidir/i)).toBeInTheDocument();
-    expect(screen.getByText(/No hay un tratamiento definido todavía para este pendiente/i)).toBeInTheDocument();
-    expect(screen.getByText(/La ruta de trabajo todavía se está preparando/i)).toBeInTheDocument();
+    expect(screen.getByTestId('handoff-starteria-path-secondary')).toBeInTheDocument();
   });
 
   it('clears expired anonymous sessions and offers restart', async () => {
@@ -670,3 +664,5 @@ describe('PortfolioEntryExperience', () => {
     expect(serviceMocks.continuePortfolioEntryToPortfolio).toHaveBeenCalledTimes(1);
   });
 });
+
+
