@@ -222,6 +222,7 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       await expect(activeQuestionText).toHaveCount(1);
       await expect(answer).toBeVisible();
       await expect(answer).toBeEnabled();
+      await expect(page.getByTestId('portfolio-entry-understanding')).toBeVisible();
       if (scenario.id === 'portfolio-first' && attempt === 0) {
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
       }
@@ -240,6 +241,12 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       );
       await page.getByRole('button', { name: /Enviar respuesta/i }).click();
       await clarificationResponse;
+      if (clarificationAnswers === 3) {
+        await expect(page.getByTestId('portfolio-entry-active-question')).toHaveCount(0);
+        await expect(page.getByLabel(/Tu respuesta/i)).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toHaveCount(0);
+        await expect(page.getByText(/Ya tengo suficiente claridad para proponerte un primer abordaje/i)).toBeVisible();
+      }
       continue;
     }
 

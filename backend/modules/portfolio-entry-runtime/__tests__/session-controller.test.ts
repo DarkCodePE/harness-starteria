@@ -149,7 +149,7 @@ describe('Portfolio Entry session controller', () => {
     expect(result.final_context.exploration_round).toBe(1);
   });
 
-  it('does not treat an unqualified no-questions status as sufficient context', async () => {
+  it('converges an unqualified no-questions status to the exploration checkpoint', async () => {
     const adapter = new ScriptedAdapter([output({ questions: [], question_count: 0, status: 'no_questions_required' })]);
     const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-unqualified', candidateId: 'test' }).execute({
       caseId: 'case-unqualified',
@@ -159,8 +159,44 @@ describe('Portfolio Entry session controller', () => {
       initialContext: context(),
     });
 
-    expect(result.final_context.clarification_status).toBe('in_progress');
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.trace.turns[0]?.transition.reason).toBe('no_new_material_question');
     expect(result.completed).toBe(false);
+  });
+
+  it('converges after the third answered question without emitting a fourth', async () => {
+    const adapter = new ScriptedAdapter([
+      output({ ...materialQuestion.question_plan, questions: [{ ...materialQuestion.question_plan.questions[0], id: 'q1', resolves: ['gap-1'] }] }),
+      output({ ...materialQuestion.question_plan, questions: [{ ...materialQuestion.question_plan.questions[0], id: 'q2', resolves: ['gap-2'] }] }),
+      output({ ...materialQuestion.question_plan, questions: [{ ...materialQuestion.question_plan.questions[0], id: 'q3', resolves: ['gap-3'] }] }),
+    ]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-third', candidateId: 'test' }).execute({
+      caseId: 'case-third',
+      runId: 'run-third',
+      candidateId: 'test',
+      initialUserInput: 'Tenemos un portafolio amplio y debemos decidir dónde concentrar esfuerzo.',
+      initialContext: context({
+        quick_questions_asked: 2,
+        previous_questions: [
+          { id: 'q0', question: 'Primera pregunta', resolves: ['gap-0'], turn_index: 1, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 3 },
+          { id: 'q-before', question: 'Segunda pregunta', resolves: ['gap-before'], turn_index: 2, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 2 },
+        ],
+      }),
+      followUpResponder: (questions) => ({
+        response: 'La decisión es priorizar las iniciativas que presentaremos al comité.',
+        matched_question_ids: [questions[0].id],
+        response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves,
+        unmatched_questions: [],
+        fallback_used: false,
+        consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.final_context.quick_questions_asked).toBe(3);
+    expect(result.trace.questions_total).toBe(1);
+    expect(result.trace.turns.at(-1)?.questions_asked).toEqual([]);
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
   });
 
   it('keeps Guided Exploration opt-in and starts a new exploration round on accept', async () => {

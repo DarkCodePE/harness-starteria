@@ -41,6 +41,10 @@ export type PortfolioEntrySessionClientDto = {
     reverseAlignment?: PortfolioEntrySession['semanticState']['reverseAlignment'];
     ambiguities?: PortfolioEntrySession['semanticState']['ambiguities'];
     contradictions?: PortfolioEntrySession['semanticState']['contradictions'];
+    understanding?: {
+      value: string;
+      source: 'latestAnalysis.extracted_context';
+    };
   };
   nextAction: 'submit_message' | 'answer_clarification' | 'offer_guided_exploration' | 'generate_handoff' | 'review_handoff' | 'claim_or_close' | 'closed';
   handoff?: PortfolioEntryHandoffClientDto;
@@ -108,6 +112,7 @@ export function toPortfolioEntrySessionClientDto(
       reverseAlignment: session.semanticState.reverseAlignment,
       ambiguities: session.semanticState.ambiguities,
       contradictions: session.semanticState.contradictions,
+      understanding: buildUnderstanding(session),
     },
     nextAction: deriveNextAction(session, turns),
     handoff: session.latestHandoff ? toHandoffClientDto(session.latestHandoff) : undefined,
@@ -149,4 +154,35 @@ function deriveNextAction(session: PortfolioEntrySession, turns: PortfolioEntryT
   if (session.lifecycleStatus === 'HANDOFF_READY' || session.lifecycleStatus === 'AWAITING_CONFIRMATION') return 'review_handoff';
   if (session.lifecycleStatus === 'CONFIRMED' || session.lifecycleStatus === 'REVISIONS_REQUESTED') return 'claim_or_close';
   return 'closed';
+}
+
+function buildUnderstanding(session: PortfolioEntrySession): PortfolioEntrySessionClientDto['semanticProjection']['understanding'] {
+  const context = session.latestAnalysis?.extracted_context ?? session.semanticState.extractedContext;
+  if (!context) return undefined;
+
+  const values = [
+    ['portfolio_size', 'portafolio'],
+    ['initiatives_mentioned', 'iniciativas'],
+    ['goal', 'objetivo'],
+    ['decision_need', 'decisión'],
+    ['problem', 'situación'],
+    ['metric', 'señal'],
+    ['constraints', 'restricción'],
+    ['reporting_need', 'necesidad de reporte'],
+  ] as const;
+  const anchors = values
+    .map(([key, label]) => {
+      const value = context[key];
+      if (value === null || value === undefined || value === '') return null;
+      const rendered = Array.isArray(value) ? value.join(', ') : String(value);
+      return `${label}: ${rendered}`;
+    })
+    .filter((value): value is string => Boolean(value))
+    .slice(0, 3);
+
+  if (anchors.length < 2) return undefined;
+  return {
+    value: `Así estoy entendiendo lo que me dices: ${anchors.slice(0, 2).join('; ')}. ${anchors[2] ? `También aparece ${anchors[2]}.` : ''}`.trim(),
+    source: 'latestAnalysis.extracted_context',
+  };
 }

@@ -451,9 +451,12 @@ function ConversationPanel({
               </Badge>
             </div>
             <h2 className="text-lg font-semibold text-text-primary">Aclaración breve</h2>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
-              Estoy recogiendo el contexto declarado y el siguiente punto que conviene aclarar. Puedes continuar con información parcial.
-            </p>
+            {session.semanticProjection.understanding ? (
+              <div className="mt-3 rounded-ds-md border border-brand-primary/20 bg-brand-primary-subtle p-4" data-testid="portfolio-entry-understanding">
+                <p className="text-xs font-semibold uppercase text-brand-primary">Así estoy entendiendo lo que me dices</p>
+                <p className="mt-2 text-sm leading-6 text-text-primary">{session.semanticProjection.understanding.value.replace(/^Así estoy entendiendo lo que me dices:\s*/i, '')}</p>
+              </div>
+            ) : null}
           </div>
 
           <ConversationTrace session={session} />
@@ -480,7 +483,8 @@ function ConversationPanel({
             </div>
           ) : null}
 
-          <div className="space-y-2">
+          {activeQuestion ? (
+            <div className="space-y-2">
             <label htmlFor="portfolio-entry-answer" className="block text-sm font-semibold text-text-primary">
               Tu respuesta
             </label>
@@ -492,9 +496,14 @@ function ConversationPanel({
               className="min-h-28 resize-y bg-background-subtle text-sm leading-6"
               disabled={pending}
             />
-          </div>
+            </div>
+          ) : (
+            <div className="rounded-ds-md border border-status-feedback-warning-border bg-status-feedback-warning-surface p-4 text-sm leading-6 text-status-feedback-warning-text" data-testid="portfolio-entry-inconsistent-state">
+              No hay una pregunta activa para responder. Puedes revisar la conversación o continuar cuando Starteria proponga el siguiente paso.
+            </div>
+          )}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {activeQuestion ? <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button
               type="button"
               onClick={onSubmit}
@@ -511,7 +520,7 @@ function ConversationPanel({
             >
               No lo se todavia
             </Button>
-          </div>
+          </div> : null}
         </div>
       </div>
     </section>

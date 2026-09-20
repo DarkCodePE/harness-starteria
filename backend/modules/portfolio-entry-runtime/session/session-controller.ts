@@ -210,6 +210,27 @@ function transitionFromStructuredOutput(
   budgetOverflow: boolean,
 ): SessionTransition {
   const plan = output.question_plan;
+
+  // Quick Clarification must converge whenever a turn has no user-facing
+  // question. A provider plan without an emitted question cannot leave the
+  // user waiting in an answer state.
+  if (context.interaction_mode === 'quick_clarification' && emittedQuestions.length === 0) {
+    return createTransition(
+      fromStatus,
+      'exploration_offered',
+      fromMode,
+      fromMode,
+      plan.stop_reason === 'sufficient_context'
+        ? 'sufficient_context_checkpoint'
+        : budgetBefore === 0
+          ? 'quick_budget_exhausted'
+          : 'no_new_material_question',
+      plan.stop_reason === 'sufficient_context' || budgetBefore > 0 ? 'agent_output' : 'budget',
+      budgetBefore,
+      budgetAfter,
+    );
+  }
+
   if (context.interaction_mode === 'quick_clarification' && plan.stop_reason === 'sufficient_context') {
     return createTransition(
       fromStatus,
@@ -229,10 +250,6 @@ function transitionFromStructuredOutput(
 
   if (budgetOverflow && budgetBefore === 0 && context.interaction_mode === 'quick_clarification') {
     return createTransition(fromStatus, 'exploration_offered', fromMode, fromMode, 'no_new_material_question', 'checkpoint', budgetBefore, budgetAfter);
-  }
-
-  if (plan.status === 'questions_required' && emittedQuestions.length === 0 && context.interaction_mode === 'quick_clarification') {
-    return createTransition(fromStatus, 'exploration_offered', fromMode, fromMode, 'quick_budget_exhausted', 'budget', budgetBefore, budgetAfter);
   }
 
   if (context.interaction_mode === 'guided_exploration' && (budgetAfter === 0 || emittedQuestions.length === 0)) {
