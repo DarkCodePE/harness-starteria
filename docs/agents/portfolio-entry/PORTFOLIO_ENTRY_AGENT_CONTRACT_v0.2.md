@@ -931,3 +931,7 @@ Antes de pasar a Skill Contracts:
 Y:
 
 > La IA puede reducir ambigüedad, pero no debe reducir artificialmente la incertidumbre convirtiéndola en certeza.
+
+## Guided Exploration convergence amendment
+
+For this slice, Guided Exploration is one explicit round with at most 2 additional user-facing questions. The Quick Clarification budget is independent and is never reset. Completion converges to a second proposal checkpoint and cannot offer another Guided Exploration opt-in.

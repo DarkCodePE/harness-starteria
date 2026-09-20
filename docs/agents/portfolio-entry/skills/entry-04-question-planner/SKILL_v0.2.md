@@ -705,12 +705,12 @@ Session:
 ```text
 interaction_mode = guided_exploration
 exploration_goal = clarificar qué resultado debería producir “innovar más”
-available_question_budget = 3
+available_question_budget = 2
 ```
 
 Esperado:
 
-1–3 preguntas centradas exclusivamente en ese objetivo.
+0–2 preguntas centradas exclusivamente en ese objetivo.
 
 No abrir temas de presupuesto, KPIs, governance y experimentación si no son necesarios.
 
@@ -850,7 +850,7 @@ No implementar:
 
 No congelar todavía:
 
-- cantidad máxima de rondas de Guided Exploration;
+- la ronda única de Guided Exploration y su máximo de 2 preguntas;
 - score exacto de information value;
 - threshold de criticality;
 - wording final;
@@ -885,3 +885,7 @@ Antes de Harness v0.2:
 Y:
 
 > En exploración guiada, cada pregunta debe acercar al usuario a claridad sobre un propósito explícito, no abrir otra conversación sin fin.
+
+## Guided Exploration budget alignment
+
+When `interaction_mode = guided_exploration`, the available budget is `0..2` for the single accepted round. The skill emits at most one user-facing question per turn, never renews budget, and leaves convergence to the session controller.

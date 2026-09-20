@@ -171,6 +171,9 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(adapter.calls).toHaveLength(3);
     expect(adapter.calls[2].sessionContext.clarification_status).toBe('guided_exploration');
     expect(adapter.calls[2].sessionContext.interaction_mode).toBe('guided_exploration');
+    expect(adapter.calls[2].priorAnalysis?.extracted_context.summary).toBe(
+      'Aun necesitamos seguir aclarando criterios, restricciones y decision final antes de ordenar el portafolio.',
+    );
   });
 
   it('chooses a provisional route through Runtime and reaches handoff readiness', async () => {

@@ -108,6 +108,7 @@ export class PortfolioEntryExperimentalSessionService {
           candidateId: 'portfolio-entry-api-v1',
           initialUserInput: body.message,
           initialContext: runtimeContext,
+          priorAnalysis: session.latestAnalysis ?? undefined,
         });
       } catch (error) {
         await this.recordFailure(sessionId, error);
@@ -157,6 +158,9 @@ export class PortfolioEntryExperimentalSessionService {
       if (runtimeContext.clarification_status !== 'exploration_offered') {
         throw PortfolioEntrySessionError.invalidTransition('Guided Exploration is not currently offered.');
       }
+      if (body.choice === 'accept' && runtimeContext.interaction_mode !== 'quick_clarification') {
+        throw PortfolioEntrySessionError.invalidTransition('Guided Exploration can only be accepted from the first checkpoint.');
+      }
       const controller = new PortfolioEntrySessionController(this.agentAdapter, {
         runId: context.requestId ?? randomUUID(),
         candidateId: 'portfolio-entry-api-v1',
@@ -170,6 +174,7 @@ export class PortfolioEntryExperimentalSessionService {
           candidateId: 'portfolio-entry-api-v1',
           initialUserInput: '',
           initialContext: runtimeContext,
+          priorAnalysis: session.latestAnalysis ?? undefined,
           guidedExplorationChoice: body.choice,
         });
       } catch (error) {

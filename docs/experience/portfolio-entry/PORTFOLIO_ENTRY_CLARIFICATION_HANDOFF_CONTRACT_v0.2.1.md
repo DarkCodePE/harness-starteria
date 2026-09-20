@@ -395,9 +395,7 @@ El usuario prefiere avanzar.
 
 Después de cada ronda Starteria debe sintetizar antes de ofrecer otra.
 
-No existe en v0.2 una cantidad absoluta de rondas congelada.
-
-Debe validarse con Harness antes de definirla.
+Esta slice congela una única ronda de Guided Exploration; no se permite una tercera ronda.
 
 ---
 
@@ -1227,7 +1225,8 @@ Antes de pasar a Harness v0.2:
 - [ ] Quick Clarification aceptado;
 - [ ] budget de hasta 3 preguntas rápidas aceptado;
 - [ ] Guided Exploration opt-in aceptado;
-- [ ] checkpoint entre rondas aceptado;
+- [ ] segundo checkpoint después de Guided Exploration aceptado;
+- [ ] Guided Exploration tiene una única ronda y máximo 2 preguntas;
 - [ ] una sola active question por turno;
 - [ ] answer identity 0..1 y separación entre pregunta respondida y gap resuelto;
 - [ ] `answered_gaps` contiene solo gaps resueltos;
@@ -1251,3 +1250,7 @@ Antes de pasar a Harness v0.2:
 Y:
 
 > La entrada muestra una forma razonable de avanzar y qué puede resolverse dentro de Starteria; la plataforma desarrolla la profundidad de ese camino.
+
+## Guided Exploration convergence amendment
+
+For this slice: Quick Clarification is limited to 0..3 user-facing questions; Guided Exploration is one explicit round limited to 0..2 additional questions; total questions before proposal is 0..5. Normal Guided completion converges to a second checkpoint exposing only `Ver mi propuesta de abordaje`; it never offers another Guided Exploration opt-in.

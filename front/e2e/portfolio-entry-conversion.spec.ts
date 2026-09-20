@@ -10,6 +10,7 @@ type Scenario = {
   input: string;
   answer: string;
   continueToPortfolio?: boolean;
+  exerciseGuidedExploration?: boolean;
 };
 
 const SCENARIOS: Scenario[] = [
@@ -18,6 +19,7 @@ const SCENARIOS: Scenario[] = [
     input: 'Tengo 18 iniciativas y necesito decidir cuales continuar.',
     answer: 'Necesito comparar contribucion, evidencia y esfuerzo antes del proximo comite.',
     continueToPortfolio: true,
+    exerciseGuidedExploration: true,
   },
   {
     id: 'solution-first',
@@ -199,12 +201,24 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
 
 
   let clarificationAnswers = 0;
+  let guidedAnswers = 0;
+  let guidedOptedIn = false;
   const activeQuestionWording = new Set<string>();
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
     if (await visible(page.getByText(/Qué haría Starteria primero/i))) return;
 
     const provisionalRoute = page.getByRole('button', { name: /Ver mi propuesta de abordaje/i });
     if (await provisionalRoute.isVisible().catch(() => false)) {
+      const deepen = page.getByRole('button', { name: /Seguir aterrizando mi necesidad/i });
+      if (scenario.exerciseGuidedExploration && !guidedOptedIn && await deepen.isVisible().catch(() => false)) {
+        const guidedResponse = page.waitForResponse((response) =>
+          response.request().method() === 'POST' && /\/guided-exploration$/.test(response.url()),
+        );
+        await deepen.click();
+        await guidedResponse;
+        guidedOptedIn = true;
+        continue;
+      }
       const checkpointResponse = page.waitForResponse((response) =>
         response.request().method() === 'POST' && /\/guided-exploration$/.test(response.url()),
       );
@@ -222,6 +236,8 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       await expect(activeQuestionText).toHaveCount(1);
       await expect(answer).toBeVisible();
       await expect(answer).toBeEnabled();
+      await expect(page.getByTestId('portfolio-entry-understanding')).toBeVisible();
+      const guidedMode = await page.getByText(/Exploración guiada/i).isVisible().catch(() => false);
       if (scenario.id === 'portfolio-first' && attempt === 0) {
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
       }
@@ -232,7 +248,13 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       ).toBe(false);
       activeQuestionWording.add(wording);
       clarificationAnswers += 1;
-      expect(clarificationAnswers).toBeLessThanOrEqual(3);
+      if (guidedMode) {
+        guidedAnswers += 1;
+        expect(guidedAnswers).toBeLessThanOrEqual(2);
+      } else {
+        expect(clarificationAnswers - guidedAnswers).toBeLessThanOrEqual(3);
+      }
+      expect(clarificationAnswers).toBeLessThanOrEqual(5);
       await answer.fill(scenario.answer);
       const clarificationResponse = page.waitForResponse((response) =>
         response.request().method() === 'POST' &&
@@ -240,6 +262,13 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       );
       await page.getByRole('button', { name: /Enviar respuesta/i }).click();
       await clarificationResponse;
+      if (guidedMode && guidedAnswers === 2) {
+        await expect(page.getByTestId('portfolio-entry-active-question')).toHaveCount(0);
+        await expect(page.getByLabel(/Tu respuesta/i)).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toHaveCount(0);
+        await expect(page.getByText(/Con lo que acabamos de profundizar/i)).toBeVisible();
+        await expect(page.getByRole('button', { name: /Seguir aterrizando mi necesidad/i })).toHaveCount(0);
+      }
       continue;
     }
 
