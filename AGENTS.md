@@ -56,6 +56,27 @@ Para Portfolio Entry, usar una sola autoridad:
 
 No crear otro `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` paralelo si duplica ese contrato. Si el checkout productivo contiene una version aprobada distinta, registrar la diferencia en `CURRENT_STATE.md` o en una auditoria antes de copiar o reemplazar contenido.
 
+## Strategic Framing
+
+Before modifying Portfolio Lead strategic framing behavior, read:
+
+- `docs/STARTERIA_AUTHORITY.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+- `docs/portfolio-lead/07-strategic-framing/STRATEGIC_FRAMING_CONTEXT_v0.1.md`
+
+Preserve:
+
+- Core v0.2 as current factual authority;
+- human authority;
+- adaptive framing depth;
+- Strategic Lenses are not mandatory canonical entities;
+- Copilot is optional for completing framing;
+- AI observations do not automatically create Challenges;
+- gaps may remain in observation;
+- mental models SF-MM-01...07 must remain traceable to contracts, acceptance tests and implementation slices.
+
+Stop and classify as ADR candidate if implementation requires changing canonical Core/domain semantics.
+
 ## Separacion de ADRs
 
 - `docs/adr/` conserva ADRs del harness/documentacion.
