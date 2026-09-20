@@ -29,7 +29,7 @@ export class PortfolioEntrySessionController {
   async execute(input: PortfolioEntrySessionRunInput): Promise<SessionExecutionResult> {
     let context = input.initialContext;
     let nextUserInput: string | null = input.initialUserInput;
-    let priorAnalysis: PortfolioEntryAnalyzeTurnOutputV2['analysis'] | undefined;
+    let priorAnalysis: PortfolioEntryAnalyzeTurnOutputV2['analysis'] | undefined = input.priorAnalysis;
     const turns: SessionTurnTrace[] = [];
     const modeTransitions: SessionTransition[] = [];
     const violations: string[] = [];
@@ -70,13 +70,18 @@ export class PortfolioEntrySessionController {
       };
 
       modelCalls += 1;
-      const output = await this.adapter.analyzeTurn({
+      const generatedOutput = await this.adapter.analyzeTurn({
         entryId: `${input.caseId}-${input.runId}-${turnIndex}`,
         sessionId: input.sessionId ?? `${input.caseId}-${input.runId}`,
         rawInput: nextUserInput,
         priorAnalysis,
         sessionContext: context,
       });
+      const output = input.guidedExplorationChoice === 'accept'
+        && turns.length === 0
+        && input.priorAnalysis
+        ? { ...generatedOutput, analysis: input.priorAnalysis }
+        : generatedOutput;
       modelExecution = output.modelExecution;
       priorAnalysis = output.analysis;
 

@@ -166,6 +166,32 @@ describe('Portfolio Entry session controller', () => {
     expect(result.final_context.exploration_round).toBe(1);
   });
 
+  it('preserves prior semantic analysis when guided opt-in is only a control event', async () => {
+    const priorAnalysis = sufficient.analysis;
+    const weakerGeneratedOutput = {
+      ...sufficient,
+      analysis: {
+        ...sufficient.analysis,
+        extracted_context: { summary: 'Acepto explorar un poco mas antes de ver una ruta provisional.' },
+        ambiguities: ['decision_to_enable'],
+      },
+    };
+    const adapter = adapterWith([weakerGeneratedOutput]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-preserve-guided-context', candidateId: 'test' }).execute({
+      caseId: 'case-preserve-guided-context',
+      runId: 'run-preserve-guided-context',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered' }),
+      priorAnalysis,
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(adapter.calls[0]?.priorAnalysis).toEqual(priorAnalysis);
+    expect(result.trace.turns[0]?.analysis).toEqual(priorAnalysis);
+    expect(result.final_context.interaction_mode).toBe('guided_exploration');
+  });
+
   it('converges guided exploration to the second checkpoint after sufficient context', async () => {
     const result = await new PortfolioEntrySessionController(adapterWith([output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' })]), { runId: 'run-guided-sufficient', candidateId: 'test' }).execute({
       caseId: 'case-guided-sufficient',

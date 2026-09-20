@@ -108,6 +108,7 @@ export class PortfolioEntryExperimentalSessionService {
           candidateId: 'portfolio-entry-api-v1',
           initialUserInput: body.message,
           initialContext: runtimeContext,
+          priorAnalysis: session.latestAnalysis ?? undefined,
         });
       } catch (error) {
         await this.recordFailure(sessionId, error);
@@ -173,6 +174,7 @@ export class PortfolioEntryExperimentalSessionService {
           candidateId: 'portfolio-entry-api-v1',
           initialUserInput: '',
           initialContext: runtimeContext,
+          priorAnalysis: session.latestAnalysis ?? undefined,
           guidedExplorationChoice: body.choice,
         });
       } catch (error) {
