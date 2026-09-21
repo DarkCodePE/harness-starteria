@@ -138,6 +138,7 @@ export type PortfolioEntrySessionRunInput = {
   candidateId: string;
   initialUserInput: string;
   initialContext: SessionContext;
+  priorAnalysis?: PortfolioEntryAnalysisV2;
   sessionId?: string;
   guidedExplorationChoice?: 'accept' | 'provisional_route' | 'reject';
   followUpResponder?: (questions: QuestionRecord[], context: SessionContext) => FollowUpResponseResult;

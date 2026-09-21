@@ -41,7 +41,7 @@ export class LivePortfolioEntryAgentAdapter implements PortfolioEntryAgentAdapte
         sessionContext: input.sessionContext,
         available_question_budget: input.sessionContext.interaction_mode === 'quick_clarification'
           ? Math.max(0, input.sessionContext.quick_question_budget - input.sessionContext.quick_questions_asked)
-          : Math.max(0, 3 - input.sessionContext.questions_asked_current_round),
+          : Math.max(0, 2 - input.sessionContext.questions_asked_current_round),
         candidate: safeCandidatePayload(this.candidate),
       },
       outputSchema: portfolioEntryTurnOutputV2Schema,

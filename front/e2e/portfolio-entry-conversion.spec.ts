@@ -10,6 +10,7 @@ type Scenario = {
   input: string;
   answer: string;
   continueToPortfolio?: boolean;
+  exerciseGuidedExploration?: boolean;
 };
 
 const SCENARIOS: Scenario[] = [
@@ -18,6 +19,7 @@ const SCENARIOS: Scenario[] = [
     input: 'Tengo 18 iniciativas y necesito decidir cuales continuar.',
     answer: 'Necesito comparar contribucion, evidencia y esfuerzo antes del proximo comite.',
     continueToPortfolio: true,
+    exerciseGuidedExploration: true,
   },
   {
     id: 'solution-first',
@@ -197,11 +199,26 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
   await page.getByLabel(/necesitas conseguir/i).fill(scenario.input);
   await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    if (await visible(page.getByText(/Qué haría Starteria primero/i))) return;
+
+  let clarificationAnswers = 0;
+  let guidedAnswers = 0;
+  let guidedOptedIn = false;
+  const activeQuestionWording = new Set<string>();
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    if (await visible(page.getByText(/Esto estoy entendiendo/i))) return;
 
     const provisionalRoute = page.getByRole('button', { name: /Ver mi propuesta de abordaje/i });
     if (await provisionalRoute.isVisible().catch(() => false)) {
+      const deepen = page.getByRole('button', { name: /Seguir aterrizando mi necesidad/i });
+      if (scenario.exerciseGuidedExploration && !guidedOptedIn && await deepen.isVisible().catch(() => false)) {
+        const guidedResponse = page.waitForResponse((response) =>
+          response.request().method() === 'POST' && /\/guided-exploration$/.test(response.url()),
+        );
+        await deepen.click();
+        await guidedResponse;
+        guidedOptedIn = true;
+        continue;
+      }
       const checkpointResponse = page.waitForResponse((response) =>
         response.request().method() === 'POST' && /\/guided-exploration$/.test(response.url()),
       );
@@ -210,15 +227,34 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       continue;
     }
 
-    const answer = page.getByLabel(/Tu respuesta/i);
-    if (await answer.isVisible().catch(() => false)) {
-      if (!(await answer.isEnabled().catch(() => false))) {
-        await page.waitForTimeout(500);
-        continue;
-      }
+
+    const activeQuestion = page.getByTestId('portfolio-entry-active-question');
+    if (await activeQuestion.isVisible().catch(() => false)) {
+      const answer = page.getByLabel(/Tu respuesta/i);
+      const activeQuestionText = page.getByTestId('portfolio-entry-active-question-text');
+      await expect(activeQuestion).toHaveCount(1);
+      await expect(activeQuestionText).toHaveCount(1);
+      await expect(answer).toBeVisible();
+      await expect(answer).toBeEnabled();
+      await expect(page.getByTestId('portfolio-entry-understanding')).toBeVisible();
+      const guidedMode = await page.getByText(/Exploración guiada/i).isVisible().catch(() => false);
       if (scenario.id === 'portfolio-first' && attempt === 0) {
         await page.screenshot({ path: testInfo.outputPath('portfolio-entry-clarification.png'), fullPage: true });
       }
+      const wording = (await activeQuestionText.innerText()).trim();
+      expect(
+        activeQuestionWording.has(wording),
+        `Repeated active question: ${wording}`,
+      ).toBe(false);
+      activeQuestionWording.add(wording);
+      clarificationAnswers += 1;
+      if (guidedMode) {
+        guidedAnswers += 1;
+        expect(guidedAnswers).toBeLessThanOrEqual(2);
+      } else {
+        expect(clarificationAnswers - guidedAnswers).toBeLessThanOrEqual(3);
+      }
+      expect(clarificationAnswers).toBeLessThanOrEqual(5);
       await answer.fill(scenario.answer);
       const clarificationResponse = page.waitForResponse((response) =>
         response.request().method() === 'POST' &&
@@ -226,13 +262,27 @@ async function reachHandoff(page: Page, scenario: Scenario, testInfo: TestInfo) 
       );
       await page.getByRole('button', { name: /Enviar respuesta/i }).click();
       await clarificationResponse;
+      if (guidedMode && guidedAnswers === 2) {
+        await expect(page.getByTestId('portfolio-entry-active-question')).toHaveCount(0);
+        await expect(page.getByLabel(/Tu respuesta/i)).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toHaveCount(0);
+        await expect(page.getByText(/Con lo que acabamos de profundizar/i)).toBeVisible();
+        await expect(page.getByRole('button', { name: /Seguir aterrizando mi necesidad/i })).toHaveCount(0);
+      }
       continue;
     }
 
-    await page.waitForTimeout(1000);
+    await expect
+      .poll(async () => {
+        if (await page.getByText(/Esto estoy entendiendo/i).isVisible().catch(() => false)) return 'handoff';
+        if (await provisionalRoute.isVisible().catch(() => false)) return 'guided-offer';
+        if (await activeQuestion.isVisible().catch(() => false)) return 'active-question';
+        return 'transitioning';
+      })
+      .not.toBe('transitioning');
   }
 
-  await expect(page.getByText(/Qué haría Starteria primero/i)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Esto estoy entendiendo/i)).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
@@ -249,7 +299,9 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
     await expect(page.getByText(/Quick clarification/i)).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText(/Lo que estamos aclarando ahora/i)).toBeVisible();
+    await expect(page.getByTestId('portfolio-entry-active-question')).toBeVisible();
+    await expect(page.getByTestId('portfolio-entry-active-question-text')).toHaveCount(1);
+
     await expect(page.getByText(/Ver conversación/i)).toBeVisible();
     await expect(page.getByLabel(/Tu respuesta/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Enviar respuesta/i })).toBeVisible();
@@ -264,19 +316,17 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await reachHandoff(page, scenario, testInfo);
 
       await expect(page.getByText('Lectura inicial lista', { exact: true })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Tu situación', exact: true })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Qué haría Starteria primero', exact: true })).toBeVisible();
-      await expect(page.getByText('Por qué empezar por ahí', { exact: true })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Lo que todavía puede cambiar la decisión', exact: true })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Cómo lo llevamos a trabajo', exact: true })).toBeVisible();
+      await expect(page.getByText('Esto estoy entendiendo', { exact: true })).toBeVisible();
+      await expect(page.getByText('Decisión que necesitas habilitar', { exact: true })).toBeVisible();
+      await expect(page.getByText('Cómo lo abordaría Starteria', { exact: true })).toBeVisible();
+      await expect(page.getByText('Lo que todavía puede cambiar la decisión', { exact: true })).toBeVisible();
+      await expect(page.getByTestId('handoff-starteria-path-secondary')).toBeVisible();
       await expect(page.getByText('Ver conversación', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
-      const recommendedApproach = page
-        .getByRole('heading', { name: 'Qué haría Starteria primero', exact: true })
-        .locator('xpath=ancestor::section[1]');
+      const recommendedApproach = page.getByTestId('handoff-approach');
       await expect(recommendedApproach).toHaveCount(1);
-      await expect(recommendedApproach.getByText('Propuesta de Starteria', { exact: true })).toBeVisible();
+      await expect(recommendedApproach.getByTestId('handoff-approach-step').first()).toBeVisible();
       await expect(page.getByText(/Crear iniciativa y continuar/i)).toHaveCount(0);
       await expect(page.getByText(/\bProject\b/i)).toHaveCount(0);
       await expect(page.getByText(/Step0/i)).toHaveCount(0);

@@ -110,11 +110,11 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(first.body.data.lifecycleStatus).toBe('CLARIFYING');
     expect(first.body.data.lifecycleStatus).not.toBe('ABANDONED');
     expect(first.body.data.nextAction).toBe('answer_clarification');
-    expect(first.body.data.clarification.quickQuestionsAsked).toBe(3);
-    expect(first.body.data.conversation[0].emittedQuestions).toHaveLength(3);
+    expect(first.body.data.clarification.quickQuestionsAsked).toBe(1);
+    expect(first.body.data.conversation[0].emittedQuestions).toHaveLength(1);
 
     const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
-    const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
+    const resolves = first.body.data.conversation[0].emittedQuestions[0].resolves;
     const checkpoint = await request(app)
       .post(`${base}/sessions/${created.sessionId}/messages`)
       .set('X-Starteria-Entry-Token', created.token)
@@ -122,7 +122,7 @@ describe('Portfolio Entry Experimental Session API', () => {
       .send({
         expectedRevision: first.body.data.revision,
         message: 'La gerencia debe decidir que tres iniciativas financiar primero. Usaremos impacto operativo, urgencia, riesgo y capacidad disponible como criterios.',
-        matchedQuestionIds: questionIds,
+        matchedQuestionIds: [questionIds[0]],
         respondedResolves: resolves,
       })
       .expect(200);
@@ -166,11 +166,14 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(accepted.body.data.clarification.interactionMode).toBe('guided_exploration');
     expect(accepted.body.data.clarification.explorationRound).toBe(1);
     expect(accepted.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
-    expect(accepted.body.data.clarification.answeredGaps).toEqual([]);
+    expect(accepted.body.data.clarification.answeredGaps).toEqual(['analysis.extracted_context.decision_need']);
     expect(accepted.body.data.semanticProjection.currentFrame).toBe('portfolio_first');
     expect(adapter.calls).toHaveLength(3);
     expect(adapter.calls[2].sessionContext.clarification_status).toBe('guided_exploration');
     expect(adapter.calls[2].sessionContext.interaction_mode).toBe('guided_exploration');
+    expect(adapter.calls[2].priorAnalysis?.extracted_context.summary).toBe(
+      'Aun necesitamos seguir aclarando criterios, restricciones y decision final antes de ordenar el portafolio.',
+    );
   });
 
   it('chooses a provisional route through Runtime and reaches handoff readiness', async () => {
@@ -649,7 +652,7 @@ async function offerGuidedExploration(app: express.Express): Promise<{
     .expect(200);
 
   const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
-  const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
+  const resolves = first.body.data.conversation[0].emittedQuestions[0].resolves;
   const response = await request(app)
     .post(`${base}/sessions/${created.sessionId}/messages`)
     .set('X-Starteria-Entry-Token', created.token)
@@ -657,7 +660,7 @@ async function offerGuidedExploration(app: express.Express): Promise<{
     .send({
       expectedRevision: first.body.data.revision,
       message: 'Aun necesitamos seguir aclarando criterios, restricciones y decision final antes de ordenar el portafolio.',
-      matchedQuestionIds: questionIds,
+      matchedQuestionIds: [questionIds[0]],
       respondedResolves: resolves,
     })
     .expect(200);
@@ -952,17 +955,9 @@ function makeNeedsGuidedExplorationOutput(input: PortfolioEntryAnalyzeTurnInputV
       status: 'insufficient_input',
     },
     question_plan: {
-      question_count: 1,
+      question_count: 0,
       status: 'questions_required',
-      questions: [{
-        id: 'guided-q1',
-        question: 'Que criterio debe pesar mas si no pueden avanzar todas las iniciativas?',
-        question_type: 'guided_deepening',
-        reason_to_ask: 'El presupuesto rapido ya se agoto y queda una aclaracion material.',
-        resolves: ['analysis.extracted_context.constraints'],
-        priority: 1,
-        expected_answer_type: 'text',
-      }],
+      questions: [],
     },
   };
 }

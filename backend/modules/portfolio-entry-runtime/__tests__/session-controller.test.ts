@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PortfolioEntryAgentAdapterV2, PortfolioEntryAnalyzeTurnInputV2, PortfolioEntryAnalyzeTurnOutputV2 } from '../agent/portfolio-entry-agent-adapter';
 import { createInitialSessionContext, type SessionContext } from '../domain/session.types';
+import { applyAnswerResolution } from '../session/single-turn-result';
 import { PortfolioEntrySessionController } from '../session/session-controller';
 
 class ScriptedAdapter implements PortfolioEntryAgentAdapterV2 {
@@ -12,6 +13,10 @@ class ScriptedAdapter implements PortfolioEntryAgentAdapterV2 {
     this.calls.push(input);
     return this.outputs[Math.min(this.calls.length - 1, this.outputs.length - 1)];
   }
+}
+
+function adapterWith(outputs: PortfolioEntryAnalyzeTurnOutputV2[]): ScriptedAdapter {
+  return new ScriptedAdapter(outputs);
 }
 
 function context(overrides: Partial<SessionContext> = {}): SessionContext {
@@ -58,6 +63,29 @@ const materialQuestion = output({
     expected_answer_type: 'decision',
   }],
   question_count: 1,
+  status: 'questions_required',
+});
+
+const guidedQuestion = output({
+  questions: [{
+    id: 'guided-gap',
+    question: '¿Qué resultado concreto cambiaría tu siguiente decisión?',
+    reason_to_ask: 'Define el foco de la profundización.',
+    resolves: ['guided_goal'],
+    priority: 1,
+    expected_answer_type: 'decision',
+  }],
+  question_count: 1,
+  status: 'questions_required',
+});
+
+const batchedQuestions = output({
+  questions: [
+    { id: 'q1', question: 'Primera pregunta material', reason_to_ask: 'r', resolves: ['gap-1'], priority: 1, expected_answer_type: 'text' },
+    { id: 'q2', question: 'Segunda pregunta material', reason_to_ask: 'r', resolves: ['gap-2'], priority: 2, expected_answer_type: 'text' },
+    { id: 'q3', question: 'Tercera pregunta material', reason_to_ask: 'r', resolves: ['gap-3'], priority: 3, expected_answer_type: 'text' },
+  ],
+  question_count: 3,
   status: 'questions_required',
 });
 
@@ -138,7 +166,109 @@ describe('Portfolio Entry session controller', () => {
     expect(result.final_context.exploration_round).toBe(1);
   });
 
-  it('does not treat an unqualified no-questions status as sufficient context', async () => {
+  it('preserves prior semantic analysis when guided opt-in is only a control event', async () => {
+    const priorAnalysis = sufficient.analysis;
+    const weakerGeneratedOutput = {
+      ...sufficient,
+      analysis: {
+        ...sufficient.analysis,
+        extracted_context: { summary: 'Acepto explorar un poco mas antes de ver una ruta provisional.' },
+        ambiguities: ['decision_to_enable'],
+      },
+    };
+    const adapter = adapterWith([weakerGeneratedOutput]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-preserve-guided-context', candidateId: 'test' }).execute({
+      caseId: 'case-preserve-guided-context',
+      runId: 'run-preserve-guided-context',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered' }),
+      priorAnalysis,
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(adapter.calls[0]?.priorAnalysis).toEqual(priorAnalysis);
+    expect(result.trace.turns[0]?.analysis).toEqual(priorAnalysis);
+    expect(result.final_context.interaction_mode).toBe('guided_exploration');
+  });
+
+  it('converges guided exploration to the second checkpoint after sufficient context', async () => {
+    const result = await new PortfolioEntrySessionController(adapterWith([output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' })]), { runId: 'run-guided-sufficient', candidateId: 'test' }).execute({
+      caseId: 'case-guided-sufficient',
+      runId: 'run-guided-sufficient',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered' }),
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(result.final_context.interaction_mode).toBe('guided_exploration');
+    expect(result.final_context.exploration_round).toBe(1);
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.trace.turns[0]?.transition.reason).toBe('guided_checkpoint_reached');
+  });
+
+  it('limits guided exploration to two questions and then shows the second checkpoint', async () => {
+    const guidedQuestions = [
+      output({ ...guidedQuestion.question_plan, questions: [{ ...guidedQuestion.question_plan.questions[0], id: 'guided-1', question: '¿Qué resultado concreto cambiaría tu siguiente decisión?' , resolves: ['guided-1'] }] }),
+      output({ ...guidedQuestion.question_plan, questions: [{ ...guidedQuestion.question_plan.questions[0], id: 'guided-2', question: '¿Qué señal usarías para revisar esa decisión?' , resolves: ['guided-2'] }] }),
+      output({ ...guidedQuestion.question_plan, questions: [{ ...guidedQuestion.question_plan.questions[0], id: 'guided-3', question: '¿Qué restricción podría cambiar el orden?' , resolves: ['guided-3'] }] }),
+    ];
+    const result = await new PortfolioEntrySessionController(adapterWith(guidedQuestions), { runId: 'run-guided-budget', candidateId: 'test' }).execute({
+      caseId: 'case-guided-budget',
+      runId: 'run-guided-budget',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered', quick_questions_asked: 3 }),
+      guidedExplorationChoice: 'accept',
+      followUpResponder: (questions) => ({
+        response: 'La respuesta concreta es priorizar las iniciativas que llegan al comité.',
+        matched_question_ids: [questions[0].id],
+        response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves,
+        unmatched_questions: [],
+        fallback_used: false,
+        consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.trace.questions_total).toBe(2);
+    expect(result.final_context.quick_questions_asked).toBe(3);
+    expect(result.final_context.questions_asked_current_round).toBe(2);
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.trace.turns.at(-1)?.questions_asked).toEqual([]);
+  });
+
+  it('does not open a third guided round', async () => {
+    const result = await new PortfolioEntrySessionController(adapterWith([]), { runId: 'run-guided-no-third', candidateId: 'test' }).execute({
+      caseId: 'case-guided-no-third',
+      runId: 'run-guided-no-third',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered', interaction_mode: 'guided_exploration', exploration_round: 1 }),
+      guidedExplorationChoice: 'accept',
+    });
+
+    expect(result.final_context.clarification_status).toBe('ready_for_handoff');
+    expect(result.final_context.exploration_round).toBe(1);
+    expect(result.trace.turns).toHaveLength(0);
+  });
+
+  it('uses the second checkpoint proposal action to become handoff-ready', async () => {
+    const result = await new PortfolioEntrySessionController(adapterWith([]), { runId: 'run-guided-proposal', candidateId: 'test' }).execute({
+      caseId: 'case-guided-proposal',
+      runId: 'run-guided-proposal',
+      candidateId: 'test',
+      initialUserInput: '',
+      initialContext: context({ clarification_status: 'exploration_offered', interaction_mode: 'guided_exploration', exploration_round: 1 }),
+      guidedExplorationChoice: 'provisional_route',
+    });
+
+    expect(result.final_context.clarification_status).toBe('ready_for_handoff');
+    expect(result.final_context.exploration_round).toBe(1);
+  });
+
+  it('converges an unqualified no-questions status to the exploration checkpoint', async () => {
     const adapter = new ScriptedAdapter([output({ questions: [], question_count: 0, status: 'no_questions_required' })]);
     const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-unqualified', candidateId: 'test' }).execute({
       caseId: 'case-unqualified',
@@ -148,8 +278,44 @@ describe('Portfolio Entry session controller', () => {
       initialContext: context(),
     });
 
-    expect(result.final_context.clarification_status).toBe('in_progress');
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
+    expect(result.trace.turns[0]?.transition.reason).toBe('no_new_material_question');
     expect(result.completed).toBe(false);
+  });
+
+  it('converges after the third answered question without emitting a fourth', async () => {
+    const adapter = new ScriptedAdapter([
+      output({ ...materialQuestion.question_plan, questions: [{ ...materialQuestion.question_plan.questions[0], id: 'q1', resolves: ['gap-1'] }] }),
+      output({ ...materialQuestion.question_plan, questions: [{ ...materialQuestion.question_plan.questions[0], id: 'q2', resolves: ['gap-2'] }] }),
+      output({ ...materialQuestion.question_plan, questions: [{ ...materialQuestion.question_plan.questions[0], id: 'q3', resolves: ['gap-3'] }] }),
+    ]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-third', candidateId: 'test' }).execute({
+      caseId: 'case-third',
+      runId: 'run-third',
+      candidateId: 'test',
+      initialUserInput: 'Tenemos un portafolio amplio y debemos decidir dónde concentrar esfuerzo.',
+      initialContext: context({
+        quick_questions_asked: 2,
+        previous_questions: [
+          { id: 'q0', question: 'Primera pregunta', resolves: ['gap-0'], turn_index: 1, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 3 },
+          { id: 'q-before', question: 'Segunda pregunta', resolves: ['gap-before'], turn_index: 2, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 2 },
+        ],
+      }),
+      followUpResponder: (questions) => ({
+        response: 'La decisión es priorizar las iniciativas que presentaremos al comité.',
+        matched_question_ids: [questions[0].id],
+        response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves,
+        unmatched_questions: [],
+        fallback_used: false,
+        consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.final_context.quick_questions_asked).toBe(3);
+    expect(result.trace.questions_total).toBe(1);
+    expect(result.trace.turns.at(-1)?.questions_asked).toEqual([]);
+    expect(result.final_context.clarification_status).toBe('exploration_offered');
   });
 
   it('keeps Guided Exploration opt-in and starts a new exploration round on accept', async () => {
@@ -219,5 +385,64 @@ describe('Portfolio Entry session controller', () => {
 
     expect(result.trace.turns[0]?.questions_asked).toEqual([]);
     expect(result.trace.questions_total).toBe(0);
+  });
+
+  it('normalizes a provider batch to one question and consumes one budget slot', async () => {
+    const adapter = new ScriptedAdapter([batchedQuestions]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-batch', candidateId: 'test' }).execute({
+      caseId: 'case-batch', runId: 'run-batch', candidateId: 'test',
+      initialUserInput: 'Hay varios gaps materiales.', initialContext: context(),
+    });
+
+    expect(result.trace.turns[0]?.questions_asked).toHaveLength(1);
+    expect(result.trace.turns[0]?.questions_asked[0]?.id).toBe('q1');
+    expect(result.final_context.quick_questions_asked).toBe(1);
+    expect(result.violations).toContain('question_budget_overflow');
+  });
+
+  it('answers a question without resolving its gap for an unknown response', async () => {
+    const adapter = new ScriptedAdapter([materialQuestion, sufficient]);
+    const result = await new PortfolioEntrySessionController(adapter, { runId: 'run-unknown', candidateId: 'test' }).execute({
+      caseId: 'case-unknown', runId: 'run-unknown', candidateId: 'test',
+      initialUserInput: 'Necesito aclarar una decision.', initialContext: context(),
+      followUpResponder: (questions) => ({
+        response: 'No lo sé todavía.', matched_question_ids: [questions[0].id], response_rule_ids_used: [],
+        responded_resolves: questions[0].resolves, unmatched_questions: [], fallback_used: false, consumed_once_rule_ids: [],
+      }),
+    });
+
+    expect(result.trace.turns[0]?.scripted_response_result?.matched_question_ids).toEqual(['decision-gap']);
+    expect(result.trace.turns[0]?.scripted_response_result?.responded_resolves).toEqual([]);
+    expect(result.final_context.answered_gaps).toEqual([]);
+  });
+
+  it('derives a supported resolution from post-answer structured analysis, not client resolves', () => {
+    const question = { id: 'decision-gap', question: '¿Qué decisión?', resolves: ['decision_to_enable'] };
+    const answer = applyAnswerResolution(
+      context(),
+      { ...question, turn_index: 1, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 3 },
+      ['decision-gap'],
+      'La gerencia debe decidir qué iniciativas financiar primero.',
+      output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' }).analysis,
+    );
+
+    expect(answer.matchedQuestionIds).toEqual(['decision-gap']);
+    expect(answer.respondedResolves).toEqual(['decision_to_enable']);
+    expect(answer.context.answered_gaps).toEqual(['decision_to_enable']);
+  });
+
+  it.each(['No lo sé todavía.', 'Ya te respondí.', 'No entendí.', 'No estoy seguro.', 'Puede ser.'])('keeps low-information answer unresolved: %s', (response) => {
+    const question = { id: 'decision-gap', question: '¿Qué decisión?', resolves: ['decision_to_enable'] };
+    const answer = applyAnswerResolution(
+      context(),
+      { ...question, turn_index: 1, interaction_mode: 'quick_clarification', asked_at_budget_remaining: 3 },
+      ['decision-gap'],
+      response,
+      output({ questions: [], question_count: 0, status: 'no_questions_required', stop_reason: 'sufficient_context' }).analysis,
+    );
+
+    expect(answer.matchedQuestionIds).toEqual(['decision-gap']);
+    expect(answer.respondedResolves).toEqual([]);
+    expect(answer.context.answered_gaps).toEqual([]);
   });
 });
