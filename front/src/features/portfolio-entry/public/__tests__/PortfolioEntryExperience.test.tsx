@@ -448,7 +448,15 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.getByText(/Decisi.*que necesitas habilitar/i)).toBeInTheDocument();
     expect(screen.getByText(/C.*mo lo abordar.*Starteria/i)).toBeInTheDocument();
     expect(screen.getByText(/Lo que todav.*decisi/i)).toBeInTheDocument();
-    expect(screen.getByTestId('handoff-starteria-path-secondary')).toBeInTheDocument();
+    const expandedAnalysis = screen.getByTestId('handoff-expanded-analysis');
+    expect(expandedAnalysis).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /continuar con mi portafolio/i })).toBeInTheDocument();
+    expect(screen.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
+    fireEvent.click(screen.getByText('Ver análisis completo', { exact: true }));
+    expect(screen.getByTestId('handoff-starteria-path-expanded')).toBeVisible();
+    expect(screen.getByText(/As.*la decisi.*parte del portfolio real/i)).toBeVisible();
+    fireEvent.click(screen.getByText('Ver análisis completo', { exact: true }));
+    expect(screen.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
     expect(screen.getByText(/Contin.*Starteria/i)).toBeInTheDocument();
     expect(screen.queryByText('source_path')).not.toBeInTheDocument();
 
@@ -501,6 +509,50 @@ describe('PortfolioEntryExperience', () => {
     });
   });
 
+  it('keeps deeper handoff material collapsed and reachable without changing the CTA', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    const session = sessionWithHandoff();
+    session.handoff!.handoff = makeHandoff({
+      known_context: [{ key: 'Restricción', value: 'La capacidad del equipo es limitada.', provenance: { origin: 'USER_DECLARED' } }],
+      unresolved_context: [
+        { gap_id: 'gap-1', description: 'Primer pendiente visible.' },
+        { gap_id: 'gap-2', description: 'Segundo pendiente visible.' },
+        { gap_id: 'gap-3', description: 'Tercer pendiente visible.' },
+        { gap_id: 'gap-4', description: 'Pendiente adicional para el análisis completo.' },
+      ],
+      evidence_or_clarity_needed: [],
+      starteria_path: [
+        { action: 'structure', description: 'Ordenar el contexto.' },
+        { action: 'make_visible', description: 'Hacer visibles las señales.' },
+        { action: 'compare_or_follow', description: 'Comparar alternativas.' },
+        { action: 'resolve_gaps', description: 'Resolver pendientes.' },
+        { action: 'prepare_decision', description: 'Preparar la decisión.' },
+      ],
+    });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(session);
+
+    renderExperience();
+
+    expect(await screen.findByText('Esto estoy entendiendo')).toBeVisible();
+    expect(screen.getByText(/Pendiente adicional para el .*lisis completo/)).not.toBeVisible();
+    expect(screen.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
+    expect(screen.getByRole('button', { name: /continuar con mi portafolio/i })).toBeVisible();
+
+    fireEvent.click(screen.getByText(/Ver an.*lisis completo/));
+
+    expect(screen.getByText(/Por qu.*llegamos a esta lectura/)).toBeVisible();
+    expect(screen.getByText('Supuestos que estamos usando')).toBeVisible();
+    expect(screen.getByText(/Contexto todav.*abierto/)).toBeVisible();
+    expect(screen.getByText(/Pendiente adicional para el .*lisis completo/)).toBeVisible();
+    expect(screen.getByText('Ruta completa en Starteria')).toBeVisible();
+    expect(screen.getByTestId('handoff-starteria-path-expanded')).toBeVisible();
+    expect(screen.getByTestId('handoff-provenance-detail')).toBeVisible();
+    expect(screen.getByRole('button', { name: /continuar con mi portafolio/i })).toBeVisible();
+
+    fireEvent.click(screen.getByText(/Ver an.*lisis completo/));
+    expect(screen.getByText(/Pendiente adicional para el .*lisis completo/)).not.toBeVisible();
+  });
+
   it('keeps an unresolved decision visible as uncertainty and renders a resolution-less gap safely', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     const session = sessionWithHandoff();
@@ -515,7 +567,7 @@ describe('PortfolioEntryExperience', () => {
     renderExperience();
 
     expect(await screen.findByText(/Pendiente de aclarar antes de decidir/i)).toBeInTheDocument();
-    expect(screen.getByTestId('handoff-starteria-path-secondary')).toBeInTheDocument();
+    expect(screen.getByTestId('handoff-expanded-analysis')).toBeInTheDocument();
   });
 
   it('clears expired anonymous sessions and offers restart', async () => {

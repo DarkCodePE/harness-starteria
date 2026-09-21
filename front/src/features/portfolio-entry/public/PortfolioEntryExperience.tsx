@@ -752,28 +752,144 @@ const PATH_LABELS: Record<string, string> = {
   prepare_decision: 'Preparar una decisión',
 };
 
-function StarteriaPathSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+function originLabel(origin: ProvenanceOrigin | undefined): string | null {
+  return origin ? PROVENANCE_LABELS[origin] : null;
+}
+
+function ExpandedAnalysis({
+  handoff,
+  session,
+}: {
+  handoff: PortfolioEntryHandoff;
+  session: PortfolioEntrySessionDto;
+}) {
+  const visibleGapDescriptions = new Set([
+    ...handoff.unresolved_context.map((item) => item.description),
+    ...handoff.evidence_or_clarity_needed.map((item) => item.value),
+  ].filter(Boolean).slice(0, 3));
+  const additionalGaps = handoff.unresolved_context.filter((item) => !visibleGapDescriptions.has(item.description));
+  const additionalEvidence = handoff.evidence_or_clarity_needed.filter((item) => !visibleGapDescriptions.has(item.value));
+  const resolutionByGap = new Map((handoff.gap_resolution_map ?? []).map((item) => [item.gap_id, item]));
+  const mappedAdditionalGaps = [
+    ...additionalGaps,
+    ...(handoff.gap_resolution_map ?? [])
+      .filter((item) => !handoff.unresolved_context.some((gap) => gap.gap_id === item.gap_id))
+      .map((item) => ({ gap_id: item.gap_id, description: item.gap_description })),
+  ];
+  const knownContext = handoff.known_context.filter((item) => item.value.trim());
+  const hasRationale = Boolean(handoff.recommended_approach?.rationale?.trim());
+  const hasAssumptions = Boolean(handoff.recommended_approach?.assumption?.trim()) || knownContext.length > 0;
+  const hasAdditionalContext = mappedAdditionalGaps.length > 0 || additionalEvidence.length > 0;
+  const provenance = provenanceLabels(handoff);
+  const hasProvenance = provenance.length > 0;
+
   return (
-    <section data-testid="handoff-starteria-path-secondary" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase text-brand-primary">04</p>
-      <h2 className="mt-2 text-xl font-semibold text-text-primary">Cómo lo llevamos a trabajo</h2>
-      <p className="mt-1 text-sm leading-6 text-text-secondary">La ruta contextual disponible para continuar.</p>
-      {handoff.starteria_path.length > 0 ? (
-        <ol className="mt-5 space-y-3 border-l-2 border-brand-primary/30 pl-5">
-          {handoff.starteria_path.map((item, index) => (
-            <li key={`${item.action}-${index}`} className="relative rounded-ds-md border border-border-default bg-background-subtle p-4">
-              <span className="absolute -left-[2.05rem] top-4 flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white">{index + 1}</span>
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold text-text-primary">{PATH_LABELS[item.action] ?? 'Siguiente trabajo'}</p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-text-secondary">{item.description}</p>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="mt-4 text-sm leading-6 text-text-secondary">La ruta de trabajo todavía se está preparando para esta situación.</p>
-      )}
-    </section>
+    <details data-testid="handoff-expanded-analysis" className="rounded-ds-lg border border-border-default bg-background-subtle">
+      <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset md:px-6">
+        Ver análisis completo
+      </summary>
+      <div className="space-y-6 border-t border-border-default px-5 py-5 md:px-6">
+        {hasRationale ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Por qué llegamos a esta lectura</h3>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">{handoff.recommended_approach?.rationale}</p>
+          </section>
+        ) : null}
+
+        {hasAssumptions ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Supuestos que estamos usando</h3>
+            <div className="mt-3 space-y-3">
+              {handoff.recommended_approach?.assumption?.trim() ? (
+                <div className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-sm leading-6 text-text-secondary">{handoff.recommended_approach.assumption}</p>
+                  <Badge className="mt-3" variant="neutral">Provisional</Badge>
+                </div>
+              ) : null}
+              {knownContext.map((item) => (
+                <div key={`${item.key}-${item.value}`} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-xs font-semibold uppercase text-text-muted">{item.key}</p>
+                  <p className="mt-1 text-sm leading-6 text-text-secondary">{item.value}</p>
+                  {originLabel(item.provenance?.origin) ? <Badge className="mt-3" variant="neutral">{originLabel(item.provenance?.origin)}</Badge> : null}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {hasAdditionalContext ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Contexto todavía abierto</h3>
+            <div className="mt-3 space-y-3">
+              {mappedAdditionalGaps.map((gap) => (
+                <div key={gap.gap_id} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-sm font-semibold text-text-primary">{gap.description}</p>
+                  {resolutionByGap.has(gap.gap_id) ? <p className="mt-2 text-sm leading-6 text-text-secondary">{resolutionForGap(resolutionByGap.get(gap.gap_id))}</p> : null}
+                </div>
+              ))}
+              {additionalEvidence.length > 0 ? (
+                <div className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-xs font-semibold uppercase text-text-muted">Evidencia o claridad adicional</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-text-secondary">
+                    {additionalEvidence.map((item, index) => <li key={`${item.value}-${index}`}>{item.value}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {additionalEvidence.length > 0 ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Evidencia o claridad que ayudaría</h3>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-text-secondary">
+              {additionalEvidence.map((item, index) => <li key={`${item.value}-${index}`}>{item.value}</li>)}
+            </ul>
+          </section>
+        ) : null}
+
+        {handoff.alternative_approaches.length > 0 ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Otras formas de empezar</h3>
+            <div className="mt-3 space-y-3">
+              {handoff.alternative_approaches.map((alternative, index) => (
+                <div key={`${alternative.description}-${index}`} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-sm leading-6 text-text-primary">{alternative.description}</p>
+                  {alternative.rationale ? <p className="mt-2 text-sm leading-6 text-text-secondary">{alternative.rationale}</p> : null}
+                  <Badge className="mt-3" variant="neutral">Propuesta de Starteria</Badge>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {handoff.starteria_path.length > 0 ? (
+          <section data-testid="handoff-starteria-path-expanded">
+            <h3 className="text-base font-semibold text-text-primary">Ruta completa en Starteria</h3>
+            <ol className="mt-3 space-y-3 border-l-2 border-brand-primary/30 pl-5">
+              {handoff.starteria_path.map((item, index) => (
+                <li key={`${item.action}-${index}`} className="relative rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <span className="absolute -left-[2.05rem] top-4 flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white">{index + 1}</span>
+                  <p className="text-sm font-semibold text-text-primary">{PATH_LABELS[item.action] ?? item.action}</p>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">{item.description}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
+
+        {hasProvenance ? (
+          <section data-testid="handoff-provenance-detail">
+            <h3 className="text-base font-semibold text-text-primary">Fuente de la lectura</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {provenance.map((label) => <Badge key={label} variant="neutral">{label}</Badge>)}
+            </div>
+          </section>
+        ) : null}
+
+        <ConversationTrace session={session} />
+      </div>
+    </details>
   );
 }
 
@@ -925,15 +1041,14 @@ function HandoffReview({
       </div>
 
       <div className="space-y-5">
-        <ConversationTrace session={session} />
         <div data-testid="handoff-first-view" className="space-y-4">
           <Vh1UnderstandingSection handoff={handoff} />
           <Vh1DecisionSection handoff={handoff} />
           <Vh1ApproachSection handoff={handoff} />
           <Vh1GapsSection handoff={handoff} />
         </div>
+        <ExpandedAnalysis handoff={handoff} session={session} />
         <div data-testid="handoff-secondary-content" className="space-y-4">
-          <StarteriaPathSection handoff={handoff} />
           <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
         </div>
       </div>

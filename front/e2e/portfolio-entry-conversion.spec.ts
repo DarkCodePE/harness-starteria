@@ -320,7 +320,10 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await expect(page.getByText('Decisión que necesitas habilitar', { exact: true })).toBeVisible();
       await expect(page.getByText('Cómo lo abordaría Starteria', { exact: true })).toBeVisible();
       await expect(page.getByText('Lo que todavía puede cambiar la decisión', { exact: true })).toBeVisible();
-      await expect(page.getByTestId('handoff-starteria-path-secondary')).toBeVisible();
+      await expect(page.getByTestId('handoff-expanded-analysis')).toBeVisible();
+      await expect(page.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
+      await page.getByText('Ver análisis completo', { exact: true }).click();
+      await expect(page.getByTestId('handoff-starteria-path-expanded')).toBeVisible();
       await expect(page.getByText('Ver conversación', { exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
