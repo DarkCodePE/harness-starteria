@@ -5,7 +5,6 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
-  HelpCircle,
   PencilLine,
   RefreshCcw,
   ShieldCheck,
@@ -437,46 +436,37 @@ function ConversationPanel({
   const activeQuestion = questions[0];
   const guided = session.clarification.interactionMode === 'guided_exploration';
   const canSubmit = value.trim().length > 0 && !pending;
+  const synthesis = session.semanticProjection.understanding?.value
+    ?.replace(/^AsÃ­ estoy entendiendo lo que me dices:\s*/i, '')
+    .trim();
   return (
-    <section className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-ds-md bg-brand-primary-subtle p-2 text-brand-primary">
-          <HelpCircle size={18} />
+    <section data-testid="portfolio-entry-conversation-panel" className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-7">
+      <div className="space-y-6">
+        <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs text-text-muted" aria-label="Estado de la conversación">
+          <h2 className="text-xs font-medium text-text-muted">{guided ? 'Exploración guiada' : 'Aclaración breve'}</h2>
+          <span aria-label="Progreso de aclaración">
+            {guided
+              ? `Profundizando · ${session.clarification.questionsAskedCurrentRound} de hasta 2`
+              : `Aclaración ${session.clarification.quickQuestionsAsked} de hasta ${session.clarification.quickQuestionBudget}`}
+          </span>
         </div>
-        <div className="min-w-0 flex-1 space-y-3">
+
+        <div className="min-w-0 space-y-6">
           <div>
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{guided ? 'Exploración guiada' : 'Quick clarification'}</Badge>
-              <Badge variant="neutral">
-                {guided
-                  ? `Profundizando · ${session.clarification.questionsAskedCurrentRound} de hasta 2`
-                  : `Aclaración ${session.clarification.quickQuestionsAsked} de hasta ${session.clarification.quickQuestionBudget}`}
-              </Badge>
-            </div>
-            <h2 className="text-lg font-semibold text-text-primary">{guided ? 'Exploración guiada' : 'Aclaración breve'}</h2>
-            {session.semanticProjection.understanding ? (
-              <div className="mt-3 rounded-ds-md border border-brand-primary/20 bg-brand-primary-subtle p-4" data-testid="portfolio-entry-understanding">
-                <p className="text-xs font-semibold uppercase text-brand-primary">Así estoy entendiendo lo que me dices</p>
-                <p className="mt-2 text-sm leading-6 text-text-primary">{session.semanticProjection.understanding.value.replace(/^Así estoy entendiendo lo que me dices:\s*/i, '')}</p>
+            {synthesis ? (
+              <div className="border-l-2 border-brand-primary/40 pl-4" data-testid="portfolio-entry-understanding">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-primary">Esto estoy entendiendo</p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-text-primary">{synthesis}</p>
               </div>
             ) : null}
           </div>
 
-          <ConversationTrace session={session} />
-
-          <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
-            <p className="text-xs font-semibold uppercase text-text-muted">Tu punto de partida</p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {session.conversation[0]?.userInput || 'Todavía no hay contexto declarado.'}
-            </p>
-          </div>
-
-          {activeQuestion ? (
+            {activeQuestion ? (
             <div
-              className="rounded-ds-md border border-border-default bg-background-subtle p-4"
+              className="rounded-ds-md border-l-4 border-brand-primary bg-surface-default p-5 shadow-sm"
               data-testid="portfolio-entry-active-question"
             >
-              <p className="text-xs font-semibold uppercase text-text-muted">Lo que estamos aclarando ahora</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-primary">Para afinarlo un poco más</p>
               <p
                 className="mt-2 text-sm font-semibold leading-6 text-text-primary"
                 data-testid="portfolio-entry-active-question-text"
@@ -517,13 +507,15 @@ function ConversationPanel({
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="ghost"
               disabled={pending}
               onClick={() => onChange('No lo se todavia.')}
             >
               No lo se todavia
             </Button>
           </div> : null}
+
+          <ConversationTrace session={session} />
         </div>
       </div>
     </section>

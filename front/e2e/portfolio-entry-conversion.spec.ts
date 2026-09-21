@@ -298,7 +298,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     await page.getByLabel(/necesitas conseguir/i).fill('Necesito ordenar mis iniciativas ya.');
     await page.getByRole('button', { name: /Analizar mi situaci[oó]n/i }).click();
 
-    await expect(page.getByText(/Quick clarification/i)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: /Aclaraci[oó]n breve/i })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('portfolio-entry-active-question')).toBeVisible();
     await expect(page.getByTestId('portfolio-entry-active-question-text')).toHaveCount(1);
 
