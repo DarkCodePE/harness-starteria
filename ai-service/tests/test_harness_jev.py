@@ -276,3 +276,61 @@ def test_llm_and_jev_arms_share_the_same_state_builder():
     state = _interpret_state(case)
     assert state.strip()
     assert case.raw_input[:30] in state
+
+
+# --- probability vs confidence ---------------------------------------------------------
+
+
+def test_selected_probability_is_not_the_confidence_statistic():
+    """The confusion this separation exists to prevent.
+
+    `probabilities[choice]` is P assigned to the winning option — what RLCD calibrates.
+    `confidence` is a statistic DERIVED from the distribution's shape (docs/jev/confidence.md:
+    "collapses that shape into a single number"). They are different numbers and only the
+    first may ever be shown as "the probability Jev gives this route".
+    """
+    answers = _answers(route=_choice(
+        "explore_validate", confidence=0.64,
+        probs={"explore_validate": 0.72, "design_solution": 0.18, "plan_coordinate": 0.10},
+    ))
+    profile, _ = build_route_profile(answers)
+
+    assert profile.selected_probabilities["route"] == pytest.approx(0.72)
+    assert profile.confidence_scores["route"] == pytest.approx(0.64)
+    assert profile.selected_probabilities["route"] != profile.confidence_scores["route"]
+
+
+def test_the_full_distribution_survives_for_later_analysis():
+    """Kept so a different measure can be computed without re-calling (and re-paying) Jev."""
+    dist = {"explore_validate": 0.72, "design_solution": 0.18, "plan_coordinate": 0.10}
+    profile, _ = build_route_profile(_answers(
+        route=_choice("explore_validate", 0.64, dist)))
+
+    assert profile.probability_distributions["route"] == dist
+    assert sum(profile.probability_distributions["route"].values()) == pytest.approx(1.0)
+    # Margin over the runner-up — one of the measures this field makes computable.
+    ranked = sorted(profile.probability_distributions["route"].values(), reverse=True)
+    assert ranked[0] - ranked[1] == pytest.approx(0.54)
+
+
+def test_route_and_unit_are_recorded_separately():
+    """They can calibrate differently; averaging them would hide that."""
+    profile, _ = build_route_profile(_answers(
+        route=_choice("explore_validate", 0.9, {"explore_validate": 0.95}),
+        unit=_choice("initiative", 0.3, {"initiative": 0.41, "project": 0.39}),
+    ))
+    assert profile.selected_probabilities["route"] == pytest.approx(0.95)
+    assert profile.selected_probabilities["unit"] == pytest.approx(0.41)
+
+
+def test_the_gate_still_reads_confidence_not_probability():
+    """Deliberate: `confidence` is TypeSafe's documented thresholding signal, and locally it
+    ordered the 23 route cases correctly (both failures were its two lowest values).
+    Switching the gate to probability needs its own evidence, which does not exist yet."""
+    low_conf_high_prob = _answers(
+        route=_choice("explore_validate", 0.30, {"explore_validate": 0.92}),
+        unit=_choice("initiative", 0.30, {"initiative": 0.92}),
+    )
+    profile, _ = build_route_profile(low_conf_high_prob)
+    assert profile.confidence == "low"          # gate fires on the shape statistic
+    assert profile.selected_probabilities["route"] == pytest.approx(0.92)
