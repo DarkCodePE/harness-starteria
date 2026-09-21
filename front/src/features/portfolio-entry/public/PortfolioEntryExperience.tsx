@@ -893,7 +893,7 @@ function ExpandedAnalysis({
   );
 }
 
-function EarlyAccessCard({
+function LegacyEarlyAccessCard({
   pending,
   onConfirm,
   onStartEditing,
@@ -936,6 +936,54 @@ function EarlyAccessCard({
         </Button>
       </div>
       <p className="text-xs leading-5 text-text-muted">Esta continuidad no crea iniciativas ni activa Steps.</p>
+    </section>
+  );
+}
+
+function EarlyAccessCard({
+  pending,
+  onConfirm,
+  onStartEditing,
+}: {
+  pending: boolean;
+  onConfirm: () => void;
+  onStartEditing: () => void;
+}) {
+  const benefits = [
+    'Conserva esta lectura.',
+    'Ordena y prioriza tus iniciativas.',
+    'Da seguimiento al portafolio desde un mismo contexto.',
+  ];
+
+  return (
+    <section data-testid="portfolio-entry-conversion-cta" className="overflow-hidden rounded-ds-lg border border-cyan-300/30 bg-slate-950 text-white shadow-md">
+      <div className="grid gap-8 p-6 md:grid-cols-[minmax(0,1.35fr)_minmax(16rem,0.65fr)] md:items-center md:p-8">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200">Continúa desde esta lectura</p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-semibold leading-tight text-white md:text-3xl">Convierte esta lectura en tu portafolio de trabajo</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+            Guarda este análisis y empieza a ordenar tus iniciativas con los mismos criterios, sin perder el contexto que ya construiste.
+          </p>
+          <ul className="mt-5 grid gap-3 text-sm leading-6 text-slate-200 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+            {benefits.map((benefit) => (
+              <li key={benefit} className="flex gap-2">
+                <CheckCircle2 size={16} className="mt-1 shrink-0 text-cyan-200" aria-hidden="true" />
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="flex flex-col gap-3 md:border-l md:border-white/15 md:pl-8">
+          <Button type="button" onClick={onConfirm} disabled={pending} className="w-full">
+            Crear mi portafolio
+            <ArrowRight size={16} aria-hidden="true" />
+          </Button>
+          <Button type="button" variant="ghost" onClick={onStartEditing} disabled={pending} className="w-full text-slate-200 hover:bg-white/10 hover:text-white">
+            Ajustar esta lectura
+          </Button>
+          <p className="text-center text-xs leading-5 text-slate-400">Tu lectura se conserva. No tendrás que empezar de nuevo.</p>
+        </div>
+      </div>
     </section>
   );
 }

@@ -450,17 +450,22 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.getByText(/Lo que todav.*decisi/i)).toBeInTheDocument();
     const expandedAnalysis = screen.getByTestId('handoff-expanded-analysis');
     expect(expandedAnalysis).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /continuar con mi portafolio/i })).toBeInTheDocument();
+    const conversionCta = screen.getByTestId('portfolio-entry-conversion-cta');
+    expect(conversionCta).toHaveTextContent('Convierte esta lectura en tu portafolio de trabajo');
+    expect(within(conversionCta).getByRole('button', { name: /crear mi portafolio/i })).toBeInTheDocument();
+    expect(within(conversionCta).getAllByRole('listitem')).toHaveLength(3);
+    expect(conversionCta).toHaveTextContent('Tu lectura se conserva. No tendrás que empezar de nuevo.');
+    expect(conversionCta).not.toHaveTextContent('Ruta completa en Starteria');
     expect(screen.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
     fireEvent.click(screen.getByText('Ver análisis completo', { exact: true }));
     expect(screen.getByTestId('handoff-starteria-path-expanded')).toBeVisible();
     expect(screen.getByText(/As.*la decisi.*parte del portfolio real/i)).toBeVisible();
     fireEvent.click(screen.getByText('Ver análisis completo', { exact: true }));
     expect(screen.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
-    expect(screen.getByText(/Contin.*Starteria/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tu lectura se conserva/i)).toBeInTheDocument();
     expect(screen.queryByText('source_path')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /continuar con mi portafolio/i }));
+    fireEvent.click(screen.getByRole('button', { name: /crear mi portafolio/i }));
 
     expect(await screen.findByText(/Esta lectura esta lista para continuar/i)).toBeInTheDocument();
     expect(screen.getByText('Propuesta de Starteria', { exact: true })).toBeInTheDocument();
@@ -536,7 +541,7 @@ describe('PortfolioEntryExperience', () => {
     expect(await screen.findByText('Esto estoy entendiendo')).toBeVisible();
     expect(screen.getByText(/Pendiente adicional para el .*lisis completo/)).not.toBeVisible();
     expect(screen.getByTestId('handoff-starteria-path-expanded')).not.toBeVisible();
-    expect(screen.getByRole('button', { name: /continuar con mi portafolio/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /crear mi portafolio/i })).toBeVisible();
 
     fireEvent.click(screen.getByText(/Ver an.*lisis completo/));
 
@@ -547,7 +552,7 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.getByText('Ruta completa en Starteria')).toBeVisible();
     expect(screen.getByTestId('handoff-starteria-path-expanded')).toBeVisible();
     expect(screen.getByTestId('handoff-provenance-detail')).toBeVisible();
-    expect(screen.getByRole('button', { name: /continuar con mi portafolio/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /crear mi portafolio/i })).toBeVisible();
 
     fireEvent.click(screen.getByText(/Ver an.*lisis completo/));
     expect(screen.getByText(/Pendiente adicional para el .*lisis completo/)).not.toBeVisible();
@@ -611,7 +616,7 @@ describe('PortfolioEntryExperience', () => {
 
     renderExperience();
 
-    fireEvent.click(await screen.findByRole('button', { name: /continuar con mi portafolio/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /crear mi portafolio/i }));
 
     await waitFor(() => expect(serviceMocks.confirmPortfolioEntryHandoff).toHaveBeenCalled());
     expect(serviceMocks.continuePortfolioEntryToPortfolio).not.toHaveBeenCalled();

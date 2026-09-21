@@ -325,7 +325,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       await page.getByText('Ver análisis completo', { exact: true }).click();
       await expect(page.getByTestId('handoff-starteria-path-expanded')).toBeVisible();
       await expect(page.getByText('Ver conversación', { exact: true })).toBeVisible();
-      await expect(page.getByRole('button', { name: /Continuar con mi portafolio/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Crear mi portafolio/i })).toBeVisible();
       await expect(page.getByRole('button', { name: /Ajustar esta lectura/i })).toBeVisible();
       const recommendedApproach = page.getByTestId('handoff-approach');
       await expect(recommendedApproach).toHaveCount(1);
@@ -356,7 +356,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
       const api = await pwRequest.newContext({ baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5176' });
       const user = await registerPortfolioUser(api);
 
-      await page.getByRole('button', { name: /Continuar con mi portafolio/i }).click();
+      await page.getByRole('button', { name: /Crear mi portafolio/i }).click();
       await expect(page.getByText(/Esta lectura esta lista para continuar/i)).toBeVisible();
       await page.screenshot({ path: testInfo.outputPath('portfolio-entry-registration-transition.png'), fullPage: true });
       await page.getByRole('button', { name: /Crear cuenta y conservar lectura/i }).click();
@@ -524,7 +524,7 @@ test.describe('Portfolio Entry visible UX and Portfolio continuation', () => {
     const api = await pwRequest.newContext({ baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5176' });
     const user = await registerPortfolioUser(api);
 
-    await page.getByRole('button', { name: /Continuar con mi portafolio/i }).click();
+    await page.getByRole('button', { name: /Crear mi portafolio/i }).click();
     await expect(page.getByText(/Esta lectura esta lista para continuar/i)).toBeVisible();
     await page.getByRole('button', { name: /Crear cuenta y conservar lectura/i }).click();
     await loginThroughUi(page, user.email, user.password);
@@ -644,7 +644,7 @@ async function startPortfolioBootstrapFromEntry(page: Page, testInfo: TestInfo) 
   const api = await pwRequest.newContext({ baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5176' });
   const user = await registerPortfolioUser(api);
 
-  await page.getByRole('button', { name: /Continuar con mi portafolio/i }).click();
+  await page.getByRole('button', { name: /Crear mi portafolio/i }).click();
   await expect(page.getByText(/Esta lectura esta lista para continuar/i)).toBeVisible();
   await page.getByRole('button', { name: /Crear cuenta y conservar lectura/i }).click();
   await loginThroughUi(page, user.email, user.password);
