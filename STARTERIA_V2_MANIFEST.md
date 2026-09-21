@@ -87,6 +87,31 @@ UNKNOWN
 
 ---
 
+# 2.1 Slice AI_HARNESS_INTERPRET_ADR031
+
+**Registrado:** 2026-09-20 por instrucción explícita del responsable.
+
+```text
+slice_id: AI_HARNESS_INTERPRET_ADR031
+logic_status: ACTIVE_V2_BASELINE (sólo la política acotada por ADR-031 Accepted)
+implementation_status: IMPLEMENTED_VERIFIED (tests herméticos; despliegue externo no acreditado)
+visual_status: NOT_APPLICABLE
+evidence_status: TESTING (riesgo productivo y estabilidad no certificados)
+authority: backend/docs/adr/ADR-027-methodology-agent-harness.md
+           backend/docs/adr/ADR-031-confidence-threshold-for-human-escalation.md
+entry_boundary: mode=harness / POST /ai/diagnose
+exit_boundary: RouteProfile -> GateLadder -> route | confirm | escalate
+implementation: ai-service/harness/stages/llm_stages.py
+report: docs/analisis-jev/13-adr-031-activation.md
+```
+
+Jev es el backend por defecto de INTERPRET del harness; GROUND continúa en OpenRouter.
+El corte 0.50 es una decisión operativa provisional aprobada, no una cota de riesgo.
+La autoridad Core referenciada en CURRENT_STATE no está presente en este checkout;
+esta aprobación sólo cubre la slice descrita y no certifica Starteria V2 completa.
+
+---
+
 # 3. Jerarquía de autoridad objetivo
 
 ```text

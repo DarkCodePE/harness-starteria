@@ -201,6 +201,9 @@ Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El 
 
 - ADRs de harness/documentacion: `docs/adr/`.
 - ADRs de producto: `docs/product-adr/ADR-INDEX.md`.
+- El índice de producto apunta a los ADR-027 y ADR-031 canónicos en
+  `backend/docs/adr/` durante la reconciliación de este checkout mixto;
+  ADR-031 tiene estado `Accepted` por decisión explícita del 2026-09-20.
 - No mezclar la serie de producto con `docs/adr/ADR-001...007`.
 
 ## 8. Reglas obligatorias

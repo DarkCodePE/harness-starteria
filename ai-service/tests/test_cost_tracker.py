@@ -15,6 +15,7 @@ from services.cost_tracker import (
     CostLimitExceededError,
     CostTracker,
     _daily_cost,
+    _unpriced_calls,
 )
 
 
@@ -22,8 +23,10 @@ from services.cost_tracker import (
 def _reset_daily_cost() -> None:
     """Wipe the in-memory daily-cost store before every test in this module."""
     _daily_cost.clear()
+    _unpriced_calls.clear()
     yield
     _daily_cost.clear()
+    _unpriced_calls.clear()
 
 
 @pytest.mark.unit
@@ -75,6 +78,16 @@ class TestCheckRequestCost:
         with pytest.raises(CostLimitExceededError):
             tracker.check_request_cost(
                 agent_id="x", estimated_input_tokens=1000, estimated_output_tokens=1000
+            )
+
+    def test_two_stage_request_checks_combined_cost(self, monkeypatch) -> None:
+        from services import cost_tracker as ct_mod
+
+        monkeypatch.setattr(ct_mod.settings, "max_cost_per_request_usd", 0.00045)
+        with pytest.raises(CostLimitExceededError):
+            CostTracker().check_request_cost(
+                agent_id="methodology-harness",
+                models=("openrouter:deepseek/deepseek-v4-flash", "typesafe:jev-latest"),
             )
 
 
@@ -137,3 +150,15 @@ class TestRecordUsage:
         tracker = CostTracker()
         cost = tracker.record_usage("proj-zero", "x", 0, 0)
         assert cost == 0.0
+
+    def test_jev_usage_is_priced_as_jev(self) -> None:
+        tracker = CostTracker()
+        cost = tracker.record_usage("proj-jev", "methodology-harness", 1000, 50,
+                                    model="typesafe:jev-latest")
+        assert cost == pytest.approx(0.000042)
+
+    def test_missing_usage_is_not_reported_as_free(self) -> None:
+        tracker = CostTracker()
+        assert tracker.record_usage("proj-missing", "methodology-harness", None, 8,
+                                    model="typesafe:jev-latest") is None
+        assert _unpriced_calls["proj-missing"] == 1

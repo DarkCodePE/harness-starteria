@@ -63,3 +63,23 @@ def test_interpret_sets_route_profile():
     assert state.route_profile.route == "explore_validate"
     assert state.route_profile.depth == "systemic"
     assert ctx.recorder.audit.prompt_versions["interpret"] == "1.0.0"
+
+
+def test_live_llm_output_cannot_activate_experimental_unit_gate(monkeypatch):
+    monkeypatch.setenv("HARNESS_INTERPRET_BACKEND", "llm")
+    state = DiagnosisState(raw_input="algo")
+    ctx = _ctx({})
+
+    def fake_call(*_args, **_kwargs):
+        return RouteProfile(
+            intent="validate", unit="initiative", challenge_type="growth",
+            route="explore_validate", depth="standard", step=1,
+            confidence="high", unit_confidence="low",
+            confidence_scores={"route": 0.9, "unit": 0.1},
+        )
+
+    monkeypatch.setattr("harness.stages.llm_stages.stage_structured_call", fake_call)
+    run_interpret(state, ctx)
+    assert state.route_profile.unit_confidence is None
+    assert state.route_profile.confidence_scores == {}
+    assert "ambiguous_classification" not in ctx.ladder.evaluate(state).failed_hard_gates

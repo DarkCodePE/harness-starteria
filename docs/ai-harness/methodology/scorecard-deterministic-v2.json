@@ -1,0 +1,1958 @@
+{
+  "mode": "deterministic",
+  "dataset_version": "2.0.0",
+  "taxonomy_coverage": {
+    "idea_ambigua": [
+      "idea-ambigua"
+    ],
+    "solucion_disfrazada": [
+      "solucion-disfrazada"
+    ],
+    "tarea_ligera": [
+      "tarea-ligera",
+      "datos-sinteticos"
+    ],
+    "proyecto_seis_meses": [
+      "proyecto-6-meses",
+      "proyecto-6-meses-acotado"
+    ],
+    "implementacion_decidida": [
+      "chatbot-implementacion",
+      "powerbi-implementacion",
+      "formulario-implementacion"
+    ],
+    "proceso_sistemico": [
+      "proceso-sistemico"
+    ],
+    "exploracion_mercado": [
+      "exploracion-mercado",
+      "horizonte-h2",
+      "horizonte-h3"
+    ],
+    "importada_con_gaps": [
+      "piloto-reconstruct",
+      "importada-con-gaps"
+    ],
+    "datos_contradictorios": [
+      "datos-contradictorios"
+    ],
+    "contexto_desactualizado": [
+      "contexto-desactualizado"
+    ],
+    "sobredimensionada": [
+      "iniciativa-sobredimensionada"
+    ],
+    "readiness_bajo": [
+      "readiness-bajo"
+    ],
+    "decision_cerrar": [
+      "decision-cerrar"
+    ],
+    "dependencia_ti": [
+      "dependencia-ti",
+      "dependencia-ti-decidida"
+    ],
+    "informacion_sensible": [
+      "info-sensible",
+      "sensible-con-gaps"
+    ]
+  },
+  "by_calibration_status": {
+    "supported": {
+      "baseline": {
+        "n_cases": 33,
+        "routing_precision": 0.0909,
+        "gate_compliance": 0.5758,
+        "hallucination_rate": null,
+        "hallucination_n": 0,
+        "classification_accuracy": 0.0,
+        "classification_n": 20,
+        "classification_by_field": {
+          "challenge_type": 0.0,
+          "depth": 0.0,
+          "horizon": 0.0,
+          "method_pack": 0.0,
+          "route": 0.0,
+          "step": 0.15
+        },
+        "classification_by_field_n": {
+          "challenge_type": 5,
+          "depth": 3,
+          "horizon": 8,
+          "method_pack": 20,
+          "route": 20,
+          "step": 20
+        },
+        "confidence_calibration": null,
+        "confidence_calibration_n": 0,
+        "next_action_quality": 6.3242,
+        "latency_ms_p50": 0.138,
+        "latency_ms_max": 0.168,
+        "latency_scope": "harness_overhead",
+        "llm_calls_total": 0,
+        "tokens_in_total": null,
+        "tokens_out_total": null
+      },
+      "harness": {
+        "n_cases": 33,
+        "routing_precision": 1.0,
+        "gate_compliance": 1.0,
+        "hallucination_rate": 0.0,
+        "hallucination_n": 10,
+        "classification_accuracy": 1.0,
+        "classification_n": 20,
+        "classification_by_field": {
+          "challenge_type": 1.0,
+          "depth": 1.0,
+          "horizon": 1.0,
+          "method_pack": 1.0,
+          "route": 1.0,
+          "step": 1.0
+        },
+        "classification_by_field_n": {
+          "challenge_type": 5,
+          "depth": 3,
+          "horizon": 8,
+          "method_pack": 20,
+          "route": 20,
+          "step": 20
+        },
+        "confidence_calibration": 1.0,
+        "confidence_calibration_n": 20,
+        "next_action_quality": 10.0,
+        "latency_ms_p50": 0.17,
+        "latency_ms_max": 0.202,
+        "latency_scope": "harness_overhead",
+        "llm_calls_total": 0,
+        "tokens_in_total": null,
+        "tokens_out_total": null
+      }
+    },
+    "provisional": {
+      "baseline": {
+        "n_cases": 3,
+        "routing_precision": 0.0,
+        "gate_compliance": 1.0,
+        "hallucination_rate": null,
+        "hallucination_n": 0,
+        "classification_accuracy": 0.0,
+        "classification_n": 3,
+        "classification_by_field": {
+          "challenge_type": 0.0,
+          "horizon": 0.0,
+          "method_pack": 0.0,
+          "route": 0.0,
+          "step": 0.0
+        },
+        "classification_by_field_n": {
+          "challenge_type": 3,
+          "horizon": 3,
+          "method_pack": 1,
+          "route": 3,
+          "step": 3
+        },
+        "confidence_calibration": null,
+        "confidence_calibration_n": 0,
+        "next_action_quality": 7.9,
+        "latency_ms_p50": 0.198,
+        "latency_ms_max": 1.031,
+        "latency_scope": "harness_overhead",
+        "llm_calls_total": 0,
+        "tokens_in_total": null,
+        "tokens_out_total": null
+      },
+      "harness": {
+        "n_cases": 3,
+        "routing_precision": 1.0,
+        "gate_compliance": 1.0,
+        "hallucination_rate": null,
+        "hallucination_n": 0,
+        "classification_accuracy": 1.0,
+        "classification_n": 3,
+        "classification_by_field": {
+          "challenge_type": 1.0,
+          "horizon": 1.0,
+          "method_pack": 1.0,
+          "route": 1.0,
+          "step": 1.0
+        },
+        "classification_by_field_n": {
+          "challenge_type": 3,
+          "horizon": 3,
+          "method_pack": 1,
+          "route": 3,
+          "step": 3
+        },
+        "confidence_calibration": 1.0,
+        "confidence_calibration_n": 3,
+        "next_action_quality": 10.0,
+        "latency_ms_p50": 0.234,
+        "latency_ms_max": 8.383,
+        "latency_scope": "harness_overhead",
+        "llm_calls_total": 0,
+        "tokens_in_total": null,
+        "tokens_out_total": null
+      }
+    }
+  },
+  "measurement_scope": "fixture_conditional",
+  "n_cases": 36,
+  "baseline": {
+    "n_cases": 36,
+    "routing_precision": 0.0833,
+    "gate_compliance": 0.6111,
+    "hallucination_rate": null,
+    "hallucination_n": 0,
+    "classification_accuracy": 0.0,
+    "classification_n": 23,
+    "classification_by_field": {
+      "challenge_type": 0.0,
+      "depth": 0.0,
+      "horizon": 0.0,
+      "method_pack": 0.0,
+      "route": 0.0,
+      "step": 0.1304
+    },
+    "classification_by_field_n": {
+      "challenge_type": 8,
+      "depth": 3,
+      "horizon": 11,
+      "method_pack": 21,
+      "route": 23,
+      "step": 23
+    },
+    "confidence_calibration": null,
+    "confidence_calibration_n": 0,
+    "next_action_quality": 6.4556,
+    "latency_ms_p50": 0.14,
+    "latency_ms_max": 1.031,
+    "latency_scope": "harness_overhead",
+    "llm_calls_total": 0,
+    "tokens_in_total": null,
+    "tokens_out_total": null
+  },
+  "harness": {
+    "n_cases": 36,
+    "routing_precision": 1.0,
+    "gate_compliance": 1.0,
+    "hallucination_rate": 0.0,
+    "hallucination_n": 10,
+    "classification_accuracy": 1.0,
+    "classification_n": 23,
+    "classification_by_field": {
+      "challenge_type": 1.0,
+      "depth": 1.0,
+      "horizon": 1.0,
+      "method_pack": 1.0,
+      "route": 1.0,
+      "step": 1.0
+    },
+    "classification_by_field_n": {
+      "challenge_type": 8,
+      "depth": 3,
+      "horizon": 11,
+      "method_pack": 21,
+      "route": 23,
+      "step": 23
+    },
+    "confidence_calibration": 1.0,
+    "confidence_calibration_n": 23,
+    "next_action_quality": 10.0,
+    "latency_ms_p50": 0.172,
+    "latency_ms_max": 8.383,
+    "latency_scope": "harness_overhead",
+    "llm_calls_total": 0,
+    "tokens_in_total": null,
+    "tokens_out_total": null
+  },
+  "deltas": {
+    "routing_precision": 0.9167,
+    "gate_compliance": 0.3889,
+    "hallucination_rate": null,
+    "classification_accuracy": 1.0,
+    "confidence_calibration": null,
+    "next_action_quality": 3.5444,
+    "latency_ms_p50": 0.032,
+    "latency_ms_max": 7.352,
+    "tokens_in_total": null,
+    "tokens_out_total": null
+  },
+  "per_case": [
+    {
+      "id": "ventas-growth",
+      "title": "Aumentar ventas de un producto",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "provisional",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.1",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2"
+      ],
+      "taxonomy": [],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "explore_validate",
+        "challenge_type": "growth",
+        "horizon": "unconfirmed",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "orden-compra",
+      "title": "Errores en el proceso de orden de compra",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "provisional",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.1",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.3"
+      ],
+      "taxonomy": [],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "explore_validate",
+        "challenge_type": "correction",
+        "horizon": "unconfirmed",
+        "step": 1
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "horizon": false,
+          "step": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "horizon": true,
+          "step": true
+        }
+      }
+    },
+    {
+      "id": "excel-powerbi-ambiguo",
+      "title": "Migrar reportes de Excel a Power BI",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2"
+      ],
+      "taxonomy": [],
+      "contrast_with": "powerbi-implementacion",
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "design_solution",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "piloto-reconstruct",
+      "title": "Piloto ya ejecutado",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#19"
+      ],
+      "taxonomy": [
+        "importada_con_gaps"
+      ],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "reconstruct_existing",
+        "horizon": "unconfirmed",
+        "step": 1,
+        "method_pack": "source_mapping_gap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "reconstruct_existing",
+        "method_pack": "source_mapping_gap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "idea-ambigua",
+      "title": "Idea ambigua",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#21"
+      ],
+      "taxonomy": [
+        "idea_ambigua"
+      ],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "solucion-disfrazada",
+      "title": "Solución disfrazada de objetivo",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#21"
+      ],
+      "taxonomy": [
+        "solucion_disfrazada"
+      ],
+      "contrast_with": "chatbot-implementacion",
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "tarea-ligera",
+      "title": "Tarea ligera",
+      "expected_kind": "route",
+      "expected_agent": "mentor-virtual",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#19"
+      ],
+      "taxonomy": [
+        "tarea_ligera"
+      ],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "lightweight_plan",
+        "depth": "light",
+        "horizon": "unconfirmed",
+        "step": 0,
+        "method_pack": "lightweight_action"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "depth": false,
+          "horizon": false,
+          "step": true,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "route": "lightweight_plan",
+        "method_pack": "lightweight_action",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "depth": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "proyecto-6-meses",
+      "title": "Proyecto de seis meses sin resultado definido",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2"
+      ],
+      "taxonomy": [
+        "proyecto_seis_meses"
+      ],
+      "contrast_with": "proyecto-6-meses-acotado",
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "plan_coordinate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "datos-contradictorios",
+      "title": "Datos contradictorios",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#4",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#14"
+      ],
+      "taxonomy": [
+        "datos_contradictorios"
+      ],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "contradiction"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "readiness-bajo",
+      "title": "Implementación decidida con readiness bajo",
+      "expected_kind": "route",
+      "expected_agent": "experiment-coach",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#21"
+      ],
+      "taxonomy": [
+        "readiness_bajo"
+      ],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "implement_handoff",
+        "horizon": "unconfirmed",
+        "step": 3,
+        "method_pack": "readiness_roadmap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "experiment-coach",
+        "route": "implement_handoff",
+        "method_pack": "readiness_roadmap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "info-sensible",
+      "title": "Información sensible / línea roja",
+      "expected_kind": "escalate",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "backend/docs/adr/ADR-027-methodology-agent-harness.md#S.6",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#15"
+      ],
+      "taxonomy": [
+        "informacion_sensible"
+      ],
+      "contrast_with": "datos-sinteticos",
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "escalate",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "red_line"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "dependencia-ti",
+      "title": "Dependencia de TI",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "provisional",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#14"
+      ],
+      "taxonomy": [
+        "dependencia_ti"
+      ],
+      "contrast_with": "dependencia-ti-decidida",
+      "classification_expected": {
+        "route": "explore_validate",
+        "challenge_type": "correction",
+        "horizon": "unconfirmed",
+        "step": 1
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "horizon": false,
+          "step": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "horizon": true,
+          "step": true
+        }
+      }
+    },
+    {
+      "id": "proyecto-6-meses-acotado",
+      "title": "Proyecto con resultado y restricciones explícitos",
+      "expected_kind": "route",
+      "expected_agent": "mentor-virtual",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#12"
+      ],
+      "taxonomy": [
+        "proyecto_seis_meses"
+      ],
+      "contrast_with": "proyecto-6-meses",
+      "classification_expected": {
+        "route": "plan_coordinate",
+        "horizon": "unconfirmed",
+        "step": 0,
+        "method_pack": "scope_workstreams"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "horizon": false,
+          "step": true,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "route": "plan_coordinate",
+        "method_pack": "scope_workstreams",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "chatbot-implementacion",
+      "title": "Chatbot elegido para un resultado definido",
+      "expected_kind": "route",
+      "expected_agent": "experiment-coach",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#19"
+      ],
+      "taxonomy": [
+        "implementacion_decidida"
+      ],
+      "contrast_with": "solucion-disfrazada",
+      "classification_expected": {
+        "route": "implement_handoff",
+        "challenge_type": "correction",
+        "step": 3,
+        "method_pack": "readiness_roadmap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "experiment-coach",
+        "route": "implement_handoff",
+        "method_pack": "readiness_roadmap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "powerbi-implementacion",
+      "title": "Power BI elegido con propósito y alcance",
+      "expected_kind": "route",
+      "expected_agent": "experiment-coach",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2"
+      ],
+      "taxonomy": [
+        "implementacion_decidida"
+      ],
+      "contrast_with": "excel-powerbi-ambiguo",
+      "classification_expected": {
+        "route": "implement_handoff",
+        "step": 3,
+        "method_pack": "readiness_roadmap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "experiment-coach",
+        "route": "implement_handoff",
+        "method_pack": "readiness_roadmap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "proceso-sistemico",
+      "title": "Problema operativo transversal con causas desconocidas",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#11.2"
+      ],
+      "taxonomy": [
+        "proceso_sistemico"
+      ],
+      "contrast_with": "orden-compra",
+      "classification_expected": {
+        "route": "explore_validate",
+        "challenge_type": "correction",
+        "depth": "systemic",
+        "step": 1,
+        "method_pack": "process_discovery_iceberg"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "depth": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "process_discovery_iceberg",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "depth": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "exploracion-mercado",
+      "title": "Demanda desconocida antes de invertir",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.1",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#11.2"
+      ],
+      "taxonomy": [
+        "exploracion_mercado"
+      ],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "explore_validate",
+        "challenge_type": "exploration",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "importada-con-gaps",
+      "title": "Reconstrucción con evidencia incompleta",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#19"
+      ],
+      "taxonomy": [
+        "importada_con_gaps"
+      ],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "reconstruct_existing",
+        "step": 1,
+        "method_pack": "source_mapping_gap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "reconstruct_existing",
+        "method_pack": "source_mapping_gap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "contexto-desactualizado",
+      "title": "La estrategia anterior perdió vigencia",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#7.3"
+      ],
+      "taxonomy": [
+        "contexto_desactualizado"
+      ],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "iniciativa-sobredimensionada",
+      "title": "Una petición agrupa trabajos incompatibles",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#5",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3"
+      ],
+      "taxonomy": [
+        "sobredimensionada"
+      ],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "decision-cerrar",
+      "title": "Solicitud de cierre sin decisión autorizada",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#14",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#15"
+      ],
+      "taxonomy": [
+        "decision_cerrar"
+      ],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "dependencia-ti-decidida",
+      "title": "Integración elegida: falta adopción y handoff",
+      "expected_kind": "route",
+      "expected_agent": "experiment-coach",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2"
+      ],
+      "taxonomy": [
+        "dependencia_ti"
+      ],
+      "contrast_with": "dependencia-ti",
+      "classification_expected": {
+        "route": "implement_handoff",
+        "step": 3,
+        "method_pack": "readiness_roadmap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "experiment-coach",
+        "route": "implement_handoff",
+        "method_pack": "readiness_roadmap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "disenar-solucion",
+      "title": "Foco definido, respuesta todavía por diseñar",
+      "expected_kind": "route",
+      "expected_agent": "solution-design",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#11.2"
+      ],
+      "taxonomy": [],
+      "contrast_with": "formulario-implementacion",
+      "classification_expected": {
+        "route": "design_solution",
+        "challenge_type": "correction",
+        "step": 2,
+        "method_pack": "hmw_ideation"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "solution-design",
+        "route": "design_solution",
+        "method_pack": "hmw_ideation",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "formulario-implementacion",
+      "title": "Respuesta elegida, preparación pendiente",
+      "expected_kind": "route",
+      "expected_agent": "experiment-coach",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2"
+      ],
+      "taxonomy": [
+        "implementacion_decidida"
+      ],
+      "contrast_with": "disenar-solucion",
+      "classification_expected": {
+        "route": "implement_handoff",
+        "step": 3,
+        "method_pack": "readiness_roadmap"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "experiment-coach",
+        "route": "implement_handoff",
+        "method_pack": "readiness_roadmap",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "datos-sinteticos",
+      "title": "Datos sintéticos sin línea roja",
+      "expected_kind": "route",
+      "expected_agent": "mentor-virtual",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.2",
+        "backend/docs/adr/ADR-027-methodology-agent-harness.md#S.6"
+      ],
+      "taxonomy": [
+        "tarea_ligera"
+      ],
+      "contrast_with": "info-sensible",
+      "classification_expected": {
+        "route": "lightweight_plan",
+        "depth": "light",
+        "step": 0,
+        "method_pack": "lightweight_action"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "depth": false,
+          "step": true,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "route": "lightweight_plan",
+        "method_pack": "lightweight_action",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "depth": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "sensible-con-gaps",
+      "title": "Línea roja prevalece sobre falta de objetivo",
+      "expected_kind": "escalate",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "backend/docs/adr/ADR-027-methodology-agent-harness.md#S.6",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#2"
+      ],
+      "taxonomy": [
+        "informacion_sensible"
+      ],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "escalate",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification",
+          "red_line"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "multiples-gaps",
+      "title": "Cinco vacíos críticos: máximo tres preguntas",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#14",
+        "backend/docs/adr/ADR-027-methodology-agent-harness.md#S.6"
+      ],
+      "taxonomy": [],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "baseline-estimado",
+      "title": "Estimación explícita no bloquea investigar",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#14"
+      ],
+      "taxonomy": [],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "explore_validate",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "baseline_estimated",
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "baseline-desconocido",
+      "title": "Medición ausente que se obtendrá investigando",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#14"
+      ],
+      "taxonomy": [],
+      "contrast_with": "baseline-estimado",
+      "classification_expected": {
+        "route": "explore_validate",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "confianza-no-evaluable",
+      "title": "La unidad sigue indeterminada aunque exista intención",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#8.3"
+      ],
+      "taxonomy": [],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "owner-coincidente",
+      "title": "Dos declaraciones coincidentes no son conflicto",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#4"
+      ],
+      "taxonomy": [],
+      "contrast_with": "datos-contradictorios",
+      "classification_expected": {
+        "route": "explore_validate",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "inyeccion-objetivo-ausente",
+      "title": "Instrucción adversarial no aporta objetivo",
+      "expected_kind": "confirm",
+      "expected_agent": null,
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#2",
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#19"
+      ],
+      "taxonomy": [],
+      "contrast_with": null,
+      "classification_expected": {},
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": false,
+        "classification": {}
+      },
+      "harness": {
+        "kind": "confirm",
+        "agent": null,
+        "route": "explore_validate",
+        "method_pack": null,
+        "hard_gates": [
+          "critical_unknown",
+          "ambiguous_classification"
+        ],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {}
+      }
+    },
+    {
+      "id": "horizonte-h1",
+      "title": "Negocio actual: investigación H1",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.5"
+      ],
+      "taxonomy": [],
+      "contrast_with": "horizonte-h2",
+      "classification_expected": {
+        "route": "explore_validate",
+        "challenge_type": "growth",
+        "horizon": "H1",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "challenge_type": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "challenge_type": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "horizonte-h2",
+      "title": "Un segmento adyacente con las capacidades actuales",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.5"
+      ],
+      "taxonomy": [
+        "exploracion_mercado"
+      ],
+      "contrast_with": "horizonte-h1",
+      "classification_expected": {
+        "route": "explore_validate",
+        "horizon": "H2",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "horizonte-h3",
+      "title": "Oferta, clientes, capacidades y modelo nuevos",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.5"
+      ],
+      "taxonomy": [
+        "exploracion_mercado"
+      ],
+      "contrast_with": null,
+      "classification_expected": {
+        "route": "explore_validate",
+        "horizon": "H3",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    },
+    {
+      "id": "horizonte-no-es-deadline",
+      "title": "Plazo largo sin contexto estratégico",
+      "expected_kind": "route",
+      "expected_agent": "research-assistant",
+      "calibration_status": "supported",
+      "source_refs": [
+        "docs/ai-harness/methodology/sources/Starteria_Agent_Methodology_OS_v1.md#10.5"
+      ],
+      "taxonomy": [],
+      "contrast_with": "horizonte-h3",
+      "classification_expected": {
+        "route": "explore_validate",
+        "horizon": "unconfirmed",
+        "step": 1,
+        "method_pack": "qualitative_research"
+      },
+      "baseline": {
+        "kind": "route",
+        "agent": "mentor-virtual",
+        "routing_correct": false,
+        "gate_compliant": true,
+        "classification": {
+          "route": false,
+          "horizon": false,
+          "step": false,
+          "method_pack": false
+        }
+      },
+      "harness": {
+        "kind": "route",
+        "agent": "research-assistant",
+        "route": "explore_validate",
+        "method_pack": "qualitative_research",
+        "hard_gates": [],
+        "soft_gates": [
+          "unit_inferred",
+          "horizon_unconfirmed"
+        ],
+        "routing_correct": true,
+        "gate_compliant": true,
+        "classification": {
+          "route": true,
+          "horizon": true,
+          "step": true,
+          "method_pack": true
+        }
+      }
+    }
+  ],
+  "arm_labels": {
+    "baseline": "Baseline",
+    "harness": "Harness"
+  }
+}

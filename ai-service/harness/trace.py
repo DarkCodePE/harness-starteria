@@ -28,6 +28,12 @@ class StageTrace(BaseModel):
     stage: str
     duration_ms: int = 0
     llm_used: bool = False
+    model_provider: str | None = None
+    model_id: str | None = None
+    # None = not measured (no call, or a provider that reported no usage). Never 0 as a
+    # stand-in for unknown: "free" and "unreported" are different claims.
+    tokens_in: int | None = None
+    tokens_out: int | None = None
     epistemic_tags: list[str] = Field(default_factory=list, description="Statuses observed at this stage.")
     gate: GateVerdict | None = None
     notes: list[str] = Field(default_factory=list)

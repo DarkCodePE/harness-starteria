@@ -2,13 +2,15 @@
 # This file is the single source of truth for how the diagnostic harness classifies
 # and routes a request. "Configuración, no prompts monolíticos": editing routing or
 # gate behavior happens here, not in code. Loaded + validated by config_loader.py.
-version: "1.0.0"
+version: "1.1.0"
 
 model:
   # deepseek-v4-flash is the model initial_reviewer benchmarked as reliable for
-  # OpenRouter json_schema structured output (qwen fails it). The GROUND/INTERPRET
-  # stages need structured output, so they use this, not the qwen the workers use.
+  # OpenRouter json_schema structured output (qwen fails it). GROUND uses this;
+  # INTERPRET uses Jev under ADR-031 unless explicitly rolled back to llm.
   stage_model: "openrouter:deepseek/deepseek-v4-flash"
+  interpret_backend: jev
+  jev_model: jev-latest
   # Diagnosis is a classification task: the same input must route the same way on re-runs.
   # temperature=0 minimizes run-to-run variance in grounding/interpretation (observed at 0.2).
   temperature: 0.0
@@ -29,7 +31,8 @@ epistemic:
     - historical_document
     - ai_inference
 
-# Ordered diagnostic pipeline. `prompt`/`output_contract` present ⇒ LLM stage.
+# Ordered diagnostic pipeline. A prompt/output contract may be used by either
+# the default Jev INTERPRET backend or the explicit LLM rollback.
 stages:
   - id: intake
   - id: ground

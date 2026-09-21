@@ -28,7 +28,7 @@ spec:
         - containerPort: 8001
         envFrom:
         # Secret created/rotated by cd.yml. Provides:
-        #   OPENROUTER_API_KEY, LANGSMITH_API_KEY,
+        #   OPENROUTER_API_KEY, JEV_API_KEY, LANGSMITH_API_KEY,
         #   AI_SERVICE_INTERNAL_TOKEN, BACKEND_WEBHOOK_TOKEN.
         - secretRef:
             name: starteria-ai-service-secrets

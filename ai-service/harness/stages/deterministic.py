@@ -66,7 +66,11 @@ def _strategic_questions(state: DiagnosisState, ctx: StageContext) -> list[str]:
         questions.append(f"¿Puedes precisar {_friendly(key)}?")
     for key in state.contradictions:
         questions.append(f"Hay valores en conflicto para {_friendly(key)}; ¿cuál es el correcto?")
-    if not questions and state.route_profile and state.route_profile.confidence in ("low", "not_evaluable"):
+    if state.route_profile and state.route_profile.unit_confidence in ("low", "not_evaluable"):
+        questions.append("¿La unidad de trabajo es una tarea, iniciativa, proyecto, reto u otra unidad?")
+    if state.route_profile and state.route_profile.confidence in ("low", "not_evaluable") and (
+        not questions or state.route_profile.unit_confidence in ("low", "not_evaluable")
+    ):
         questions.append("¿Cuál es el resultado concreto que debe haber cambiado al terminar?")
     return ctx.ladder.enforce_question_cap(questions)
 

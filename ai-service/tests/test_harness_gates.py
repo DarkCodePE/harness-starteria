@@ -58,6 +58,25 @@ def test_soft_gate_accumulates_without_blocking():
     assert set(v.failed_soft_gates) & {"baseline_estimated", "unit_inferred", "horizon_unconfirmed"}
 
 
+@pytest.mark.parametrize(
+    "route_confidence,unit_confidence,expected_confirmation",
+    [("high", "high", False), ("low", "high", True),
+     ("high", "low", True), ("low", "low", True)],
+)
+def test_route_or_unit_low_keeps_one_hard_gate(route_confidence, unit_confidence, expected_confirmation):
+    baseline_score = _ladder().evaluate(_state([], confidence="high", unit_confidence="high")).score
+    v = _ladder().evaluate(_state([], confidence=route_confidence, unit_confidence=unit_confidence))
+    assert ("ambiguous_classification" in v.failed_hard_gates) is expected_confirmation
+    assert v.score == round(baseline_score + (0.6 if expected_confirmation else 0.0), 4)
+    if unit_confidence == "low":
+        assert "La unidad de trabajo requiere confirmación." in v.reasons
+
+
+def test_previous_profiles_without_unit_confidence_keep_their_gate_behavior():
+    assert "ambiguous_classification" not in _ladder().evaluate(_state([], confidence="high")).failed_hard_gates
+    assert "ambiguous_classification" in _ladder().evaluate(_state([], confidence="low")).failed_hard_gates
+
+
 def test_prohibited_terms_and_question_cap():
     ladder = _ladder()
     assert set(ladder.check_prohibited_terms("La propuesta queda validada y aprobada")) == {"validada", "aprobada"}

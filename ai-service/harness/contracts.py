@@ -122,6 +122,9 @@ class RouteProfile(BaseModel):
     horizon: Horizon = "unconfirmed"
     step: int = Field(..., ge=0, le=4, description="Methodological step 0-4 the request belongs to.")
     confidence: Confidence = "medium"
+    # Optional for the Jev experiment. Existing LLM RouteProfiles use only `confidence`.
+    unit_confidence: Confidence | None = None
+    confidence_scores: dict[str, float] = Field(default_factory=dict)
     rationale: list[str] = Field(default_factory=list, description="Short reasons for the classification.")
     conditions_that_would_change: list[str] = Field(
         default_factory=list, description="§9: conditions under which this classification would change."

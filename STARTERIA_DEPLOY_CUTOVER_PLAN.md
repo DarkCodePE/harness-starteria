@@ -171,6 +171,7 @@ AI service variables:
 | Variable | Status | Notes |
 |---|---|---|
 | `OPENROUTER_API_KEY` | REQUIRED | Provider IA key; never commit value. |
+| `JEV_API_KEY` | REQUIRED for Jev INTERPRET | TypeSafe key; store as a GitHub Actions secret and sync into the AI service Kubernetes Secret. |
 | `OPENROUTER_MODEL` | OPTIONAL | Defaults to `deepseek/deepseek-v4-flash` in compose. |
 | `OPENROUTER_BASE_URL` | OPTIONAL | Defaults in code. |
 | `ENVIRONMENT` | REQUIRED | Production/staging environment label. |
@@ -265,6 +266,7 @@ Grouped audit:
 | BACKEND | `PILOT_LEAD_NOTIFY_FROM` | OPTIONAL |
 | BACKEND | `PILOT_LEAD_NOTIFY_TO` | OPTIONAL |
 | AI_SERVICE | `OPENROUTER_API_KEY` | REQUIRED |
+| AI_SERVICE | `JEV_API_KEY` | REQUIRED for Jev INTERPRET |
 | AI_SERVICE | `OPENROUTER_MODEL` | OPTIONAL |
 | AI_SERVICE | `OPENROUTER_BASE_URL` | OPTIONAL |
 | AI_SERVICE | `ENVIRONMENT` | REQUIRED |
