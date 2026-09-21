@@ -122,6 +122,20 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
 - ADRs de producto: `docs/product-adr/`.
 - La serie de producto se mantiene separada de `docs/adr/ADR-001...007`.
 
+### AI Harness / INTERPRET — ADR-031
+
+El responsable aprobó ADR-031 el 2026-09-20 y autorizó la slice
+`AI_HARNESS_INTERPRET_ADR031`, registrada en `STARTERIA_V2_MANIFEST.md`.
+El código de `ai-service` usa Jev por defecto en INTERPRET de `mode=harness` y
+`POST /ai/diagnose`; GROUND sigue en OpenRouter. `HARNESS_INTERPRET_BACKEND=llm`
+restaura la ruta anterior. El corte provisional sigue en 0.50 por pregunta.
+La implementación está verificada con pruebas herméticas; este checkout no acredita
+despliegue externo ni riesgo productivo. En este entorno no hay `JEV_API_KEY` configurada,
+por lo que una llamada real al path Jev falla cerrada hasta instalarla en el entorno
+de ejecución. CD exige ahora el secreto `JEV_API_KEY`; la lista de secretos de
+`DarkCodePE/harness-starteria` no lo contiene todavía y el despliegue queda
+bloqueado hasta configurarlo. Ver `docs/analisis-jev/13-adr-031-activation.md`.
+
 ## Legacy e historico
 
 Los documentos legacy o historicos deben abrir con banner `DEPRECATED`, `SUPERSEDED` o `HISTORICAL` y enlazar a este archivo y al reemplazo vigente si existe.

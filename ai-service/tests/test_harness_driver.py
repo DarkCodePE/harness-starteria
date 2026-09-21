@@ -61,7 +61,7 @@ def test_trace_audit_records_provenance():
         [GroundedField(key="baseline", value="10%", status=E.INFERRED)],
         confidence="high"))
     audit = d.trace.audit
-    assert audit.config_version == "1.0.0"
+    assert audit.config_version == "1.1.0"
     assert audit.prompt_versions == {"ground": "1.0.0", "interpret": "1.0.0"}
     assert "baseline" in audit.inferred_fields
     assert audit.timestamp is not None

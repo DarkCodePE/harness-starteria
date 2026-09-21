@@ -42,7 +42,8 @@ from agents.solution_design import create_solution_design_agent
 from schemas.requests import InvokeRequest
 from schemas.responses import InvokeResponse
 from services.context_assembler import ContextAssembler
-from services.cost_tracker import CostLimitExceededError, CostTracker
+from services.cost_tracker import CostTracker
+from services.usage_collector import UsageCollector
 from tools.context_tools import get_agent_routing_hint, get_step_description
 
 logger = logging.getLogger(__name__)
@@ -242,10 +243,13 @@ class OrchestratorAgent:
 
         start = time.monotonic()
         project_id: str = request.payload.get("projectId", "unknown")  # type: ignore[union-attr]
-        _cost_tracker.check_project_daily_budget(project_id)
-        _cost_tracker.check_request_cost(agent_id=request.agentHint or "methodology-harness")
-
         harness = get_harness()
+        _cost_tracker.check_project_daily_budget(project_id)
+        _cost_tracker.check_request_cost(
+            agent_id="methodology-harness",
+            models=(harness.ground_model_ref, harness.interpret_model_ref),
+        )
+
         request_ref = {
             "step": request.step,
             "module": request.module,
@@ -263,6 +267,22 @@ class OrchestratorAgent:
             or ""
         )
         decision = harness.diagnose(request_ref, raw_input=raw_input, project_id=project_id)
+
+        # E6 records per-stage tokens on the trace; without this they never reach the budget.
+        # Charged separately from any step agent invoked below: different call, different model.
+        harness_in = sum(s.tokens_in or 0 for s in decision.trace.stages)
+        harness_out = sum(s.tokens_out or 0 for s in decision.trace.stages)
+        for stage in decision.trace.stages:
+            if stage.llm_used:
+                model = (f"{stage.model_provider}:{stage.model_id}"
+                         if stage.model_provider and stage.model_id else None)
+                _cost_tracker.record_usage(
+                    project_id=project_id,
+                    agent_id="methodology-harness",
+                    input_tokens=stage.tokens_in,
+                    output_tokens=stage.tokens_out,
+                    model=model,
+                )
 
         diagnosis_payload = {
             "kind": decision.kind,
@@ -297,7 +317,7 @@ class OrchestratorAgent:
             data=diagnosis_payload,
             agent="methodology-harness",
             model=harness._model_id(),  # noqa: SLF001 — model id for audit surface
-            tokensUsed=0,
+            tokensUsed=harness_in + harness_out,
             latencyMs=int((time.monotonic() - start) * 1000),
         )
 
@@ -321,7 +341,10 @@ class OrchestratorAgent:
             ensure_ascii=False,
         )
 
-        config = {"configurable": {"thread_id": project_id}}
+        # The handler observes only the calls made inside THIS invocation. Sweeping
+        # result["messages"] would re-bill the whole thread, which thread_id persists.
+        usage = UsageCollector()
+        config = {"configurable": {"thread_id": project_id}, "callbacks": [usage]}
 
         result = self._orchestrator.invoke(
             {"messages": [{"role": "user", "content": user_content}]},
@@ -347,12 +370,20 @@ class OrchestratorAgent:
         except (json.JSONDecodeError, TypeError):
             data = {"response": raw_content}
 
-        # Record usage (deepagents does not expose token counts directly)
+        if not usage.complete:
+            logger.warning(
+                "usage_incomplete project=%s agent=%s calls=%d without_usage=%d — the "
+                "daily budget is under-counted for this request",
+                project_id,
+                AGENT_ID,
+                usage.calls,
+                usage.calls_without_usage,
+            )
         _cost_tracker.record_usage(
             project_id=project_id,
             agent_id=AGENT_ID,
-            input_tokens=0,
-            output_tokens=0,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
         )
 
         return InvokeResponse(

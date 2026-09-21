@@ -10,7 +10,9 @@ pytestmark = pytest.mark.unit
 
 def test_config_loads_and_version_stamped():
     cfg = load_methodology()
-    assert cfg.version == "1.0.0"
+    assert cfg.version == "1.1.0"
+    assert cfg.model.interpret_backend == "jev"
+    assert cfg.model.jev_model == "jev-latest"
     assert cfg.stage_ids() == [
         "intake", "ground", "interpret", "confirm", "classify_route", "method_hint", "gate", "emit",
     ]

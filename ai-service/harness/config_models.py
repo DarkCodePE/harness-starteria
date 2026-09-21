@@ -19,6 +19,8 @@ from pydantic import BaseModel, Field
 
 class ModelConfig(BaseModel):
     stage_model: str = "openrouter:deepseek/deepseek-v4-flash"
+    interpret_backend: Literal["jev", "llm"] = "jev"
+    jev_model: str = "jev-latest"
     temperature: float = 0.2
     max_tokens: int = 4000
 

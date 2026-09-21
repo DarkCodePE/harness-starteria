@@ -35,7 +35,9 @@ def _pred_any_conflicting(state: DiagnosisState, rule: GateRule) -> bool:
 
 def _pred_confidence_low(state: DiagnosisState, rule: GateRule) -> bool:
     rp = state.route_profile
-    return rp is None or rp.confidence in ("low", "not_evaluable")
+    return rp is None or rp.confidence in ("low", "not_evaluable") or rp.unit_confidence in (
+        "low", "not_evaluable"
+    )
 
 
 def _pred_field_flag(state: DiagnosisState, rule: GateRule) -> bool:
@@ -111,6 +113,14 @@ class GateLadder:
                 failed_hard.append(rule.id)
                 score += rule.weight
                 reasons.append(rule.message or rule.id)
+                # One hard gate keeps the original weight, while the Jev experiment
+                # exposes which of its two independent classifications needs review.
+                rp = state.route_profile
+                if rule.predicate == "confidence_low" and rp and rp.unit_confidence is not None:
+                    if rp.confidence in ("low", "not_evaluable"):
+                        reasons.append("La ruta metodológica requiere confirmación.")
+                    if rp.unit_confidence in ("low", "not_evaluable"):
+                        reasons.append("La unidad de trabajo requiere confirmación.")
         for rule in self._gates.soft:
             if evaluate_rule(state, rule):
                 failed_soft.append(rule.id)
