@@ -46,6 +46,42 @@ Costo de la decisión: una corrida degradada produce una clasificación de **men
 medida** —`challenge_type` y `depth` son peores en el LLM en algunas dimensiones— sin
 interrumpir al usuario. Se prefiere eso a un 503.
 
+2026-09-21 — **Se separa probabilidad de confianza** en el `RouteProfile`.
+
+`docs/jev/confidence.md` distingue dos cantidades que la integración estaba colapsando:
+
+| Campo | Qué es |
+|---|---|
+| `selected_probabilities` | P de la opción ganadora. **Es lo que RLCD calibra** y lo único que puede mostrarse a un usuario como "la probabilidad que Jev le da a esta ruta". |
+| `confidence_scores` | Estadístico **derivado** de la forma de la distribución — *"collapses that shape into a single number"*. TypeSafe lo entrega para poder gatear sin hacer la cuenta. **No es P(acierto).** |
+| `probability_distributions` | La distribución completa por pregunta. |
+
+El código guardaba `confidence` bajo el nombre `confidence_scores` —correcto, pero ambiguo
+junto a nada más— y **descartaba las probabilidades**, que es justamente lo que el doc dice
+que se entrega para poder usar otra medida: *"you are never locked into our definition...
+which is exactly why we give you the full `probabilities`"*. Ese campo, además, **no lo leía
+nadie**: el único uso en todo el repo era la escritura.
+
+Se conserva la distribución completa para poder calcular después margen sobre la segunda
+opción, entropía o una curva de fiabilidad **sin volver a llamar (ni pagar) a Jev**.
+
+**El gate sigue leyendo `confidence`, no la probabilidad.** Dos razones: es la señal que
+TypeSafe documenta para umbralizar, y localmente ordenó bien los 23 casos `route` —los dos
+fallos fueron sus dos valores más bajos—. Cambiarlo a `probabilities[choice]` exige su propia
+evidencia, que todavía no existe.
+
+**Sobre afirmar calibración:** que Jev se entrene con RLCD no prueba que esté calibrado *en
+este dominio*. TypeSafe no ha publicado una evaluación de calibración reproducible de forma
+independiente. Hasta tener una curva local, el texto de producto debe decir **"probabilidad
+estimada por Jev"**, nunca "N% de probabilidad de acertar". Verificarlo exige comprobar que
+entre muchas clasificaciones cercanas a 0,70, cerca del 70% aciertan — imposible con 23 casos
+y 2 errores.
+
+Nota de versionado: cualquier curva de calibración queda atada también a las `criteria` de
+cada pregunta. Las de `intent` y `unit` se escribieron en `harness/jev.py` porque la
+metodología solo lista sus etiquetas; reescribirlas invalida la calibración igual que
+cambiar de modelo.
+
 ## Date
 
 2026-09-20
