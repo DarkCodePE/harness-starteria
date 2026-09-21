@@ -208,7 +208,7 @@ describe('PortfolioEntryExperience', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /analizar mi situ/i }));
     await screen.findByText(/Aclaraci.*breve/i);
-    const clarificationLabel = await screen.findByText('Lo que estamos aclarando ahora');
+    const clarificationLabel = await screen.findByText(/Para afinarlo un poco m/i);
     const currentClarification = within(clarificationLabel.parentElement as HTMLElement);
     expect(await currentClarification.findByText(/que decision necesitas habilitar/i)).toBeInTheDocument();
     expect(serviceMocks.submitPortfolioEntryMessage).toHaveBeenCalledWith(
@@ -283,7 +283,7 @@ describe('PortfolioEntryExperience', () => {
 
     renderExperience();
 
-    expect(await screen.findByText('Tu punto de partida')).toBeInTheDocument();
+    expect(await screen.findByText('Tu contexto inicial')).toBeInTheDocument();
     expect(screen.queryByText('Lo que estamos aclarando ahora')).not.toBeInTheDocument();
     fireEvent.click(await screen.findByText(/Ver conversaci/i));
     const trace = within(screen.getByTestId('portfolio-entry-conversation-trace'));
@@ -416,6 +416,17 @@ describe('PortfolioEntryExperience', () => {
 
     expect(await screen.findByTestId('portfolio-entry-understanding')).toHaveTextContent('40 iniciativas');
     expect(screen.getByTestId('portfolio-entry-active-question')).toBeInTheDocument();
+    expect(screen.getByLabelText(/tu respuesta/i)).toBeInTheDocument();
+  });
+
+  it('omits the synthesis block when the session has no structured understanding', async () => {
+    savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
+    serviceMocks.getPortfolioEntrySession.mockResolvedValue(sessionWithQuestion());
+
+    renderExperience();
+
+    expect(await screen.findByTestId('portfolio-entry-active-question')).toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-entry-understanding')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/tu respuesta/i)).toBeInTheDocument();
   });
 
