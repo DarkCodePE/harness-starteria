@@ -251,7 +251,14 @@ def build_route_profile(answers: dict[str, Any]) -> tuple[RouteProfile, list[str
         step=step_idx,
         confidence=_confidence_label(route_conf),
         unit_confidence=_confidence_label(unit_conf),
+        # P of the winning option — what RLCD calibrates, and what a user should be shown.
+        selected_probabilities={
+            "route": float(route_p.get(route) or 0.0),
+            "unit": float(unit_p.get(unit) or 0.0),
+        },
+        # The shape statistic the gate thresholds on. Not P(correct).
         confidence_scores={"route": route_conf, "unit": unit_conf},
+        probability_distributions={"route": dict(route_p), "unit": dict(unit_p)},
         rationale=rationale,
         conditions_that_would_change=conditions,
     )
