@@ -316,9 +316,11 @@ function StatusMessage({ pendingRequest }: { pendingRequest: PendingRequest }) {
 function ErrorMessage({
   error,
   onRestart,
+  onRetry,
 }: {
   error: UiError | null;
   onRestart: () => void;
+  onRetry?: () => void;
 }) {
   if (!error) return null;
   const terminal = ['unauthorized', 'not_found', 'expired'].includes(error.kind);
@@ -332,6 +334,11 @@ function ErrorMessage({
           <Button type="button" variant="secondary" size="sm" onClick={onRestart} className="mt-2">
             <RefreshCcw size={14} />
             Empezar de nuevo
+          </Button>
+        ) : onRetry ? (
+          <Button type="button" variant="secondary" size="sm" onClick={onRetry} className="mt-2">
+            <RefreshCcw size={14} />
+            Reintentar análisis
           </Button>
         ) : null}
       </AlertDescription>
@@ -1262,6 +1269,7 @@ export function PortfolioEntryExperience({
   const [claimedNotice, setClaimedNotice] = useState(() => readPortfolioEntryClaimedNotice());
   const [conversionError, setConversionError] = useState<UiError | null>(null);
   const [conversionIdempotencyKey, setConversionIdempotencyKey] = useState<string | null>(null);
+  const [handoffRetryRevision, setHandoffRetryRevision] = useState<number | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const materializedRevisionRef = useRef<number | null>(null);
   const trackedClarificationRef = useRef<number | null>(null);
@@ -1283,6 +1291,7 @@ export function PortfolioEntryExperience({
     setEditingCorrection(false);
     setConversionError(null);
     setConversionIdempotencyKey(null);
+    setHandoffRetryRevision(null);
   };
 
   const handleRequestError = async (err: unknown, ref = sessionRef) => {
@@ -1314,6 +1323,35 @@ export function PortfolioEntryExperience({
       clearPortfolioEntryCurrentSession();
       setSessionRef(null);
       if (apiError.kind === 'expired') trackPortfolioEntryEvent('session_expired');
+    }
+  };
+
+  const materializeHandoff = async (
+    revision: number,
+    ref: StoredPortfolioEntrySession,
+    manualRetry = false,
+  ) => {
+    if (pendingRequest === 'handoff') return;
+    if (!manualRetry && materializedRevisionRef.current === revision) return;
+    materializedRevisionRef.current = revision;
+    setHandoffRetryRevision(null);
+    setError(null);
+    setPendingRequest('handoff');
+    try {
+      const next = await materializePortfolioEntryHandoff(ref.sessionId, ref.credential, {
+        expectedRevision: revision,
+        idempotencyKey: createIdempotencyKey('portfolio-entry:handoff'),
+      });
+      setSessionDto(next);
+      setError(null);
+      setHandoffRetryRevision(null);
+      trackPortfolioEntryEvent('handoff_generated', { sessionId: next.id });
+    } catch (err) {
+      const apiError = normalizePortfolioEntryApiError(err);
+      if (mapError(apiError.kind).retryable) setHandoffRetryRevision(revision);
+      await handleRequestError(err, ref);
+    } finally {
+      setPendingRequest(null);
     }
   };
 
@@ -1386,24 +1424,21 @@ export function PortfolioEntryExperience({
     if (!sessionDto || !sessionRef) return;
     if (sessionDto.nextAction !== 'generate_handoff') return;
     if (materializedRevisionRef.current === sessionDto.revision) return;
-    materializedRevisionRef.current = sessionDto.revision;
-
-    const key = createIdempotencyKey('portfolio-entry:handoff');
-    setPendingRequest('handoff');
-    materializePortfolioEntryHandoff(sessionRef.sessionId, sessionRef.credential, {
-      expectedRevision: sessionDto.revision,
-      idempotencyKey: key,
-    })
-      .then((next) => {
-        setSessionDto(next);
-        setError(null);
-        trackPortfolioEntryEvent('handoff_generated', { sessionId: next.id });
-      })
-      .catch((err) => void handleRequestError(err))
-      .finally(() => setPendingRequest(null));
-    // handleRequestError intentionally reads current state; only the revision triggers this effect.
+    void materializeHandoff(sessionDto.revision, sessionRef);
+    // The helper intentionally owns request state and error recovery. The revision guard prevents automatic retries.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionDto?.nextAction, sessionDto?.revision, sessionRef?.sessionId]);
+
+  const retryHandoff = () => {
+    if (
+      !sessionDto ||
+      !sessionRef ||
+      pendingRequest ||
+      sessionDto.nextAction !== 'generate_handoff' ||
+      handoffRetryRevision !== sessionDto.revision
+    ) return;
+    void materializeHandoff(sessionDto.revision, sessionRef, true);
+  };
 
   const startFlow = async () => {
     const message = currentInput.trim();
@@ -1673,7 +1708,15 @@ export function PortfolioEntryExperience({
         <StatusMessage pendingRequest={pendingRequest} />
       </div>
       <div className="mx-auto max-w-3xl">
-        <ErrorMessage error={error} onRestart={restart} />
+        <ErrorMessage
+          error={error}
+          onRestart={restart}
+          onRetry={
+            error?.retryable && handoffRetryRevision === sessionDto?.revision
+              ? retryHandoff
+              : undefined
+          }
+        />
       </div>
       {renderMain()}
     </div>
