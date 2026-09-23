@@ -160,6 +160,7 @@ export class FetchStructuredModelAdapter implements StructuredModelAdapter {
       retry_count: retryCount,
       retry_reason: retryReason,
       usage: extractUsage(providerRaw),
+      fallback_used: false,
     };
   }
 }

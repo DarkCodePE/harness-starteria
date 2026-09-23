@@ -1494,6 +1494,29 @@ export function PortfolioEntryExperience({
     }
   };
 
+  const retryPendingAnalysis = async () => {
+    if (!sessionDto || !sessionRef || pending || sessionDto.nextAction !== 'retry_analysis' || !sessionDto.pendingInput) return;
+    setError(null);
+    setPendingRequest('submitting');
+    try {
+      const next = await submitPortfolioEntryMessage(sessionRef.sessionId, sessionRef.credential, {
+        expectedRevision: sessionDto.revision,
+        idempotencyKey: createIdempotencyKey('portfolio-entry:retry-analysis'),
+        message: sessionDto.pendingInput.value,
+      });
+      setSessionDto(next);
+    } catch (err) {
+      await handleRequestError(err);
+    } finally {
+      setPendingRequest(null);
+    }
+  };
+
+  const continueWithProvisionalReading = () => {
+    if (!sessionDto || !sessionRef || pending || !sessionDto.pendingInput) return;
+    void materializeHandoff(sessionDto.revision, sessionRef, true);
+  };
+
   const chooseGuided = async (choice: 'accept' | 'provisional_route') => {
     if (!sessionDto || !sessionRef || pending) return;
     setError(null);
@@ -1670,6 +1693,18 @@ export function PortfolioEntryExperience({
 
     if (sessionDto.nextAction === 'offer_guided_exploration') {
       return <GuidedExplorationOffer session={sessionDto} pending={pending} onChoose={chooseGuided} />;
+    }
+
+    if (sessionDto.nextAction === 'retry_analysis' && sessionDto.pendingInput) {
+      return (
+        <section className="mx-auto max-w-3xl space-y-4 rounded-ds-lg border border-status-feedback-warning-border bg-status-feedback-warning-surface p-5" data-testid="portfolio-entry-degraded-continuation">
+          <p className="text-sm leading-6 text-status-feedback-warning-text">Tu respuesta quedó guardada, pero el análisis sigue pendiente. No necesitas escribirla de nuevo.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={retryPendingAnalysis} disabled={pending}>Reintentar análisis</Button>
+            <Button type="button" variant="ghost" onClick={continueWithProvisionalReading} disabled={pending}>Continuar con lectura provisional</Button>
+          </div>
+        </section>
+      );
     }
 
     if (sessionDto.nextAction === 'review_handoff' || sessionDto.nextAction === 'claim_or_close') {

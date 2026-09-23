@@ -41,6 +41,7 @@ export type PortfolioEntryQuestionBudgetState = {
 };
 
 export type PortfolioEntrySemanticState = {
+  pendingInput?: PortfolioEntryPendingInput;
   initialEntryState?: PortfolioEntryAnalysisV2['initial_entry_state'];
   currentFrame?: PortfolioEntryAnalysisV2['current_frame'];
   primaryIntent?: PortfolioEntryAnalysisV2['primary_intent'];
@@ -55,6 +56,28 @@ export type PortfolioEntrySemanticState = {
   answeredGaps: string[];
   runtimeClarificationStatus?: ClarificationStatus;
   userExplorationChoice?: UserExplorationChoice;
+};
+
+export type PortfolioEntryPendingInputStatus =
+  | 'RECEIVED'
+  | 'ANALYSIS_PENDING'
+  | 'ANALYZED'
+  | 'FAILED_RETRYABLE'
+  | 'SUPERSEDED';
+
+export type PortfolioEntryPendingInput = {
+  id: string;
+  value: string;
+  status: PortfolioEntryPendingInputStatus;
+  receivedAt: string;
+  updatedAt: string;
+  provenance: {
+    origin: 'USER_DECLARED';
+    sourcePath: 'messages.message';
+    sourceText: string;
+  };
+  analysisVersion?: string;
+  failure?: { errorType: string; technicalError?: string };
 };
 
 export type PortfolioEntryHandoffRecord = {

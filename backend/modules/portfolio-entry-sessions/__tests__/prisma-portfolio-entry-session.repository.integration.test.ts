@@ -60,6 +60,24 @@ describeIntegration('PrismaPortfolioEntrySessionRepository', () => {
       .rejects.toMatchObject({ code: 'PORTFOLIO_ENTRY_SESSION_EXPIRED' });
   });
 
+  it('persists pending input as the next CAS revision before a turn is appended', async () => {
+    const { service, repository } = makeService();
+    const { session } = await createSession(service);
+
+    const pending = await service.persistPendingInput({
+      sessionId: session.id,
+      value: 'Necesitamos ordenar el portafolio antes de decidir foco.',
+      expectedRevision: 0,
+    });
+
+    expect(pending.revision).toBe(1);
+    expect(pending.semanticState.pendingInput?.status).toBe('ANALYSIS_PENDING');
+    await expect(repository.findSessionById(session.id)).resolves.toMatchObject({
+      revision: 1,
+      semanticState: { pendingInput: { id: pending.semanticState.pendingInput?.id } },
+    });
+  });
+
   it('appends ordered turns atomically and preserves responded_resolves without harness metadata', async () => {
     const { service, repository } = makeService();
     const { session } = await createAnalyzingSession(service);
