@@ -22,7 +22,7 @@ import type {
   PortfolioEntryTurn,
   PortfolioEntryVersioning,
 } from '../domain/portfolio-entry-session.types';
-import { semanticStateFromRuntimeContext } from '../domain/portfolio-entry-session.types';
+import { semanticStateFromRuntimeContext, type PortfolioEntryPendingInput } from '../domain/portfolio-entry-session.types';
 import type { PortfolioEntryModelExecutionRecord } from '../observability/portfolio-entry-execution-metadata';
 import { PortfolioEntrySessionError } from './portfolio-entry-session-errors';
 import { assertLifecycleTransition, assertSessionIsActive, isSessionConversionEligible } from './portfolio-entry-session-guards';
@@ -227,12 +227,15 @@ export class PortfolioEntrySessionService {
       input.runtimeContextAfter,
       input.runtimeTurn.analysis,
     );
+    const analyzedPending = session.semanticState.pendingInput
+      ? { ...session.semanticState.pendingInput, status: 'ANALYZED' as const, analysisVersion: input.runtimeTurn.analysis.analysis_version, updatedAt: now.toISOString() }
+      : undefined;
     const updatedSession: PortfolioEntrySession = {
       ...session,
       lifecycleStatus: deriveLifecycleFromRuntimeStatus(input.runtimeContextAfter.clarification_status),
       executionStatus: 'SUCCEEDED',
       interactionMode: input.runtimeContextAfter.interaction_mode,
-      semanticState,
+      semanticState: { ...semanticState, ...(analyzedPending ? { pendingInput: analyzedPending } : {}) },
       questionBudget: budgetFromRuntimeContext(input.runtimeContextAfter),
       latestAnalysis: input.runtimeTurn.analysis,
       revision: expectedRevision + 1,
@@ -261,6 +264,62 @@ export class PortfolioEntrySessionService {
     };
 
     return this.repository.appendTurn(turn, updatedSession, expectedRevision);
+  }
+
+  async persistPendingInput(input: {
+    sessionId: string;
+    value: string;
+    expectedRevision: number;
+    now?: Date;
+  }): Promise<PortfolioEntrySession> {
+    const now = input.now ?? this.now();
+    const session = await this.requireSession(input.sessionId);
+    assertSessionIsActive(session, now);
+    if (session.revision !== input.expectedRevision) throw PortfolioEntrySessionError.conflict();
+    const existing = session.semanticState.pendingInput;
+    if (existing && existing.value !== input.value && ['ANALYSIS_PENDING', 'FAILED_RETRYABLE'].includes(existing.status)) {
+      throw PortfolioEntrySessionError.conflict();
+    }
+    const pending: PortfolioEntryPendingInput = {
+      id: existing?.value === input.value ? existing.id : randomUUID(),
+      value: input.value,
+      status: 'ANALYSIS_PENDING',
+      receivedAt: existing?.value === input.value ? existing.receivedAt : now.toISOString(),
+      updatedAt: now.toISOString(),
+      provenance: existing?.value === input.value
+        ? existing.provenance
+        : { origin: 'USER_DECLARED', sourcePath: 'messages.message', sourceText: input.value },
+    };
+    return this.repository.saveSessionState({
+      session: { ...session, executionStatus: 'RUNNING', semanticState: { ...session.semanticState, pendingInput: pending }, updatedAt: now, lastActivityAt: now },
+      expectedRevision: input.expectedRevision,
+    });
+  }
+
+  async markPendingInputFailed(input: {
+    sessionId: string;
+    expectedRevision: number;
+    errorType: string;
+    technicalError?: string;
+    now?: Date;
+  }): Promise<PortfolioEntrySession> {
+    const now = input.now ?? this.now();
+    const session = await this.requireSession(input.sessionId);
+    const pending = session.semanticState.pendingInput;
+    if (!pending || session.revision !== input.expectedRevision) throw PortfolioEntrySessionError.conflict();
+    return this.repository.saveSessionState({
+      session: {
+        ...session,
+        executionStatus: input.errorType === 'schema_invalid' ? 'SCHEMA_ERROR' : 'FAILED_RETRYABLE',
+        semanticState: {
+          ...session.semanticState,
+          pendingInput: { ...pending, status: 'FAILED_RETRYABLE', updatedAt: now.toISOString(), failure: { errorType: input.errorType, ...(input.technicalError ? { technicalError: input.technicalError } : {}) } },
+        },
+        updatedAt: now,
+        lastActivityAt: now,
+      },
+      expectedRevision: input.expectedRevision,
+    });
   }
 
   async applyRuntimeContext(input: ApplyRuntimeContextInput): Promise<PortfolioEntrySession> {

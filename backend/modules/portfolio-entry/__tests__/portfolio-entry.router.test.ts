@@ -375,7 +375,7 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect((await repository.listTurns(created.sessionId))).toHaveLength(1);
   });
 
-  it('does not silently use a deterministic adapter in live composition', async () => {
+  it('keeps the received input when live composition is unavailable', async () => {
     const { app } = makeApp({ useDefaultAdapter: true });
     const created = await createSession(app);
     await request(app)
@@ -383,10 +383,13 @@ describe('Portfolio Entry Experimental Session API', () => {
       .set('X-Starteria-Entry-Token', created.token)
       .set('Idempotency-Key', 'missing-live-provider')
       .send({ expectedRevision: 0, message: 'Mensaje de prueba para provider no configurado.' })
-      .expect(503);
+      .expect(200);
+    expect((await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('X-Starteria-Entry-Token', created.token)).body.data.pendingInput.status).toBe('FAILED_RETRYABLE');
   });
 
-  it('keeps provider failure from mutating semantic lifecycle', async () => {
+  it('keeps provider failure retryable without asking for the answer again', async () => {
     const adapter = new FailingAgentAdapter();
     const { app, repository } = makeApp({ adapter });
     const created = await createSession(app);
@@ -396,12 +399,14 @@ describe('Portfolio Entry Experimental Session API', () => {
       .set('X-Starteria-Entry-Token', created.token)
       .set('Idempotency-Key', 'provider-fails')
       .send({ expectedRevision: 0, message: 'Necesitamos ordenar el portafolio.' })
-      .expect(503);
+      .expect(200);
 
     const stored = await repository.findSessionById(created.sessionId);
     const executions = await repository.listModelExecutions(created.sessionId);
     expect(stored?.lifecycleStatus).toBe('ENTRY_CAPTURED');
     expect(stored?.revision).toBe(0);
+    expect(stored?.semanticState.pendingInput?.value).toBe('Necesitamos ordenar el portafolio.');
+    expect(stored?.semanticState.pendingInput?.status).toBe('FAILED_RETRYABLE');
     expect(executions).toHaveLength(1);
     expect(executions[0].technicalError).toBe('provider timeout');
   });

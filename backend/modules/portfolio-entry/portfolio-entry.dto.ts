@@ -47,9 +47,11 @@ export type PortfolioEntrySessionClientDto = {
       source: 'latestAnalysis.extracted_context';
     };
   };
-  nextAction: 'submit_message' | 'answer_clarification' | 'offer_guided_exploration' | 'generate_handoff' | 'review_handoff' | 'claim_or_close' | 'closed';
+  nextAction: 'submit_message' | 'answer_clarification' | 'offer_guided_exploration' | 'generate_handoff' | 'review_handoff' | 'retry_analysis' | 'continue_provisional_reading' | 'claim_or_close' | 'closed';
   handoff?: PortfolioEntryHandoffClientDto;
   confirmation?: PortfolioEntryConfirmationClientDto;
+  pendingInput?: PortfolioEntrySession['semanticState']['pendingInput'];
+  handoffMode?: 'live' | 'deterministic' | 'degraded';
 };
 
 export type PortfolioEntryHandoffClientDto = {
@@ -121,6 +123,10 @@ export function toPortfolioEntrySessionClientDto(
     nextAction: deriveNextAction(session, turns),
     handoff: session.latestHandoff ? toHandoffClientDto(session.latestHandoff) : undefined,
     confirmation: session.confirmation ? toConfirmationClientDto(session.confirmation) : undefined,
+    pendingInput: session.semanticState.pendingInput,
+    handoffMode: session.latestHandoff
+      ? session.semanticState.pendingInput?.status === 'FAILED_RETRYABLE' ? 'degraded' : 'deterministic'
+      : undefined,
   };
 }
 
@@ -150,6 +156,7 @@ function toConfirmationClientDto(confirmation: PortfolioEntryConfirmation): Port
 }
 
 function deriveNextAction(session: PortfolioEntrySession, turns: PortfolioEntryTurn[]): PortfolioEntrySessionClientDto['nextAction'] {
+  if (session.semanticState.pendingInput?.status === 'FAILED_RETRYABLE') return 'retry_analysis';
   if (session.semanticState.runtimeClarificationStatus === 'exploration_offered') return 'offer_guided_exploration';
   if (session.lifecycleStatus === 'ENTRY_CAPTURED' || session.lifecycleStatus === 'CLARIFYING') {
     return (turns.at(-1)?.emittedQuestions.length ?? 0) > 0 ? 'answer_clarification' : 'submit_message';

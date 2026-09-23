@@ -38,6 +38,7 @@ export type ModelExecutionMetadata = {
   retry_count: number;
   retry_reason?: string;
   usage?: unknown;
+  fallback_used?: boolean;
 };
 
 export type ModelExecutionResult<T> = {

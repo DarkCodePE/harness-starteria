@@ -87,6 +87,15 @@ export class PortfolioEntryExperimentalSessionService {
       assertNotConverted(session);
       this.assertExpectedRevision(session, body.expectedRevision);
       const turnsBefore = await this.sessionRepository.listTurns(sessionId);
+      // Accept and persist the user input before any semantic/model work. The
+      // revision is intentionally unchanged so a timeout-after-commit can be
+      // recovered by the existing CAS + idempotency boundary.
+      await this.sessionService.persistPendingInput({
+        sessionId,
+        value: body.message,
+        expectedRevision: body.expectedRevision,
+        now: this.now(),
+      });
       const activeQuestion = latestActiveQuestion(turnsBefore);
       const answer = applyAnswerResolution(
         contextFromSession(session, turnsBefore),
@@ -112,7 +121,14 @@ export class PortfolioEntryExperimentalSessionService {
         });
       } catch (error) {
         await this.recordFailure(sessionId, error);
-        throw error;
+        const failed = await this.sessionService.markPendingInputFailed({
+          sessionId,
+          expectedRevision: body.expectedRevision,
+          errorType: error instanceof LiveModelExecutionError && error.result.error_type === 'SCHEMA_ERROR' ? 'schema_invalid' : 'provider_unavailable',
+          technicalError: error instanceof LiveModelExecutionError ? error.result.technical_error : undefined,
+          now: this.now(),
+        });
+        return this.toDto(failed);
       }
       const runtimeTurn = result.trace.turns.at(-1);
       if (!runtimeTurn) throw PortfolioEntryApiError.schemaFailure();

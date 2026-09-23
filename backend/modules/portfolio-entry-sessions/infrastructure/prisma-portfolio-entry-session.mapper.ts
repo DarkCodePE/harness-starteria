@@ -60,6 +60,16 @@ const questionRecordSchema = z.object({
 });
 
 const semanticStateSchema = z.object({
+  pendingInput: z.object({
+    id: z.string(),
+    value: z.string(),
+    status: z.enum(['RECEIVED', 'ANALYSIS_PENDING', 'ANALYZED', 'FAILED_RETRYABLE', 'SUPERSEDED']),
+    receivedAt: z.string(),
+    updatedAt: z.string(),
+    provenance: z.object({ origin: z.literal('USER_DECLARED'), sourcePath: z.literal('messages.message'), sourceText: z.string() }),
+    analysisVersion: z.string().optional(),
+    failure: z.object({ errorType: z.string(), technicalError: z.string().optional() }).optional(),
+  }).optional(),
   initialEntryState: portfolioEntryFrameV2Schema.optional(),
   currentFrame: portfolioEntryFrameV2Schema.optional(),
   primaryIntent: portfolioEntryIntentV2Schema.optional(),
