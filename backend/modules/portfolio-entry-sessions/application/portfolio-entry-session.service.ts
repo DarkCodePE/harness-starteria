@@ -291,7 +291,7 @@ export class PortfolioEntrySessionService {
         : { origin: 'USER_DECLARED', sourcePath: 'messages.message', sourceText: input.value },
     };
     return this.repository.saveSessionState({
-      session: { ...session, executionStatus: 'RUNNING', semanticState: { ...session.semanticState, pendingInput: pending }, updatedAt: now, lastActivityAt: now },
+      session: { ...session, executionStatus: 'RUNNING', semanticState: { ...session.semanticState, pendingInput: pending }, revision: input.expectedRevision + 1, updatedAt: now, lastActivityAt: now },
       expectedRevision: input.expectedRevision,
     });
   }
@@ -315,6 +315,7 @@ export class PortfolioEntrySessionService {
           ...session.semanticState,
           pendingInput: { ...pending, status: 'FAILED_RETRYABLE', updatedAt: now.toISOString(), failure: { errorType: input.errorType, ...(input.technicalError ? { technicalError: input.technicalError } : {}) } },
         },
+        revision: input.expectedRevision + 1,
         updatedAt: now,
         lastActivityAt: now,
       },

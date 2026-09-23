@@ -80,7 +80,7 @@ describe('Portfolio Entry Experimental Session API', () => {
       .send({ expectedRevision: 0, message: 'Queremos ordenar iniciativas de experiencia cliente para decidir cuales financiar este trimestre.' })
       .expect(200);
 
-    expect(submitted.body.data.revision).toBe(1);
+    expect(submitted.body.data.revision).toBe(2);
     expect(submitted.body.data.conversation).toHaveLength(1);
     expect(submitted.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
     expect(submitted.body.data.clarification.answeredGaps).toEqual([]);
@@ -322,7 +322,7 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(response.body.data.nextAction).toBe('offer_guided_exploration');
     const stored = await repository.findSessionById(created.sessionId);
     expect(stored?.lifecycleStatus).toBe('CLARIFYING');
-    expect(stored?.revision).toBe(1);
+    expect(stored?.revision).toBe(2);
   });
 
   it('replays duplicate idempotent submits and rejects reused keys with different payloads', async () => {
@@ -404,11 +404,41 @@ describe('Portfolio Entry Experimental Session API', () => {
     const stored = await repository.findSessionById(created.sessionId);
     const executions = await repository.listModelExecutions(created.sessionId);
     expect(stored?.lifecycleStatus).toBe('ENTRY_CAPTURED');
-    expect(stored?.revision).toBe(0);
+    expect(stored?.revision).toBe(2);
     expect(stored?.semanticState.pendingInput?.value).toBe('Necesitamos ordenar el portafolio.');
     expect(stored?.semanticState.pendingInput?.status).toBe('FAILED_RETRYABLE');
     expect(executions).toHaveLength(1);
     expect(executions[0].technicalError).toBe('provider timeout');
+  });
+
+  it('retries the same persisted pending answer without duplicating the logical turn', async () => {
+    const adapter = new FailOnceAgentAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const created = await createSession(app);
+    const message = 'Necesitamos ordenar el portafolio antes de decidir foco y financiamiento.';
+
+    const failed = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'pending-fails-once')
+      .send({ expectedRevision: 0, message })
+      .expect(200);
+    const pendingId = failed.body.data.pendingInput.id;
+    expect(failed.body.data.revision).toBe(2);
+
+    const retried = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'pending-retry-fresh-key')
+      .send({ expectedRevision: failed.body.data.revision, message })
+      .expect(200);
+
+    expect(retried.body.data.conversation).toHaveLength(1);
+    expect(retried.body.data.pendingInput.id).toBe(pendingId);
+    expect(retried.body.data.pendingInput.status).toBe('ANALYZED');
+    expect(retried.body.data.revision).toBe(4);
+    expect((await repository.listTurns(created.sessionId))).toHaveLength(1);
+    expect(adapter.calls).toHaveLength(2);
   });
 
   it('does not overwrite newer state when a valid model result loses the CAS race', async () => {
@@ -433,7 +463,7 @@ describe('Portfolio Entry Experimental Session API', () => {
     const turns = await repository.listTurns(created.sessionId);
     const stored = await repository.findSessionById(created.sessionId);
     expect(turns).toHaveLength(1);
-    expect(stored?.revision).toBe(1);
+    expect(stored?.revision).toBe(2);
   });
 
   it('materializes, reads, confirms, and corrects handoffs without exposing internals or conversion eligibility', async () => {
@@ -750,6 +780,37 @@ class FailingAgentAdapter implements PortfolioEntryAgentAdapterV2 {
       },
     };
     throw new LiveModelExecutionError('provider timeout', result);
+  }
+}
+
+class FailOnceAgentAdapter implements PortfolioEntryAgentAdapterV2 {
+  calls: PortfolioEntryAnalyzeTurnInputV2[] = [];
+  private failed = false;
+
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    this.calls.push(input);
+    if (!this.failed) {
+      this.failed = true;
+      const result: ModelExecutionResult<PortfolioEntryAnalyzeTurnOutputV2> = {
+        provider_raw: null,
+        parsed_output: null,
+        validated_output: null,
+        schema_errors: [],
+        technical_error: 'provider timeout',
+        error_type: 'TECHNICAL_ERROR',
+        execution_metadata: {
+          call_id: 'failed-once-call',
+          purpose: 'analysis_turn',
+          provider: 'test-provider',
+          model: 'test-model',
+          duration_ms: 1000,
+          retry_count: 0,
+          seed_support: 'not_requested',
+        },
+      };
+      throw new LiveModelExecutionError('provider timeout', result);
+    }
+    return makeAnalysisOutput(input);
   }
 }
 

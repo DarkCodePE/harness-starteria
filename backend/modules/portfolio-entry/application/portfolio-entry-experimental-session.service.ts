@@ -40,6 +40,7 @@ type RecoveryHint = {
   kind: 'portfolio-entry-recovery';
   operation: Operation;
   expectedRevision: number;
+  pendingInputId?: string;
   turnIndex?: number;
   ownerUserId?: string;
 };
@@ -82,23 +83,30 @@ export class PortfolioEntryExperimentalSessionService {
     const initial = await this.authorize(sessionId, context);
     assertNotConverted(initial);
     return this.withIdempotency('submit_message', sessionId, body, context, async () => {
-      this.assertExpectedRevision(initial, body.expectedRevision);
       const session = await this.authorize(sessionId, context);
       assertNotConverted(session);
       this.assertExpectedRevision(session, body.expectedRevision);
       const turnsBefore = await this.sessionRepository.listTurns(sessionId);
-      // Accept and persist the user input before any semantic/model work. The
-      // revision is intentionally unchanged so a timeout-after-commit can be
-      // recovered by the existing CAS + idempotency boundary.
-      await this.sessionService.persistPendingInput({
+      if (session.semanticState.pendingInput?.value === body.message && session.semanticState.pendingInput.status === 'ANALYZED') {
+        return this.toDto(session);
+      }
+      // Accepting input is its own versioned mutation. Every subsequent
+      // mutation in this request must use the returned revision.
+      const pendingSession = await this.sessionService.persistPendingInput({
         sessionId,
         value: body.message,
         expectedRevision: body.expectedRevision,
         now: this.now(),
       });
+      await this.storeRecovery(context, {
+        kind: 'portfolio-entry-recovery',
+        operation: 'submit_message',
+        expectedRevision: body.expectedRevision,
+        pendingInputId: pendingSession.semanticState.pendingInput?.id,
+      });
       const activeQuestion = latestActiveQuestion(turnsBefore);
       const answer = applyAnswerResolution(
-        contextFromSession(session, turnsBefore),
+        contextFromSession(pendingSession, turnsBefore),
         activeQuestion,
         body.matchedQuestionIds,
         body.message,
@@ -117,13 +125,13 @@ export class PortfolioEntryExperimentalSessionService {
           candidateId: 'portfolio-entry-api-v1',
           initialUserInput: body.message,
           initialContext: runtimeContext,
-          priorAnalysis: session.latestAnalysis ?? undefined,
+          priorAnalysis: pendingSession.latestAnalysis ?? undefined,
         });
       } catch (error) {
         await this.recordFailure(sessionId, error);
         const failed = await this.sessionService.markPendingInputFailed({
           sessionId,
-          expectedRevision: body.expectedRevision,
+          expectedRevision: pendingSession.revision,
           errorType: error instanceof LiveModelExecutionError && error.result.error_type === 'SCHEMA_ERROR' ? 'schema_invalid' : 'provider_unavailable',
           technicalError: error instanceof LiveModelExecutionError ? error.result.technical_error : undefined,
           now: this.now(),
@@ -146,6 +154,7 @@ export class PortfolioEntryExperimentalSessionService {
         kind: 'portfolio-entry-recovery',
         operation: 'submit_message',
         expectedRevision: body.expectedRevision,
+        pendingInputId: pendingSession.semanticState.pendingInput?.id,
         turnIndex: runtimeTurnForPersistence.turn_index,
       });
       await this.sessionService.appendTurn({
@@ -154,11 +163,11 @@ export class PortfolioEntryExperimentalSessionService {
         runtimeContextAfter: result.final_context,
         matchedQuestionIds: resolvedAnswer.matchedQuestionIds,
         respondedResolves: resolvedAnswer.respondedResolves,
-        expectedRevision: body.expectedRevision,
+        expectedRevision: pendingSession.revision,
         now: this.now(),
       });
       return this.toDto(await this.requireSession(sessionId));
-    }, (record) => this.recoverSubmit(sessionId, record, body.expectedRevision));
+    }, (record) => this.recoverSubmit(sessionId, record, body.expectedRevision, body.message));
   }
 
   async chooseGuidedExploration(sessionId: string, body: GuidedExplorationBody, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
@@ -377,13 +386,16 @@ export class PortfolioEntryExperimentalSessionService {
     await this.idempotencyRepository.storeRecoveryHint({ id: context.idempotencyRecordId, recoverySnapshot: hint });
   }
 
-  private async recoverSubmit(sessionId: string, record: PortfolioEntryIdempotencyRecord, expectedRevision: number): Promise<PortfolioEntrySessionClientDto | null> {
+  private async recoverSubmit(sessionId: string, record: PortfolioEntryIdempotencyRecord, expectedRevision: number, message: string): Promise<PortfolioEntrySessionClientDto | null> {
     const hint = recoveryHint(record, 'submit_message', expectedRevision);
-    if (!hint?.turnIndex) return null;
+    if (!hint?.pendingInputId) return null;
     const session = await this.requireSession(sessionId);
-    if (session.revision !== expectedRevision + 1) return null;
+    const pending = session.semanticState.pendingInput;
+    if (!pending || pending.id !== hint.pendingInputId || pending.value !== message) return null;
     const turns = await this.sessionRepository.listTurns(sessionId);
-    if (!turns.some((turn) => turn.turnIndex === hint.turnIndex)) return null;
+    if (pending.status === 'FAILED_RETRYABLE') return toPortfolioEntrySessionClientDto(session, turns);
+    if (pending.status !== 'ANALYZED' || !hint.turnIndex) return null;
+    if (!turns.some((turn) => turn.turnIndex === hint.turnIndex && turn.userInput === pending.value)) return null;
     return toPortfolioEntrySessionClientDto(session, turns);
   }
 
