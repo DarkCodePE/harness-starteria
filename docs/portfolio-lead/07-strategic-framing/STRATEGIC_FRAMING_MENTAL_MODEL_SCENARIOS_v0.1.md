@@ -1,7 +1,11 @@
 ﻿# Strategic Framing Mental Model Scenarios v0.1
 
-**Estado:** `CANDIDATE` â€” escenarios congelados en SF-0
+**Estado:** `APPROVED SCENARIO BASELINE FOR SF IMPLEMENTATION/TESTING` — human-approved 2026-09-24
 **Regla:** cada escenario debe poder rastrearse al Experience Contract, checklist, matriz y slice futuro.
+
+**Status:** `APPROVED SCENARIO BASELINE FOR SF IMPLEMENTATION/TESTING`  
+**Human approval:** 2026-09-24  
+Runtime verification: PENDING
 
 ## SF-MM-01 â€” Expert / direct
 
@@ -86,3 +90,19 @@
 - **Forbidden behavior:** limitar el anÃ¡lisis a cuatro lenses fijos o canonizar el lens como jerarquÃ­a.
 - **Acceptance condition:** la perspectiva puede contribuir a cero, uno o varios resultados sin crear Challenge automÃ¡tico.
 - **Likely implementation slice:** `SF-4`, `SF-5`.
+
+## SF-MM-08 — Challenge-first / parent unclear
+
+- **Given:** the user brings a clear operational/strategic problem, likely Challenge-like, while the broader Front is unknown or provisional.
+- **Expected behavior:** preserve the problem; identify why it matters and a movement signal/proxy; test whether broader parent context changes interpretation; produce a candidate Challenge-like state.
+- **Forbidden behavior:** inventing a Front, creating an orphan canonical Challenge or forcing a corporate-strategy workshop before useful progress.
+- **Acceptance condition:** no canonical Challenge exists until a Strategic Front is resolved/confirmed and a human explicitly promotes it.
+- **Likely implementation slice:** `SF-2`, `SF-3`, `SF-6`.
+
+## SF-MM-09 — Initiative/solution-first with value path uncertain
+
+- **Given:** the user starts from a concrete solution/initiative and direct business value is not yet proven.
+- **Expected behavior:** reverse-align expected change; separate movement, contribution and business outcome signals; preserve pending alignment when parent context is unresolved; do not fabricate ROI/business impact.
+- **Forbidden behavior:** treating the initiative name as strategy, inferred KPI as confirmed or automatically creating a Front/Challenge.
+- **Acceptance condition:** expected/observed/attributed contribution and unresolved parent context remain visible and reviewable.
+- **Likely implementation slice:** `SF-2`, `SF-3`, `SF-5`, `SF-7`.

@@ -669,6 +669,33 @@ First:
 4. audit current implementation against it;
 5. only then define implementation slices.
 
+## SF-0.1 amendment: Strategic Interpretation
+
+Strategic Interpretation is shared by Public Entry, Enterprise Direct and
+Existing Portfolio/imported work. It produces a provisional Strategic
+Interpretation Result before a sufficiently clear Portfolio Anchor and
+Strategic Framing. Its scope assessment is advisory: `front_like`,
+`challenge_like`, `initiative_like` or `unresolved`.
+
+It preserves both paths:
+
+```text
+strategic intention → Front → Challenge → Initiative → Evidence
+initiative/solution/problem → interpretation → broader relationship → governed alignment
+```
+
+The result may preserve intended movement, why it matters, signals/proxies,
+parent context, existing structures, reverse-alignment findings, provenance and
+uncertainty. It may question or reinterpret existing structures but cannot
+silently rewrite or confirm them. Movement Signal, Contribution Signal and
+Business Outcome remain separate, and business value may remain unproven.
+
+Portfolio Anchor remains the minimum sufficient strategic reference, not
+necessarily the highest-level corporate objective and not a Strategic Front.
+Under current Core/schema constraints, a candidate Challenge is non-canonical;
+canonical Challenge creation requires a resolved/confirmed Strategic Front and
+explicit human promotion. No orphan Challenge or inferred Front is authorized.
+
 Primary question:
 
 > How should Startería adapt framing depth, lenses, gap prioritization and Copilot intervention to different user mental models while preserving speed, flexibility and human authority?

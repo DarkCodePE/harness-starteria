@@ -671,6 +671,55 @@ Portfolio Home != Initiative workspace
 Project = current implementation identity of Initiative, not necessarily a separate domain concept
 ```
 
+## 11.1 SF-0.1 Strategic Interpretation concepts
+
+### Strategic Interpretation Result
+
+Non-canonical conceptual output containing intended movement, why it matters,
+signal/proxy, parent context, existing work, reverse-alignment findings,
+provenance and open uncertainties. It may include a provisional Scope
+Assessment and does not create domain entities.
+
+### Scope Assessment
+
+Advisory assessment of the likely strategic level of input: `front_like`,
+`challenge_like`, `initiative_like` or `unresolved`. It is an experience/reasoning
+concept, not a canonical type discriminator.
+
+`Front-like` is broad enough to organize several Challenges/Initiatives and
+portfolio decisions. `Challenge-like` is a material problem/opportunity/result
+within broader context. `Initiative-like` is a concrete intervention, project,
+solution, experiment or executable work item. `Unresolved` means the evidence
+does not support responsible distinction.
+
+### Candidate Challenge
+
+A non-canonical proposal inside Strategic Framing. It remains provisional until
+a Strategic Front is resolved/confirmed and a person explicitly promotes it to
+canonical Challenge. It must not be persisted as an orphan or linked to an
+inferred Front.
+
+### Movement Signal / Contribution Signal / Business Outcome
+
+Movement Signal indicates whether the specific outcome/problem is moving.
+Contribution Signal indicates whether an Initiative contributes to that
+movement. Business Outcome indicates whether the movement translates into
+business value. These are distinct; expected, observed and attributed
+contribution must not be fabricated or conflated.
+
+### Parent Strategic Context / Alignment
+
+The broader outcome or strategic relationship around current work. Its state may
+be known, provisional or unresolved. Existing work can remain pending alignment
+while reverse alignment continues.
+
+### Top-down / Bottom-up alignment
+
+Top-down follows intention → Front → Challenge → Initiative → Evidence.
+Bottom-up/reverse alignment starts from initiative, solution or problem and
+tests its broader outcome/Front relationship. Both preserve provenance and
+require human confirmation for material canonicalization.
+
 ## 12. Recommended glossary governance
 
 This glossary should become a discoverable Portfolio Lead reference and be updated whenever a contract/ADR changes term meaning.

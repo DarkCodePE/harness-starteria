@@ -1,8 +1,14 @@
 ﻿# Strategic Framing Experience Contract v0.1
 
-**Estado:** `CANDIDATE` â€” SF-0 freeze; pendiente de revisiÃ³n humana
+**Estado:** `APPROVED EXPERIENCE CONTRACT — SF-0` — human-approved 2026-09-24
 **Bounded context:** `Strategic Framing`
 **Autoridad superior:** Core factual v0.2; este contrato no lo modifica.
+
+**Status:** `APPROVED EXPERIENCE CONTRACT — SF-0`  
+**Human approval:** 2026-09-24  
+**Core factual authority:** v0.2  
+**Core modified:** NO  
+**ADR required by SF-0:** NO
 
 ## 1. PropÃ³sito y frontera
 
@@ -146,3 +152,77 @@ Marcar `ADR CANDIDATE` y detener la resoluciÃ³n silenciosa si aparece necesida
 - cambio de roles Core;
 - cambio de identidad de Initiative;
 - cambio material de invariantes Core.
+
+## 11. SF-0.1 Strategic Interpretation amendment
+
+Strategic Interpretation is a shared capability for Public Entry, Enterprise
+Direct and Existing Portfolio/imported work. It precedes Strategic Framing:
+
+```text
+Public Entry / Enterprise Direct / Existing Portfolio
+  → Strategic Interpretation
+  → sufficient strategic reference / Portfolio Anchor
+  → Strategic Framing
+```
+
+Portfolio Entry is not the exclusive gateway. Interpretation is not Framing and
+neither is canonical strategy. The non-canonical **Strategic Interpretation
+Result** may contain intended movement, why it matters, signal/proxy, scope
+assessment, parent context, existing structures, reverse-alignment findings,
+provenance and open uncertainties.
+
+Scope assessment is advisory/provisional and may be `front_like`,
+`challenge_like`, `initiative_like` or `unresolved`. It must consider outcome
+scope, governed decisions, possible child Challenges, intervention/solution
+nature, broader parent outcome, organizational horizon/context and existing work
+patterns; it must not classify from wording alone. It does not create or change
+a canonical Front, Challenge or Initiative, and exact persistence is deferred
+to SF-1+. Human confirmation remains required when material.
+
+`SF-BOUND-09`: Strategic Interpretation may question, reinterpret or
+reverse-align existing strategic structures, but cannot silently rewrite or
+confirm them.
+
+`SF-BOUND-10`: A challenge-like or initiative-like input may continue framing
+before full parent context is known, but canonical corporate hierarchy must be
+resolved before canonical Challenge creation.
+
+## 12. Portfolio Anchor, signals and candidate Challenge
+
+Portfolio Anchor is the minimum sufficiently clear strategic reference required
+to responsibly organize current work and make the next governance decision. It
+may include intended movement, why it matters, signal/proxy, horizon/context,
+the decision to enable, parent relationship (`known`, `provisional` or
+`unresolved`), provenance and uncertainty. `Anchor != Strategic Front` and
+`anchor sufficient != all parent hierarchy resolved`. Initiative/work-item
+alignment may remain pending where Core permits it.
+
+Keep distinct:
+
+- **Movement Signal:** whether the specific outcome/problem is moving.
+- **Contribution Signal:** whether an Initiative is contributing to that movement.
+- **Business Outcome:** whether the movement translates into business value.
+
+`movement signal != contribution signal != business outcome`. Business outcome
+may remain unproven; do not fabricate ROI or causal attribution, and preserve
+expected/observed/attributed contribution distinctions.
+
+Root-cause depth is adaptive. Deepen only if it may materially change level
+classification, prioritization, parent alignment, governance/investment or
+value/risk interpretation. A sufficiently clear problem, understood relevance,
+useful signal/proxy and visible parent alignment may be enough.
+
+A `candidate Challenge` is a structured proposal inside Strategic Framing, not
+a canonical `Challenge` row/entity:
+
+```text
+candidate Challenge
+  → resolve/select/confirm Strategic Front
+  → explicit human promotion
+  → canonical Challenge
+```
+
+Do not make `Challenge.strategicFrontId` nullable, persist an orphan Challenge,
+invent a Front to satisfy the foreign key or silently link to an inferred Front.
+If the parent is unclear, preserve the problem, mark alignment provisional or
+unresolved and continue reverse alignment without canonicalization.

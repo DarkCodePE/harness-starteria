@@ -127,8 +127,9 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   `docs/portfolio-lead/90-implementation-reports/PORTFOLIO_HOME_UX_RECONCILIATION_PH3A_v0.1.md`;
   PH-3B frontend implementation is not present.
 - Strategic Framing SF-0 documentation is materialized under
-  `docs/portfolio-lead/07-strategic-framing/` and ready for final human
-  approval; SF-1 through SF-8 remain unexecuted.
+  `docs/portfolio-lead/07-strategic-framing/` and human-approved on
+  2026-09-24. The Experience Contract is approved, Strategic Framing runtime
+  is not implemented, and SF-1 through SF-8 remain unexecuted.
 - The Portfolio Lead reconciliation plan, glossary/context map and PH-2
   revalidation report are indexed evidence/reference artifacts, not new
   authority.

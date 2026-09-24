@@ -1,6 +1,10 @@
 ﻿# Strategic Framing Acceptance Checklist v0.1
 
-**Estado:** `CANDIDATE` â€” baseline de aceptaciÃ³n documental; tests de implementaciÃ³n aÃºn `TBD`.
+**Estado:** `APPROVED ACCEPTANCE BASELINE` — implementation verification `PENDING`; tests de implementaciÃ³n aÃºn `TBD`.
+
+**Checklist status:** `APPROVED ACCEPTANCE BASELINE`  
+**Implementation verification:** PENDING  
+**Human approval:** 2026-09-24
 
 ## Core experience
 
@@ -35,6 +39,35 @@
 - [ ] Se distinguen blocker, soft gap y optional context.
 - [ ] La ausencia de un lens no bloquea automÃ¡ticamente.
 - [ ] Drivers, gaps, opportunities, Challenges activos y decisiones conservan trazabilidad.
+
+## SF-0.1 multi-entry and interpretation
+
+- [ ] Public Entry, Enterprise Direct and Existing Portfolio/imported work are supported conceptually.
+- [ ] Strategic Interpretation is distinct from Strategic Framing and canonical strategy.
+- [ ] Strategic Interpretation Result supports `front_like`, `challenge_like`, `initiative_like` and `unresolved`.
+- [ ] Scope classification is advisory until materially reviewed.
+- [ ] Top-down and bottom-up/reverse-alignment paths are both preserved.
+- [ ] Interpretation can question existing structures without silently rewriting or confirming them.
+- [ ] Portfolio Anchor is minimum sufficient reference, not necessarily the highest-level corporate objective or a Strategic Front.
+- [ ] Movement Signal, Contribution Signal and Business Outcome remain separate.
+- [ ] A useful movement signal may suffice even when business outcome is unproven.
+- [ ] No fabricated ROI, KPI or causal attribution is presented as fact.
+- [ ] Root-cause exploration is adaptive and not mandatory consulting discovery.
+
+## Candidate Challenge and Core/schema boundary
+
+- [ ] A challenge-like input does not create an orphan canonical Challenge.
+- [ ] Canonical Challenge still requires a resolved/confirmed Strategic Front and explicit human promotion.
+- [ ] No inferred Front is created to satisfy the schema.
+- [ ] `Challenge.strategicFrontId` remains required/unchanged.
+- [ ] Initiative/work-item alignment may remain pending.
+- [ ] Bottom-up learning can trigger strategic review without rewriting history.
+- [ ] ADR is not required now; canonical Challenge without Strategic Front is the documented ADR trigger.
+
+## Added scenarios
+
+- [ ] SF-MM-08 is protected by contract and negative acceptance coverage.
+- [ ] SF-MM-09 is protected by contract and negative acceptance coverage.
 
 ## Evidence to produce in later slices
 

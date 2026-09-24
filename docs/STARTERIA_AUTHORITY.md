@@ -107,8 +107,11 @@ evidence. PH-3B is not implemented and remains paused pending later SF-7
 reconciliation.
 
 The SF-0 Strategic Framing documentation package is materialized under
-`docs/portfolio-lead/07-strategic-framing/` and is ready for final human
-approval. It is not runtime, not SF-1 and not a canonical Core extension.
+`docs/portfolio-lead/07-strategic-framing/` and was human-approved on
+2026-09-24. The Experience Contract is an `APPROVED` Experience Contract,
+subordinate to Core v0.2 and approved ADRs. This approval does not imply
+runtime implementation, does not execute SF-1 and is not a canonical Core
+extension.
 
 ## 5. Contrato activo para Portfolio -> Initiative Activation/Handoff
 
