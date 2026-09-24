@@ -2,8 +2,8 @@
 
 **Estado:** `APPROVED ACCEPTANCE BASELINE` — implementation verification `PENDING`; tests de implementaciÃ³n aÃºn `TBD`.
 
-**Checklist status:** `APPROVED ACCEPTANCE BASELINE`  
-**Implementation verification:** PENDING  
+**Checklist status:** `APPROVED ACCEPTANCE BASELINE`
+**Implementation verification:** PENDING
 **Human approval:** 2026-09-24
 
 ## Core experience

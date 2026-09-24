@@ -14,9 +14,9 @@
 | SF-7 | Portfolio Home Integration | Future read-model reconciliation for outcome, health, drivers, gaps, Challenges, coverage, learning and decisions | Not started; PH-3A/PH-3B unchanged |
 | SF-8 | E2E Harness | Direct, mixed, Copilot and negative boundary coverage | Not started |
 
-**Status:** `APPROVED EXECUTION PLAN`  
-**Human approval:** 2026-09-24  
-**Next authorized slice:** SF-1 Current-State Audit  
+**Status:** `APPROVED EXECUTION PLAN`
+**Human approval:** 2026-09-24
+**Next authorized slice:** SF-1 Current-State Audit
 No slice after SF-0 is executed by this approval materialization.
 
 ## Sequence guardrails

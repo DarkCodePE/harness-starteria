@@ -3,8 +3,8 @@
 **Estado:** `APPROVED SCENARIO BASELINE FOR SF IMPLEMENTATION/TESTING` — human-approved 2026-09-24
 **Regla:** cada escenario debe poder rastrearse al Experience Contract, checklist, matriz y slice futuro.
 
-**Status:** `APPROVED SCENARIO BASELINE FOR SF IMPLEMENTATION/TESTING`  
-**Human approval:** 2026-09-24  
+**Status:** `APPROVED SCENARIO BASELINE FOR SF IMPLEMENTATION/TESTING`
+**Human approval:** 2026-09-24
 Runtime verification: PENDING
 
 ## SF-MM-01 â€” Expert / direct

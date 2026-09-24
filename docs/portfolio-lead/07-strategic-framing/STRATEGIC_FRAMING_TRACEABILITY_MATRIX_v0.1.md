@@ -12,8 +12,8 @@
 | SF-MM-06 | Direct path is complete; structured state is record | Complete structured framing without chat | Full non-chat controls | TBD | No Copilot path completes framing | SF-3, SF-8 |
 | SF-MM-07 | Specialized perspectives can activate adaptively | Specialized observation contribution | Specialized lens suggestion/control | TBD | Specialized perspective does not auto-create Challenge | SF-4, SF-5 |
 
-**Status:** `APPROVED TRACEABILITY BASELINE`  
-**Human approval:** 2026-09-24  
+**Status:** `APPROVED TRACEABILITY BASELINE`
+**Human approval:** 2026-09-24
 Application/domain capabilities and tests marked `TBD` remain `TBD`.
 
 ## Cross-cutting traceability

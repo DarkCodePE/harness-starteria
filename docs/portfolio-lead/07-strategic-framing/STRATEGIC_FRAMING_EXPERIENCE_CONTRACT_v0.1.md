@@ -4,10 +4,10 @@
 **Bounded context:** `Strategic Framing`
 **Autoridad superior:** Core factual v0.2; este contrato no lo modifica.
 
-**Status:** `APPROVED EXPERIENCE CONTRACT — SF-0`  
-**Human approval:** 2026-09-24  
-**Core factual authority:** v0.2  
-**Core modified:** NO  
+**Status:** `APPROVED EXPERIENCE CONTRACT — SF-0`
+**Human approval:** 2026-09-24
+**Core factual authority:** v0.2
+**Core modified:** NO
 **ADR required by SF-0:** NO
 
 ## 1. PropÃ³sito y frontera

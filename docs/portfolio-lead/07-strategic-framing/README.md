@@ -31,18 +31,18 @@ Este directorio define el bounded context **Strategic Framing** entre las rutas 
 - Esta documentaciÃ³n es una propuesta de Experience Contract subordinada al Core; no crea entidades, lifecycle, endpoints ni autoridad de IA.
 - La interpretaciÃ³n puede cuestionar o reverse-align estructuras existentes, pero no reescribirlas ni confirmarlas silenciosamente.
 
-**Estado vigente:** `APPROVED` — human-approved SF-0 Experience baseline  
-**Approval date:** 2026-09-24  
-**Scope:** Experience Contract, scenarios and acceptance baseline only  
+**Estado vigente:** `APPROVED` — human-approved SF-0 Experience baseline
+**Approval date:** 2026-09-24
+**Scope:** Experience Contract, scenarios and acceptance baseline only
 **Runtime:** NOT IMPLEMENTED · **SF-1:** NOT EXECUTED · **Core change:** NO · **ADR blocker:** NO
 
 ## SF-0 HUMAN APPROVAL
 
-Date: 2026-09-24  
-Decision: APPROVED  
-ADR blocker: NO  
-Core change: NO  
-Schema change: NO  
+Date: 2026-09-24
+Decision: APPROVED
+ADR blocker: NO
+Core change: NO
+Schema change: NO
 Next authorized slice: SF-1 Current-State Audit
 
 ## Documentos
