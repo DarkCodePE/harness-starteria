@@ -1,8 +1,8 @@
 # Strategic Framing — SF-1 Current-State Audit v0.1
 
-**Status:** `EVIDENCE / CURRENT-STATE AUDIT` · `NOT AUTHORITY`  
-**Slice:** SF-1  
-**Audit date:** 2026-09-24  
+**Status:** `EVIDENCE / CURRENT-STATE AUDIT` · `NOT AUTHORITY`
+**Slice:** SF-1
+**Audit date:** 2026-09-24
 **Scope:** factual repository audit against the human-approved SF-0 baseline. No runtime, schema, tests, authority documents, routes, Copilot capabilities, commit or push was performed.
 
 ## Executive summary
