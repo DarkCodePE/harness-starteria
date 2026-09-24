@@ -1,0 +1,43 @@
+# Strategic Framing — SF-0
+
+**Estado:** `CANDIDATE` — contrato y escenarios congelados para revisión humana  
+**Slice:** `SF-0 — Strategic Framing Contract + Scenario Freeze`  
+**Alcance:** exclusivamente documental; no implementa runtime ni modifica Core.
+
+```text
+SF-0 documentation package:
+READY FOR FINAL HUMAN APPROVAL
+NOT runtime
+NOT SF-1
+NOT canonical Core extension
+```
+
+SF-0 preserves the multi-entry boundary: Portfolio Entry is not the exclusive
+gateway; Public Entry, Enterprise Direct and Existing Portfolio/imported work
+may reuse Strategic Interpretation and converge on a sufficiently clear
+Portfolio Anchor before Strategic Framing. Interpretation remains provisional
+and does not confirm a Strategic Front, Gap or Challenge.
+
+## Propósito
+
+Este directorio define el bounded context **Strategic Framing** entre Portfolio Entry y el trabajo estratégico posterior. El paquete convierte los mental models `SF-MM-01...07` en reglas de experiencia comprobables sin promoverlos a autoridad de Core.
+
+## Autoridad y límites
+
+- Core factual: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`.
+- Authority map: `docs/STARTERIA_AUTHORITY.md`.
+- Contexto/target de handoff: `STRATEGIC_FRAMING_CONTEXT_v0.1.md`.
+- Esta documentación es una propuesta de Experience Contract subordinada al Core; no crea entidades, lifecycle, endpoints ni autoridad de IA.
+- No se modifica `STRATEGIC_FRAMING_CONTEXT_v0.1.md`.
+
+## Documentos
+
+1. `STRATEGIC_FRAMING_EXPERIENCE_CONTRACT_v0.1.md` — reglas congeladas.
+2. `STRATEGIC_FRAMING_MENTAL_MODEL_SCENARIOS_v0.1.md` — escenarios `SF-MM-01...07`.
+3. `STRATEGIC_FRAMING_ACCEPTANCE_CHECKLIST_v0.1.md` — criterios de aceptación y negativos.
+4. `STRATEGIC_FRAMING_TRACEABILITY_MATRIX_v0.1.md` — escenario a estado, UI, aplicación, test y slice.
+5. `STRATEGIC_FRAMING_IMPLEMENTATION_SEQUENCE_v0.1.md` — secuencia futura, no ejecutada en SF-0.
+
+## Declaración de congelación
+
+`SF-0` congela comportamiento de experiencia candidato. No autoriza implementación. Toda necesidad de cambiar semántica canónica, lifecycle, cardinalidad, persistencia o autoridad humana/AI debe detenerse y tratarse como `ADR CANDIDATE`.

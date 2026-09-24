@@ -21,6 +21,7 @@ export type PortfolioEntrySessionClientDto = {
     turnIndex: number;
     userInput: string;
     emittedQuestions: PortfolioEntryTurn['emittedQuestions'];
+    matchedQuestionIds: string[];
     respondedResolves: string[];
     createdAt: string;
   }>;
@@ -32,6 +33,7 @@ export type PortfolioEntrySessionClientDto = {
     questionsAskedCurrentRound: number;
     previousQuestions: PortfolioEntrySession['semanticState']['previousQuestions'];
     answeredGaps: string[];
+    checkpoint?: 'quick' | 'guided';
   };
   semanticProjection: {
     initialEntryState?: PortfolioEntrySession['semanticState']['initialEntryState'];
@@ -40,10 +42,16 @@ export type PortfolioEntrySessionClientDto = {
     reverseAlignment?: PortfolioEntrySession['semanticState']['reverseAlignment'];
     ambiguities?: PortfolioEntrySession['semanticState']['ambiguities'];
     contradictions?: PortfolioEntrySession['semanticState']['contradictions'];
+    understanding?: {
+      value: string;
+      source: 'latestAnalysis.extracted_context';
+    };
   };
-  nextAction: 'submit_message' | 'answer_clarification' | 'offer_guided_exploration' | 'generate_handoff' | 'review_handoff' | 'claim_or_close' | 'closed';
+  nextAction: 'submit_message' | 'answer_clarification' | 'offer_guided_exploration' | 'generate_handoff' | 'review_handoff' | 'retry_analysis' | 'continue_provisional_reading' | 'claim_or_close' | 'closed';
   handoff?: PortfolioEntryHandoffClientDto;
   confirmation?: PortfolioEntryConfirmationClientDto;
+  pendingInput?: PortfolioEntrySession['semanticState']['pendingInput'];
+  handoffMode?: 'live' | 'deterministic' | 'degraded';
 };
 
 export type PortfolioEntryHandoffClientDto = {
@@ -87,6 +95,7 @@ export function toPortfolioEntrySessionClientDto(
       turnIndex: turn.turnIndex,
       userInput: turn.userInput,
       emittedQuestions: turn.emittedQuestions,
+      matchedQuestionIds: turn.matchedQuestionIds,
       respondedResolves: turn.respondedResolves,
       createdAt: turn.createdAt.toISOString(),
     })),
@@ -98,6 +107,9 @@ export function toPortfolioEntrySessionClientDto(
       questionsAskedCurrentRound: session.questionBudget.questionsAskedCurrentRound,
       previousQuestions: session.semanticState.previousQuestions,
       answeredGaps: session.semanticState.answeredGaps,
+      checkpoint: session.semanticState.runtimeClarificationStatus === 'exploration_offered'
+        ? session.interactionMode === 'guided_exploration' ? 'guided' : 'quick'
+        : undefined,
     },
     semanticProjection: {
       initialEntryState: session.semanticState.initialEntryState,
@@ -106,10 +118,15 @@ export function toPortfolioEntrySessionClientDto(
       reverseAlignment: session.semanticState.reverseAlignment,
       ambiguities: session.semanticState.ambiguities,
       contradictions: session.semanticState.contradictions,
+      understanding: buildUnderstanding(session),
     },
-    nextAction: deriveNextAction(session),
+    nextAction: deriveNextAction(session, turns),
     handoff: session.latestHandoff ? toHandoffClientDto(session.latestHandoff) : undefined,
     confirmation: session.confirmation ? toConfirmationClientDto(session.confirmation) : undefined,
+    pendingInput: session.semanticState.pendingInput,
+    handoffMode: session.latestHandoff
+      ? session.semanticState.pendingInput?.status === 'FAILED_RETRYABLE' ? 'degraded' : 'deterministic'
+      : undefined,
   };
 }
 
@@ -138,14 +155,45 @@ function toConfirmationClientDto(confirmation: PortfolioEntryConfirmation): Port
   };
 }
 
-function deriveNextAction(session: PortfolioEntrySession): PortfolioEntrySessionClientDto['nextAction'] {
+function deriveNextAction(session: PortfolioEntrySession, turns: PortfolioEntryTurn[]): PortfolioEntrySessionClientDto['nextAction'] {
+  if (session.semanticState.pendingInput?.status === 'FAILED_RETRYABLE') return 'retry_analysis';
   if (session.semanticState.runtimeClarificationStatus === 'exploration_offered') return 'offer_guided_exploration';
   if (session.lifecycleStatus === 'ENTRY_CAPTURED' || session.lifecycleStatus === 'CLARIFYING') {
-    const lastTransition = session.semanticState.previousQuestions.at(-1);
-    return lastTransition ? 'answer_clarification' : 'submit_message';
+    return (turns.at(-1)?.emittedQuestions.length ?? 0) > 0 ? 'answer_clarification' : 'submit_message';
   }
   if (session.lifecycleStatus === 'HANDOFF_ELIGIBLE') return 'generate_handoff';
   if (session.lifecycleStatus === 'HANDOFF_READY' || session.lifecycleStatus === 'AWAITING_CONFIRMATION') return 'review_handoff';
   if (session.lifecycleStatus === 'CONFIRMED' || session.lifecycleStatus === 'REVISIONS_REQUESTED') return 'claim_or_close';
   return 'closed';
+}
+
+function buildUnderstanding(session: PortfolioEntrySession): PortfolioEntrySessionClientDto['semanticProjection']['understanding'] {
+  const context = session.latestAnalysis?.extracted_context ?? session.semanticState.extractedContext;
+  if (!context) return undefined;
+
+  const values = [
+    ['portfolio_size', 'portafolio'],
+    ['initiatives_mentioned', 'iniciativas'],
+    ['goal', 'objetivo'],
+    ['decision_need', 'decisión'],
+    ['problem', 'situación'],
+    ['metric', 'señal'],
+    ['constraints', 'restricción'],
+    ['reporting_need', 'necesidad de reporte'],
+  ] as const;
+  const anchors = values
+    .map(([key, label]) => {
+      const value = context[key];
+      if (value === null || value === undefined || value === '') return null;
+      const rendered = Array.isArray(value) ? value.join(', ') : String(value);
+      return `${label}: ${rendered}`;
+    })
+    .filter((value): value is string => Boolean(value))
+    .slice(0, 3);
+
+  if (anchors.length < 2) return undefined;
+  return {
+    value: `Así estoy entendiendo lo que me dices: ${anchors.slice(0, 2).join('; ')}. ${anchors[2] ? `También aparece ${anchors[2]}.` : ''}`.trim(),
+    source: 'latestAnalysis.extracted_context',
+  };
 }

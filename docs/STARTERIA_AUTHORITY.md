@@ -54,8 +54,8 @@ Debe registrarse el conflicto y reconciliarse segun esta Authority Map.
 
 Cuando dos fuentes entren en conflicto, aplicar este orden:
 
-1. Core v0.2 factual: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
-2. ADRs de producto aprobados en `doc/product-adr/`
+1. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+2. ADRs de producto aprobados en `docs/product-adr/`
 3. Experience Logic Contracts aprobados
 4. Agent Contracts
 5. Skill Contracts
@@ -68,7 +68,7 @@ Regla: si dos fuentes entran en conflicto, gobierna la de mayor autoridad y debe
 
 ## 3. Estado factual del Core Contract
 
-Core Contract factual encontrado en este checkout:
+Core Contract:
 
 `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 
@@ -77,10 +77,9 @@ Estado declarado actual:
 - Version: `v0.2`
 - Estado: `Base fundacional revisada / Por validar`
 
-`docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` no esta materializado ni promovido
-en este checkout. Core v0.3 se registra unicamente como `External /
-reconciliation candidate`, `Not current authority` y `Requires ADR / evidence /
-re-test before promotion`. Ver `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`.
+The external `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` v0.3 artifact is not
+materialized or promoted in this checkout. It remains a reconciliation
+candidate and requires an ADR, original evidence and re-test before promotion.
 
 La presencia de este contrato en el repositorio no lo convierte en aprobado. Cualquier cambio que dependa de tratarlo como aprobado requiere ratificacion explicita.
 
@@ -98,6 +97,18 @@ Estado declarado:
 No crear otro `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` si duplica este contrato. Usar una sola autoridad.
 
 El desarrollo de este slice no debe modificar el comportamiento del Adaptive Core / Step 0-4.
+
+## 4.1 Portfolio Home and Strategic Framing reconciliation status
+
+PH-0 remains a frozen Portfolio Home governance target. PH-2 is implemented on
+this branch and post-merge revalidated as `GO_WITH_GAPS`; the report is evidence
+only and runtime is not globally certified. PH-3A is design/reconciliation
+evidence. PH-3B is not implemented and remains paused pending later SF-7
+reconciliation.
+
+The SF-0 Strategic Framing documentation package is materialized under
+`docs/portfolio-lead/07-strategic-framing/` and is ready for final human
+approval. It is not runtime, not SF-1 and not a canonical Core extension.
 
 ## 5. Contrato activo para Portfolio -> Initiative Activation/Handoff
 
@@ -124,7 +135,7 @@ La relacion de autoridad para este bounded context es:
 STARTERIA_AUTHORITY
         |
         v
-CORE v0.2 FACTUAL
+STARTERIA_CORE_LOGIC_CONTRACT
         |
         v
 PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT
@@ -147,7 +158,7 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 ### Core
 
 - `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
-- `doc/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
+- `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
 
 ### Gobernanza de desarrollo
 
@@ -157,7 +168,7 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 
 ### Portfolio Entry
 
-- `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+- `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 - `docs/experience/portfolio-entry/PORTFOLIO_ENTRY_ACCEPTANCE_CHECKLIST_v0.1.md`
 - `docs/experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md` - propuesto para revision, no implementado
 - `docs/agents/portfolio-entry/PORTFOLIO_ENTRY_AGENT_CONTRACT_v0.1.md` - propuesto
@@ -202,19 +213,13 @@ Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El 
 - `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md` - checklist de aceptacion H-0.
 - `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md` - evidencia factual; no autoridad funcional.
 
-### Portfolio Home Governance
-
-The PH-0 frozen pack is indexed at:
-
-`docs/portfolio-lead/06-portfolio-home-governance/README_PORTFOLIO_HOME_GOVERNANCE_PACK_v0.1.md`
-
-It is below Portfolio Governance and Activation/Handoff in the authority
-chain. It defines the target/read-model boundary and does not certify runtime.
-
 ## 7. ADRs
 
 - ADRs de harness/documentacion: `docs/adr/`.
-- ADRs de producto: `doc/product-adr/ADR-INDEX.md`.
+- ADRs de producto: `docs/product-adr/ADR-INDEX.md`.
+- El índice de producto apunta a los ADR-027 y ADR-031 canónicos en
+  `backend/docs/adr/` durante la reconciliación de este checkout mixto;
+  ADR-031 tiene estado `Accepted` por decisión explícita del 2026-09-20.
 - No mezclar la serie de producto con `docs/adr/ADR-001...007`.
 
 ## 8. Reglas obligatorias

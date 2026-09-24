@@ -87,6 +87,31 @@ UNKNOWN
 
 ---
 
+# 2.1 Slice AI_HARNESS_INTERPRET_ADR031
+
+**Registrado:** 2026-09-20 por instrucción explícita del responsable.
+
+```text
+slice_id: AI_HARNESS_INTERPRET_ADR031
+logic_status: ACTIVE_V2_BASELINE (sólo la política acotada por ADR-031 Accepted)
+implementation_status: IMPLEMENTED_VERIFIED (tests herméticos; despliegue externo no acreditado)
+visual_status: NOT_APPLICABLE
+evidence_status: TESTING (riesgo productivo y estabilidad no certificados)
+authority: backend/docs/adr/ADR-027-methodology-agent-harness.md
+           backend/docs/adr/ADR-031-confidence-threshold-for-human-escalation.md
+entry_boundary: mode=harness / POST /ai/diagnose
+exit_boundary: RouteProfile -> GateLadder -> route | confirm | escalate
+implementation: ai-service/harness/stages/llm_stages.py
+report: docs/analisis-jev/13-adr-031-activation.md
+```
+
+Jev es el backend por defecto de INTERPRET del harness; GROUND continúa en OpenRouter.
+El corte 0.50 es una decisión operativa provisional aprobada, no una cota de riesgo.
+La autoridad Core referenciada en CURRENT_STATE no está presente en este checkout;
+esta aprobación sólo cubre la slice descrita y no certifica Starteria V2 completa.
+
+---
+
 # 3. Jerarquía de autoridad objetivo
 
 ```text
@@ -307,7 +332,8 @@ HYP-004 Program / accelerator support experience
 | Handoff / Value Handoff Cognition | CANDIDATE + hypotheses | EXPERIMENTAL / VERIFY | V2_PILOT | TESTING | TEST |
 | Registration / continuation | CANDIDATE | IMPLEMENTED_UNVERIFIED | MIXED | TESTING | VERIFY grant and full E2E |
 | Portfolio Bootstrap | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED / VERIFY | VERIFIED reported | RECONCILE |
-| Portfolio Home | TARGET AUTHORITY FROZEN PH-0 / CANDIDATE | IMPLEMENTED_VERIFIED reported, runtime not certified | V2_TARGET_DEFINED; DS-06 evidence only | VERIFIED reported, reconcile required | RECONCILE |
+| Portfolio Home | TARGET AUTHORITY FROZEN PH-0 / CANDIDATE | PH-2 read-model implementation evidence; post-merge `GO_WITH_GAPS`; runtime not certified | V2_TARGET_DEFINED; PH-3A evidence only | REQUIRES_RETEST | RECONCILE; PH-3B not implemented |
+| Strategic Framing | CANDIDATE / SF-0 documentation package | NOT_IMPLEMENTED | V2_TARGET_DEFINED | SUPPORTED | READY FOR FINAL HUMAN APPROVAL; SF-1–SF-8 not executed |
 | Strategic Front | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
 | Challenge | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
 | Activation / Invitation | TARGET CONTRACT | PARTIAL / PILOT | V2_PILOT DS-08 | SUPPORTED | VERIFY |

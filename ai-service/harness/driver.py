@@ -10,6 +10,7 @@ from __future__ import annotations
 import time
 
 from harness.contracts import DiagnosisState
+from harness.llm import collect_usage
 from harness.stages import StageContext, build_registry
 from harness.state_machine import STAGE_ORDER, HarnessStage, advance
 from harness.trace import HarnessDecision, StageTrace
@@ -33,14 +34,28 @@ class StageDriver:
             fn = self._registry[current]
 
             started = time.monotonic()
-            override = fn(state, ctx)
+            with collect_usage() as usage:
+                override = fn(state, ctx)
             duration_ms = int((time.monotonic() - started) * 1000)
+
+            # Sum across calls: a stage that retried a truncated response was billed twice.
+            _tin = [u.input_tokens for u in usage if u.input_tokens is not None]
+            _tout = [u.output_tokens for u in usage if u.output_tokens is not None]
 
             ctx.recorder.record(
                 StageTrace(
                     stage=current.value,
                     duration_ms=duration_ms,
-                    llm_used=current in (HarnessStage.GROUND, HarnessStage.INTERPRET),
+                    # An LLM stage that was served from a mock did NOT call an LLM. Reporting
+                    # the stage's *type* here made deterministic runs look like live ones.
+                    llm_used=(
+                        current in (HarnessStage.GROUND, HarnessStage.INTERPRET)
+                        and ctx.mock_for(current.value) is None
+                    ),
+                    model_provider=usage[0].provider if usage else None,
+                    model_id=usage[0].model_id if usage else None,
+                    tokens_in=sum(_tin) if _tin else None,
+                    tokens_out=sum(_tout) if _tout else None,
                     epistemic_tags=sorted({f.status.value for f in state.fields}),
                     gate=state.gate if current in (HarnessStage.CONFIRM, HarnessStage.GATE) else None,
                     notes=[f"→ {override.value}"] if override else [],

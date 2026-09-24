@@ -4,6 +4,7 @@ export type PortfolioEntryNextAction =
   | 'offer_guided_exploration'
   | 'generate_handoff'
   | 'review_handoff'
+  | 'retry_analysis'
   | 'claim_or_close'
   | 'closed';
 
@@ -48,6 +49,7 @@ export type PortfolioEntrySessionDto = {
     turnIndex: number;
     userInput: string;
     emittedQuestions: PortfolioEntryQuestion[];
+    matchedQuestionIds?: string[];
     respondedResolves: string[];
     createdAt: string;
   }>;
@@ -59,6 +61,7 @@ export type PortfolioEntrySessionDto = {
     questionsAskedCurrentRound: number;
     previousQuestions: PortfolioEntryQuestion[];
     answeredGaps: string[];
+    checkpoint?: 'quick' | 'guided';
   };
   semanticProjection: {
     initialEntryState?: string;
@@ -67,10 +70,25 @@ export type PortfolioEntrySessionDto = {
     reverseAlignment?: unknown;
     ambiguities?: unknown[];
     contradictions?: unknown[];
+    understanding?: {
+      value: string;
+      source: 'latestAnalysis.extracted_context';
+    };
   };
   nextAction: PortfolioEntryNextAction;
   handoff?: PortfolioEntryHandoffDto;
   confirmation?: PortfolioEntryConfirmationDto;
+  pendingInput?: {
+    id: string;
+    value: string;
+    status: 'RECEIVED' | 'ANALYSIS_PENDING' | 'ANALYZED' | 'FAILED_RETRYABLE' | 'SUPERSEDED';
+    receivedAt: string;
+    updatedAt: string;
+    provenance: { origin: 'USER_DECLARED'; sourcePath: 'messages.message'; sourceText: string };
+    analysisVersion?: string;
+    failure?: { errorType: string; technicalError?: string };
+  };
+  handoffMode?: 'live' | 'deterministic' | 'degraded';
 };
 
 export type ProvenanceOrigin = 'USER_DECLARED' | 'EXTRACTED_FROM_USER_TEXT' | 'AI_INFERRED' | 'AI_SUGGESTED';

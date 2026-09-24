@@ -75,6 +75,9 @@ Primary authority map:
 | PG-2 Events / interaction_channel | GO |
 | PG-4 Permissions | GO |
 | Portfolio Home Governance PH-0 | GO documentation freeze; runtime not certified |
+| Portfolio Home PH-2 read model | Implementation evidence; `GET /api/v1/portfolio/home` present; runtime certification pending |
+| Portfolio Home PH-3A | UX reconciliation design/evidence only; PH-3B not implemented |
+| Strategic Framing SF-0 | Documentation package ready for final human approval; SF-1–SF-8 not executed |
 | Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
 The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
@@ -208,6 +211,24 @@ Portfolio Home V2 is documented in the PH-0 frozen pack:
 - [Activation/Handoff Traceability](06-portfolio-home-governance/PORTFOLIO_HOME_TO_INITIATIVE_HANDOFF_TRACEABILITY_v0.1.md)
 - [Acceptance Checklist](06-portfolio-home-governance/PORTFOLIO_HOME_ACCEPTANCE_CHECKLIST_v0.1.md)
 - [Implementation Sequence](06-portfolio-home-governance/PORTFOLIO_HOME_IMPLEMENTATION_SEQUENCE_v0.1.md)
+
+Implementation evidence:
+
+- [PH-2 read-model implementation report](90-implementation-reports/PORTFOLIO_HOME_READ_MODEL_IMPLEMENTATION_REPORT_v0.1.md)
+- [PH-3A UX reconciliation report](90-implementation-reports/PORTFOLIO_HOME_UX_RECONCILIATION_PH3A_v0.1.md)
+
+These reports do not certify runtime, and PH-3B is not implemented.
+
+Strategic Framing:
+
+- [SF-0 package](07-strategic-framing/README.md) — candidate documentation,
+  ready for final human approval; not runtime and not SF-1.
+- [Glossary and context map](00-authority/STARTERIA_GLOSSARY_AND_CONTEXT_MAP_v0.1.md)
+  — reference vocabulary; does not override Core or approved contracts.
+- [Portfolio Lead reconciliation plan](../reconciliation/STARTERIA_PORTFOLIO_LEAD_RECONCILIATION_PLAN_v0.1.md)
+  — reconciliation baseline; human review required.
+- [PH-2 post-merge revalidation](../reconciliation/PORTFOLIO_HOME_PH2_POST_MERGE_REVALIDATION_v0.1.md)
+  — evidence report; `GO_WITH_GAPS`.
 
 Candidate dependencies remain explicit: Activation Readiness, exact
 `pre_start`, ownership transitions, Challenge coverage/cardinality, exact Step

@@ -122,6 +122,25 @@ class RouteProfile(BaseModel):
     horizon: Horizon = "unconfirmed"
     step: int = Field(..., ge=0, le=4, description="Methodological step 0-4 the request belongs to.")
     confidence: Confidence = "medium"
+    # Optional for the Jev experiment. Existing LLM RouteProfiles use only `confidence`.
+    unit_confidence: Confidence | None = None
+
+    # Two DIFFERENT quantities, kept apart on purpose (docs/jev/confidence.md).
+    #
+    #   selected_probabilities  P assigned to the option that WON. This is the number RLCD
+    #                           calibrates, and the only one fit to show a user as "the
+    #                           probability Jev gives this route".
+    #   confidence_scores       A statistic DERIVED from the distribution's shape — how
+    #                           concentrated it is. TypeSafe ships it so you can threshold
+    #                           without doing the math. It is NOT P(correct).
+    #
+    # Conflating them is easy and expensive: a 0.72 probability with a 0.64 confidence is one
+    # answer, not two readings of the same number.
+    selected_probabilities: dict[str, float] = Field(default_factory=dict)
+    confidence_scores: dict[str, float] = Field(default_factory=dict)
+    # The full distribution per question. Kept so a different measure can be computed later
+    # — margin over the runner-up, entropy, a reliability curve — without re-calling Jev.
+    probability_distributions: dict[str, dict[str, float]] = Field(default_factory=dict)
     rationale: list[str] = Field(default_factory=list, description="Short reasons for the classification.")
     conditions_that_would_change: list[str] = Field(
         default_factory=list, description="§9: conditions under which this classification would change."

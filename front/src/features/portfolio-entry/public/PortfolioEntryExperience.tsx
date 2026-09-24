@@ -5,7 +5,6 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
-  HelpCircle,
   PencilLine,
   RefreshCcw,
   ShieldCheck,
@@ -105,11 +104,7 @@ const PROVENANCE_LABELS: Record<ProvenanceOrigin, string> = {
 
 function latestQuestions(session: PortfolioEntrySessionDto | null): PortfolioEntryQuestion[] {
   const turns = session?.conversation ?? [];
-  for (let index = turns.length - 1; index >= 0; index -= 1) {
-    const questions = turns[index]?.emittedQuestions ?? [];
-    if (questions.length > 0) return questions;
-  }
-  return [];
+  return turns.at(-1)?.emittedQuestions.slice(0, 1) ?? [];
 }
 
 function textFromProvenanced(value: ProvenancedText | 'unresolved' | undefined): string {
@@ -321,9 +316,11 @@ function StatusMessage({ pendingRequest }: { pendingRequest: PendingRequest }) {
 function ErrorMessage({
   error,
   onRestart,
+  onRetry,
 }: {
   error: UiError | null;
   onRestart: () => void;
+  onRetry?: () => void;
 }) {
   if (!error) return null;
   const terminal = ['unauthorized', 'not_found', 'expired'].includes(error.kind);
@@ -337,6 +334,11 @@ function ErrorMessage({
           <Button type="button" variant="secondary" size="sm" onClick={onRestart} className="mt-2">
             <RefreshCcw size={14} />
             Empezar de nuevo
+          </Button>
+        ) : onRetry ? (
+          <Button type="button" variant="secondary" size="sm" onClick={onRetry} className="mt-2">
+            <RefreshCcw size={14} />
+            Reintentar análisis
           </Button>
         ) : null}
       </AlertDescription>
@@ -439,42 +441,39 @@ function ConversationPanel({
 }) {
   const questions = latestQuestions(session);
   const activeQuestion = questions[0];
+  const guided = session.clarification.interactionMode === 'guided_exploration';
   const canSubmit = value.trim().length > 0 && !pending;
+  const synthesis = session.semanticProjection.understanding?.value
+    ?.replace(/^AsÃ­ estoy entendiendo lo que me dices:\s*/i, '')
+    .trim();
   return (
-    <section className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-ds-md bg-brand-primary-subtle p-2 text-brand-primary">
-          <HelpCircle size={18} />
+    <section data-testid="portfolio-entry-conversation-panel" className="mx-auto max-w-3xl rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-7">
+      <div className="space-y-6">
+        <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs text-text-muted" aria-label="Estado de la conversación">
+          <h2 className="text-xs font-medium text-text-muted">{guided ? 'Exploración guiada' : 'Aclaración breve'}</h2>
+          <span aria-label="Progreso de aclaración">
+            {guided
+              ? `Profundizando · ${session.clarification.questionsAskedCurrentRound} de hasta 2`
+              : `Aclaración ${session.clarification.quickQuestionsAsked} de hasta ${session.clarification.quickQuestionBudget}`}
+          </span>
         </div>
-        <div className="min-w-0 flex-1 space-y-3">
+
+        <div className="min-w-0 space-y-6">
           <div>
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Quick clarification</Badge>
-              <Badge variant="neutral">
-                Aclaracion {session.clarification.quickQuestionsAsked} de hasta {session.clarification.quickQuestionBudget}
-              </Badge>
-            </div>
-            <h2 className="text-lg font-semibold text-text-primary">Aclaración breve</h2>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
-              Estoy recogiendo el contexto declarado y el siguiente punto que conviene aclarar. Puedes continuar con información parcial.
-            </p>
+            {synthesis ? (
+              <div className="border-l-2 border-brand-primary/40 pl-4" data-testid="portfolio-entry-understanding">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-primary">Esto estoy entendiendo</p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-text-primary">{synthesis}</p>
+              </div>
+            ) : null}
           </div>
 
-          <ConversationTrace session={session} />
-
-          <div className="rounded-ds-md border border-border-default bg-background-subtle p-4">
-            <p className="text-xs font-semibold uppercase text-text-muted">Tu punto de partida</p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {session.conversation[0]?.userInput || 'Todavía no hay contexto declarado.'}
-            </p>
-          </div>
-
-          {activeQuestion ? (
+            {activeQuestion ? (
             <div
-              className="rounded-ds-md border border-border-default bg-background-subtle p-4"
+              className="rounded-ds-md border-l-4 border-brand-primary bg-surface-default p-5 shadow-sm"
               data-testid="portfolio-entry-active-question"
             >
-              <p className="text-xs font-semibold uppercase text-text-muted">Lo que estamos aclarando ahora</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-primary">Para afinarlo un poco más</p>
               <p
                 className="mt-2 text-sm font-semibold leading-6 text-text-primary"
                 data-testid="portfolio-entry-active-question-text"
@@ -484,7 +483,8 @@ function ConversationPanel({
             </div>
           ) : null}
 
-          <div className="space-y-2">
+          {activeQuestion ? (
+            <div className="space-y-2">
             <label htmlFor="portfolio-entry-answer" className="block text-sm font-semibold text-text-primary">
               Tu respuesta
             </label>
@@ -496,9 +496,14 @@ function ConversationPanel({
               className="min-h-28 resize-y bg-background-subtle text-sm leading-6"
               disabled={pending}
             />
-          </div>
+            </div>
+          ) : (
+            <div className="rounded-ds-md border border-status-feedback-warning-border bg-status-feedback-warning-surface p-4 text-sm leading-6 text-status-feedback-warning-text" data-testid="portfolio-entry-inconsistent-state">
+              No hay una pregunta activa para responder. Puedes revisar la conversación o continuar cuando Starteria proponga el siguiente paso.
+            </div>
+          )}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {activeQuestion ? <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button
               type="button"
               onClick={onSubmit}
@@ -509,13 +514,15 @@ function ConversationPanel({
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="ghost"
               disabled={pending}
               onClick={() => onChange('No lo se todavia.')}
             >
               No lo se todavia
             </Button>
-          </div>
+          </div> : null}
+
+          <ConversationTrace session={session} />
         </div>
       </div>
     </section>
@@ -534,13 +541,19 @@ function GuidedExplorationOffer({
   return (
     <div className="mx-auto max-w-3xl">
       <AISuggestionPanel
-        title="Ya tengo suficiente claridad para proponerte un primer abordaje"
-        suggestion="Entiendo qué estás intentando conseguir, qué está dificultando la decisión y qué aspectos siguen abiertos. Podemos seguir aterrizando algunos puntos o convertir lo que tenemos en una propuesta concreta."
+        title={session.clarification.checkpoint === 'guided'
+          ? 'Con lo que acabamos de profundizar, ya puedo convertir esta lectura en una propuesta de abordaje.'
+          : 'Ya tengo suficiente claridad para proponerte un primer abordaje'}
+        suggestion={session.clarification.checkpoint === 'guided'
+          ? 'La exploración guiada queda cerrada y la propuesta seguirá mostrando qué está claro y qué conserva incertidumbre.'
+          : 'Entiendo qué estás intentando conseguir, qué está dificultando la decisión y qué aspectos siguen abiertos. Podemos seguir aterrizando algunos puntos o convertir lo que tenemos en una propuesta concreta.'}
         why={['La aclaración puede continuar sin convertirse en una entrevista larga.', 'La propuesta será provisional y conservará la incertidumbre explícita.']}
-        actions={[
-          { id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending },
-          { id: 'deepen', label: 'Seguir aterrizando mi necesidad', tone: 'secondary', disabled: pending },
-        ]}
+        actions={session.clarification.checkpoint === 'guided'
+          ? [{ id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending }]
+          : [
+            { id: 'provisional', label: 'Ver mi propuesta de abordaje', tone: 'primary', disabled: pending },
+            { id: 'deepen', label: 'Seguir aterrizando mi necesidad', tone: 'secondary', disabled: pending },
+          ]}
         onAction={(actionId) => onChoose(actionId === 'deepen' ? 'accept' : 'provisional_route')}
       />
       <div className="mt-4">
@@ -738,32 +751,148 @@ const PATH_LABELS: Record<string, string> = {
   prepare_decision: 'Preparar una decisión',
 };
 
-function StarteriaPathSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+function originLabel(origin: ProvenanceOrigin | undefined): string | null {
+  return origin ? PROVENANCE_LABELS[origin] : null;
+}
+
+function ExpandedAnalysis({
+  handoff,
+  session,
+}: {
+  handoff: PortfolioEntryHandoff;
+  session: PortfolioEntrySessionDto;
+}) {
+  const visibleGapDescriptions = new Set([
+    ...handoff.unresolved_context.map((item) => item.description),
+    ...handoff.evidence_or_clarity_needed.map((item) => item.value),
+  ].filter(Boolean).slice(0, 3));
+  const additionalGaps = handoff.unresolved_context.filter((item) => !visibleGapDescriptions.has(item.description));
+  const additionalEvidence = handoff.evidence_or_clarity_needed.filter((item) => !visibleGapDescriptions.has(item.value));
+  const resolutionByGap = new Map((handoff.gap_resolution_map ?? []).map((item) => [item.gap_id, item]));
+  const mappedAdditionalGaps = [
+    ...additionalGaps,
+    ...(handoff.gap_resolution_map ?? [])
+      .filter((item) => !handoff.unresolved_context.some((gap) => gap.gap_id === item.gap_id))
+      .map((item) => ({ gap_id: item.gap_id, description: item.gap_description })),
+  ];
+  const knownContext = handoff.known_context.filter((item) => item.value.trim());
+  const hasRationale = Boolean(handoff.recommended_approach?.rationale?.trim());
+  const hasAssumptions = Boolean(handoff.recommended_approach?.assumption?.trim()) || knownContext.length > 0;
+  const hasAdditionalContext = mappedAdditionalGaps.length > 0 || additionalEvidence.length > 0;
+  const provenance = provenanceLabels(handoff);
+  const hasProvenance = provenance.length > 0;
+
   return (
-    <section className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
-      <p className="text-xs font-semibold uppercase text-brand-primary">04</p>
-      <h2 className="mt-2 text-xl font-semibold text-text-primary">Cómo lo llevamos a trabajo</h2>
-      <p className="mt-1 text-sm leading-6 text-text-secondary">La ruta contextual disponible para continuar.</p>
-      {handoff.starteria_path.length > 0 ? (
-        <ol className="mt-5 space-y-3 border-l-2 border-brand-primary/30 pl-5">
-          {handoff.starteria_path.map((item, index) => (
-            <li key={`${item.action}-${index}`} className="relative rounded-ds-md border border-border-default bg-background-subtle p-4">
-              <span className="absolute -left-[2.05rem] top-4 flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white">{index + 1}</span>
-              <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold text-text-primary">{PATH_LABELS[item.action] ?? 'Siguiente trabajo'}</p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-text-secondary">{item.description}</p>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="mt-4 text-sm leading-6 text-text-secondary">La ruta de trabajo todavía se está preparando para esta situación.</p>
-      )}
-    </section>
+    <details data-testid="handoff-expanded-analysis" className="rounded-ds-lg border border-border-default bg-background-subtle">
+      <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-inset md:px-6">
+        Ver análisis completo
+      </summary>
+      <div className="space-y-6 border-t border-border-default px-5 py-5 md:px-6">
+        {hasRationale ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Por qué llegamos a esta lectura</h3>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">{handoff.recommended_approach?.rationale}</p>
+          </section>
+        ) : null}
+
+        {hasAssumptions ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Supuestos que estamos usando</h3>
+            <div className="mt-3 space-y-3">
+              {handoff.recommended_approach?.assumption?.trim() ? (
+                <div className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-sm leading-6 text-text-secondary">{handoff.recommended_approach.assumption}</p>
+                  <Badge className="mt-3" variant="neutral">Provisional</Badge>
+                </div>
+              ) : null}
+              {knownContext.map((item) => (
+                <div key={`${item.key}-${item.value}`} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-xs font-semibold uppercase text-text-muted">{item.key}</p>
+                  <p className="mt-1 text-sm leading-6 text-text-secondary">{item.value}</p>
+                  {originLabel(item.provenance?.origin) ? <Badge className="mt-3" variant="neutral">{originLabel(item.provenance?.origin)}</Badge> : null}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {hasAdditionalContext ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Contexto todavía abierto</h3>
+            <div className="mt-3 space-y-3">
+              {mappedAdditionalGaps.map((gap) => (
+                <div key={gap.gap_id} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-sm font-semibold text-text-primary">{gap.description}</p>
+                  {resolutionByGap.has(gap.gap_id) ? <p className="mt-2 text-sm leading-6 text-text-secondary">{resolutionForGap(resolutionByGap.get(gap.gap_id))}</p> : null}
+                </div>
+              ))}
+              {additionalEvidence.length > 0 ? (
+                <div className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-xs font-semibold uppercase text-text-muted">Evidencia o claridad adicional</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-text-secondary">
+                    {additionalEvidence.map((item, index) => <li key={`${item.value}-${index}`}>{item.value}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {additionalEvidence.length > 0 ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Evidencia o claridad que ayudaría</h3>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-text-secondary">
+              {additionalEvidence.map((item, index) => <li key={`${item.value}-${index}`}>{item.value}</li>)}
+            </ul>
+          </section>
+        ) : null}
+
+        {handoff.alternative_approaches.length > 0 ? (
+          <section>
+            <h3 className="text-base font-semibold text-text-primary">Otras formas de empezar</h3>
+            <div className="mt-3 space-y-3">
+              {handoff.alternative_approaches.map((alternative, index) => (
+                <div key={`${alternative.description}-${index}`} className="rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <p className="text-sm leading-6 text-text-primary">{alternative.description}</p>
+                  {alternative.rationale ? <p className="mt-2 text-sm leading-6 text-text-secondary">{alternative.rationale}</p> : null}
+                  <Badge className="mt-3" variant="neutral">Propuesta de Starteria</Badge>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {handoff.starteria_path.length > 0 ? (
+          <section data-testid="handoff-starteria-path-expanded">
+            <h3 className="text-base font-semibold text-text-primary">Ruta completa en Starteria</h3>
+            <ol className="mt-3 space-y-3 border-l-2 border-brand-primary/30 pl-5">
+              {handoff.starteria_path.map((item, index) => (
+                <li key={`${item.action}-${index}`} className="relative rounded-ds-md border border-border-default bg-surface-default p-4">
+                  <span className="absolute -left-[2.05rem] top-4 flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white">{index + 1}</span>
+                  <p className="text-sm font-semibold text-text-primary">{PATH_LABELS[item.action] ?? item.action}</p>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">{item.description}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
+
+        {hasProvenance ? (
+          <section data-testid="handoff-provenance-detail">
+            <h3 className="text-base font-semibold text-text-primary">Fuente de la lectura</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {provenance.map((label) => <Badge key={label} variant="neutral">{label}</Badge>)}
+            </div>
+          </section>
+        ) : null}
+
+        <ConversationTrace session={session} />
+      </div>
+    </details>
   );
 }
 
-function EarlyAccessCard({
+function LegacyEarlyAccessCard({
   pending,
   onConfirm,
   onStartEditing,
@@ -810,6 +939,115 @@ function EarlyAccessCard({
   );
 }
 
+function EarlyAccessCard({
+  pending,
+  onConfirm,
+  onStartEditing,
+}: {
+  pending: boolean;
+  onConfirm: () => void;
+  onStartEditing: () => void;
+}) {
+  const benefits = [
+    'Conserva esta lectura.',
+    'Ordena y prioriza tus iniciativas.',
+    'Da seguimiento al portafolio desde un mismo contexto.',
+  ];
+
+  return (
+    <section data-testid="portfolio-entry-conversion-cta" className="overflow-hidden rounded-ds-lg border border-cyan-300/30 bg-slate-950 text-white shadow-md">
+      <div className="grid gap-8 p-6 md:grid-cols-[minmax(0,1.35fr)_minmax(16rem,0.65fr)] md:items-center md:p-8">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200">Continúa desde esta lectura</p>
+          <h2 className="mt-3 max-w-2xl text-2xl font-semibold leading-tight text-white md:text-3xl">Convierte esta lectura en tu portafolio de trabajo</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+            Guarda este análisis y empieza a ordenar tus iniciativas con los mismos criterios, sin perder el contexto que ya construiste.
+          </p>
+          <ul className="mt-5 grid gap-3 text-sm leading-6 text-slate-200 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+            {benefits.map((benefit) => (
+              <li key={benefit} className="flex gap-2">
+                <CheckCircle2 size={16} className="mt-1 shrink-0 text-cyan-200" aria-hidden="true" />
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="flex flex-col gap-3 md:border-l md:border-white/15 md:pl-8">
+          <Button type="button" onClick={onConfirm} disabled={pending} className="w-full">
+            Crear mi portafolio
+            <ArrowRight size={16} aria-hidden="true" />
+          </Button>
+          <Button type="button" variant="ghost" onClick={onStartEditing} disabled={pending} className="w-full text-slate-200 hover:bg-white/10 hover:text-white">
+            Ajustar esta lectura
+          </Button>
+          <p className="text-center text-xs leading-5 text-slate-400">Tu lectura se conserva. No tendrás que empezar de nuevo.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Vh1UnderstandingSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const understanding = textFromProvenanced(handoff.understanding);
+  const outcome = textFromProvenanced(handoff.desired_outcome);
+  const visibleText = outcome !== 'Aun por aclarar' && !understanding.includes(outcome)
+    ? `${understanding} ${outcome}`
+    : understanding;
+  return (
+    <section data-testid="handoff-understanding" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">Esto estoy entendiendo</p>
+      <p className="mt-3 max-w-3xl text-base leading-7 text-text-primary">{visibleText}</p>
+      <div className="mt-4"><ProvenanceChips handoff={handoff} /></div>
+    </section>
+  );
+}
+
+function Vh1DecisionSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  return (
+    <section data-testid="handoff-decision" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">Decisión que necesitas habilitar</p>
+      <p className="mt-3 max-w-3xl text-base leading-7 text-text-primary">{textFromDecision(handoff.decision_to_enable)}</p>
+    </section>
+  );
+}
+
+function Vh1ApproachSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const steps = handoff.starteria_path
+    .filter((step) => step.action.trim() || step.description.trim())
+    .slice(0, 3)
+    .map((step) => ({ title: step.action || 'Siguiente movimiento', description: step.description }));
+  const visibleSteps = steps.length > 0
+    ? steps
+    : [{ title: 'Foco inicial', description: handoff.recommended_approach?.description || 'Aun por aclarar.' }];
+  return (
+    <section data-testid="handoff-approach" className="rounded-ds-lg border border-cyan-300/30 bg-slate-950 p-5 text-white shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-cyan-200">Cómo lo abordaría Starteria</p>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        {visibleSteps.map((step, index) => (
+          <div key={`${step.title}-${index}`} data-testid="handoff-approach-step" className="rounded-ds-md border border-white/10 bg-white/7 p-4">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">{index + 1}</span>
+            <p className="mt-4 text-sm font-semibold text-white">{step.title}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{step.description}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Vh1GapsSection({ handoff }: { handoff: PortfolioEntryHandoff }) {
+  const gaps = [
+    ...handoff.unresolved_context.map((item) => item.description),
+    ...handoff.evidence_or_clarity_needed.map((item) => item.value),
+  ].filter(Boolean).slice(0, 3);
+  return (
+    <section data-testid="handoff-gaps" className="rounded-ds-lg border border-border-default bg-surface-default p-5 shadow-sm md:p-6">
+      <p className="text-xs font-semibold uppercase text-brand-primary">Lo que todavía puede cambiar la decisión</p>
+      {gaps.length > 0 ? <ul className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">{gaps.map((gap, index) => <li key={`${gap}-${index}`}>{gap}</li>)}</ul> : <p className="mt-3 text-sm leading-6 text-text-secondary">No hay pendientes materiales registrados en esta lectura inicial.</p>}
+    </section>
+  );
+}
+
 function HandoffReview({
   session,
   correctionDraft,
@@ -850,12 +1088,16 @@ function HandoffReview({
       </div>
 
       <div className="space-y-5">
-        <ConversationTrace session={session} />
-        <UnderstandingSection handoff={handoff} />
-        <RecommendedApproachSection handoff={handoff} />
-        <MaterialGapsSection handoff={handoff} />
-        <StarteriaPathSection handoff={handoff} />
-        <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
+        <div data-testid="handoff-first-view" className="space-y-4">
+          <Vh1UnderstandingSection handoff={handoff} />
+          <Vh1DecisionSection handoff={handoff} />
+          <Vh1ApproachSection handoff={handoff} />
+          <Vh1GapsSection handoff={handoff} />
+        </div>
+        <ExpandedAnalysis handoff={handoff} session={session} />
+        <div data-testid="handoff-secondary-content" className="space-y-4">
+          <EarlyAccessCard pending={pending} onConfirm={onConfirm} onStartEditing={onStartEditing} />
+        </div>
       </div>
 
       {editing ? (
@@ -1027,6 +1269,7 @@ export function PortfolioEntryExperience({
   const [claimedNotice, setClaimedNotice] = useState(() => readPortfolioEntryClaimedNotice());
   const [conversionError, setConversionError] = useState<UiError | null>(null);
   const [conversionIdempotencyKey, setConversionIdempotencyKey] = useState<string | null>(null);
+  const [handoffRetryRevision, setHandoffRetryRevision] = useState<number | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const materializedRevisionRef = useRef<number | null>(null);
   const trackedClarificationRef = useRef<number | null>(null);
@@ -1034,6 +1277,7 @@ export function PortfolioEntryExperience({
   const trackedConversionCtaRef = useRef<string | null>(null);
 
   const questions = useMemo(() => latestQuestions(sessionDto), [sessionDto]);
+  const activeQuestion = questions[0];
   const pending = pendingRequest !== null;
 
   const restart = () => {
@@ -1047,6 +1291,7 @@ export function PortfolioEntryExperience({
     setEditingCorrection(false);
     setConversionError(null);
     setConversionIdempotencyKey(null);
+    setHandoffRetryRevision(null);
   };
 
   const handleRequestError = async (err: unknown, ref = sessionRef) => {
@@ -1078,6 +1323,35 @@ export function PortfolioEntryExperience({
       clearPortfolioEntryCurrentSession();
       setSessionRef(null);
       if (apiError.kind === 'expired') trackPortfolioEntryEvent('session_expired');
+    }
+  };
+
+  const materializeHandoff = async (
+    revision: number,
+    ref: StoredPortfolioEntrySession,
+    manualRetry = false,
+  ) => {
+    if (pendingRequest === 'handoff') return;
+    if (!manualRetry && materializedRevisionRef.current === revision) return;
+    materializedRevisionRef.current = revision;
+    setHandoffRetryRevision(null);
+    setError(null);
+    setPendingRequest('handoff');
+    try {
+      const next = await materializePortfolioEntryHandoff(ref.sessionId, ref.credential, {
+        expectedRevision: revision,
+        idempotencyKey: createIdempotencyKey('portfolio-entry:handoff'),
+      });
+      setSessionDto(next);
+      setError(null);
+      setHandoffRetryRevision(null);
+      trackPortfolioEntryEvent('handoff_generated', { sessionId: next.id });
+    } catch (err) {
+      const apiError = normalizePortfolioEntryApiError(err);
+      if (mapError(apiError.kind).retryable) setHandoffRetryRevision(revision);
+      await handleRequestError(err, ref);
+    } finally {
+      setPendingRequest(null);
     }
   };
 
@@ -1150,24 +1424,21 @@ export function PortfolioEntryExperience({
     if (!sessionDto || !sessionRef) return;
     if (sessionDto.nextAction !== 'generate_handoff') return;
     if (materializedRevisionRef.current === sessionDto.revision) return;
-    materializedRevisionRef.current = sessionDto.revision;
-
-    const key = createIdempotencyKey('portfolio-entry:handoff');
-    setPendingRequest('handoff');
-    materializePortfolioEntryHandoff(sessionRef.sessionId, sessionRef.credential, {
-      expectedRevision: sessionDto.revision,
-      idempotencyKey: key,
-    })
-      .then((next) => {
-        setSessionDto(next);
-        setError(null);
-        trackPortfolioEntryEvent('handoff_generated', { sessionId: next.id });
-      })
-      .catch((err) => void handleRequestError(err))
-      .finally(() => setPendingRequest(null));
-    // handleRequestError intentionally reads current state; only the revision triggers this effect.
+    void materializeHandoff(sessionDto.revision, sessionRef);
+    // The helper intentionally owns request state and error recovery. The revision guard prevents automatic retries.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionDto?.nextAction, sessionDto?.revision, sessionRef?.sessionId]);
+
+  const retryHandoff = () => {
+    if (
+      !sessionDto ||
+      !sessionRef ||
+      pendingRequest ||
+      sessionDto.nextAction !== 'generate_handoff' ||
+      handoffRetryRevision !== sessionDto.revision
+    ) return;
+    void materializeHandoff(sessionDto.revision, sessionRef, true);
+  };
 
   const startFlow = async () => {
     const message = currentInput.trim();
@@ -1211,6 +1482,7 @@ export function PortfolioEntryExperience({
         expectedRevision: sessionDto.revision,
         idempotencyKey: createIdempotencyKey('portfolio-entry:message'),
         message,
+        matchedQuestionIds: activeQuestion ? [activeQuestion.id] : undefined,
       });
       setSessionDto(next);
       setCurrentInput('');
@@ -1220,6 +1492,29 @@ export function PortfolioEntryExperience({
     } finally {
       setPendingRequest(null);
     }
+  };
+
+  const retryPendingAnalysis = async () => {
+    if (!sessionDto || !sessionRef || pending || sessionDto.nextAction !== 'retry_analysis' || !sessionDto.pendingInput) return;
+    setError(null);
+    setPendingRequest('submitting');
+    try {
+      const next = await submitPortfolioEntryMessage(sessionRef.sessionId, sessionRef.credential, {
+        expectedRevision: sessionDto.revision,
+        idempotencyKey: createIdempotencyKey('portfolio-entry:retry-analysis'),
+        message: sessionDto.pendingInput.value,
+      });
+      setSessionDto(next);
+    } catch (err) {
+      await handleRequestError(err);
+    } finally {
+      setPendingRequest(null);
+    }
+  };
+
+  const continueWithProvisionalReading = () => {
+    if (!sessionDto || !sessionRef || pending || !sessionDto.pendingInput) return;
+    void materializeHandoff(sessionDto.revision, sessionRef, true);
   };
 
   const chooseGuided = async (choice: 'accept' | 'provisional_route') => {
@@ -1400,6 +1695,18 @@ export function PortfolioEntryExperience({
       return <GuidedExplorationOffer session={sessionDto} pending={pending} onChoose={chooseGuided} />;
     }
 
+    if (sessionDto.nextAction === 'retry_analysis' && sessionDto.pendingInput) {
+      return (
+        <section className="mx-auto max-w-3xl space-y-4 rounded-ds-lg border border-status-feedback-warning-border bg-status-feedback-warning-surface p-5" data-testid="portfolio-entry-degraded-continuation">
+          <p className="text-sm leading-6 text-status-feedback-warning-text">Tu respuesta quedó guardada, pero el análisis sigue pendiente. No necesitas escribirla de nuevo.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={retryPendingAnalysis} disabled={pending}>Reintentar análisis</Button>
+            <Button type="button" variant="ghost" onClick={continueWithProvisionalReading} disabled={pending}>Continuar con lectura provisional</Button>
+          </div>
+        </section>
+      );
+    }
+
     if (sessionDto.nextAction === 'review_handoff' || sessionDto.nextAction === 'claim_or_close') {
       return (
         <HandoffReview
@@ -1436,7 +1743,15 @@ export function PortfolioEntryExperience({
         <StatusMessage pendingRequest={pendingRequest} />
       </div>
       <div className="mx-auto max-w-3xl">
-        <ErrorMessage error={error} onRestart={restart} />
+        <ErrorMessage
+          error={error}
+          onRestart={restart}
+          onRetry={
+            error?.retryable && handoffRetryRevision === sessionDto?.revision
+              ? retryHandoff
+              : undefined
+          }
+        />
       </div>
       {renderMain()}
     </div>

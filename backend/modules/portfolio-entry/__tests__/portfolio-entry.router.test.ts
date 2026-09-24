@@ -80,7 +80,7 @@ describe('Portfolio Entry Experimental Session API', () => {
       .send({ expectedRevision: 0, message: 'Queremos ordenar iniciativas de experiencia cliente para decidir cuales financiar este trimestre.' })
       .expect(200);
 
-    expect(submitted.body.data.revision).toBe(1);
+    expect(submitted.body.data.revision).toBe(2);
     expect(submitted.body.data.conversation).toHaveLength(1);
     expect(submitted.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
     expect(submitted.body.data.clarification.answeredGaps).toEqual([]);
@@ -110,11 +110,11 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(first.body.data.lifecycleStatus).toBe('CLARIFYING');
     expect(first.body.data.lifecycleStatus).not.toBe('ABANDONED');
     expect(first.body.data.nextAction).toBe('answer_clarification');
-    expect(first.body.data.clarification.quickQuestionsAsked).toBe(3);
-    expect(first.body.data.conversation[0].emittedQuestions).toHaveLength(3);
+    expect(first.body.data.clarification.quickQuestionsAsked).toBe(1);
+    expect(first.body.data.conversation[0].emittedQuestions).toHaveLength(1);
 
     const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
-    const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
+    const resolves = first.body.data.conversation[0].emittedQuestions[0].resolves;
     const checkpoint = await request(app)
       .post(`${base}/sessions/${created.sessionId}/messages`)
       .set('X-Starteria-Entry-Token', created.token)
@@ -122,7 +122,7 @@ describe('Portfolio Entry Experimental Session API', () => {
       .send({
         expectedRevision: first.body.data.revision,
         message: 'La gerencia debe decidir que tres iniciativas financiar primero. Usaremos impacto operativo, urgencia, riesgo y capacidad disponible como criterios.',
-        matchedQuestionIds: questionIds,
+        matchedQuestionIds: [questionIds[0]],
         respondedResolves: resolves,
       })
       .expect(200);
@@ -166,11 +166,14 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(accepted.body.data.clarification.interactionMode).toBe('guided_exploration');
     expect(accepted.body.data.clarification.explorationRound).toBe(1);
     expect(accepted.body.data.clarification.quickQuestionsAsked).toBeLessThanOrEqual(3);
-    expect(accepted.body.data.clarification.answeredGaps).toEqual([]);
+    expect(accepted.body.data.clarification.answeredGaps).toEqual(['analysis.extracted_context.decision_need']);
     expect(accepted.body.data.semanticProjection.currentFrame).toBe('portfolio_first');
     expect(adapter.calls).toHaveLength(3);
     expect(adapter.calls[2].sessionContext.clarification_status).toBe('guided_exploration');
     expect(adapter.calls[2].sessionContext.interaction_mode).toBe('guided_exploration');
+    expect(adapter.calls[2].priorAnalysis?.extracted_context.summary).toBe(
+      'Aun necesitamos seguir aclarando criterios, restricciones y decision final antes de ordenar el portafolio.',
+    );
   });
 
   it('chooses a provisional route through Runtime and reaches handoff readiness', async () => {
@@ -319,7 +322,7 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect(response.body.data.nextAction).toBe('offer_guided_exploration');
     const stored = await repository.findSessionById(created.sessionId);
     expect(stored?.lifecycleStatus).toBe('CLARIFYING');
-    expect(stored?.revision).toBe(1);
+    expect(stored?.revision).toBe(2);
   });
 
   it('replays duplicate idempotent submits and rejects reused keys with different payloads', async () => {
@@ -372,7 +375,7 @@ describe('Portfolio Entry Experimental Session API', () => {
     expect((await repository.listTurns(created.sessionId))).toHaveLength(1);
   });
 
-  it('does not silently use a deterministic adapter in live composition', async () => {
+  it('keeps the received input when live composition is unavailable', async () => {
     const { app } = makeApp({ useDefaultAdapter: true });
     const created = await createSession(app);
     await request(app)
@@ -380,10 +383,13 @@ describe('Portfolio Entry Experimental Session API', () => {
       .set('X-Starteria-Entry-Token', created.token)
       .set('Idempotency-Key', 'missing-live-provider')
       .send({ expectedRevision: 0, message: 'Mensaje de prueba para provider no configurado.' })
-      .expect(503);
+      .expect(200);
+    expect((await request(app)
+      .get(`${base}/sessions/${created.sessionId}`)
+      .set('X-Starteria-Entry-Token', created.token)).body.data.pendingInput.status).toBe('FAILED_RETRYABLE');
   });
 
-  it('keeps provider failure from mutating semantic lifecycle', async () => {
+  it('keeps provider failure retryable without asking for the answer again', async () => {
     const adapter = new FailingAgentAdapter();
     const { app, repository } = makeApp({ adapter });
     const created = await createSession(app);
@@ -393,14 +399,46 @@ describe('Portfolio Entry Experimental Session API', () => {
       .set('X-Starteria-Entry-Token', created.token)
       .set('Idempotency-Key', 'provider-fails')
       .send({ expectedRevision: 0, message: 'Necesitamos ordenar el portafolio.' })
-      .expect(503);
+      .expect(200);
 
     const stored = await repository.findSessionById(created.sessionId);
     const executions = await repository.listModelExecutions(created.sessionId);
     expect(stored?.lifecycleStatus).toBe('ENTRY_CAPTURED');
-    expect(stored?.revision).toBe(0);
+    expect(stored?.revision).toBe(2);
+    expect(stored?.semanticState.pendingInput?.value).toBe('Necesitamos ordenar el portafolio.');
+    expect(stored?.semanticState.pendingInput?.status).toBe('FAILED_RETRYABLE');
     expect(executions).toHaveLength(1);
     expect(executions[0].technicalError).toBe('provider timeout');
+  });
+
+  it('retries the same persisted pending answer without duplicating the logical turn', async () => {
+    const adapter = new FailOnceAgentAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const created = await createSession(app);
+    const message = 'Necesitamos ordenar el portafolio antes de decidir foco y financiamiento.';
+
+    const failed = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'pending-fails-once')
+      .send({ expectedRevision: 0, message })
+      .expect(200);
+    const pendingId = failed.body.data.pendingInput.id;
+    expect(failed.body.data.revision).toBe(2);
+
+    const retried = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/messages`)
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'pending-retry-fresh-key')
+      .send({ expectedRevision: failed.body.data.revision, message })
+      .expect(200);
+
+    expect(retried.body.data.conversation).toHaveLength(1);
+    expect(retried.body.data.pendingInput.id).toBe(pendingId);
+    expect(retried.body.data.pendingInput.status).toBe('ANALYZED');
+    expect(retried.body.data.revision).toBe(4);
+    expect((await repository.listTurns(created.sessionId))).toHaveLength(1);
+    expect(adapter.calls).toHaveLength(2);
   });
 
   it('does not overwrite newer state when a valid model result loses the CAS race', async () => {
@@ -425,7 +463,7 @@ describe('Portfolio Entry Experimental Session API', () => {
     const turns = await repository.listTurns(created.sessionId);
     const stored = await repository.findSessionById(created.sessionId);
     expect(turns).toHaveLength(1);
-    expect(stored?.revision).toBe(1);
+    expect(stored?.revision).toBe(2);
   });
 
   it('materializes, reads, confirms, and corrects handoffs without exposing internals or conversion eligibility', async () => {
@@ -649,7 +687,7 @@ async function offerGuidedExploration(app: express.Express): Promise<{
     .expect(200);
 
   const questionIds = first.body.data.conversation[0].emittedQuestions.map((question: { id: string }) => question.id);
-  const resolves = first.body.data.conversation[0].emittedQuestions.flatMap((question: { resolves: string[] }) => question.resolves);
+  const resolves = first.body.data.conversation[0].emittedQuestions[0].resolves;
   const response = await request(app)
     .post(`${base}/sessions/${created.sessionId}/messages`)
     .set('X-Starteria-Entry-Token', created.token)
@@ -657,7 +695,7 @@ async function offerGuidedExploration(app: express.Express): Promise<{
     .send({
       expectedRevision: first.body.data.revision,
       message: 'Aun necesitamos seguir aclarando criterios, restricciones y decision final antes de ordenar el portafolio.',
-      matchedQuestionIds: questionIds,
+      matchedQuestionIds: [questionIds[0]],
       respondedResolves: resolves,
     })
     .expect(200);
@@ -742,6 +780,37 @@ class FailingAgentAdapter implements PortfolioEntryAgentAdapterV2 {
       },
     };
     throw new LiveModelExecutionError('provider timeout', result);
+  }
+}
+
+class FailOnceAgentAdapter implements PortfolioEntryAgentAdapterV2 {
+  calls: PortfolioEntryAnalyzeTurnInputV2[] = [];
+  private failed = false;
+
+  async analyzeTurn(input: PortfolioEntryAnalyzeTurnInputV2): Promise<PortfolioEntryAnalyzeTurnOutputV2> {
+    this.calls.push(input);
+    if (!this.failed) {
+      this.failed = true;
+      const result: ModelExecutionResult<PortfolioEntryAnalyzeTurnOutputV2> = {
+        provider_raw: null,
+        parsed_output: null,
+        validated_output: null,
+        schema_errors: [],
+        technical_error: 'provider timeout',
+        error_type: 'TECHNICAL_ERROR',
+        execution_metadata: {
+          call_id: 'failed-once-call',
+          purpose: 'analysis_turn',
+          provider: 'test-provider',
+          model: 'test-model',
+          duration_ms: 1000,
+          retry_count: 0,
+          seed_support: 'not_requested',
+        },
+      };
+      throw new LiveModelExecutionError('provider timeout', result);
+    }
+    return makeAnalysisOutput(input);
   }
 }
 
@@ -952,17 +1021,9 @@ function makeNeedsGuidedExplorationOutput(input: PortfolioEntryAnalyzeTurnInputV
       status: 'insufficient_input',
     },
     question_plan: {
-      question_count: 1,
+      question_count: 0,
       status: 'questions_required',
-      questions: [{
-        id: 'guided-q1',
-        question: 'Que criterio debe pesar mas si no pueden avanzar todas las iniciativas?',
-        question_type: 'guided_deepening',
-        reason_to_ask: 'El presupuesto rapido ya se agoto y queda una aclaracion material.',
-        resolves: ['analysis.extracted_context.constraints'],
-        priority: 1,
-        expected_answer_type: 'text',
-      }],
+      questions: [],
     },
   };
 }

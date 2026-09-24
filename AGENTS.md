@@ -36,7 +36,7 @@ Los cambios frontend de producto estan permitidos solo cuando el pedido declare 
 Cuando haya conflicto entre documentos, aplicar este orden y conservar el estado declarado de cada documento:
 
 1. `docs/STARTERIA_AUTHORITY.md`
-2. Core Contract, en su estado factual real: `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+2. Core Contract, en su estado factual real: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 3. ADRs de producto aprobados en `docs/product-adr/`
 4. Experience Logic Contracts aprobados
 5. Agent Contracts
@@ -52,7 +52,7 @@ La presencia de un contrato en este repositorio no lo convierte en aprobado. Man
 
 Para Portfolio Entry, usar una sola autoridad:
 
-`docs/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
+`doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 No crear otro `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` paralelo si duplica ese contrato. Si el checkout productivo contiene una version aprobada distinta, registrar la diferencia en `CURRENT_STATE.md` o en una auditoria antes de copiar o reemplazar contenido.
 
@@ -99,7 +99,7 @@ Todo cambio de Starteria debe comenzar leyendo, en este orden:
 1. `CURRENT_STATE.md`.
 2. `STARTERIA_V2_MANIFEST.md`.
 3. `docs/STARTERIA_AUTHORITY.md`.
-4. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
+4. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`.
 5. ADRs de producto aprobados relevantes.
 6. Experience Contract del slice afectado.
 7. Agent / Skill Contracts aplicables.

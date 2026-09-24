@@ -14,13 +14,12 @@ import {
 } from './application/portfolio-entry-experimental-session.service';
 import {
   DeterministicPortfolioEntryHandoffMaterializer,
-  UnconfiguredPortfolioEntryHandoffMaterializer,
   type PortfolioEntryAgentAdapterV2,
   type PortfolioEntryHandoffMaterializer,
   FetchStructuredModelAdapter,
   LivePortfolioEntryAgentAdapter,
-  LivePortfolioEntryHandoffMaterializer,
   loadPortfolioEntryProviderConfig,
+  ResilientStructuredModelAdapter,
   portfolioEntryLiveHealth,
   loadResolvedPromptManifest,
 } from '../portfolio-entry-runtime';
@@ -139,7 +138,7 @@ function configuredAgentAdapter(): PortfolioEntryAgentAdapterV2 {
     const provider = loadPortfolioEntryProviderConfig();
     const prompts = loadResolvedPromptManifest();
     const candidate = createLiveCandidate(provider, prompts);
-    return new LivePortfolioEntryAgentAdapter(new FetchStructuredModelAdapter(provider), candidate, prompts);
+    return new LivePortfolioEntryAgentAdapter(createResilientModel(provider), candidate, prompts);
   } catch (err) {
     // Degrading silently here surfaces later as PORTFOLIO_ENTRY_MODEL_PROVIDER_FAILURE
     // on every request, which points at the provider instead of the real cause.
@@ -155,17 +154,34 @@ function configuredHandoffMaterializer(): PortfolioEntryHandoffMaterializer {
     }
     return new DeterministicPortfolioEntryHandoffMaterializer();
   }
-  try {
-    const provider = loadPortfolioEntryProviderConfig();
-    const prompts = loadResolvedPromptManifest();
-    const candidate = createLiveCandidate(provider, prompts);
-    return new LivePortfolioEntryHandoffMaterializer(new FetchStructuredModelAdapter(provider), candidate, prompts);
-  } catch (err) {
-    // Degrading silently here surfaces later as PORTFOLIO_ENTRY_MODEL_PROVIDER_FAILURE
-    // on every request, which points at the provider instead of the real cause.
-    logger.error({ err }, 'Portfolio Entry live handoff materializer is not configured; falling back to unconfigured.');
-    return new UnconfiguredPortfolioEntryHandoffMaterializer();
-  }
+  // Handoff is a deterministic projection of persisted structured state. A
+  // live model may enrich wording in a future opt-in path, but it is never a
+  // prerequisite for rendering or saving the handoff.
+  return new DeterministicPortfolioEntryHandoffMaterializer();
+}
+
+function createResilientModel(primaryConfig: ReturnType<typeof loadPortfolioEntryProviderConfig>) {
+  const primary = new FetchStructuredModelAdapter(primaryConfig);
+  const fallback = loadFallbackProviderConfig();
+  return new ResilientStructuredModelAdapter(
+    primary,
+    fallback ? new FetchStructuredModelAdapter(fallback) : undefined,
+  );
+}
+
+function loadFallbackProviderConfig() {
+  const env = process.env;
+  const apiKey = env.PORTFOLIO_ENTRY_FALLBACK_API_KEY?.trim();
+  if (!apiKey) return undefined;
+  const provider = (env.PORTFOLIO_ENTRY_FALLBACK_PROVIDER?.trim() || 'deepseek_responses') as 'openai_responses' | 'deepseek_responses';
+  if (provider !== 'openai_responses' && provider !== 'deepseek_responses') return undefined;
+  return {
+    provider,
+    model: env.PORTFOLIO_ENTRY_FALLBACK_MODEL?.trim() || (provider === 'openai_responses' ? 'gpt-4o-mini' : 'deepseek-chat'),
+    apiKey,
+    baseUrl: (env.PORTFOLIO_ENTRY_FALLBACK_BASE_URL?.trim() || (provider === 'openai_responses' ? 'https://api.openai.com/v1' : 'https://api.deepseek.com')).replace(/\/$/, ''),
+    timeoutMs: Number(env.PORTFOLIO_ENTRY_FALLBACK_TIMEOUT_MS || 30_000),
+  };
 }
 
 function createLiveCandidate(

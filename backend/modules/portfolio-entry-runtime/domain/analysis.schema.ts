@@ -88,6 +88,8 @@ export const questionItemV2Schema = z.object({
 });
 
 export const questionPlanV2Schema = z.object({
+  // The persisted contract remains an array for legacy history. Productive
+  // turns are normalized to one question by the session runtime.
   questions: z.array(questionItemV2Schema).max(3),
   question_count: z.number().int().min(0).max(3),
   stop_reason: z.enum([

@@ -2,8 +2,8 @@
 
 Ported from ECC's gan-evaluator weighted-rubric pattern: a set of weighted criteria produce
 a 0..10 score with a PASS/FAIL threshold. Kept deterministic (code-based, not LLM) so eval
-runs are reproducible in both modes; the weighting is the same rubric a human reviewer would
-apply to "is the next action concrete, grounded and proportional?".
+runs are reproducible in both modes. This is a structural proxy, not human assessment
+of question relevance, escalation ownership or downstream answer quality.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from harness.eval.dataset import GoldenCase
+from harness.eval.metrics import classification_correct, gate_compliant, routing_correct
 
 PASS_THRESHOLD = 7.0
 
@@ -54,4 +55,9 @@ def grade_next_action(case: GoldenCase, arm) -> Grade:  # arm: ArmResult (avoid 
         "proportionality": proportionality,
     }
     score10 = round(10.0 * sum(_WEIGHTS[k] * v for k, v in breakdown.items()), 3)
-    return Grade(score=score10, verdict="PASS" if score10 >= PASS_THRESHOLD else "FAIL", breakdown=breakdown)
+    correct = (routing_correct(case, arm) and gate_compliant(case, arm)
+               and classification_correct(case, arm) is not False
+               and arm.grounded_forbidden_hits == 0)
+    # A polished but wrong disposition/route cannot pass on style points.
+    return Grade(score=score10, verdict="PASS" if correct and score10 >= PASS_THRESHOLD else "FAIL",
+                 breakdown=breakdown)

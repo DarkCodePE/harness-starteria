@@ -463,7 +463,7 @@ Objetivo:
 
 Límite inicial:
 
-`0–3 preguntas críticas`
+`0–1 pregunta user-facing activa por turno; máximo 3 preguntas user-facing secuenciales`
 
 Priorizar:
 1. intención de negocio ambigua;
@@ -475,6 +475,23 @@ Priorizar:
 
 Pantalla 1 **planifica** las preguntas.
 Pantalla 2 **las presenta y obtiene respuestas**.
+
+Reglas de convergencia:
+
+- el sistema puede detectar múltiples gaps internamente, pero solo uno puede convertirse en active question;
+- una respuesta Quick Clarification mapea a `matchedQuestionIds` de cardinalidad `0..1`;
+- `QUESTION ANSWERED` no equivale a `GAP RESOLVED`; “No lo sé todavía” retira la pregunta sin resolver su gap;
+- `answered_gaps` contiene solo gaps realmente resueltos, nunca el historial de preguntas respondidas;
+- una pregunta presentada no puede reaparecer como active question por ID, wording, resolve target o equivalencia material determinista;
+- el active question proviene del turno actual/latest, sin fallback histórico;
+- tras cada respuesta debe surgir una nueva pregunta materialmente distinta, el checkpoint o un stop técnico/de seguridad.
+
+El checkpoint puede aparecer después de 0, 1, 2 o 3 preguntas y conserva:
+
+`Ya tengo suficiente claridad para proponerte un primer abordaje`
+
+`Ver mi propuesta de abordaje` → `provisional_route` → `ready_for_handoff`  
+`Seguir aterrizando mi necesidad` → `guided_exploration`
 
 ---
 
@@ -576,7 +593,7 @@ Input: `Necesito ordenar esto antes del comité.`
 Esperado:
 - conservar ambigüedad;
 - no inventar qué es “esto”;
-- question_plan <= 3.
+- question_plan user-facing <= 1 por turno; el presupuesto total Quick Clarification <= 3.
 
 ## Contradictorio
 
@@ -683,6 +700,9 @@ No requieren ADR:
 - [ ] no modifica gating del Adaptive Core;
 - [ ] no amplía autoridad IA;
 - [ ] no cambia cardinalidad corporativa.
+- [ ] conserva `questions[]` para compatibilidad y no muta turnos históricos con más de una pregunta;
+- [ ] el active question nunca usa fallback histórico;
+- [ ] answer identity, `answered_gaps`, budget y convergence cumplen ADR-002.
 
 ---
 

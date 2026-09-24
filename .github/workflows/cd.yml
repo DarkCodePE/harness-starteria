@@ -193,11 +193,12 @@ jobs:
           STARTERIA_AI_SERVICE_TOKEN: ${{ secrets.STARTERIA_AI_SERVICE_TOKEN }}
           STARTERIA_BRIDGE_SHARED_SECRET: ${{ secrets.STARTERIA_BRIDGE_SHARED_SECRET }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
           PORTFOLIO_ENTRY_API_KEY: ${{ secrets.PORTFOLIO_ENTRY_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: |
           set -euo pipefail
-          for name in DOCKERHUB_USERNAME DOCKERHUB_TOKEN RACKSPACE_REFRESH_TOKEN RACKSPACE_ORG_NAME RACKSPACE_CLOUDSPACE_NAME STARTERIA_JWT_SECRET STARTERIA_DB_PASSWORD STARTERIA_AI_SERVICE_TOKEN STARTERIA_BRIDGE_SHARED_SECRET OPENROUTER_API_KEY PORTFOLIO_ENTRY_API_KEY GOOGLE_CLIENT_ID; do
+          for name in DOCKERHUB_USERNAME DOCKERHUB_TOKEN RACKSPACE_REFRESH_TOKEN RACKSPACE_ORG_NAME RACKSPACE_CLOUDSPACE_NAME STARTERIA_JWT_SECRET STARTERIA_DB_PASSWORD STARTERIA_AI_SERVICE_TOKEN STARTERIA_BRIDGE_SHARED_SECRET OPENROUTER_API_KEY JEV_API_KEY PORTFOLIO_ENTRY_API_KEY GOOGLE_CLIENT_ID; do
             [[ -n "${!name}" ]] || { echo "::error::Missing required secret $name"; exit 1; }
           done
       - uses: azure/setup-kubectl@v4
@@ -250,6 +251,7 @@ jobs:
           PORTFOLIO_ENTRY_API_KEY: ${{ secrets.PORTFOLIO_ENTRY_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           SMTP_HOST: ${{ secrets.STARTERIA_SMTP_HOST }}
           SMTP_USER: ${{ secrets.STARTERIA_SMTP_USER }}
@@ -273,7 +275,8 @@ jobs:
             --from-literal=SMTP_PASS="${SMTP_PASS:-}" --from-literal=PILOT_LEAD_NOTIFY_FROM="${PILOT_LEAD_NOTIFY_FROM:-}" \
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n "$NAMESPACE" create secret generic starteria-ai-service-secrets \
-            --from-literal=OPENROUTER_API_KEY="$OPENROUTER_API_KEY" --from-literal=LANGSMITH_API_KEY="${LANGSMITH_API_KEY:-}" \
+            --from-literal=OPENROUTER_API_KEY="$OPENROUTER_API_KEY" --from-literal=JEV_API_KEY="$JEV_API_KEY" \
+            --from-literal=LANGSMITH_API_KEY="${LANGSMITH_API_KEY:-}" \
             --from-literal=AI_SERVICE_INTERNAL_TOKEN="$AI_SERVICE_TOKEN" --from-literal=BACKEND_WEBHOOK_TOKEN="$AI_SERVICE_TOKEN" \
             --dry-run=client -o yaml | kubectl apply -f -
       - name: Apply manifests and set release images
