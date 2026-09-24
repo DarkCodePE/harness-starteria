@@ -138,3 +138,47 @@ export type StrategicFramingReadInput = {
   } | null;
   now?: () => Date;
 };
+
+export type StrategicFramingProvisionalSourceMode = 'public_entry' | 'enterprise_direct' | 'existing_portfolio';
+export type StrategicFramingProvisionalSubject = 'front_like' | 'challenge_like' | 'initiative_like' | 'unresolved';
+export type StrategicFramingParentContextStatus = 'known' | 'provisional' | 'unresolved';
+
+export type StrategicFramingCorrection = {
+  intendedMovement?: string | null;
+  whyItMatters?: string | null;
+  movementSignalStatus?: string | null;
+  movementSignalValue?: string | null;
+  horizonContext?: string | null;
+  decisionToEnable?: string | null;
+  subjectLevel?: StrategicFramingProvisionalSubject;
+  scopeAssessment?: StrategicFramingReadModel['scopeAssessment'];
+  rationaleUncertainty?: string | null;
+  parentStatus?: StrategicFramingParentContextStatus;
+  parentContext?: { label?: string | null; sourceRefs?: string[] };
+  sufficiency?: StrategicFramingReadModel['sufficiency'];
+};
+
+export type StrategicFramingProvisionalState = {
+  id: string;
+  userId: string;
+  organizationId: string | null;
+  sourceMode: StrategicFramingProvisionalSourceMode;
+  logicalContextKey: string;
+  sourceRefs: string[];
+  provenance: ReadonlyArray<{ sourceRef: string; kind: FramingProvenance | 'source_or_derived' | 'human_corrected' | 'human_confirmed' | 'unresolved' }>;
+  intendedMovement: string | null;
+  whyItMatters: string | null;
+  movementSignalStatus: string | null;
+  movementSignalValue: string | null;
+  horizonContext: string | null;
+  decisionToEnable: string | null;
+  subjectLevel: StrategicFramingProvisionalSubject;
+  scopeAssessment: StrategicFramingReadModel['scopeAssessment'];
+  rationaleUncertainty: string | null;
+  parentStatus: StrategicFramingParentContextStatus;
+  parentContext: { label: string | null; sourceRefs: string[] };
+  sufficiency: StrategicFramingReadModel['sufficiency'];
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};

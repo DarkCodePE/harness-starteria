@@ -128,8 +128,12 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   PH-3B frontend implementation is not present.
 - Strategic Framing SF-0 documentation is materialized under
   `docs/portfolio-lead/07-strategic-framing/` and human-approved on
-  2026-09-24. The Experience Contract is approved, Strategic Framing runtime
-  is not implemented, and SF-1 through SF-8 remain unexecuted.
+  2026-09-24. SF-1 current-state audit is completed, SF-2 read model is
+  implemented, SF-3A provisional-state decision is approved, and SF-3B
+  provisional persistence/application state is implemented but unverified.
+  SF-3C and later slices are not implemented. Strategic Framing is not
+  end-to-end implemented; no routes, UI, Copilot integration or canonical
+  promotion are included.
 - The Portfolio Lead reconciliation plan, glossary/context map and PH-2
   revalidation report are indexed evidence/reference artifacts, not new
   authority.

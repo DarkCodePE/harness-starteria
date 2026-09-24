@@ -2621,6 +2621,77 @@ model PortfolioBootstrapSession {
   @@index([existingWorkStatus])
 }
 
+enum StrategicFramingProvisionalSourceMode {
+  public_entry
+  enterprise_direct
+  existing_portfolio
+}
+
+enum StrategicFramingProvisionalSubject {
+  front_like
+  challenge_like
+  initiative_like
+  unresolved
+}
+
+enum StrategicFramingProvisionalParentStatus {
+  known
+  provisional
+  unresolved
+}
+
+model StrategicFramingProvisionalState {
+  id                   String                                  @id @default(cuid())
+  userId               String
+  organizationId       String?
+  sourceMode           StrategicFramingProvisionalSourceMode
+  logicalContextKey    String
+  sourceRefs           Json
+  provenance           Json
+  intendedMovement     String?
+  whyItMatters         String?
+  movementSignalStatus String?
+  movementSignalValue  String?
+  horizonContext       String?
+  decisionToEnable     String?
+  subjectLevel         StrategicFramingProvisionalSubject
+  scopeAssessment      Json
+  rationaleUncertainty String?
+  parentStatus         StrategicFramingProvisionalParentStatus
+  parentContext        Json
+  sufficiencyStatus    String
+  blockers             Json
+  softGaps             Json
+  optionalContext      Json
+  version              Int                                     @default(1)
+  createdAt            DateTime                                @default(now())
+  updatedAt            DateTime                                @updatedAt
+
+  history              StrategicFramingProvisionalStateHistory[]
+
+  @@unique([userId, logicalContextKey])
+  @@index([organizationId])
+  @@index([sourceMode])
+  @@index([parentStatus])
+}
+
+model StrategicFramingProvisionalStateHistory {
+  id         String                           @id @default(cuid())
+  stateId    String
+  version    Int
+  actorUserId String?
+  action     String
+  reason     String?
+  snapshot   Json
+  createdAt  DateTime                         @default(now())
+
+  state      StrategicFramingProvisionalState @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  @@unique([stateId, version])
+  @@index([actorUserId])
+  @@index([createdAt])
+}
+
 model PortfolioAnchor {
   id                   String                              @id @default(cuid())
   bootstrapSessionId   String                              @unique
