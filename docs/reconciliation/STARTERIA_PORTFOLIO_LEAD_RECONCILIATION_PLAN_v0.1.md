@@ -1,4 +1,4 @@
-# StarterÃ­a â€” Portfolio Lead Reconciliation Plan v0.1
+﻿# StarterÃƒÂ­a Ã¢â‚¬â€ Portfolio Lead Reconciliation Plan v0.1
 
 **Date:** 2026-09-24
 **Status:** RECONCILIATION BASELINE / HUMAN REVIEW REQUIRED
@@ -54,13 +54,13 @@ Portfolio Entry runtime/UI/E2E should not be restored from the older branch vers
 
 - `backend/modules/portfolio/portfolio-home.read-service.ts`
 - `backend/modules/portfolio/__tests__/portfolio-home.read-service.test.ts`
-- `backend/modules/portfolio/portfolio.controller.ts` â€” only the PH-2 Home read integration delta
-- `backend/modules/portfolio/portfolio.router.ts` â€” only `GET /home` read integration delta
+- `backend/modules/portfolio/portfolio.controller.ts` Ã¢â‚¬â€ only the PH-2 Home read integration delta
+- `backend/modules/portfolio/portfolio.router.ts` Ã¢â‚¬â€ only `GET /home` read integration delta
 - `docs/portfolio-lead/06-portfolio-home-governance/**`
 - `docs/portfolio-lead/90-implementation-reports/PORTFOLIO_HOME_READ_MODEL_IMPLEMENTATION_REPORT_v0.1.md`
 - `docs/portfolio-lead/90-implementation-reports/PORTFOLIO_HOME_UX_RECONCILIATION_PH3A_v0.1.md`
 - `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`
-- `docs/portfolio-lead/07-strategic-framing/STRATEGIC_FRAMING_CONTEXT_v0.1.md` â€” update before promotion
+- `docs/portfolio-lead/07-strategic-framing/STRATEGIC_FRAMING_CONTEXT_v0.1.md` Ã¢â‚¬â€ update before promotion
 
 ### 3.3 Do not promote automatically
 
@@ -73,49 +73,49 @@ The following remain candidate/experience concepts until their own review/ADR bo
 - canonical `StrategicGap` / `StrategicObservation`;
 - persistent LIGHT/STANDARD/DEEP enum;
 - new Project vs Initiative identity split;
-- any automatic clustering â†’ Strategic Front or Gap â†’ Challenge mutation.
+- any automatic clustering Ã¢â€ â€™ Strategic Front or Gap Ã¢â€ â€™ Challenge mutation.
 
 ## 4. New validated product decisions to reconcile into SF-0
 
 The latest discussion adds the following experience decisions:
 
-### R-DEC-01 â€” Portfolio Entry is not an exclusive gateway
+### R-DEC-01 Ã¢â‚¬â€ Portfolio Entry is not an exclusive gateway
 
 Public Portfolio Entry is a self-service acquisition/discovery experience. Strategic Framing must also be reachable from Enterprise Direct and Existing Portfolio paths.
 
-### R-DEC-02 â€” Strategic Interpretation is reusable
+### R-DEC-02 Ã¢â‚¬â€ Strategic Interpretation is reusable
 
 Intent clarification, reverse alignment, ambiguity detection and strategic questioning are reusable cognitive capabilities. They should not be duplicated as separate business logic per channel.
 
-### R-DEC-03 â€” Entry paths converge on Portfolio Anchor
+### R-DEC-03 Ã¢â‚¬â€ Entry paths converge on Portfolio Anchor
 
 ```text
-Public Portfolio Entry â”€â”
-Enterprise Direct â”€â”€â”€â”€â”€â”€â”¼â†’ Strategic Interpretation â†’ Portfolio Anchor
-Existing Portfolio â”€â”€â”€â”€â”€â”˜
-                                             â†“
+Public Portfolio Entry Ã¢â€â‚¬Ã¢â€Â
+Enterprise Direct Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Â¼Ã¢â€ â€™ Strategic Interpretation Ã¢â€ â€™ Portfolio Anchor
+Existing Portfolio Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€Ëœ
+                                             Ã¢â€ â€œ
                                       Strategic Framing
 ```
 
-### R-DEC-04 â€” Interpretation is not confirmed structure
+### R-DEC-04 Ã¢â‚¬â€ Interpretation is not confirmed structure
 
 Entry/interpretation output may contain provisional understanding, candidate outcomes or recommended directions. It does not automatically create/confirm Strategic Front, Driver, Gap, Opportunity or Challenge.
 
-### R-DEC-05 â€” Do not repeat resolved intake
+### R-DEC-05 Ã¢â‚¬â€ Do not repeat resolved intake
 
 Strategic Framing should consume already-resolved upstream context and only reopen it when stale, conflicting, materially insufficient or explicitly challenged.
 
-### R-DEC-06 â€” Strategic Framing and Home remain separate
+### R-DEC-06 Ã¢â‚¬â€ Strategic Framing and Home remain separate
 
 Strategic Framing structures/revises strategic framing. Portfolio Home continuously observes/governs attention, progress and decisions.
 
 ## 5. Reconciliation execution sequence
 
-### REC-0 â€” Freeze functional additions on the branch
+### REC-0 Ã¢â‚¬â€ Freeze functional additions on the branch
 
 Do not add new Portfolio Home/Strategic Framing runtime behavior until branch reconciliation is complete.
 
-### REC-1 â€” Bring current main into the existing branch
+### REC-1 Ã¢â‚¬â€ Bring current main into the existing branch
 
 Preserve branch name `docs/portfolio-home-v2-authority`.
 
@@ -129,7 +129,7 @@ Conflict policy:
 - PH-3A docs: **retain**.
 - SF context/AGENTS: **retain intent, update with R-DEC-01..06**.
 
-### REC-2 â€” Validate PH-2 against current main
+### REC-2 Ã¢â‚¬â€ Validate PH-2 against current main
 
 Required minimum checks:
 
@@ -145,7 +145,7 @@ Required minimum checks:
 
 If any current-main domain change makes PH-2 semantics ambiguous, stop and document the gap before adapting the read model.
 
-### REC-3 â€” Refresh authority/status files
+### REC-3 Ã¢â‚¬â€ Refresh authority/status files
 
 Update only after REC-2 evidence exists:
 
@@ -157,7 +157,7 @@ Update only after REC-2 evidence exists:
 
 Do not label Portfolio Home `V2_MIGRATED` merely because PH-2 backend or PH-3A design exists.
 
-### REC-4 â€” Finalize SF-0 human review
+### REC-4 Ã¢â‚¬â€ Finalize SF-0 human review
 
 Update the SF-0 package with:
 
@@ -167,7 +167,7 @@ Update the SF-0 package with:
 - Front refinement;
 - dynamic lenses;
 - adaptive depth;
-- Gap â†’ Challenge rules;
+- Gap Ã¢â€ â€™ Challenge rules;
 - sufficiency;
 - Direct/Mixed/Copilot;
 - Home boundary.
@@ -178,7 +178,7 @@ Then close only with explicit human approval:
 SF-0 HUMAN REVIEW: APPROVED
 ```
 
-### REC-5 â€” Execute SF-1 current-state audit
+### REC-5 Ã¢â‚¬â€ Execute SF-1 current-state audit
 
 SF-1 must map target capability to current implementation and classify every item:
 
@@ -193,7 +193,7 @@ TBD / NEEDS EVIDENCE
 
 It must explicitly inspect reuse of Portfolio Entry strategic interpretation/reverse alignment for Enterprise Direct and Existing Portfolio paths.
 
-### REC-6 â€” Only then resume runtime implementation
+### REC-6 Ã¢â‚¬â€ Only then resume runtime implementation
 
 Target sequence:
 
@@ -202,48 +202,48 @@ SF-2 Read Model
 SF-3 Editable Front Workspace
 SF-4 Adaptive Lenses
 SF-5 Gap Prioritization
-SF-6 Gap â†’ Challenge
+SF-6 Gap Ã¢â€ â€™ Challenge
 SF-7 Portfolio Home integration
 SF-8 E2E
-â†“
+Ã¢â€ â€œ
 PH-3B frontend Home read-model integration
-â†“
+Ã¢â€ â€œ
 PH-4 Activation/Handoff integration
-â†“
+Ã¢â€ â€œ
 PH-5 Portfolio Home E2E closure
 ```
 
 ## 6. Specific known gaps that must enter the implementation backlog
 
-### GAP-R01 â€” Direct login bypasses governed Bootstrap/Framing
+### GAP-R01 Ã¢â‚¬â€ Direct login bypasses governed Bootstrap/Framing
 
 Current direct Portfolio login works, but without a Portfolio Entry continuation it enters normal Home and does not create an equivalent governed setup path.
 
 Target: Enterprise Direct setup reaching Strategic Interpretation / Portfolio Anchor without requiring public Entry.
 
-### GAP-R02 â€” Strategic Front UI/write mismatch
+### GAP-R02 Ã¢â‚¬â€ Strategic Front UI/write mismatch
 
 Current Front UI captures fields not all persisted through the backend adapter/path, including fields such as `area`, `threshold`, `endDate`, `sponsorEmail` and `notes`. `Critica` priority currently degrades to backend `Alta`.
 
 Target: reconcile UI contract, API schema, persistence and read adapter before calling Front management complete.
 
-### GAP-R03 â€” Imported owner is candidate, not assignment
+### GAP-R03 Ã¢â‚¬â€ Imported owner is candidate, not assignment
 
 Excel/CSV owner mapping produces candidate context; it must not silently become canonical Initiative Owner.
 
-Target: candidate resolution â†’ human confirmation â†’ invitation â†’ accept â†’ ownership.
+Target: candidate resolution Ã¢â€ â€™ human confirmation Ã¢â€ â€™ invitation Ã¢â€ â€™ accept Ã¢â€ â€™ ownership.
 
-### GAP-R04 â€” No clustering â†’ strategic structure capability
+### GAP-R04 Ã¢â‚¬â€ No clustering Ã¢â€ â€™ strategic structure capability
 
 Current Bootstrap can analyze alignment/gaps but does not productively cluster portfolio work into candidate Fronts/Challenges.
 
 Target: reverse-alignment candidate structure with provenance and human confirmation.
 
-### GAP-R05 â€” Copilot capability surface is narrow
+### GAP-R05 Ã¢â‚¬â€ Copilot capability surface is narrow
 
 `CreateStrategicFront` exists as a guarded capability. `create_challenge`, `create_initiative`, owner assignment and clustering are not equivalent productive capabilities today.
 
-### GAP-R06 â€” Activation/Handoff target not implemented E2E
+### GAP-R06 Ã¢â‚¬â€ Activation/Handoff target not implemented E2E
 
 Current challenge-linked project creation collapses ownership/start/Steps too early. Target remains:
 
@@ -251,7 +251,7 @@ Current challenge-linked project creation collapses ownership/start/Steps too ea
 Invitation != Accept != Initiative/pre-start != Start != Step activation
 ```
 
-### GAP-R07 â€” Portfolio Home frontend not consuming PH-2 read model
+### GAP-R07 Ã¢â‚¬â€ Portfolio Home frontend not consuming PH-2 read model
 
 PH-2 backend exists on the branch. Current Home UI still primarily reads the legacy/intermediate Portfolio Lead state/selectors.
 
@@ -275,5 +275,3 @@ Reconciliation is complete only when:
 ## 8. Recommended immediate next action
 
 Prepare one Codex reconciliation slice limited to REC-1 through REC-3. Do not implement SF-1 or new product behavior in the same change.
-
-

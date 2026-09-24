@@ -1,44 +1,44 @@
-# StarterÃ­a â€” Glossary and Context Map v0.1
+﻿# StarterÃƒÂ­a Ã¢â‚¬â€ Glossary and Context Map v0.1
 
 **Date:** 2026-09-24
 **Status:** WORKING GLOSSARY / TRACEABILITY BASELINE
 **Purpose:** provide one shared vocabulary for product, design, AI, engineering and governance discussions. This glossary explains what each term means, when it appears, what authority it has and what it must not be confused with.
 
-## 1. How to read StarterÃ­a
+## 1. How to read StarterÃƒÂ­a
 
-StarterÃ­a should be read as a sequence of increasingly governed context:
+StarterÃƒÂ­a should be read as a sequence of increasingly governed context:
 
 ```text
 ENTRY CHANNEL
 Where did the user/context come from?
-        â†“
+        Ã¢â€ â€œ
 STRATEGIC INTERPRETATION
 What are they really trying to achieve/understand?
-        â†“
+        Ã¢â€ â€œ
 PORTFOLIO ANCHOR
 What is the minimum sufficiently clear reference for organizing work?
-        â†“
+        Ã¢â€ â€œ
 STRATEGIC FRAMING
 How should that intent be structured sufficiently for governance?
-        â†“
+        Ã¢â€ â€œ
 STRATEGIC FRONT
 What governed strategic outcome are we organizing around?
-        â†“
+        Ã¢â€ â€œ
 OBSERVATIONS / DRIVERS / GAPS / OPPORTUNITIES
 What explains, constrains or may improve that outcome?
-        â†“
+        Ã¢â€ â€œ
 PRIORITIZATION
 What deserves attention now given impact/capacity/context?
-        â†“
+        Ã¢â€ â€œ
 CHALLENGE
 What human-confirmed problem/opportunity should become governed work?
-        â†“
+        Ã¢â€ â€œ
 INVITATION / ACCEPT / START
 Who takes responsibility, and when does execution actually begin?
-        â†“
-INITIATIVE CORE / STEPS 0â€“4
+        Ã¢â€ â€œ
+INITIATIVE CORE / STEPS 0Ã¢â‚¬â€œ4
 How is one initiative developed and evidenced?
-        â†“
+        Ã¢â€ â€œ
 PORTFOLIO HOME
 What is happening across the portfolio, what needs attention, and what decision is next?
 ```
@@ -59,7 +59,7 @@ What is happening across the portfolio, what needs attention, and what decision 
 
 ### Entry Channel
 
-**Meaning:** the route through which context enters StarterÃ­a.
+**Meaning:** the route through which context enters StarterÃƒÂ­a.
 
 **Examples:**
 - Public Portfolio Entry;
@@ -75,7 +75,7 @@ What is happening across the portfolio, what needs attention, and what decision 
 
 ### Portfolio Entry
 
-**Meaning:** the public/self-service StarterÃ­a experience that helps a potential Portfolio Lead express what they need to achieve or understand in natural language.
+**Meaning:** the public/self-service StarterÃƒÂ­a experience that helps a potential Portfolio Lead express what they need to achieve or understand in natural language.
 
 **Produces:** provisional interpretation, Entry State, intent, extracted context, ambiguity/reverse-alignment findings and handoff context.
 
@@ -89,11 +89,11 @@ What is happening across the portfolio, what needs attention, and what decision 
 
 **Meaning:** assisted entry for a company already in a demo, pilot, workshop or commercial implementation context.
 
-**Target experience:** authenticated/provisioned workspace â†’ strategic intake/interpretation â†’ Portfolio Anchor â†’ Strategic Framing.
+**Target experience:** authenticated/provisioned workspace Ã¢â€ â€™ strategic intake/interpretation Ã¢â€ â€™ Portfolio Anchor Ã¢â€ â€™ Strategic Framing.
 
 **Authority:** validated experience decision; runtime journey not yet complete.
 
-**Do not confuse with:** skipping strategic questioning. Enterprise Direct removes the awkward public acquisition flow, not the cognitive value of StarterÃ­a challenging weak Fronts/Challenges.
+**Do not confuse with:** skipping strategic questioning. Enterprise Direct removes the awkward public acquisition flow, not the cognitive value of StarterÃƒÂ­a challenging weak Fronts/Challenges.
 
 ---
 
@@ -103,7 +103,7 @@ What is happening across the portfolio, what needs attention, and what decision 
 
 **Primary cognitive operation:** reverse alignment.
 
-**Target:** existing work â†’ patterns/connections â†’ candidate outcomes/Fronts/Gaps â†’ human review.
+**Target:** existing work Ã¢â€ â€™ patterns/connections Ã¢â€ â€™ candidate outcomes/Fronts/Gaps Ã¢â€ â€™ human review.
 
 **Forbidden:** fabricate strategy solely from clustering or inventory similarity.
 
@@ -138,10 +138,10 @@ What is happening across the portfolio, what needs attention, and what decision 
 
 ```text
 solution / initiative
-â†’ expected change
-â†’ metric / signal
-â†’ business intent
-â†’ continuation criterion
+Ã¢â€ â€™ expected change
+Ã¢â€ â€™ metric / signal
+Ã¢â€ â€™ business intent
+Ã¢â€ â€™ continuation criterion
 ```
 
 **Authority:** analytical capability; results remain provisional until confirmed where material.
@@ -175,13 +175,13 @@ solution / initiative
 - `anchor_sufficient != corporate strategy approved`;
 - `anchor_confirmed != Challenge created`.
 
-**How to read it:** â€œWhat do we know enough about to start organizing work responsibly?â€
+**How to read it:** Ã¢â‚¬Å“What do we know enough about to start organizing work responsibly?Ã¢â‚¬Â
 
 ---
 
 ### Portfolio Bootstrap
 
-**Meaning:** B0â€“B5 experience that carries forward prior context, confirms/completes the Anchor, ingests existing work, proposes structure, asks for material human review and publishes a first Portfolio Reading.
+**Meaning:** B0Ã¢â‚¬â€œB5 experience that carries forward prior context, confirms/completes the Anchor, ingests existing work, proposes structure, asks for material human review and publishes a first Portfolio Reading.
 
 **Primary job:** low-effort transition from context to first governed Portfolio reading.
 
@@ -209,7 +209,7 @@ solution / initiative
 
 **Authority:** provisional.
 
-**Required progression:** candidate â†’ identity resolution â†’ human confirmation â†’ invitation/acceptance â†’ real ownership.
+**Required progression:** candidate Ã¢â€ â€™ identity resolution Ã¢â€ â€™ human confirmation Ã¢â€ â€™ invitation/acceptance Ã¢â€ â€™ real ownership.
 
 **Forbidden:** assigning canonical Initiative ownership just because an Excel cell contains a name.
 
@@ -252,7 +252,7 @@ solution / initiative
 
 **Authority:** **derived persisted snapshot**, not canonical domain truth.
 
-**How to read it:** â€œGiven current governed sources, what is the best factual reading of this Portfolio now?â€
+**How to read it:** Ã¢â‚¬Å“Given current governed sources, what is the best factual reading of this Portfolio now?Ã¢â‚¬Â
 
 ---
 
@@ -264,13 +264,13 @@ solution / initiative
 
 **Inputs may come from:** Public Entry, Enterprise Direct, Existing Portfolio, Bootstrap/Anchor.
 
-**Primary question:** â€œHow should this intent be structured sufficiently for governance?â€
+**Primary question:** Ã¢â‚¬Å“How should this intent be structured sufficiently for governance?Ã¢â‚¬Â
 
 **Does not:** continuously monitor the Portfolio or activate Initiative Core.
 
 ---
 
-### Strategic Front / Frente EstratÃ©gico
+### Strategic Front / Frente EstratÃƒÂ©gico
 
 **Meaning:** a governable strategic unit organized around an outcome the organization wants to move.
 
@@ -326,7 +326,7 @@ The outcome is the central anchor of the Front; the Front adds governance and en
 
 **Authority:** experience/read-model concept in SF-0; canonical persistence not yet authorized.
 
-**Possible progression:** Observation â†’ Driver/Gap/Opportunity.
+**Possible progression:** Observation Ã¢â€ â€™ Driver/Gap/Opportunity.
 
 ---
 
@@ -336,7 +336,7 @@ The outcome is the central anchor of the Front; the Front adds governance and en
 
 **Authority:** Strategic Framing concept; exact canonical representation TBD in SF-1+.
 
-**How to read it:** â€œWhat is materially causing or shaping the outcome?â€
+**How to read it:** Ã¢â‚¬Å“What is materially causing or shaping the outcome?Ã¢â‚¬Â
 
 ---
 
@@ -383,7 +383,7 @@ The outcome is the central anchor of the Front; the Front adds governance and en
 - soft gap;
 - useful but optional context.
 
-**How to read it:** â€œDo we know enough for this decision now?â€ rather than â€œDid we fill every field?â€
+**How to read it:** Ã¢â‚¬Å“Do we know enough for this decision now?Ã¢â‚¬Â rather than Ã¢â‚¬Å“Did we fill every field?Ã¢â‚¬Â
 
 ---
 
@@ -405,13 +405,13 @@ The outcome is the central anchor of the Front; the Front adds governance and en
 
 ```text
 Observation
-â†’ Driver / Gap / Opportunity
-â†’ Prioritization
-â†’ Human confirmation
-â†’ Challenge
+Ã¢â€ â€™ Driver / Gap / Opportunity
+Ã¢â€ â€™ Prioritization
+Ã¢â€ â€™ Human confirmation
+Ã¢â€ â€™ Challenge
 ```
 
-**Forbidden:** Lens â†’ Challenge, AI inference â†’ Challenge, Gap â†’ Challenge automatically.
+**Forbidden:** Lens Ã¢â€ â€™ Challenge, AI inference Ã¢â€ â€™ Challenge, Gap Ã¢â€ â€™ Challenge automatically.
 
 ---
 
@@ -518,13 +518,13 @@ Observation
 
 **Meaning:** bounded context that governs how an individual Initiative is developed after Start.
 
-**Owns:** Step 0â€“4 lifecycle/evidence/development behavior.
+**Owns:** Step 0Ã¢â‚¬â€œ4 lifecycle/evidence/development behavior.
 
 **Portfolio Lead must not:** duplicate or directly write Step state.
 
 ---
 
-### Step 0â€“4
+### Step 0Ã¢â‚¬â€œ4
 
 **Meaning:** stable Core functions for developing an Initiative; not fixed-duration forms.
 
@@ -582,7 +582,7 @@ Observation
 
 ### Strategic Unit
 
-**Meaning in PH-2 read model:** compact Home projection preserving the lineage Strategic Front â†’ Challenge â†’ Initiative.
+**Meaning in PH-2 read model:** compact Home projection preserving the lineage Strategic Front Ã¢â€ â€™ Challenge Ã¢â€ â€™ Initiative.
 
 **Authority:** derived Home representation, not a new canonical domain entity.
 
@@ -594,7 +594,7 @@ Observation
 
 **Important distinction:** Home may combine canonical `AttentionItem` sources with derived Portfolio Reading/legacy-derived signals. The UI must preserve source/provenance rather than treating every attention row as equivalent canonical state.
 
-**Target presentation:** what happened â†’ why it matters â†’ affected context â†’ next movement.
+**Target presentation:** what happened Ã¢â€ â€™ why it matters Ã¢â€ â€™ affected context Ã¢â€ â€™ next movement.
 
 ---
 
@@ -604,7 +604,7 @@ Observation
 
 **Authority:** advisory unless tied to a specific governed command/requirement.
 
-**Do not confuse with:** a decision taken automatically by StarterÃ­a.
+**Do not confuse with:** a decision taken automatically by StarterÃƒÂ­a.
 
 ---
 
@@ -634,9 +634,9 @@ Useful/required information is not currently available.
 ### CONFLICTING
 Material sources disagree; system must expose conflict rather than silently choose.
 
-## 10. Reading StarterÃ­a by moment
+## 10. Reading StarterÃƒÂ­a by moment
 
-| Moment | Main object/context | What StarterÃ­a is allowed to say | Human checkpoint | What comes next |
+| Moment | Main object/context | What StarterÃƒÂ­a is allowed to say | Human checkpoint | What comes next |
 |---|---|---|---|---|
 | Public/enterprise entry | raw need/context | provisional understanding | only when material ambiguity remains | Strategic Interpretation |
 | Strategic Interpretation | intent + extracted/reverse-aligned context | candidate interpretation | confirm/correct material meaning | Portfolio Anchor |
@@ -679,14 +679,12 @@ Recommended rule:
 
 ```text
 Term
-â†’ definition
-â†’ authority class
-â†’ owner bounded context
-â†’ source document
-â†’ implementation mapping
-â†’ acceptance/evidence
+Ã¢â€ â€™ definition
+Ã¢â€ â€™ authority class
+Ã¢â€ â€™ owner bounded context
+Ã¢â€ â€™ source document
+Ã¢â€ â€™ implementation mapping
+Ã¢â€ â€™ acceptance/evidence
 ```
 
-A term should not be treated as â€œcanonicalâ€ merely because it appears in code, UI copy, prompts or historical PRDs.
-
-
+A term should not be treated as Ã¢â‚¬Å“canonicalÃ¢â‚¬Â merely because it appears in code, UI copy, prompts or historical PRDs.

@@ -1,7 +1,7 @@
-# Portfolio Lead Value Gaps Register v0.1
+﻿# Portfolio Lead Value Gaps Register v0.1
 
-**Status:** `EVIDENCE / PLANNING REGISTER — NOT AUTHORITY`  
-**Date:** 2026-09-24  
+**Status:** `EVIDENCE / PLANNING REGISTER â€” NOT AUTHORITY`
+**Date:** 2026-09-24
 **Scope:** known gaps recorded during REC-1 through REC-3; no fixes are authorized by this register.
 
 | ID | Gap | Current evidence | Treatment |

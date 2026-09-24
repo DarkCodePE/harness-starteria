@@ -1,6 +1,6 @@
-# Strategic Framing Traceability Matrix v0.1
+﻿# Strategic Framing Traceability Matrix v0.1
 
-**Estado:** `CANDIDATE` — baseline documental SF-0. `TBD` significa que no existe todavía una implementación o test verificado.
+**Estado:** `CANDIDATE` â€” baseline documental SF-0. `TBD` significa que no existe todavÃ­a una implementaciÃ³n o test verificado.
 
 | Scenario ID | Contract rule | Expected state | UI capability | Application/domain capability | Acceptance test | Implementation slice |
 |---|---|---|---|---|---|---|
@@ -16,9 +16,8 @@
 
 | Rule | Expected state | UI capability | Application/domain capability | Acceptance test | Slice |
 |---|---|---|---|---|---|
-| Observation → driver/gap/opportunity → prioritization → human confirmation → Challenge | Provenance and review state visible | Promote/confirm action | TBD | No automatic Challenge from lens, AI or gap | SF-5, SF-6 |
+| Observation â†’ driver/gap/opportunity â†’ prioritization â†’ human confirmation â†’ Challenge | Provenance and review state visible | Promote/confirm action | TBD | No automatic Challenge from lens, AI or gap | SF-5, SF-6 |
 | Structured workspace is system of record | State exists outside conversation | Workspace reflects applied insights | TBD | Copilot insight can be applied or discarded | SF-3, SF-4, SF-8 |
 | Copilot is advisory | Suggestions are non-canonical until accepted | Explainable suggestion UI | TBD | AI suggestion never silently canonicalizes | SF-4, SF-6 |
 | Challenge is distinct from Invitation/Initiative/Steps | No downstream lifecycle side effect | Boundary-preserving action | TBD | Challenge promotion does not activate downstream flow | SF-6 |
 | Portfolio Home future relation | Outcome, health, drivers, gaps, Challenges, coverage, learning, decisions consumable later | TBD; PH-3A unchanged | TBD | TBD | SF-7 |
-

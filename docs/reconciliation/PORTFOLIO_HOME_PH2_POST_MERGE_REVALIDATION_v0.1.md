@@ -1,8 +1,8 @@
-# Portfolio Home PH-2 Post-Merge Revalidation v0.1
+﻿# Portfolio Home PH-2 Post-Merge Revalidation v0.1
 
-**Status:** `EVIDENCE / REVALIDATION REPORT`  
-**Decision:** `GO_WITH_GAPS`  
-**Date:** 2026-09-24  
+**Status:** `EVIDENCE / REVALIDATION REPORT`
+**Decision:** `GO_WITH_GAPS`
+**Date:** 2026-09-24
 **Scope:** REC-2 validation evidence only; this document does not define product authority.
 
 ## 1. Refs / branch state
@@ -37,7 +37,7 @@ Executed from `front/`:
 
 ```text
 npm run test:backend -- ../backend/modules/portfolio/__tests__/portfolio-home.read-service.test.ts ../backend/modules/portfolio/__tests__/portfolio.router.authz.test.ts
-Result: PASS — 2 files, 13 tests
+Result: PASS â€” 2 files, 13 tests
 
 npm run typecheck:backend
 Result: PASS
@@ -46,7 +46,7 @@ git diff --check
 Result: PASS
 
 conflict marker scan
-Result: PASS — no unresolved merge markers
+Result: PASS â€” no unresolved merge markers
 ```
 
 No browser E2E was run; it is outside REC-2 scope.
@@ -65,13 +65,13 @@ No browser E2E was run; it is outside REC-2 scope.
 | `Decision` | CANONICAL READ as resolution relation | Resolved requests are excluded from pending decisions. |
 | latest Portfolio Reading | DERIVED persisted snapshot | Read from the latest bootstrap-session reading; absence remains explicitly unavailable. |
 
-## 6. Contract → implementation mapping
+## 6. Contract â†’ implementation mapping
 
 | Frozen Home contract area | PH-2 implementation | Result |
 | --- | --- | --- |
 | Portfolio Reading | `portfolioReading` maps summary, counts, home state, generated time and source | Implemented, with nullable/partial counts where no source exists |
 | Governance | `governance` exposes portfolio lead, sponsors, owners and authorities | Implemented; portfolio lead may be null; sponsor remains separate from authority |
-| Strategic units | `strategicUnits[]` maps front → challenge → initiative | Implemented; initiative and invitation visibility remain distinct |
+| Strategic units | `strategicUnits[]` maps front â†’ challenge â†’ initiative | Implemented; initiative and invitation visibility remain distinct |
 | Attention | `attention[]` combines reading signals and initiative blockers | Implemented; provenance is retained |
 | Pending decisions | `pendingDecisions[]` maps unresolved requests and authority when known | Implemented; resolved decisions excluded |
 | Recommendations | `recommendations[]` maps reading and existing metadata suggestions | Implemented as advisory and `requiresHumanConfirmation: true` |
