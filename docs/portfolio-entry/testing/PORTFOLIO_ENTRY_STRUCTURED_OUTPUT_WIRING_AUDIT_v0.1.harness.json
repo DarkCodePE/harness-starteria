@@ -1,0 +1,302 @@
+{
+  "audit": "HARNESS_ONLY_STRUCTURED_OUTPUT_WIRING",
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "structured_output_mode": "STRICT_JSON_SCHEMA",
+  "request_snapshot": {
+    "endpoint_path": "/v1/responses",
+    "method": "POST",
+    "header_names": [
+      "Authorization",
+      "Content-Type"
+    ],
+    "model": "gpt-5.6-luna",
+    "text_format": {
+      "type": "json_schema",
+      "name": "technical_smoke",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "ASK",
+              "STOP",
+              "ROUTE",
+              "REQUIRE_ORGANIZATIONAL_INPUT"
+            ]
+          },
+          "routing_target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "visible_question": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stop_rationale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deferred_gaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "next_action",
+          "routing_target",
+          "visible_question",
+          "stop_rationale",
+          "deferred_gaps"
+        ]
+      }
+    }
+  },
+  "serialized_provider_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "next_action": {
+        "type": "string",
+        "enum": [
+          "ASK",
+          "STOP",
+          "ROUTE",
+          "REQUIRE_ORGANIZATIONAL_INPUT"
+        ]
+      },
+      "routing_target": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "visible_question": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "stop_rationale": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "deferred_gaps": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "next_action",
+      "routing_target",
+      "visible_question",
+      "stop_rationale",
+      "deferred_gaps"
+    ]
+  },
+  "source_schema_summary": {
+    "zod": "object, strict, all five fields required; nullable string fields"
+  },
+  "calls": [
+    {
+      "index": 1,
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": [],
+      "parsed_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to help with regarding the audit?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      },
+      "validated_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to help with regarding the audit?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      }
+    },
+    {
+      "index": 2,
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": [],
+      "parsed_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to do with the audit call value of 2? Please provide the relevant audit context or task.",
+        "stop_rationale": null,
+        "deferred_gaps": [
+          "The purpose and expected output for audit_call are unspecified."
+        ]
+      },
+      "validated_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to do with the audit call value of 2? Please provide the relevant audit context or task.",
+        "stop_rationale": null,
+        "deferred_gaps": [
+          "The purpose and expected output for audit_call are unspecified."
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": [],
+      "parsed_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to do with audit_call 3?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      },
+      "validated_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to do with audit_call 3?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      }
+    },
+    {
+      "index": 4,
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": [],
+      "parsed_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to audit or help with regarding audit_call 4?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      },
+      "validated_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to audit or help with regarding audit_call 4?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      }
+    },
+    {
+      "index": 5,
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": [],
+      "parsed_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to do with the audit_call value of 5?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      },
+      "validated_output": {
+        "next_action": "ASK",
+        "routing_target": null,
+        "visible_question": "What would you like me to do with the audit_call value of 5?",
+        "stop_rationale": null,
+        "deferred_gaps": []
+      }
+    }
+  ],
+  "raw_provider_responses_first_three": [
+    {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "provider_model": "gpt-5.6-luna",
+        "output_text_json": {
+          "next_action": "ASK",
+          "routing_target": null,
+          "visible_question": "What would you like me to help with regarding the audit?",
+          "stop_rationale": null,
+          "deferred_gaps": []
+        },
+        "output_field_presence": {
+          "next_action": true,
+          "routing_target": true,
+          "visible_question": true,
+          "stop_rationale": true,
+          "deferred_gaps": true
+        },
+        "output_field_nulls": {
+          "routing_target": true,
+          "visible_question": false,
+          "stop_rationale": true
+        }
+      }
+    },
+    {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "provider_model": "gpt-5.6-luna",
+        "output_text_json": {
+          "next_action": "ASK",
+          "routing_target": null,
+          "visible_question": "What would you like me to do with the audit call value of 2? Please provide the relevant audit context or task.",
+          "stop_rationale": null,
+          "deferred_gaps": [
+            "The purpose and expected output for audit_call are unspecified."
+          ]
+        },
+        "output_field_presence": {
+          "next_action": true,
+          "routing_target": true,
+          "visible_question": true,
+          "stop_rationale": true,
+          "deferred_gaps": true
+        },
+        "output_field_nulls": {
+          "routing_target": true,
+          "visible_question": false,
+          "stop_rationale": true
+        }
+      }
+    },
+    {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "provider_model": "gpt-5.6-luna",
+        "output_text_json": {
+          "next_action": "ASK",
+          "routing_target": null,
+          "visible_question": "What would you like me to do with audit_call 3?",
+          "stop_rationale": null,
+          "deferred_gaps": []
+        },
+        "output_field_presence": {
+          "next_action": true,
+          "routing_target": true,
+          "visible_question": true,
+          "stop_rationale": true,
+          "deferred_gaps": true
+        },
+        "output_field_nulls": {
+          "routing_target": true,
+          "visible_question": false,
+          "stop_rationale": true
+        }
+      }
+    }
+  ],
+  "parser_observation": {
+    "shared_adapter_removes_nulls_before_zod": true,
+    "source_function": "removeProviderNullOptionals"
+  }
+}

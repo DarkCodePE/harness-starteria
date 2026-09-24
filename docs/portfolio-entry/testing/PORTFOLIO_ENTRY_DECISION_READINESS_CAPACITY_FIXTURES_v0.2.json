@@ -1,0 +1,63 @@
+{
+  "fixture_version": "HYP-005-fixture-model-v0.2",
+  "status": "TESTING",
+  "authority": "experimental-only",
+  "preserves_original_capacity_pair": true,
+  "development": [
+    {
+      "id": "CAP-V02-BLOCKING",
+      "title": "CAPACITY_COUNTERFACTUAL_CURRENT_DECISION",
+      "turns": [
+        "La decisión actual es si podemos continuar con el lanzamiento controlado; la capacidad operativa es la condición pendiente.",
+        "Puedo confirmar si existe capacidad comprometida para sostenerlo ahora."
+      ],
+      "expectation_mode": "STRICT_ACTION",
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_dependency": "BLOCKING",
+      "expected_sensitivity": "HIGH",
+      "expected_answerability": "USER_CAN_ANSWER",
+      "expected_answer_shape": "BOOLEAN",
+      "expected_action": "ASK",
+      "decision_counterfactual": {
+        "answer_a": "Sí existe capacidad comprometida.",
+        "consequence_a": "La decisión puede continuar bajo las condiciones actuales.",
+        "answer_b": "No existe capacidad comprometida.",
+        "consequence_b": "La decisión debe pausarse, condicionarse o enrutarse a otra ventana.",
+        "materially_different": "YES"
+      },
+      "required_invariants": [
+        "capacity remains explicit",
+        "no false readiness",
+        "no detailed workload redesign in Portfolio Entry"
+      ]
+    },
+    {
+      "id": "CAP-V02-LATER-STAGE",
+      "title": "CAPACITY_COUNTERFACTUAL_LATER_STAGE",
+      "turns": [
+        "La decisión de continuar y el routing ya están confirmados; queda planificar cómo distribuir la capacidad durante la iniciativa.",
+        "Las alternativas de capacidad pueden cambiar la secuencia de trabajo, pero no la decisión actual ni quién debe resolverla."
+      ],
+      "expectation_mode": "INVARIANT_BASED",
+      "acceptable_actions": ["ROUTE", "STOP"],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_dependency": "NON_BLOCKING",
+      "expected_sensitivity": "LOW",
+      "expected_answerability": "LATER_STAGE_DISCOVERY",
+      "expected_answer_shape": "OPEN_EXPLORATION",
+      "expected_action": "ROUTE",
+      "decision_counterfactual": {
+        "answer_a": "La capacidad se distribuye de una manera.",
+        "consequence_a": "Cambia la planificación de la iniciativa.",
+        "answer_b": "La capacidad se distribuye de otra manera.",
+        "consequence_b": "Cambia la planificación, pero no la decisión ni el routing actual.",
+        "materially_different": "NO"
+      },
+      "required_invariants": [
+        "later-stage boundary remains explicit",
+        "no implementation planning is pulled into Portfolio Entry",
+        "current decision is not reopened"
+      ]
+    }
+  ]
+}

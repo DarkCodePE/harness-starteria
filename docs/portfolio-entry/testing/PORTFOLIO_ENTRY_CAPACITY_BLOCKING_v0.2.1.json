@@ -1,0 +1,36 @@
+{
+  "fixture_version": "HYP-005-fixture-model-v0.2.1",
+  "status": "TESTING",
+  "authority": "experimental-only",
+  "historical_fixture_preserved": "CAP-V02-BLOCKING",
+  "development": [
+    {
+      "id": "CAP-V02-BLOCKING-v0.2.1",
+      "title": "CAPACITY_EXPLICIT_ROUTE_CHANGING_BLOCKER",
+      "turns": [
+        "La decisión actual es si podemos continuar con el lanzamiento controlado; la capacidad operativa es la condición pendiente.",
+        "Puedo confirmar si existe capacidad comprometida para sostenerlo ahora."
+      ],
+      "expectation_mode": "STRICT_ACTION",
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_dependency": "BLOCKING",
+      "expected_sensitivity": "HIGH",
+      "expected_answerability": "USER_CAN_ANSWER",
+      "expected_answer_shape": "BOOLEAN",
+      "expected_action": "ASK",
+      "decision_counterfactual": {
+        "answer_a": "Existe una persona o área con capacidad mínima comprometida para operar.",
+        "consequence_a": "La implementación controlada puede continuar.",
+        "answer_b": "Ninguna persona o área puede asumir la responsabilidad operativa mínima.",
+        "consequence_b": "La implementación formal no puede continuar y debe enrutarse a input organizacional o a otra ventana de decisión.",
+        "materially_different": "YES"
+      },
+      "required_invariants": [
+        "capacity uncertainty remains explicit",
+        "no false readiness",
+        "no implementation design in Portfolio Entry",
+        "no Step leakage"
+      ]
+    }
+  ]
+}

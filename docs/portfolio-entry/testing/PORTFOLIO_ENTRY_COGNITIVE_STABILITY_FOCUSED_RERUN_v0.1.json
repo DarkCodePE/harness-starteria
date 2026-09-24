@@ -1,0 +1,876 @@
+{
+  "candidate_id": "portfolio-entry-conversational-realization-v0.1",
+  "source_prompt_path": "test/portfolio-entry-v02-isolated-validation/decision-readiness-live-prompt.v0.1.md",
+  "cases": [
+    "CF-02",
+    "CF-05",
+    "CF-11"
+  ],
+  "repetitions": 10,
+  "requested_runs": 30,
+  "completed_runs": 30,
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "runs": [
+    {
+      "case_id": "CF-02",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "No se han descrito las ideas concretas ni sus posibles resultados."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para ordenar las ideas, primero hay que acordar qué resultado considera más importante la dirección; sin eso, cualquier prioridad sería arbitraria.",
+        "question": "¿Qué resultado debe pesar más en la decisión: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, acelerar la entrega u otro?",
+        "response": "Para ordenar las ideas, primero hay que acordar qué resultado considera más importante la dirección; sin eso, cualquier prioridad sería arbitraria.\n\n¿Qué resultado debe pesar más en la decisión: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, acelerar la entrega u otro?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado debe pesar más en la decisión: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, acelerar la entrega u otro?",
+        "visible_response": "Para ordenar las ideas, primero hay que acordar qué resultado considera más importante la dirección; sin eso, cualquier prioridad sería arbitraria.\n\n¿Qué resultado debe pesar más en la decisión: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, acelerar la entrega u otro?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No está identificado quién tiene autoridad para decidir si el piloto pasa a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto o dirección responsable de la operación",
+        "deferred_gaps": [
+          "Los criterios que esa persona o instancia usará para aprobar el paso a operación."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto tiene recursos suficientes, pero aún falta confirmar quién puede autorizar su paso a operación.",
+        "question": null,
+        "response": "El piloto ya cuenta con presupuesto y equipo, pero falta identificar a la persona o instancia con autoridad para aprobar el paso a operación. Hay que confirmarlo con el patrocinador del piloto o la dirección responsable antes de avanzar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto tiene recursos suficientes, pero aún falta confirmar quién puede autorizar su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El piloto ya cuenta con presupuesto y equipo, pero falta identificar a la persona o instancia con autoridad para aprobar el paso a operación. Hay que confirmarlo con el patrocinador del piloto o la dirección responsable antes de avanzar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "Ninguna para presentar la iniciativa al comité; la preparación necesaria ya está cubierta.",
+        "next_action": "ROUTE",
+        "routing_target": "Comité",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "question": null,
+        "response": "El siguiente paso es presentarla al comité. El diseño del experimento siguiente puede quedar para después de esa revisión."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso es presentarla al comité. El diseño del experimento siguiente puede quedar para después de esa revisión."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Falta definir qué resultado debe pesar más al comparar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o responsable de priorización",
+        "deferred_gaps": [
+          "No se ha aclarado cómo se compararán las ideas una vez definido el resultado prioritario."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para ordenar las ideas hace falta saber qué resultado considera más importante la dirección; sin esa aclaración, cualquier prioridad sería arbitraria.",
+        "question": null,
+        "response": "El siguiente paso es pedir a dirección que confirme qué resultado debe pesar más —por ejemplo, impacto, ingresos, reducción de costes o rapidez—. Con esa respuesta ya se podrá establecer una prioridad defendible entre las ideas."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para ordenar las ideas hace falta saber qué resultado considera más importante la dirección; sin esa aclaración, cualquier prioridad sería arbitraria.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso es pedir a dirección que confirme qué resultado debe pesar más —por ejemplo, impacto, ingresos, reducción de costes o rapidez—. Con esa respuesta ya se podrá establecer una prioridad defendible entre las ideas."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad formal para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto o autoridad de gobernanza que aprueba el paso a operación",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El presupuesto y el equipo ya están disponibles; lo que falta es confirmar quién tiene la autoridad formal para decidir el paso a operación.",
+        "question": null,
+        "response": "Hay que confirmarlo con el patrocinador del piloto o con la autoridad de gobernanza correspondiente antes de avanzar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El presupuesto y el equipo ya están disponibles; lo que falta es confirmar quién tiene la autoridad formal para decidir el paso a operación.",
+        "visible_question": null,
+        "visible_response": "Hay que confirmarlo con el patrocinador del piloto o con la autoridad de gobernanza correspondiente antes de avanzar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "No hay una brecha material para presentar la iniciativa al comité; el diseño del experimento siguiente queda como tarea posterior ya identificada.",
+        "next_action": "STOP",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": "La iniciativa cuenta con validación, responsable, presupuesto, capacidad y criterio de decisión acordado. La presentación al comité puede avanzar; el siguiente paso ya está definido y no requiere aclaración adicional aquí."
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa parece lista para presentarse al comité: está validada, tiene responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El diseño del experimento siguiente queda para después.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. El siguiente paso ya identificado es diseñar el experimento posterior."
+      },
+      "realized_visible": {
+        "presentation_mode": "SYNTHESIS_ONLY",
+        "visible_synthesis": "La iniciativa parece lista para presentarse al comité: está validada, tiene responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El diseño del experimento siguiente queda para después.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité. El siguiente paso ya identificado es diseñar el experimento posterior."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más en la priorización; falta una preferencia explícita de la dirección o del responsable de decisión.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o responsable de decidir las prioridades",
+        "deferred_gaps": [
+          "Criterios para comparar las ideas",
+          "Información disponible sobre cada idea",
+          "Restricciones de tiempo, recursos o riesgo"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para saber qué merece prioridad, primero hay que aclarar qué resultado considera más importante la dirección. Sin esa orientación, no se puede comparar las ideas de forma útil.",
+        "question": null,
+        "response": "Lo primero es pedir a la dirección o a la persona responsable que confirme qué resultado debe pesar más al priorizar. Hasta tener esa orientación, no conviene ordenar las ideas."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para saber qué merece prioridad, primero hay que aclarar qué resultado considera más importante la dirección. Sin esa orientación, no se puede comparar las ideas de forma útil.",
+        "visible_question": null,
+        "visible_response": "Lo primero es pedir a la dirección o a la persona responsable que confirme qué resultado debe pesar más al priorizar. Hasta tener esa orientación, no conviene ordenar las ideas."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No está identificado quién tiene la autoridad formal para decidir el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto o responsable con autoridad formal sobre la operación",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El presupuesto y el equipo ya están disponibles; lo que bloquea el siguiente paso es confirmar quién puede autorizar el paso a operación.",
+        "question": null,
+        "response": "Hay que confirmarlo con el patrocinador del piloto o con la persona responsable de autorizar cambios en la operación. Esa persona debe indicar si el piloto pasa a operación y bajo qué condiciones."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El presupuesto y el equipo ya están disponibles; lo que bloquea el siguiente paso es confirmar quién puede autorizar el paso a operación.",
+        "visible_question": null,
+        "visible_response": "Hay que confirmarlo con el patrocinador del piloto o con la persona responsable de autorizar cambios en la operación. Esa persona debe indicar si el piloto pasa a operación y bajo qué condiciones."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Ninguno para presentar la iniciativa al comité; queda pendiente el diseño del experimento siguiente.",
+        "next_action": "STOP",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y criterio de decisión acordado. Puede presentarse al comité sin esperar a completar el diseño del experimento posterior."
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para presentarse: ya tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede quedar como asunto posterior.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. El diseño del experimento siguiente puede abordarse después, sin retrasar esta presentación."
+      },
+      "realized_visible": {
+        "presentation_mode": "SYNTHESIS_ONLY",
+        "visible_synthesis": "La iniciativa está lista para presentarse: ya tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede quedar como asunto posterior.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité. El diseño del experimento siguiente puede abordarse después, sin retrasar esta presentación."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Criterio rector de prioridad: qué resultado debe pesar más para la dirección.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "No se conocen aún las alternativas concretas ni la información necesaria para compararlas."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección.",
+        "question": "¿Qué resultado debe pesar más al priorizar: impacto económico, urgencia, reducción de riesgos, satisfacción del cliente u otro?",
+        "response": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección. ¿Qué resultado debe pesar más al priorizar: impacto económico, urgencia, reducción de riesgos, satisfacción del cliente u otro?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado debe pesar más al priorizar: impacto económico, urgencia, reducción de riesgos, satisfacción del cliente u otro?",
+        "visible_response": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección. ¿Qué resultado debe pesar más al priorizar: impacto económico, urgencia, reducción de riesgos, satisfacción del cliente u otro?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "No está identificado quién tiene autoridad formal para confirmar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador ejecutivo o responsable formal de la decisión operativa",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es identificar a la persona con autoridad para confirmar el siguiente paso.",
+        "question": "¿Qué persona o comité tiene autoridad formal para decidir si el piloto pasa a operación?",
+        "response": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es identificar a la persona con autoridad para confirmar el siguiente paso. ¿Qué persona o comité tiene autoridad formal para decidir si el piloto pasa a operación?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es identificar a la persona con autoridad para confirmar el siguiente paso.",
+        "visible_question": null,
+        "visible_response": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es identificar a la persona con autoridad para confirmar el siguiente paso. ¿Qué persona o comité tiene autoridad formal para decidir si el piloto pasa a operación?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Falta definir el experimento siguiente antes de completar la preparación para el comité.",
+        "next_action": "ROUTE",
+        "routing_target": "Equipo responsable de diseñar el experimento siguiente",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El único pendiente es definir el experimento siguiente.",
+        "question": null,
+        "response": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El único pendiente es definir el experimento siguiente, así que conviene derivar ese trabajo al equipo responsable antes de presentarla al comité."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El único pendiente es definir el experimento siguiente.",
+        "visible_question": null,
+        "visible_response": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El único pendiente es definir el experimento siguiente, así que conviene derivar ese trabajo al equipo responsable antes de presentarla al comité."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "Falta una definición explícita de qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección",
+        "deferred_gaps": [
+          "No se han descrito aún las ideas concretas ni sus posibles resultados.",
+          "No se conocen las restricciones o plazos que podrían afectar la prioridad."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para decidir qué merece prioridad, primero hace falta acordar qué resultado considera más importante la dirección.",
+        "question": "¿Puede la dirección indicar qué debe pesar más: impacto esperado, urgencia, reducción de riesgos, ingresos u otro resultado?",
+        "response": "Para decidir qué merece prioridad, primero hace falta acordar qué resultado considera más importante la dirección. ¿Puede indicar qué debe pesar más: impacto esperado, urgencia, reducción de riesgos, ingresos u otro resultado?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta acordar qué resultado considera más importante la dirección.",
+        "visible_question": null,
+        "visible_response": "Para decidir qué merece prioridad, primero hace falta acordar qué resultado considera más importante la dirección. ¿Puede indicar qué debe pesar más: impacto esperado, urgencia, reducción de riesgos, ingresos u otro resultado?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad formal para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "La instancia de gobierno o el patrocinador ejecutivo que pueda designar formalmente al responsable de la aprobación.",
+        "deferred_gaps": [
+          "No se conocen los criterios que esa persona o instancia usará para aprobar el paso a operación."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El presupuesto y el equipo están disponibles, pero eso no define quién puede autorizar el paso a operación. Hace falta que la organización confirme formalmente esa responsabilidad.",
+        "question": null,
+        "response": "El presupuesto y el equipo están disponibles, pero eso no define quién puede autorizar el paso a operación. La organización debe confirmar formalmente qué persona o instancia tiene esa atribución."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El presupuesto y el equipo están disponibles, pero eso no define quién puede autorizar el paso a operación. Hace falta que la organización confirme formalmente esa responsabilidad.",
+        "visible_question": null,
+        "visible_response": "El presupuesto y el equipo están disponibles, pero eso no define quién puede autorizar el paso a operación. La organización debe confirmar formalmente qué persona o instancia tiene esa atribución."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No hay una brecha material para presentar la iniciativa: cuenta con validación, responsable, presupuesto, capacidad y criterio de decisión.",
+        "next_action": "ROUTE",
+        "routing_target": "comité",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa parece lista para ser presentada: está validada, tiene responsable, recursos disponibles y un criterio claro para decidir.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse ante el comité. El diseño del experimento siguiente puede quedar para después de esa revisión."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa parece lista para ser presentada: está validada, tiene responsable, recursos disponibles y un criterio claro para decidir.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse ante el comité. El diseño del experimento siguiente puede quedar para después de esa revisión."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 6,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultados debe privilegiar la priorización ni quién tiene autoridad para establecer ese orden.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección y responsables de las áreas afectadas",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para decidir qué merece prioridad, primero hace falta acordar qué resultados importan más: por ejemplo, impacto económico, urgencia, riesgo o beneficio para clientes. Sin ese criterio, cualquier orden sería arbitrario.",
+        "question": null,
+        "response": "La siguiente acción es pedir a la dirección y a los responsables de las áreas afectadas que definan qué resultados deben pesar más. Con ese acuerdo podremos ordenar las ideas de forma consistente."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta acordar qué resultados importan más: por ejemplo, impacto económico, urgencia, riesgo o beneficio para clientes. Sin ese criterio, cualquier orden sería arbitrario.",
+        "visible_question": null,
+        "visible_response": "La siguiente acción es pedir a la dirección y a los responsables de las áreas afectadas que definan qué resultados deben pesar más. Con ese acuerdo podremos ordenar las ideas de forma consistente."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 6,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad formal para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador ejecutivo o responsable formal de operaciones/gobernanza",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; para avanzar, falta confirmar quién puede aprobar formalmente su paso a operación.",
+        "question": null,
+        "response": "El siguiente paso es que el patrocinador ejecutivo o el responsable formal de operaciones confirme quién tiene autoridad para aprobar el paso del piloto a operación y comunique su decisión."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; para avanzar, falta confirmar quién puede aprobar formalmente su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso es que el patrocinador ejecutivo o el responsable formal de operaciones confirme quién tiene autoridad para aprobar el paso del piloto a operación y comunique su decisión."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 6,
+      "internal": {
+        "selected_material_gap": "No hay una carencia material para presentar la iniciativa al comité.",
+        "next_action": "ROUTE",
+        "routing_target": "Preparación y presentación ante el comité",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa parece lista para presentarse: está validada y cuenta con responsable, presupuesto, capacidad y criterios acordados. El diseño del experimento siguiente puede tratarse después de la presentación.",
+        "question": null,
+        "response": "La iniciativa parece lista para presentarse al comité: está validada y cuenta con responsable, presupuesto, capacidad y criterios acordados. El siguiente paso es preparar y realizar esa presentación; el diseño del experimento siguiente puede abordarse después."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa parece lista para presentarse: está validada y cuenta con responsable, presupuesto, capacidad y criterios acordados. El diseño del experimento siguiente puede tratarse después de la presentación.",
+        "visible_question": null,
+        "visible_response": "La iniciativa parece lista para presentarse al comité: está validada y cuenta con responsable, presupuesto, capacidad y criterios acordados. El siguiente paso es preparar y realizar esa presentación; el diseño del experimento siguiente puede abordarse después."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 7,
+      "internal": {
+        "selected_material_gap": "Falta una prioridad explícita de la dirección: qué resultado debe pesar más al comparar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección",
+        "deferred_gaps": [
+          "No se ha detallado todavía qué resultados ofrece cada idea ni con qué evidencia cuenta."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para priorizar las ideas hace falta acordar primero qué resultado considera más importante la dirección cuando haya que elegir entre alternativas.",
+        "question": "¿Qué resultado debe protegerse por encima de los demás: ingresos, margen, retención de clientes, reducción de riesgos u otro?",
+        "response": "Para priorizar las ideas hace falta acordar primero qué resultado considera más importante la dirección cuando haya que elegir entre alternativas.\n\n¿Qué resultado debe protegerse por encima de los demás: ingresos, margen, retención de clientes, reducción de riesgos u otro?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para priorizar las ideas hace falta acordar primero qué resultado considera más importante la dirección cuando haya que elegir entre alternativas.",
+        "visible_question": null,
+        "visible_response": "Para priorizar las ideas hace falta acordar primero qué resultado considera más importante la dirección cuando haya que elegir entre alternativas.\n\n¿Qué resultado debe protegerse por encima de los demás: ingresos, margen, retención de clientes, reducción de riesgos u otro?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 7,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad formal para decidir el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto, comité de gobernanza o responsable operativo con autoridad formal de aprobación",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta es que la organización confirme quién tiene la autoridad para aprobar su paso a operación.",
+        "question": null,
+        "response": "El siguiente paso debe confirmarlo el patrocinador del piloto, el comité de gobernanza o el responsable operativo que tenga autoridad formal para aprobar el paso a operación. Esa persona o instancia debe quedar identificada antes de continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta es que la organización confirme quién tiene la autoridad para aprobar su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso debe confirmarlo el patrocinador del piloto, el comité de gobernanza o el responsable operativo que tenga autoridad formal para aprobar el paso a operación. Esa persona o instancia debe quedar identificada antes de continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 7,
+      "internal": {
+        "selected_material_gap": "Ninguna para presentar la iniciativa al comité; el diseño del experimento siguiente es posterior a esta decisión.",
+        "next_action": "ROUTE",
+        "routing_target": "comité",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa parece lista para ser presentada: está validada, tiene responsable, presupuesto, capacidad disponible y un criterio de decisión acordado.",
+        "question": null,
+        "response": "La iniciativa parece lista para ser presentada al comité. El siguiente paso es llevarla a esa instancia; el diseño del experimento siguiente puede abordarse después."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa parece lista para ser presentada: está validada, tiene responsable, presupuesto, capacidad disponible y un criterio de decisión acordado.",
+        "visible_question": null,
+        "visible_response": "La iniciativa parece lista para ser presentada al comité. El siguiente paso es llevarla a esa instancia; el diseño del experimento siguiente puede abordarse después."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 8,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe tener mayor peso al priorizar las ideas.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "No se conocen todavía las ideas concretas ni sus posibles resultados.",
+          "No están claras las restricciones o urgencias que podrían afectar la prioridad."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección.",
+        "question": "¿Qué resultado debería pesar más al priorizar: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, cumplir un plazo u otro?",
+        "response": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección. ¿Qué resultado debería pesar más al priorizar: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, cumplir un plazo u otro?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado debería pesar más al priorizar: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, cumplir un plazo u otro?",
+        "visible_response": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección. ¿Qué resultado debería pesar más al priorizar: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, cumplir un plazo u otro?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 8,
+      "internal": {
+        "selected_material_gap": "Falta identificar la autoridad formal que puede aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto o responsable de gobernanza operativa",
+        "deferred_gaps": [
+          "Criterios y condiciones para autorizar el paso a operación."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya tiene presupuesto y equipo, pero aún falta confirmar quién tiene la autoridad para aprobar su paso a operación.",
+        "question": null,
+        "response": "Hay que confirmarlo con el patrocinador del piloto o con la persona responsable de la gobernanza operativa; esa figura debe indicar quién aprueba formalmente el paso a operación."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya tiene presupuesto y equipo, pero aún falta confirmar quién tiene la autoridad para aprobar su paso a operación.",
+        "visible_question": null,
+        "visible_response": "Hay que confirmarlo con el patrocinador del piloto o con la persona responsable de la gobernanza operativa; esa figura debe indicar quién aprueba formalmente el paso a operación."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 8,
+      "internal": {
+        "selected_material_gap": "No hay una carencia material para presentar la iniciativa al comité; el diseño del experimento siguiente es posterior a esa presentación.",
+        "next_action": "STOP",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": "La iniciativa ya cuenta con validación, responsable, presupuesto, capacidad y criterio de decisión acordado. El siguiente paso para el objetivo declarado es presentarla al comité."
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para ser presentada: tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité: ya cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede abordarse después de esa presentación."
+      },
+      "realized_visible": {
+        "presentation_mode": "SYNTHESIS_ONLY",
+        "visible_synthesis": "La iniciativa está lista para ser presentada: tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité: ya cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede abordarse después de esa presentación."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 9,
+      "internal": {
+        "selected_material_gap": "Falta una definición organizacional sobre qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o grupo responsable de establecer la prioridad entre resultados",
+        "deferred_gaps": [
+          "Criterios concretos para comparar las ideas",
+          "Información sobre esfuerzo, riesgos y viabilidad"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ahora mismo no se puede ordenar las ideas porque falta acordar qué resultado importa más para la dirección.",
+        "question": null,
+        "response": "Para poder priorizar, la dirección debe definir primero qué resultado pesa más —por ejemplo, ingresos, ahorro, impacto en clientes o reducción de riesgos—. Hasta contar con esa definición, no es posible ordenar las ideas de forma consistente."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Ahora mismo no se puede ordenar las ideas porque falta acordar qué resultado importa más para la dirección.",
+        "visible_question": null,
+        "visible_response": "Para poder priorizar, la dirección debe definir primero qué resultado pesa más —por ejemplo, ingresos, ahorro, impacto en clientes o reducción de riesgos—. Hasta contar con esa definición, no es posible ordenar las ideas de forma consistente."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 9,
+      "internal": {
+        "selected_material_gap": "No está identificado el rol u órgano con autoridad formal para decidir el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador ejecutivo o comité responsable de la operación",
+        "deferred_gaps": [
+          "Criterios que debe confirmar la autoridad para aprobar el paso a operación.",
+          "Fecha y mecanismo para comunicar la decisión."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya tiene presupuesto y equipo; lo que falta es identificar quién puede autorizar formalmente su paso a operación.",
+        "question": null,
+        "response": "El piloto ya tiene presupuesto y equipo; lo que falta es identificar quién puede autorizar formalmente su paso a operación. Hay que pedir al patrocinador ejecutivo o al comité responsable de la operación que nombre explícitamente a esa persona u órgano y confirme el siguiente paso."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya tiene presupuesto y equipo; lo que falta es identificar quién puede autorizar formalmente su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El piloto ya tiene presupuesto y equipo; lo que falta es identificar quién puede autorizar formalmente su paso a operación. Hay que pedir al patrocinador ejecutivo o al comité responsable de la operación que nombre explícitamente a esa persona u órgano y confirme el siguiente paso."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 9,
+      "internal": {
+        "selected_material_gap": "Ninguna; la iniciativa cuenta con validación, responsable, presupuesto, capacidad y criterio acordado. El trabajo pendiente pertenece al diseño del experimento siguiente.",
+        "next_action": "ROUTE",
+        "routing_target": "Equipo responsable de diseñar el experimento siguiente",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para presentarse al comité: ya tiene validación, responsable, presupuesto, capacidad disponible y un criterio acordado. El único pendiente es diseñar el experimento siguiente.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité: ya tiene validación, responsable, presupuesto, capacidad disponible y un criterio acordado. El único pendiente es diseñar el experimento siguiente. El próximo paso es pasar ese diseño al equipo responsable y preparar la presentación al comité."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa está lista para presentarse al comité: ya tiene validación, responsable, presupuesto, capacidad disponible y un criterio acordado. El único pendiente es diseñar el experimento siguiente.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité: ya tiene validación, responsable, presupuesto, capacidad disponible y un criterio acordado. El único pendiente es diseñar el experimento siguiente. El próximo paso es pasar ese diseño al equipo responsable y preparar la presentación al comité."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 10,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más ni quién tiene autoridad para fijarlo.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección y responsables de decidir las prioridades",
+        "deferred_gaps": [
+          "Criterios para comparar las ideas",
+          "Información específica de cada idea"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para priorizar las ideas, primero hace falta acordar qué resultado importa más —por ejemplo, impacto, ingresos, urgencia o reducción de riesgos— y quién puede resolver esa elección.",
+        "question": null,
+        "response": "Para priorizar las ideas, primero hace falta acordar qué resultado importa más —por ejemplo, impacto, ingresos, urgencia o reducción de riesgos— y quién puede resolver esa elección. Esto debe definirse con la dirección y las personas responsables de decidir las prioridades."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para priorizar las ideas, primero hace falta acordar qué resultado importa más —por ejemplo, impacto, ingresos, urgencia o reducción de riesgos— y quién puede resolver esa elección.",
+        "visible_question": null,
+        "visible_response": "Para priorizar las ideas, primero hace falta acordar qué resultado importa más —por ejemplo, impacto, ingresos, urgencia o reducción de riesgos— y quién puede resolver esa elección. Esto debe definirse con la dirección y las personas responsables de decidir las prioridades."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 10,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad formal para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador ejecutivo del piloto o comité con autoridad formal sobre la operación",
+        "deferred_gaps": [
+          "Criterios concretos para autorizar el paso a operación",
+          "Condiciones operativas posteriores a la aprobación"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El presupuesto y el equipo ya están disponibles, pero no se puede confirmar el siguiente paso hasta identificar quién tiene autoridad para aprobar el paso a operación.",
+        "question": null,
+        "response": "El presupuesto y el equipo ya están disponibles, pero falta identificar quién tiene autoridad formal para aprobar el paso a operación. El patrocinador ejecutivo del piloto o el comité responsable debe designar a esa persona y confirmar el siguiente paso."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El presupuesto y el equipo ya están disponibles, pero no se puede confirmar el siguiente paso hasta identificar quién tiene autoridad para aprobar el paso a operación.",
+        "visible_question": null,
+        "visible_response": "El presupuesto y el equipo ya están disponibles, pero falta identificar quién tiene autoridad formal para aprobar el paso a operación. El patrocinador ejecutivo del piloto o el comité responsable debe designar a esa persona y confirmar el siguiente paso."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 10,
+      "internal": {
+        "selected_material_gap": "Diseño del experimento siguiente",
+        "next_action": "ROUTE",
+        "routing_target": "Diseño del experimento siguiente",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. Está lista para presentarse al comité; lo pendiente corresponde al diseño del experimento siguiente.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité: tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El siguiente paso es pasar al diseño del experimento siguiente."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. Está lista para presentarse al comité; lo pendiente corresponde al diseño del experimento siguiente.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité: tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El siguiente paso es pasar al diseño del experimento siguiente."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    }
+  ]
+}

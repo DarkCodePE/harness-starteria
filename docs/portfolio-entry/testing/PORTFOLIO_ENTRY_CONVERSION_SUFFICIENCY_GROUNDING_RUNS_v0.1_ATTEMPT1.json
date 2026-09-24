@@ -1,0 +1,1862 @@
+{
+  "run_version": "CONVERSION-SUFFICIENCY-GROUNDING-v0.1",
+  "status": "LIVE_COMPLETED",
+  "provider": "openai_responses",
+  "requested_model": "gpt-5.6-luna",
+  "provider_reported_models": [
+    "gpt-5.6-luna"
+  ],
+  "target_calls": 35,
+  "completed_calls": 35,
+  "deterministic_runs": [
+    {
+      "input": "Necesito ordenar esto.",
+      "expected": false,
+      "need_sufficient": false,
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "pass": true
+    },
+    {
+      "input": "No sé por dónde empezar.",
+      "expected": false,
+      "need_sufficient": false,
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "pass": true
+    },
+    {
+      "input": "Tengo algo que quiero ver.",
+      "expected": false,
+      "need_sufficient": false,
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "pass": true
+    },
+    {
+      "input": "Necesito ayuda con esto.",
+      "expected": false,
+      "need_sufficient": false,
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "pass": true
+    },
+    {
+      "input": "Quiero organizar una cosa.",
+      "expected": false,
+      "need_sufficient": false,
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "pass": true
+    },
+    {
+      "input": "Tenemos demasiados proyectos abiertos y no sabemos cuáles seguir.",
+      "expected": true,
+      "need_sufficient": true,
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "pass": true
+    },
+    {
+      "input": "Quiero reducir los errores de atención en un proceso concreto.",
+      "expected": true,
+      "need_sufficient": true,
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "pass": true
+    },
+    {
+      "input": "Necesito decidir si continuamos con este piloto.",
+      "expected": true,
+      "need_sufficient": true,
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "pass": true
+    },
+    {
+      "input": "Hay una restricción de privacidad que debemos respetar.",
+      "expected": true,
+      "need_sufficient": true,
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "pass": true
+    }
+  ],
+  "previous_failure_classification": {
+    "CR-ADV-03": {
+      "failed_repetitions": 3,
+      "cause": "A_FALSE_SUFFICIENCY"
+    },
+    "CR-ADV-05": {
+      "failed_repetitions": 2,
+      "cause": "A_FALSE_SUFFICIENCY"
+    },
+    "population_note": "Prior artifact had two failed fixture IDs and five failed repetitions; all five unchanged adversarial fixtures were retained for the 35-call population."
+  },
+  "runs": [
+    {
+      "case_id": "CR-06",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Aclarar qué situación, materiales o problema quiere ordenar la persona.",
+          "why_it_matters": "La respuesta determina qué información hace falta y cuál debería ser el siguiente paso.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción de lo que necesita ordenar y del resultado que busca.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar exactamente y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0714b0732a6a5bfe006ab58329185887d2a4f5635cda7deee2"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Falta identificar el tema o material que se quiere ordenar y el resultado que se busca.",
+          "why_it_matters": "Sin esa información no se puede determinar el siguiente paso.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción de qué quiere ordenar y para qué.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_092dd4c3e17b5956006ab58329221c87d2888073646b9ad8bb"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "REASONABLE_INFERENCE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Identificar qué es «esto» y qué resultado espera obtener al ordenarlo.",
+          "why_it_matters": "La respuesta determina qué información debe organizarse y cuál es el siguiente paso útil.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una descripción breve del material o situación y del resultado que busca.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_06066af36a1c7ab1006ab58329278087d28c67b88dc3b2ea7e"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Aclarar qué significa «esto» y qué resultado quiere obtener.",
+          "why_it_matters": "La respuesta determina cuál debe ser el siguiente paso.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción de lo que quiere ordenar y del resultado que busca.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_073dba19664f2848006ab5832925e487d2abe80e1fa9645b91"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Falta identificar qué material o situación quiere ordenar.",
+          "why_it_matters": "Sin ese contexto no se puede determinar el siguiente paso útil.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción de lo que quiere ordenar.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        },
+        {
+          "description": "Falta saber qué resultado espera obtener.",
+          "why_it_matters": "El resultado buscado determina cómo orientar la ayuda inmediata.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Preguntar qué quiere conseguir al ordenar la situación.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0854b73a4d4a3143006ab5832949a487d2bc7954eed1b3efe8"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 6,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Falta identificar qué es «esto» y qué resultado quiere obtener.",
+          "why_it_matters": "Sin esa información no se puede determinar el siguiente paso útil.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción del asunto y del resultado que necesita.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres conseguir ahora?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0f1e851b56821557006ab583291f3087d29254054070bb4798"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 7,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Falta identificar el material o situación que se quiere ordenar y el resultado esperado.",
+          "why_it_matters": "Sin esa información no se puede determinar el siguiente paso útil.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Pedir una breve descripción de qué necesita ordenar y qué quiere obtener.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0a29d84170f531af006ab5832d96d087d295c1f207d693597c"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 8,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "No está claro qué se necesita ordenar ni qué resultado se busca ahora.",
+          "why_it_matters": "Sin ese dato no se puede determinar el siguiente paso útil.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción del asunto y del resultado que quiere obtener.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener ahora?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_03213a3e598d7cfb006ab5832d705087d2a5d0558106d76135"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 9,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Falta identificar el material o asunto que se quiere ordenar y el resultado buscado.",
+          "why_it_matters": "Sin esa información no se puede determinar el siguiente paso útil.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Indicar qué necesita ordenar y qué quiere obtener al hacerlo.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_001355320590116b006ab5832d9cb087d29754c2fdc4e2031a"
+    },
+    {
+      "case_id": "CR-06",
+      "repeat_index": 10,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "REASONABLE_INFERENCE",
+        "desired_outcome": "NOT_AVAILABLE",
+        "current_decision_or_action": "NOT_AVAILABLE"
+      },
+      "need_sufficient": false,
+      "current_open_items": [
+        {
+          "description": "Aclarar qué material o situación quiere ordenar y qué resultado necesita obtener.",
+          "why_it_matters": "La respuesta determina cuál debe ser el siguiente paso.",
+          "who_can_help_resolve_it": "La persona usuaria",
+          "suggested_next_move": "Pedir una breve descripción del tema y del resultado que busca.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "NOT_READY",
+      "continuation_mode": "CLARIFY",
+      "visible_response": "¿Qué necesitas ordenar y qué resultado quieres obtener?",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 4,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 4,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_03d48bfe569fe8c1006ab5832da31c87d2bdb4ace7f249680d"
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No está claro si la ausencia de un KPI impide tomar la decisión inmediata sobre la iniciativa.",
+          "why_it_matters": "Determina si se puede avanzar con la información actual o si primero hace falta resolver la medición.",
+          "who_can_help_resolve_it": "La persona o grupo que tomará la decisión inmediata sobre la iniciativa.",
+          "suggested_next_move": "Confirmar qué decisión debe tomarse ahora y si exige contar previamente con un KPI.",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir los errores de atención en un proceso ya seleccionado, aun sin contar todavía con un KPI.. Lo que todavía importa es No está claro si la ausencia de un KPI impide tomar la decisión inmediata sobre la iniciativa.. Mientras tanto, puedes Aclarar si el KPI es necesario para la decisión inmediata.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_040282a112b07833006ab5832df5f087d2a196f2af7dea3614"
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "model_decision_readiness_action": "STOP",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "description": "Definir el KPI y la línea base para medir la reducción de errores.",
+          "why_it_matters": "Permitirá evaluar posteriormente si la mejora está produciendo el resultado esperado.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Tratarlo como trabajo posterior, una vez registrada la necesidad.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión principal ya está clara. Lo siguiente es trabajar Definir el KPI y la línea base para medir la reducción de errores.; eso pertenece al trabajo posterior y no hace falta reabrir lo que ya está resuelto.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_07dc2148ccb521b1006ab5832e35a887d28361b9159ff88e52"
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "model_decision_readiness_action": "STOP",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "description": "Definir el KPI y el umbral de mejora para la reducción de errores.",
+          "why_it_matters": "Permitirá medir el avance y comprobar el resultado más adelante.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Dejar registrada esta definición como pendiente para una fase posterior.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión principal ya está clara. Lo siguiente es trabajar Definir el KPI y el umbral de mejora para la reducción de errores.; eso pertenece al trabajo posterior y no hace falta reabrir lo que ya está resuelto.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0d3e102afe042da7006ab58331d91c87d2802ad9853fece221"
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "model_decision_readiness_action": "STOP",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "description": "Definir un KPI para medir la reducción de errores.",
+          "why_it_matters": "Permitirá evaluar el avance y determinar si la mejora logró el resultado esperado.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Acordar más adelante cómo se medirá el resultado.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión principal ya está clara. Lo siguiente es trabajar Definir un KPI para medir la reducción de errores.; eso pertenece al trabajo posterior y no hace falta reabrir lo que ya está resuelto.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_08ec5bc3c989c43f006ab583321f7c87d29055ea5a962a8739"
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Aclarar qué decisión concreta debe tomarse ahora sobre la mejora del proceso.",
+          "why_it_matters": "Determina si hace falta definir una medida de éxito antes de avanzar o si puede dejarse para después.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Precisar la decisión inmediata que se quiere tomar.",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Definir el KPI o la forma de medir la reducción de errores.",
+          "why_it_matters": "Permitirá comprobar posteriormente si la mejora logró el resultado esperado.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Abordarlo cuando esté claro que se necesita medir el resultado para la decisión actual.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir los errores de atención en un proceso ya seleccionado.. Lo que todavía importa es Aclarar qué decisión concreta debe tomarse ahora sobre la mejora del proceso.. Mientras tanto, puedes Precisar la decisión inmediata.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0a53b371bc423ec9006ab58332782c87d2a3fcc8ca4bf5ebae"
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "model_decision_readiness_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Falta asignar un sponsor.",
+          "why_it_matters": "Sin esa asignación no está definido quién respaldará y habilitará el avance de la iniciativa.",
+          "who_can_help_resolve_it": "La autoridad organizativa responsable de asignar el sponsor",
+          "suggested_next_move": "Solicitar la asignación formal de un sponsor.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Avanzar una iniciativa para reducir el tiempo de revisión de solicitudes.. Lo que todavía importa es Falta asignar un sponsor.. Mientras tanto, puedes Solicitar a la autoridad organizativa correspondiente que asigne formalmente un sponsor.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_03efa14034960498006ab5833307c887d29e2b5d4afb9a4923"
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "model_decision_readiness_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Assign a sponsor for the candidate process.",
+          "why_it_matters": "Without an accountable sponsor, the immediate decision cannot proceed.",
+          "who_can_help_resolve_it": "The organizational authority responsible for sponsor assignment",
+          "suggested_next_move": "Obtain an explicit sponsor assignment from that authority.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reduce the time required to review requests using the identified candidate process.. Lo que todavía importa es Assign a sponsor for the candidate process.. Mientras tanto, puedes Obtain an explicit sponsor assignment from the responsible organizational authority.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0d3bb04353c7af9f006ab58333d40487d2bf44b4a7853a6606"
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "model_decision_readiness_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Asignar un sponsor al proceso candidato.",
+          "why_it_matters": "Sin esa asignación no está definido quién respalda y habilita el avance.",
+          "who_can_help_resolve_it": "Autoridad organizacional responsable de la asignación",
+          "suggested_next_move": "Solicitar la asignación formal de un sponsor.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir el tiempo de revisión de solicitudes mediante un proceso candidato.. Lo que todavía importa es Asignar un sponsor al proceso candidato.. Mientras tanto, puedes Obtener de la autoridad organizacional responsable la asignación formal de un sponsor.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_09bd42288210da95006ab583371ff487d2a364ec0fe9551187"
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "model_decision_readiness_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Asignar un sponsor al proceso candidato.",
+          "why_it_matters": "Sin esa asignación no está definido quién puede respaldar o autorizar el avance.",
+          "who_can_help_resolve_it": "La autoridad organizacional responsable de asignar sponsors",
+          "suggested_next_move": "Solicitar formalmente la asignación del sponsor.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir el tiempo de revisión de solicitudes mediante un proceso candidato.. Lo que todavía importa es Asignar un sponsor al proceso candidato.. Mientras tanto, puedes Solicitar a la autoridad organizacional correspondiente que asigne un sponsor.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0fc8f99037485e49006ab5833845cc87d29db44aeff463de0f"
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "model_decision_readiness_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Asignar un sponsor al proceso candidato.",
+          "why_it_matters": "Sin esa asignación no está definido quién asume el patrocinio organizativo necesario para avanzar.",
+          "who_can_help_resolve_it": "La autoridad organizativa responsable de la asignación",
+          "suggested_next_move": "Solicitar formalmente la asignación del sponsor.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir el tiempo de revisión de solicitudes mediante un proceso candidato.. Lo que todavía importa es Asignar un sponsor al proceso candidato.. Mientras tanto, puedes Solicitar a la autoridad organizativa responsable que asigne un sponsor.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_026e409a8fc27c64006ab58338dc0887d29e066f04c01b87cb"
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Falta identificar la necesidad concreta que origina la propuesta.",
+          "why_it_matters": "Sin ella no se puede saber si el chatbot responde a algo importante ni si conviene seguir evaluándolo.",
+          "who_can_help_resolve_it": "La persona o equipo que plantea la idea y conoce el contexto de uso.",
+          "suggested_next_move": "Aclarar qué situación, dificultad o necesidad motivó la propuesta.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        },
+        {
+          "description": "Falta definir qué cambio observable se consideraría un buen resultado.",
+          "why_it_matters": "Sin un resultado esperado no se puede juzgar si la propuesta tendría valor.",
+          "who_can_help_resolve_it": "La persona o equipo que plantea la idea.",
+          "suggested_next_move": "Precisar qué debería mejorar o lograrse para considerar útil la propuesta.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Evaluar una idea tecnológica antes de decidir si merece avanzar.. Lo que todavía importa es Falta identificar la necesidad concreta que origina la propuesta.. Mientras tanto, puedes Describir la situación o necesidad que originó la propuesta.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0011fd94fb3a0dd6006ab58339086887d2a8e48fa8ababa744"
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Definir qué problema concreto se quiere resolver o qué resultado se quiere conseguir.",
+          "why_it_matters": "Sin esa definición no se puede determinar si el chatbot es una respuesta adecuada ni si la idea debe avanzar.",
+          "who_can_help_resolve_it": "La persona o equipo que plantea la idea.",
+          "suggested_next_move": "Precisar el problema o resultado que justificaría la propuesta.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Evaluar si la idea del chatbot merece avanzar antes de considerar su desarrollo.. Lo que todavía importa es Definir qué problema concreto se quiere resolver o qué resultado se quiere conseguir.. Mientras tanto, puedes Precisar el problema concreto o el resultado esperado antes de evaluar la tecnología.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0b160dcaa3dac40b006ab58339a74487d29e5a75a7eb996f55"
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Definir la situación o necesidad concreta que se quiere resolver.",
+          "why_it_matters": "Sin una necesidad clara no se puede decidir si la idea merece avanzar.",
+          "who_can_help_resolve_it": "La persona o equipo que plantea la idea y conoce la necesidad que la originó.",
+          "suggested_next_move": "Describir un problema concreto que hoy afecte a usuarios, clientes o al equipo.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        },
+        {
+          "description": "Precisar qué resultado se consideraría valioso.",
+          "why_it_matters": "Permite saber qué cambio justificaría continuar con la propuesta.",
+          "who_can_help_resolve_it": "La persona o equipo que espera obtener valor de la propuesta.",
+          "suggested_next_move": "Indicar qué debería mejorar o cambiar si la idea tuviera éxito.",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Comprobar si un chatbot con IA es una respuesta adecuada al problema definido.",
+          "why_it_matters": "La tecnología podría no ser la mejor forma de lograr el resultado buscado.",
+          "who_can_help_resolve_it": "El equipo responsable de evaluar la propuesta.",
+          "suggested_next_move": "Dejar esta comparación para después de aclarar la necesidad y el resultado.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Aclarar si existe una necesidad concreta que justifique la idea del chatbot.. Lo que todavía importa es Definir la situación o necesidad concreta que se quiere resolver.. Mientras tanto, puedes Definir el problema concreto que da origen a la idea.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_01fa116d729851b5006ab5833a491087d29bb8f773bae09b41"
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Precisar qué problema concreto se quiere resolver y para quién.",
+          "why_it_matters": "Sin esa definición no se puede determinar si el chatbot es una respuesta adecuada.",
+          "who_can_help_resolve_it": "El equipo que propone la idea y quienes conocen la necesidad que la origina.",
+          "suggested_next_move": "Identificar una necesidad concreta antes de avanzar con la propuesta.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Evaluar alternativas, viabilidad técnica y recursos necesarios.",
+          "why_it_matters": "Esos aspectos solo serán útiles después de confirmar que existe una necesidad clara.",
+          "who_can_help_resolve_it": "Por determinar cuando se aclare el problema.",
+          "suggested_next_move": "Dejarlo para una etapa posterior.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Aclarar si la idea del chatbot responde a una necesidad real.. Lo que todavía importa es Precisar qué problema concreto se quiere resolver y para quién.. Mientras tanto, puedes Definir la necesidad concreta antes de seguir evaluando el chatbot.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_071ed02fc2b69a05006ab5833c146087d2ae66d154e8cd6b8c"
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "model_decision_readiness_action": "STOP",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Definir el problema concreto que se quiere resolver y el resultado esperado.",
+          "why_it_matters": "Sin esa definición no se puede determinar si el chatbot es una respuesta adecuada ni si la iniciativa merece avanzar.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Aclarar internamente la necesidad y el resultado buscado antes de continuar.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Evaluar si un chatbot con IA es la alternativa adecuada.",
+          "why_it_matters": "Esa evaluación depende de conocer primero la necesidad y el resultado esperado.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Retomarlo cuando exista una definición clara del problema y del resultado.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Evaluar si tiene sentido avanzar con una idea de chatbot con IA.. Lo que todavía importa es Definir el problema concreto que se quiere resolver y el resultado esperado.. Mientras tanto, puedes No avanzar todavía con la propuesta tecnológica.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "NONE",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0c58be143ac07fc9006ab5833e3d8887d2b748405f7ca7d18e"
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No está especificado qué decisión inmediata debe sustentarse ni qué evidencia falta para tomarla.",
+          "why_it_matters": "Sin esa precisión no se puede determinar qué debe hacerse ahora para avanzar.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Aclarar la decisión inmediata pendiente y la evidencia que se considera necesaria para resolverla.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Determinar qué evidencia queda por recoger para avanzar en la iniciativa de reducción del tiempo de revisión de contratos.. Lo que todavía importa es No está especificado qué decisión inmediata debe sustentarse ni qué evidencia falta para tomarla.. Mientras tanto, puedes Precisar la decisión inmediata pendiente.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0cfddbfdba4b2eb4006ab5833ea6f487d2b8b619c2d99f323e"
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No se ha concretado qué evidencia falta ni cómo afecta al siguiente paso.",
+          "why_it_matters": "Sin esa información no se puede saber si conviene seguir reuniendo información o avanzar con lo disponible.",
+          "who_can_help_resolve_it": "El usuario o el equipo de la iniciativa.",
+          "suggested_next_move": "Enumerar la evidencia que ya existe y señalar qué información concreta sigue faltando.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Identificar la evidencia que todavía debe reunirse para avanzar en la iniciativa de reducir el tiempo de revisión de contratos.. Lo que todavía importa es No se ha concretado qué evidencia falta ni cómo afecta al siguiente paso.. Mientras tanto, puedes Precisar la evidencia faltante y la decisión que debe apoyar.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_07dc0ed59a14014b006ab5834015d487d2ad97f245cd5813d6"
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Aclarar qué decisión concreta debe respaldar la evidencia pendiente.",
+          "why_it_matters": "Sin esa decisión, no se puede determinar qué evidencia es necesaria ni qué información debe recopilarse primero.",
+          "who_can_help_resolve_it": "La persona o el equipo responsable de decidir cómo avanzar con la iniciativa.",
+          "suggested_next_move": "Indicar qué decisión concreta se quiere tomar ahora sobre la iniciativa.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Precisar qué evidencia ya está disponible y cuál falta, una vez aclarada la decisión objetivo.",
+          "why_it_matters": "Permitirá delimitar la recopilación pendiente sin pasar por alto las restricciones de privacidad.",
+          "who_can_help_resolve_it": "El equipo que dispone de los datos y participa en la iniciativa.",
+          "suggested_next_move": "Preparar un inventario de la evidencia existente y de las lagunas frente a la decisión definida.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Identificar qué evidencia falta recopilar.. Lo que todavía importa es Aclarar qué decisión concreta debe respaldar la evidencia pendiente.. Mientras tanto, puedes Definir la decisión concreta que debe respaldar la evidencia.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_04a1ebfb338f5d17006ab583414d6887d283d2c725cc2728d3"
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Falta precisar qué decisión inmediata debe respaldar la evidencia pendiente.",
+          "why_it_matters": "Sin esa precisión no se puede determinar qué evidencia es necesaria ni cuál debe ser el siguiente paso.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Aclarar qué decisión debe tomarse ahora y qué información cambiaría esa decisión.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Definir el alcance y la forma de recopilar la evidencia restante dentro de las restricciones de privacidad.",
+          "why_it_matters": "Será necesario para completar la base de información después de aclarar la decisión actual.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Dejarlo para después de identificar la decisión y la evidencia que realmente necesita respaldo.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Identificar la evidencia que aún debe reunirse para evaluar la iniciativa de reducir el tiempo de revisión de contratos.. Lo que todavía importa es Falta precisar qué decisión inmediata debe respaldar la evidencia pendiente.. Mientras tanto, puedes Aclarar la decisión inmediata que debe informar la evidencia pendiente.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0dafa834454ad5c2006ab5834183bc87d29db9294aa9e6e448"
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "Falta precisar qué decisión o afirmación debe respaldar la evidencia pendiente.",
+          "why_it_matters": "Sin ese propósito no se puede determinar qué evidencia es necesaria ni qué acción inmediata corresponde.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Indicar qué decisión concreta se quiere tomar o qué afirmación se necesita respaldar.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Identificar la evidencia que aún debe reunirse para avanzar con una iniciativa destinada a reducir el tiempo de revisión de contratos.. Lo que todavía importa es Falta precisar qué decisión o afirmación debe respaldar la evidencia pendiente.. Mientras tanto, puedes Precisar la decisión o afirmación que la evidencia debe respaldar.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_038c0b45764bff06006ab583428bdc87d2b1ac1145ffbe3a50"
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No se conocen los criterios de selección ni las restricciones aplicables a la arquitectura y al proveedor.",
+          "why_it_matters": "Sin ellos no puede determinarse qué opciones son aceptables ni cuál conviene elegir ahora.",
+          "who_can_help_resolve_it": null,
+          "suggested_next_move": "Precisar los criterios y restricciones que deben cumplirse.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir los tiempos de respuesta y seleccionar una arquitectura y un proveedor.. Lo que todavía importa es No se conocen los criterios de selección ni las restricciones aplicables a la arquitectura y al proveedor.. Mientras tanto, puedes Precisar los criterios y restricciones de la elección antes de comparar alternativas.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_07e27e3b6c3cce0f006ab58343fcc087d29681c8199b003d6b"
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No se han indicado los requisitos imprescindibles ni las restricciones de la elección.",
+          "why_it_matters": "Sin ellos no se puede determinar qué alternativas son adecuadas ni cuál conviene seleccionar ahora.",
+          "who_can_help_resolve_it": "El usuario puede precisar sus necesidades y limitaciones actuales.",
+          "suggested_next_move": "Indicar los requisitos no negociables y las principales restricciones para la arquitectura y el proveedor.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Elegir una arquitectura y un proveedor para reducir los tiempos de respuesta.. Lo que todavía importa es No se han indicado los requisitos imprescindibles ni las restricciones de la elección.. Mientras tanto, puedes Precisar los requisitos y restricciones que deben guiar la selección.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_062f9e5905848333006ab5834655b887d29a72688262f85237"
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No se ha indicado el tiempo de respuesta objetivo ni el tiempo actual.",
+          "why_it_matters": "Sin ambos valores no se puede saber qué debe mejorar la elección.",
+          "who_can_help_resolve_it": "La persona usuaria o quien conozca las métricas actuales y el objetivo acordado.",
+          "suggested_next_move": "Precisar el objetivo y la situación actual.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        },
+        {
+          "description": "No se han indicado restricciones ya fijadas para la elección.",
+          "why_it_matters": "Las restricciones pueden descartar opciones antes de comparar arquitectura o proveedores.",
+          "who_can_help_resolve_it": "La persona usuaria, si esas restricciones ya están definidas.",
+          "suggested_next_move": "Enumerar las restricciones conocidas, si las hay.",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Comparar alternativas de arquitectura y proveedores una vez definidos el objetivo y las restricciones.",
+          "why_it_matters": "La comparación necesita criterios concretos para ser útil.",
+          "who_can_help_resolve_it": "El equipo responsable de la selección.",
+          "suggested_next_move": "Retomar la comparación después de aclarar los datos faltantes.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir los tiempos de respuesta y elegir una arquitectura y un proveedor adecuados.. Lo que todavía importa es No se ha indicado el tiempo de respuesta objetivo ni el tiempo actual.. Mientras tanto, puedes Precisar el tiempo actual y el objetivo.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0f599aad2b7c9af5006ab583467e2c87d2823aa22cd1bba67a"
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No se conocen los criterios ni las restricciones que deben guiar la elección.",
+          "why_it_matters": "Sin ellos no puede determinarse qué opción satisface la necesidad actual.",
+          "who_can_help_resolve_it": "El usuario o quien defina los requisitos de la iniciativa.",
+          "suggested_next_move": "Indicar los criterios y restricciones ya fijados para la elección.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Reducir los tiempos de respuesta y, para ello, elegir una arquitectura y un proveedor.. Lo que todavía importa es No se conocen los criterios ni las restricciones que deben guiar la elección.. Mientras tanto, puedes Aclarar los criterios y restricciones de selección antes de comparar opciones.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0ee47b7e55a98a28006ab58347e8f887d2847c16e9ce5d3232"
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "model_decision_readiness_action": "ASK",
+      "grounding": {
+        "understood_need": "USER_SUPPORTED",
+        "desired_outcome": "USER_SUPPORTED",
+        "current_decision_or_action": "USER_SUPPORTED"
+      },
+      "need_sufficient": true,
+      "current_open_items": [
+        {
+          "description": "No se han indicado los criterios de elección, las restricciones aplicables ni las alternativas consideradas.",
+          "why_it_matters": "Sin esa información no se puede determinar cuál debe ser el siguiente paso ni comparar opciones de forma útil.",
+          "who_can_help_resolve_it": "El usuario puede indicar los criterios, restricciones y alternativas que ya conoce.",
+          "suggested_next_move": "Precisar qué criterios y restricciones deben gobernar la elección y qué alternativas están consideradas.",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [
+        {
+          "description": "Comparar en detalle las alternativas una vez definidos los criterios y restricciones.",
+          "why_it_matters": "La comparación depende de la base de elección acordada.",
+          "who_can_help_resolve_it": "El usuario y las personas responsables de la selección.",
+          "suggested_next_move": "Posponer la comparación detallada hasta reunir esa información.",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Ya está claro que quieres Elegir una arquitectura y un proveedor para reducir los tiempos de respuesta.. Lo que todavía importa es No se han indicado los criterios de elección, las restricciones aplicables ni las alternativas consideradas.. Mientras tanto, puedes Precisar los criterios y restricciones de elección.. Podemos conservar este contexto y seguir avanzando.",
+      "semantic_failures": [],
+      "failure_flags": {
+        "PLATFORM_JARGON": "NONE",
+        "INVENTED_AUTHORITY": "NONE",
+        "INVENTED_GOVERNANCE": "NONE",
+        "PREMATURE_STOP": "NONE",
+        "FORCED_CONVERSION": "NONE",
+        "UNNECESSARY_QUESTION": "MATERIAL",
+        "LATER_WORK_QUESTION": "NONE",
+        "DECISION_READINESS_REGRESSION": "NONE"
+      },
+      "scores": {
+        "HUMAN_LANGUAGE": 5,
+        "MOMENTUM_PRESERVATION": 5,
+        "ACTIONABILITY": 5,
+        "VALUE_VISIBILITY": 5,
+        "CONTINUATION_CLARITY": 5
+      },
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "response_id": "resp_0064cb17340479c1006ab58348472887d2b24088be37b8b63d"
+    }
+  ]
+}
