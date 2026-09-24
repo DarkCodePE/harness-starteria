@@ -1,0 +1,110 @@
+name: Production Cluster Diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NAMESPACE: starteria
+
+jobs:
+  diagnostics:
+    name: Collect read-only cluster diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: starteria-production
+      cancel-in-progress: false
+    steps:
+      - name: Prepare diagnostics directory
+        run: mkdir -p diagnostics
+
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+
+      - name: Fetch kubeconfig from Rackspace Spot
+        env:
+          RACKSPACE_REFRESH_TOKEN: ${{ secrets.RACKSPACE_REFRESH_TOKEN }}
+          RACKSPACE_ORG_NAME: ${{ secrets.RACKSPACE_ORG_NAME }}
+          RACKSPACE_CLOUDSPACE_NAME: ${{ secrets.RACKSPACE_CLOUDSPACE_NAME }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc --arg org "$RACKSPACE_ORG_NAME" --arg cs "$RACKSPACE_CLOUDSPACE_NAME" --arg rt "$RACKSPACE_REFRESH_TOKEN" '{organization_name:$org,cloudspace_name:$cs,refresh_token:$rt}')
+          response="$RUNNER_TEMP/spot-response.json"
+          status=$(curl --silent --show-error --output "$response" --write-out '%{http_code}' --request POST 'https://spot.rackspace.com/apis/auth.ngpc.rxt.io/v1/generate-kubeconfig' --header 'Content-Type: application/json' --data "$payload")
+          [[ "$status" == 200 ]] || { echo "::error::Rackspace kubeconfig request failed (HTTP $status)"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/kube"
+          jq -er '.data.kubeconfig' "$response" > "$RUNNER_TEMP/kube/config"
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          rm -f "$response"
+          echo "KUBECONFIG=$RUNNER_TEMP/kube/config" >> "$GITHUB_ENV"
+
+      - name: Collect read-only diagnostics
+        run: |
+          set -uo pipefail
+
+          run_diagnostic() {
+            local name="$1"
+            shift
+            local output="diagnostics/${name}.txt"
+            {
+              printf '$'
+              printf ' %q' "$@"
+              printf '\n\n'
+              "$@"
+            } > "$output" 2>&1 || {
+              status=$?
+              printf '\n[command exited %s]\n' "$status" >> "$output"
+            }
+          }
+
+          run_diagnostic 01-nodes kubectl get nodes -o wide
+
+          run_diagnostic 02-deployments kubectl get deployments -n "$NAMESPACE" -o wide
+          run_diagnostic 03-pods kubectl get pods -n "$NAMESPACE" -o wide
+          run_diagnostic 04-replicasets kubectl get replicasets -n "$NAMESPACE" -o wide
+
+          run_diagnostic 05-describe-backend-deployment kubectl describe deployment/starteria-backend -n "$NAMESPACE"
+          run_diagnostic 06-describe-frontend-deployment kubectl describe deployment/starteria-frontend -n "$NAMESPACE"
+          run_diagnostic 07-describe-ai-service-deployment kubectl describe deployment/starteria-ai-service -n "$NAMESPACE"
+
+          run_diagnostic 08-describe-backend-pods kubectl describe pods -n "$NAMESPACE" -l app=starteria-backend
+          run_diagnostic 09-describe-frontend-pods kubectl describe pods -n "$NAMESPACE" -l app=starteria-frontend
+          run_diagnostic 10-describe-ai-service-pods kubectl describe pods -n "$NAMESPACE" -l app=starteria-ai-service
+
+          run_diagnostic 11-backend-logs kubectl logs -n "$NAMESPACE" -l app=starteria-backend --tail=200
+          run_diagnostic 12-backend-previous-logs kubectl logs -n "$NAMESPACE" -l app=starteria-backend --previous --tail=200
+
+          run_diagnostic 13-frontend-logs kubectl logs -n "$NAMESPACE" -l app=starteria-frontend --tail=200
+          run_diagnostic 14-frontend-previous-logs kubectl logs -n "$NAMESPACE" -l app=starteria-frontend --previous --tail=200
+
+          run_diagnostic 15-ai-service-logs kubectl logs -n "$NAMESPACE" -l app=starteria-ai-service --tail=200
+          run_diagnostic 16-ai-service-previous-logs kubectl logs -n "$NAMESPACE" -l app=starteria-ai-service --previous --tail=200
+
+          run_diagnostic 17-events kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp
+
+          run_diagnostic current-images \
+            bash -c 'printf "backend: "; kubectl get deployment/starteria-backend -n "$NAMESPACE" -o "jsonpath={.spec.template.spec.containers[0].image}"; printf "\nfrontend: "; kubectl get deployment/starteria-frontend -n "$NAMESPACE" -o "jsonpath={.spec.template.spec.containers[0].image}"; printf "\nai-service: "; kubectl get deployment/starteria-ai-service -n "$NAMESPACE" -o "jsonpath={.spec.template.spec.containers[0].image}"; printf "\n"'
+
+          run_diagnostic 21-backend-deployment-yaml kubectl get deployment/starteria-backend -n "$NAMESPACE" -o yaml
+          run_diagnostic 22-frontend-deployment-yaml kubectl get deployment/starteria-frontend -n "$NAMESPACE" -o yaml
+          run_diagnostic 23-ai-service-deployment-yaml kubectl get deployment/starteria-ai-service -n "$NAMESPACE" -o yaml
+          run_diagnostic 24-backend-pods-yaml kubectl get pods -n "$NAMESPACE" -l app=starteria-backend -o yaml
+          run_diagnostic 25-frontend-pods-yaml kubectl get pods -n "$NAMESPACE" -l app=starteria-frontend -o yaml
+          run_diagnostic 26-ai-service-pods-yaml kubectl get pods -n "$NAMESPACE" -l app=starteria-ai-service -o yaml
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: starteria-production-cluster-diagnostics
+          path: diagnostics/
+          if-no-files-found: warn
+
+      - name: Remove kubeconfig
+        if: always()
+        run: rm -f "$RUNNER_TEMP/kube/config" "$RUNNER_TEMP/spot-response.json"
