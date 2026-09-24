@@ -1,0 +1,3380 @@
+{
+  "run_version": "HYP-005-live-candidate-v0.1",
+  "candidate_id": "portfolio-entry-decision-readiness-live-v0.1",
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "repetitions_per_case": 5,
+  "requested_runs": 60,
+  "completed_runs": 60,
+  "prompt_path": "test/portfolio-entry-v02-isolated-validation/decision-readiness-live-prompt.v0.1.md",
+  "fixture_path": "docs/portfolio-entry/testing/PORTFOLIO_ENTRY_CONVERSATIONAL_FLEXIBILITY_FIXTURES_v0.1.json",
+  "generated_at": "2026-09-24T09:51:40.805Z",
+  "runs": [
+    {
+      "case_id": "CF-01",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está confirmado quién será responsable de sostener la implementación ni si tendrá capacidad para hacerlo.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Beneficio esperado y criterios para decidir si la implementación pequeña merece continuar."
+        ],
+        "routing_target": "Responsable del área u organización que pueda confirmar la asignación de una persona y su capacidad de mantenimiento",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Antes de continuar, lo principal es confirmar que exista una persona responsable y con tiempo asignado para sostener la implementación.",
+        "question": null,
+        "response": "La continuidad debería quedar pendiente hasta que el área correspondiente confirme quién la sostendrá y que cuenta con capacidad para hacerlo."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-01-r1",
+          "case_id": "CF-01",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4146,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta acordar qué resultado o criterio debe pesar más al comparar las ideas.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "No está claro qué restricciones o umbrales podrían descartar una idea.",
+          "No se conoce aún la evidencia disponible para cada idea."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para priorizar de forma coherente, primero hay que saber qué resultado considera más importante la dirección; sin eso, cualquier orden entre las ideas sería arbitrario.",
+        "question": "¿Qué resultado debe pesar más al decidir: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, disminuir riesgos u otro?",
+        "response": "Para priorizar de forma coherente, primero hay que saber qué resultado considera más importante la dirección; sin eso, cualquier orden entre las ideas sería arbitrario.\n\n¿Qué resultado debe pesar más al decidir: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, disminuir riesgos u otro?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-02-r1",
+          "case_id": "CF-02",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4537,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No existe un equipo operativo confirmado para sostener el lanzamiento, por lo que no puede determinarse si es viable continuar este trimestre.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Liderazgo responsable de asignar y confirmar el equipo operativo",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Lo decisivo para continuar no es solo la fecha de lanzamiento, sino contar con capacidad operativa confirmada para sostenerlo. Con el equipo actualmente no disponible, la decisión debe quedar pendiente de una confirmación organizativa de recursos.",
+        "question": null,
+        "response": "Lo decisivo para continuar no es solo la fecha de lanzamiento, sino contar con capacidad operativa confirmada para sostenerlo. Como ahora no hay equipo disponible, hace falta que el liderazgo responsable confirme la asignación de ese equipo antes de seguir adelante."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-03-r1",
+          "case_id": "CF-03",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6855,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No se conoce la causa concreta por la que los usuarios siguen recurriendo a plantillas manuales, ni si responde a una carencia de la herramienta, falta de confianza, requisitos del proceso o hábito.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "No está claro si el ahorro se mantiene en el tiempo ni en qué situaciones vuelve a caer.",
+          "No se sabe qué usuarios o procesos concentran el uso de plantillas manuales."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La herramienta parece generar ahorro cuando se usa, pero ese beneficio no se sostiene porque las plantillas manuales siguen formando parte del trabajo. Para saber qué hacer a continuación, primero hay que distinguir si el problema es de utilidad, confianza o del propio proceso.",
+        "question": "¿Qué motivo dan los usuarios para seguir usando las plantillas manuales: les falta algo en la herramienta, no confían en el resultado o el proceso les exige mantenerlas?",
+        "response": "La herramienta parece generar ahorro cuando se usa, pero ese beneficio no se sostiene porque las plantillas manuales siguen formando parte del trabajo. Para saber qué hacer a continuación, primero hay que distinguir si el problema es de utilidad, confianza o del propio proceso.\n\n¿Qué motivo dan los usuarios para seguir usando las plantillas manuales: les falta algo en la herramienta, no confían en el resultado o el proceso les exige mantenerlas?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-04-r1",
+          "case_id": "CF-04",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5482,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está identificado quién tiene la autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Criterios que deben cumplirse para pasar a operación."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El piloto ya tiene presupuesto y equipo; lo que falta para avanzar es identificar quién puede autorizar su paso a operación.",
+        "question": "¿Existe una persona o comité con autoridad formal para tomar esa decisión, aunque todavía no se haya comunicado claramente al equipo?",
+        "response": "El piloto ya tiene presupuesto y equipo; lo que falta para avanzar es identificar quién puede autorizar su paso a operación. ¿Existe una persona o comité con autoridad formal para tomar esa decisión, aunque todavía no se haya comunicado claramente al equipo?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-05-r1",
+          "case_id": "CF-05",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3821,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta definir qué beneficio mínimo —económico, operativo o estratégico— justificaría seguir adelante, y cómo se compara con el coste de continuar.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Coste total de continuar y posibles riesgos",
+          "Solidez de la evidencia sobre la precisión y el ahorro de tiempo"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La precisión y el ahorro de tiempo parecen prometedores, pero todavía no está claro si se traducen en un beneficio suficiente para justificar continuar.",
+        "question": "¿Qué beneficio mínimo tendría que generar —por ejemplo, ahorro económico, capacidad adicional o reducción de errores— para que consideres que merece la pena seguir?",
+        "response": "La precisión y el ahorro de tiempo parecen prometedores, pero todavía no está claro si se traducen en un beneficio suficiente para justificar continuar. ¿Qué beneficio mínimo tendría que generar —por ejemplo, ahorro económico, capacidad adicional o reducción de errores— para que consideres que merece la pena seguir?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-06-r1",
+          "case_id": "CF-06",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4552,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "La prioridad u objetivo que debe guiar la propuesta no está definido ni comunicado por la autoridad correspondiente.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Criterios para evaluar la propuesta",
+          "Comparación entre posibles resultados",
+          "Siguiente paso operativo una vez definida la prioridad"
+        ],
+        "routing_target": "Dirección o patrocinador de la propuesta",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La propuesta no puede orientarse todavía porque no se ha comunicado qué resultado considera prioritario la dirección.",
+        "question": null,
+        "response": "La propuesta no puede orientarse todavía porque no se ha comunicado qué resultado considera prioritario la dirección. Hace falta que dirección o el patrocinador indique el objetivo principal y, si corresponde, cómo se deben ordenar las alternativas."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-07-r1",
+          "case_id": "CF-07",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4627,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "La decisión de continuar está resuelta; aún faltan definir el proveedor, la arquitectura y el workflow.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Selección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": "Diseño de solución y planificación de implementación",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Ya está decidido continuar. Lo que sigue es concretar la solución: proveedor, arquitectura y workflow.",
+        "question": null,
+        "response": "Ya está decidido continuar. El siguiente paso es pasar a diseño de solución y planificación de implementación para concretar el proveedor, la arquitectura y el workflow."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-08-r1",
+          "case_id": "CF-08",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4253,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta explicitar cuáles son los tres alcances concretos y qué criterio debe determinar la elección este trimestre.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Implicaciones de las dependencias externas para cada alcance",
+          "Nivel de compromiso disponible de sponsor, equipo y usuarios piloto",
+          "Presupuesto y capacidad real asociados a cada alternativa"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Ya existen recursos y apoyo para decidir, pero la información todavía no está conectada con una elección concreta para este trimestre.",
+        "question": "¿Cuáles son los tres alcances posibles y cuál es el criterio principal para elegir entre ellos —por ejemplo, impacto, plazo, coste o reducción de riesgo—?",
+        "response": "Ya existen recursos y apoyo para decidir, pero la información todavía no está conectada con una elección concreta para este trimestre.\n\n¿Cuáles son los tres alcances posibles y cuál es el criterio principal para elegir entre ellos —por ejemplo, impacto, plazo, coste o reducción de riesgo—?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-09-r1",
+          "case_id": "CF-09",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4248,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No hay información suficiente sobre qué situación quiere ordenar ni sobre el resultado que busca obtener.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Contexto de la situación",
+          "Objetivo inmediato del usuario"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para ayudarte a ordenar la situación, primero necesito ubicar de qué se trata y qué quieres conseguir con ello.",
+        "question": "¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir primero?",
+        "response": "Para ayudarte a ordenar la situación, primero necesito ubicar de qué se trata y qué quieres conseguir con ello.\n\n¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir primero?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-10-r1",
+          "case_id": "CF-10",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 2894,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Ninguna brecha material para presentar la iniciativa al comité; el diseño del experimento posterior queda fuera de esta decisión.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y criterio de decisión acordado. No hace falta recopilar más información antes de presentarla al comité."
+      },
+      "visible": {
+        "synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El diseño del experimento siguiente puede tratarse después de la presentación.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. No hace falta resolver nada más antes de esa presentación; el diseño del experimento siguiente puede abordarse después."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-11-r1",
+          "case_id": "CF-11",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7006,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta la confirmación de gerencia sobre si existe una excepción al límite del plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Gerencia, como autoridad responsable de confirmar la excepción.",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión depende de saber si gerencia puede autorizar una excepción al límite establecido por el plan anual.",
+        "question": null,
+        "response": "La decisión queda pendiente de gerencia: debe confirmar si existe una excepción al límite del plan anual. Hasta recibir esa confirmación, no puede definirse cómo proceder."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-12-r1",
+          "case_id": "CF-12",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 2966,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta confirmar quién será responsable de sostener la implementación y si cuenta con capacidad disponible.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La continuidad de una implementación pequeña depende de que haya una persona claramente responsable y con tiempo para mantenerla.",
+        "question": "¿Quién asumiría esa responsabilidad y puede reservar capacidad concreta para sostenerla durante el periodo previsto?",
+        "response": "La continuidad de una implementación pequeña depende de que haya una persona claramente responsable y con tiempo para mantenerla. ¿Quién asumiría esa responsabilidad y puede reservar capacidad concreta para sostenerla durante el periodo previsto?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-01-r2",
+          "case_id": "CF-01",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 2785,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta definir qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "No se conocen aún las ideas concretas ni la información disponible para compararlas."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para priorizar, primero hace falta aclarar qué resultado considera más importante la dirección; sin eso, cualquier orden sería arbitrario.",
+        "question": "¿Qué resultado debe pesar más: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, disminuir riesgos u otro?",
+        "response": "Para priorizar, primero hace falta aclarar qué resultado considera más importante la dirección; sin eso, cualquier orden sería arbitrario.\n\n¿Qué resultado debe pesar más: aumentar ingresos, reducir costes, mejorar la experiencia del cliente, disminuir riesgos u otro?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-02-r2",
+          "case_id": "CF-02",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3499,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No hay un equipo operativo asignado para sostener el lanzamiento.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Liderazgo responsable y operaciones",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La falta de capacidad operativa impide confirmar que el lanzamiento pueda continuar este trimestre.",
+        "question": null,
+        "response": "La falta de capacidad operativa impide confirmar que el lanzamiento pueda continuar este trimestre. Hace falta que liderazgo y operaciones definan quién lo sostendrá y asignen los recursos necesarios; hasta entonces, no debería aprobarse la continuidad."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-03-r2",
+          "case_id": "CF-03",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5630,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Motivo por el que los usuarios siguen usando plantillas manuales, especialmente si responden a una exigencia del proceso que la herramienta no cubre.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Qué proporción del trabajo sigue haciéndose con plantillas manuales y en qué casos concretos.",
+          "Si el uso manual se debe a una barrera de adopción o a una necesidad legítima del proceso."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La herramienta ya demuestra ahorro de tiempo, pero ese ahorro no se mantiene porque las plantillas manuales siguen formando parte del trabajo. Para entender la causa, hay que distinguir entre una necesidad real del proceso y una preferencia o costumbre de uso.",
+        "question": "¿Qué necesidad concreta cubren las plantillas manuales que la herramienta no cubre —por ejemplo, un formato exigido, una aprobación, una auditoría o simplemente una costumbre?",
+        "response": "La herramienta ya demuestra ahorro de tiempo, pero ese ahorro no se mantiene porque las plantillas manuales siguen formando parte del trabajo. Para entender la causa, hay que distinguir entre una necesidad real del proceso y una preferencia o costumbre de uso.\n\n¿Qué necesidad concreta cubren las plantillas manuales que la herramienta no cubre —por ejemplo, un formato exigido, una aprobación, una auditoría o simplemente una costumbre?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-04-r2",
+          "case_id": "CF-04",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4588,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está identificado quién tiene autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Criterios concretos para autorizar el paso a operación."
+        ],
+        "routing_target": "Patrocinador del piloto y responsable del área operativa",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién puede autorizar formalmente su paso a operación.",
+        "question": "¿Quién es el patrocinador o responsable del área operativa con autoridad para tomar esa decisión?",
+        "response": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién puede autorizar formalmente su paso a operación. ¿Quién es el patrocinador o responsable del área operativa con autoridad para tomar esa decisión?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-05-r2",
+          "case_id": "CF-05",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5197,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está definido cuánto valor económico u operativo debe generar la mejora para justificar continuar.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Coste y esfuerzo necesarios para continuar",
+          "Importancia estratégica de la iniciativa"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La precisión alta y la reducción del tiempo son señales positivas, pero todavía falta saber si el beneficio compensa lo que costaría seguir adelante.",
+        "question": "¿Qué beneficio mínimo —por ejemplo, ahorro de costes, ingresos adicionales o tiempo liberado— tendría que aportar para que decidierais continuar?",
+        "response": "La precisión alta y la reducción del tiempo son señales positivas, pero todavía falta saber si el beneficio compensa lo que costaría seguir adelante.\n\n¿Qué beneficio mínimo —por ejemplo, ahorro de costes, ingresos adicionales o tiempo liberado— tendría que aportar para que decidierais continuar?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-06-r2",
+          "case_id": "CF-06",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4690,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No se conoce el resultado que la dirección considera prioritario, y esa información no está disponible en el equipo.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Criterios para comparar la propuesta con otras prioridades",
+          "Información necesaria para valorar la propuesta una vez definido el resultado prioritario"
+        ],
+        "routing_target": "Dirección o responsable de establecer la prioridad",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La propuesta no puede priorizarse todavía porque falta saber qué resultado considera más importante la dirección. El siguiente paso es obtener esa definición directamente de dirección o de la persona responsable de establecer la prioridad.",
+        "question": null,
+        "response": "La propuesta no puede priorizarse todavía porque falta saber qué resultado considera más importante la dirección. El siguiente paso es obtener esa definición directamente de dirección o de la persona responsable de establecer la prioridad."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-07-r2",
+          "case_id": "CF-07",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3944,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta la participación de quienes deben definir y validar el proveedor, la arquitectura y el workflow.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Criterios y comparación entre proveedores",
+          "Diseño de la arquitectura",
+          "Diseño y validación del workflow"
+        ],
+        "routing_target": "Responsables técnicos y operativos de la selección del proveedor, la arquitectura y el workflow",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión de continuar ya está tomada. Lo que sigue es concretar proveedor, arquitectura y workflow con los responsables técnicos y operativos correspondientes.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es pasar la definición de proveedor, arquitectura y workflow a los responsables técnicos y operativos; esos detalles pueden concretarse allí."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-08-r2",
+          "case_id": "CF-08",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4315,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta precisar la decisión concreta de este trimestre y qué incluye cada uno de los tres alcances posibles.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Criterios con los que dirección comparará los alcances",
+          "Implicaciones de las dependencias externas",
+          "Disponibilidad real de presupuesto y equipo para cada opción"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Ya están disponibles varios insumos importantes —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no se puede convertir el contexto en una recomendación porque no está definido qué se debe elegir exactamente entre los tres alcances.",
+        "question": "¿Cuál es la decisión exacta que dirección debe tomar este trimestre y qué incluye cada uno de los tres alcances?",
+        "response": "Ya están disponibles varios insumos importantes —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no se puede convertir el contexto en una recomendación porque no está definido qué se debe elegir exactamente entre los tres alcances.\n\n¿Cuál es la decisión exacta que dirección debe tomar este trimestre y qué incluye cada uno de los tres alcances?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-09-r2",
+          "case_id": "CF-09",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4302,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta identificar la situación concreta que la persona quiere ordenar y el resultado que espera obtener.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Puedo ayudarte a darle estructura, pero todavía no sé a qué situación te refieres ni qué necesitas aclarar primero.",
+        "question": "¿Qué situación quieres ordenar y qué te gustaría poder aclarar o decidir primero?",
+        "response": "Puedo ayudarte a darle estructura, pero todavía no sé a qué situación te refieres ni qué necesitas aclarar primero.\n\n¿Qué situación quieres ordenar y qué te gustaría poder aclarar o decidir primero?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-10-r2",
+          "case_id": "CF-10",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3624,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Ninguna; la iniciativa está lista y el único pendiente identificado es diseñar el experimento siguiente.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [],
+        "routing_target": "Diseño del experimento siguiente",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio acordado. Está lista para presentarse al comité; el único pendiente es definir el experimento siguiente.",
+        "question": null,
+        "response": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio acordado. Está lista para presentarse al comité; el siguiente paso es pasar al diseño del experimento siguiente."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-11-r2",
+          "case_id": "CF-11",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5191,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta la confirmación de gerencia sobre si existe una excepción al límite establecido por el plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Gerencia",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El plan anual restringe las opciones y la decisión depende de saber si gerencia puede autorizar una excepción.",
+        "question": null,
+        "response": "La siguiente acción es solicitar a gerencia una confirmación explícita sobre si existe una excepción al límite del plan anual. Hasta recibir esa respuesta, no puede resolverse la decisión."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-12-r2",
+          "case_id": "CF-12",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3064,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está confirmado quién tendría la responsabilidad y disponibilidad para sostener la implementación pequeña.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Criterios para evaluar si la implementación pequeña cumple su propósito",
+          "Recursos y apoyo necesarios",
+          "Plazo y condiciones para continuar o detenerse"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La continuidad parece depender principalmente de contar con una persona claramente responsable y con tiempo real para sostenerla.",
+        "question": "¿Quién podría asumir esa responsabilidad y con qué disponibilidad concreta?",
+        "response": "La continuidad parece depender principalmente de contar con una persona claramente responsable y con tiempo real para sostenerla. ¿Quién podría asumir esa responsabilidad y con qué disponibilidad concreta?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-01-r3",
+          "case_id": "CF-01",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 2948,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta acordar qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Comparación concreta entre las ideas y sus posibles resultados."
+        ],
+        "routing_target": "Dirección y responsables de decidir la prioridad",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para priorizar las ideas, primero hace falta que dirección aclare qué resultado considera más importante. Sin ese criterio, no hay una base común para ordenar las opciones.",
+        "question": null,
+        "response": "Para priorizar las ideas, primero hace falta que dirección aclare qué resultado considera más importante. Sin ese criterio, no hay una base común para ordenar las opciones. El siguiente paso es pedir esa definición a dirección y a las personas responsables de decidir."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-02-r3",
+          "case_id": "CF-02",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4911,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No existe capacidad operativa asignada para sostener el lanzamiento durante este trimestre.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Dirección y operaciones",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Con lo que sabemos, el lanzamiento no puede continuar este trimestre tal como está: falta un equipo operativo que lo sostenga. Dirección u operaciones debe confirmar quién lo asumirá y con qué capacidad antes de seguir adelante.",
+        "question": null,
+        "response": "Con lo que sabemos, el lanzamiento no puede continuar este trimestre tal como está: falta un equipo operativo que lo sostenga. Dirección u operaciones debe confirmar quién lo asumirá y con qué capacidad antes de seguir adelante."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-03-r3",
+          "case_id": "CF-03",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5099,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta entender qué impulsa el uso continuado de plantillas manuales: una obligación del proceso, una necesidad de control o una preferencia de los usuarios.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "No está claro si el ahorro se pierde en todos los equipos o solo en algunos contextos de trabajo."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La herramienta parece aportar ahorro, pero ese ahorro no se mantiene porque las personas siguen recurriendo a plantillas manuales. Para entender la causa, hay que distinguir entre una exigencia del proceso y una elección de los usuarios.",
+        "question": "¿Las plantillas manuales son obligatorias o necesarias para alguna aprobación, auditoría o entrega, o las usan aunque la herramienta cubra la misma necesidad?",
+        "response": "La herramienta parece aportar ahorro, pero ese ahorro no se mantiene porque las personas siguen recurriendo a plantillas manuales. Para entender la causa, hay que distinguir entre una exigencia del proceso y una elección de los usuarios.\n\n¿Las plantillas manuales son obligatorias o necesarias para alguna aprobación, auditoría o entrega, o las usan aunque la herramienta cubra la misma necesidad?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-04-r3",
+          "case_id": "CF-04",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4662,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta identificar a la persona con autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para definir el siguiente paso es confirmar quién tiene la autoridad final para aprobar su entrada en operación.",
+        "question": "¿Quién es la persona responsable de confirmar esa aprobación?",
+        "response": "El piloto ya cuenta con presupuesto y equipo; lo que falta para definir el siguiente paso es confirmar quién tiene la autoridad final para aprobar su entrada en operación.\n\n¿Quién es la persona responsable de confirmar esa aprobación?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-05-r3",
+          "case_id": "CF-05",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4509,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta un criterio concreto para determinar si el valor generado justifica continuar, incluyendo el beneficio esperado y el coste de seguir.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "No está claro quién debe validar ese umbral ni qué evidencia adicional se necesitaría para confirmarlo."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La precisión alta y la reducción importante del tiempo son señales favorables, pero todavía no permiten saber si el beneficio compensa el coste de continuar.",
+        "question": "¿Qué beneficio concreto tendría que generar —por ejemplo, ahorro, ingresos o capacidad liberada— para que consideres que merece la pena seguir, y con qué coste habría que compararlo?",
+        "response": "La precisión alta y la reducción importante del tiempo son señales favorables, pero todavía no permiten saber si el beneficio compensa el coste de continuar.\n\n¿Qué beneficio concreto tendría que generar —por ejemplo, ahorro, ingresos o capacidad liberada— para que consideres que merece la pena seguir, y con qué coste habría que compararlo?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-06-r3",
+          "case_id": "CF-06",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4414,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta confirmar qué resultado considera prioritario la dirección; la persona usuaria no dispone de esa información.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Criterios para comparar la propuesta una vez que se confirme el resultado prioritario."
+        ],
+        "routing_target": "Dirección o responsable de la decisión",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La propuesta no puede priorizarse todavía porque no está claro qué resultado considera prioritario la dirección y esa información no está disponible.",
+        "question": null,
+        "response": "La propuesta no puede priorizarse todavía porque no está claro qué resultado considera prioritario la dirección y esa información no está disponible. El siguiente paso es pedir a la dirección o a la persona responsable de decidir que confirme explícitamente ese resultado antes de seguir evaluándola."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-07-r3",
+          "case_id": "CF-07",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4313,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta asignar la definición de proveedor, arquitectura y workflow a los responsables adecuados; la continuidad ya no requiere más evaluación.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Selección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": "Equipos responsables de compras, arquitectura/IT y operaciones",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión de continuar ya está tomada. Lo que sigue es trasladar la definición del proveedor, la arquitectura y el workflow a los equipos responsables, sin reabrir esa decisión.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es pasar la definición del proveedor, la arquitectura y el workflow a compras, arquitectura/IT y operaciones para que la concreten."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-08-r3",
+          "case_id": "CF-08",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4645,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta precisar la decisión concreta que debe tomarse y comparar explícitamente los tres alcances posibles.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Métricas relevantes y umbrales de éxito",
+          "Presupuesto disponible y restricciones",
+          "Capacidad real del equipo",
+          "Dependencias externas y usuarios piloto",
+          "Patrocinio y riesgos de ejecución"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Hay varios insumos disponibles, pero todavía no está claro qué debe decidir la dirección ni cómo se distinguen los tres alcances. Sin esa definición, no se puede recomendar una acción para este trimestre.",
+        "question": "¿Qué decisión exacta debe tomar la dirección este trimestre y cuáles son los tres alcances que debe comparar?",
+        "response": "Hay varios insumos disponibles, pero todavía no está claro qué debe decidir la dirección ni cómo se distinguen los tres alcances. Sin esa definición, no se puede recomendar una acción para este trimestre.\n\n¿Qué decisión exacta debe tomar la dirección este trimestre y cuáles son los tres alcances que debe comparar?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-09-r3",
+          "case_id": "CF-09",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4056,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta precisar qué situación quiere ordenar y qué resultado busca obtener al hacerlo.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Parece que quieres convertir una preocupación todavía poco definida en algo más claro.",
+        "question": "¿Qué situación concreta quieres ordenar y qué te gustaría poder entender o decidir sobre ella?",
+        "response": "Parece que quieres convertir una preocupación todavía poco definida en algo más claro. ¿Qué situación concreta quieres ordenar y qué te gustaría poder entender o decidir sobre ella?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-10-r3",
+          "case_id": "CF-10",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3075,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No falta información para cumplir el objetivo de presentar la iniciativa al comité; el diseño del experimento siguiente queda fuera de este turno.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya cuenta con validación, responsable, presupuesto, capacidad y criterio de decisión acordado. El siguiente paso está claro: presentarla al comité."
+      },
+      "visible": {
+        "synthesis": "La iniciativa parece lista para ser presentada: está validada, tiene responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El siguiente paso es llevarla al comité; el diseño del experimento puede tratarse por separado.",
+        "question": null,
+        "response": "La iniciativa parece lista para ser presentada: está validada, tiene responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El siguiente paso es llevarla al comité; el diseño del experimento puede tratarse por separado."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-11-r3",
+          "case_id": "CF-11",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4778,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta confirmación de gerencia sobre si existe una excepción al límite del plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Gerencia",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión depende de saber si gerencia autoriza una excepción al límite establecido por el plan anual.",
+        "question": null,
+        "response": "La decisión no puede resolverse con la información disponible: primero gerencia debe confirmar si autoriza una excepción al límite del plan anual. Con esa confirmación se podrá determinar cómo proceder."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-12-r3",
+          "case_id": "CF-12",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3140,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está confirmado que exista una persona o equipo con responsabilidad y capacidad sostenida para mantener la implementación.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Criterios para evaluar el resultado de la implementación",
+          "Recursos y condiciones técnicas",
+          "Beneficio esperado frente al costo"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para decidir si conviene continuar, primero hay que confirmar que la implementación tendrá un responsable claro y tiempo suficiente para sostenerla.",
+        "question": "¿Hay una persona o equipo concreto que pueda asumir esa responsabilidad y dedicarle tiempo de forma sostenida?",
+        "response": "Para decidir si conviene continuar, primero hay que confirmar que la implementación tendrá un responsable claro y tiempo suficiente para sostenerla. ¿Hay una persona o equipo concreto que pueda asumir esa responsabilidad y dedicarle tiempo de forma sostenida?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-01-r4",
+          "case_id": "CF-01",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5412,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más ni quién puede fijar esa prioridad.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Comparar las ideas entre sí",
+          "Precisar criterios secundarios de evaluación"
+        ],
+        "routing_target": "Dirección o las personas responsables de decidir la prioridad",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para priorizar las ideas hace falta aclarar primero qué resultado importa más: por ejemplo, impacto, ingresos, rapidez, reducción de riesgos u otro objetivo. Esa definición debe venir de dirección o de quienes tienen la autoridad para decidir.",
+        "question": null,
+        "response": "Para priorizar las ideas hace falta aclarar primero qué resultado importa más: por ejemplo, impacto, ingresos, rapidez, reducción de riesgos u otro objetivo. Esa definición debe venir de dirección o de quienes tienen la autoridad para decidir; hasta entonces, no conviene comparar las ideas entre sí."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-02-r4",
+          "case_id": "CF-02",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5011,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No hay un equipo operativo ni un responsable confirmado para sostener el lanzamiento.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Liderazgo y operaciones",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Con la información disponible, el lanzamiento no debería continuar este trimestre: no existe capacidad operativa confirmada para sostenerlo.",
+        "question": null,
+        "response": "El lanzamiento debe quedar en pausa hasta que liderazgo y operaciones confirmen un equipo responsable y con capacidad para sostenerlo."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-03-r4",
+          "case_id": "CF-03",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4203,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No se sabe si las plantillas manuales se mantienen por una exigencia del proceso o por preferencia, hábito o falta de confianza de los usuarios.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Qué ocurre con el ahorro en el tiempo cuando los usuarios sí usan la herramienta.",
+          "Qué personas o situaciones concentran el uso de plantillas manuales."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La herramienta ya demuestra que puede ahorrar tiempo, pero ese beneficio no se mantiene porque parte del trabajo sigue pasando por plantillas manuales. La causa puede estar en una exigencia del proceso o en la forma en que los usuarios trabajan.",
+        "question": "¿Las plantillas manuales son obligatorias para alguna aprobación, control o auditoría, o los usuarios las eligen aunque podrían trabajar solo con la herramienta?",
+        "response": "La herramienta ya demuestra que puede ahorrar tiempo, pero ese beneficio no se mantiene porque parte del trabajo sigue pasando por plantillas manuales. La causa puede estar en una exigencia del proceso o en la forma en que los usuarios trabajan.\n\n¿Las plantillas manuales son obligatorias para alguna aprobación, control o auditoría, o los usuarios las eligen aunque podrían trabajar solo con la herramienta?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-04-r4",
+          "case_id": "CF-04",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4228,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está identificado el rol o la persona con autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Criterios que debe cumplir el piloto para pasar a operación."
+        ],
+        "routing_target": "Responsable organizativo con autoridad para aprobar la transición a operación",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El presupuesto y el equipo ya están disponibles; lo que falta para avanzar es que la organización nombre quién puede autorizar el paso del piloto a operación.",
+        "question": null,
+        "response": "El siguiente paso es pedir a la organización que designe explícitamente a la persona o el rol con autoridad para aprobar el paso a operación."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-05-r4",
+          "case_id": "CF-05",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4955,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está claro cuál es el valor económico u operativo obtenido ni qué umbral justificaría continuar.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Coste y esfuerzo necesarios para mantener o ampliar la solución.",
+          "Riesgos y condiciones para conservar la precisión y la reducción de tiempo."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La alta precisión y el ahorro de tiempo son señales positivas, pero todavía falta saber si se traducen en un beneficio suficientemente importante para justificar continuar.",
+        "question": "¿Qué beneficio concreto produce —por ejemplo, ahorro de dinero, capacidad adicional o menos trabajo— y cuál sería el mínimo necesario para decidir que merece la pena seguir?",
+        "response": "La alta precisión y el ahorro de tiempo son señales positivas, pero todavía falta saber si se traducen en un beneficio suficientemente importante para justificar continuar.\n\n¿Qué beneficio concreto produce —por ejemplo, ahorro de dinero, capacidad adicional o menos trabajo— y cuál sería el mínimo necesario para decidir que merece la pena seguir?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-06-r4",
+          "case_id": "CF-06",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4024,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "La prioridad o resultado que la dirección considera más importante no está definido ni comunicado.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Dirección o responsable de tomar la decisión",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para decidir si la propuesta merece prioridad, primero hace falta saber qué resultado quiere privilegiar la dirección. Como esa orientación no está disponible, el siguiente paso es obtenerla directamente de la dirección o de la persona responsable de decidir.",
+        "question": null,
+        "response": "Para decidir si la propuesta merece prioridad, primero hace falta saber qué resultado quiere privilegiar la dirección. Como esa orientación no está disponible, el siguiente paso es obtenerla directamente de la dirección o de la persona responsable de decidir."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-07-r4",
+          "case_id": "CF-07",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3210,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta asignar la definición de proveedor, arquitectura y workflow a los responsables correspondientes; la decisión de continuar ya no requiere más validación.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Selección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": "Equipo responsable de arquitectura, compras y operaciones",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión de continuar ya está tomada. Lo que sigue es pasar la definición del proveedor, la arquitectura y el workflow a los responsables de arquitectura, compras y operaciones.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es pasar la definición del proveedor, la arquitectura y el workflow a los responsables de arquitectura, compras y operaciones; no hace falta resolver esos detalles aquí."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-08-r4",
+          "case_id": "CF-08",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4935,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Faltan los tres alcances concretos y el criterio que debe determinar cuál se elige este trimestre.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Métricas objetivo y umbrales de éxito",
+          "Presupuesto disponible por alcance",
+          "Dependencias externas y restricciones de calendario",
+          "Capacidad real del equipo y condiciones del piloto"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Hay recursos y apoyos para decidir, pero la elección no puede concretarse sin comparar claramente las alternativas y saber qué resultado prioriza la dirección este trimestre.",
+        "question": "¿Cuáles son los tres alcances y qué resultado o condición debe pesar más para elegir entre ellos?",
+        "response": "Hay recursos y apoyos para decidir, pero la elección no puede concretarse sin comparar claramente las alternativas y saber qué resultado prioriza la dirección este trimestre.\n\n¿Cuáles son los tres alcances y qué resultado o condición debe pesar más para elegir entre ellos?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-09-r4",
+          "case_id": "CF-09",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4465,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta conocer la situación concreta y qué resultado busca obtener el usuario.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para ayudarte a ordenar esto, primero necesito ubicar de qué se trata y qué quieres conseguir.",
+        "question": "¿Qué situación quieres ordenar y qué te gustaría poder aclarar o decidir sobre ella?",
+        "response": "Para ayudarte a ordenar esto, primero necesito ubicar de qué se trata y qué quieres conseguir.\n\n¿Qué situación quieres ordenar y qué te gustaría poder aclarar o decidir sobre ella?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-10-r4",
+          "case_id": "CF-10",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3367,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Ninguno para la presentación; el diseño del experimento corresponde a la etapa posterior.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "routing_target": "Diseño del experimento y preparación de la ejecución",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La iniciativa está lista para presentarse al comité: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. El siguiente asunto —diseñar el experimento— puede continuar por separado en la preparación de la ejecución."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-11-r4",
+          "case_id": "CF-11",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8654,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta la confirmación de gerencia sobre si puede autorizarse una excepción al plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Gerencia",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión está limitada por el plan anual y depende de que gerencia confirme si existe una excepción autorizable.",
+        "question": null,
+        "response": "La decisión está limitada por el plan anual y depende de que gerencia confirme si existe una excepción autorizable. El siguiente paso es solicitar esa confirmación; sin ella, no puede resolverse."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-12-r4",
+          "case_id": "CF-12",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3536,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta confirmar si existe una persona o equipo responsable de mantener la implementación y con capacidad disponible.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La continuidad de una implementación pequeña depende de contar con una persona o equipo que pueda hacerse cargo de sostenerla, no solo de ponerla en marcha.",
+        "question": "¿Hay una persona o equipo concreto que pueda asumir esa responsabilidad y reservar tiempo para mantenerla?",
+        "response": "La continuidad de una implementación pequeña depende de contar con una persona o equipo que pueda hacerse cargo de sostenerla, no solo de ponerla en marcha. ¿Hay una persona o equipo concreto que pueda asumir esa responsabilidad y reservar tiempo para mantenerla?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-01-r5",
+          "case_id": "CF-01",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3562,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe tener mayor peso al priorizar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Comparar y ordenar las ideas concretas hasta conocer esa prioridad."
+        ],
+        "routing_target": "Dirección y responsables de negocio",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Para priorizar las ideas de forma coherente, primero hay que acordar qué resultado importa más, por ejemplo impacto, ingresos, rapidez o reducción de riesgos.",
+        "question": "¿Qué resultado debe pesar más para la dirección al elegir entre las ideas?",
+        "response": "Para priorizar las ideas de forma coherente, primero hay que acordar qué resultado importa más, por ejemplo impacto, ingresos, rapidez o reducción de riesgos.\n\n¿Qué resultado debe pesar más para la dirección al elegir entre las ideas?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-02-r5",
+          "case_id": "CF-02",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4638,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No existe un equipo operativo comprometido y con capacidad confirmada para sostener el lanzamiento durante este trimestre.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Confirmar otros riesgos del lanzamiento una vez resuelta la capacidad operativa."
+        ],
+        "routing_target": "Dirección responsable de operaciones y del lanzamiento",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La falta de un equipo operativo para sostenerlo impide recomendar que el lanzamiento continúe tal como está planteado.",
+        "question": null,
+        "response": "La falta de un equipo operativo para sostenerlo impide recomendar que el lanzamiento continúe tal como está planteado. La dirección responsable debe confirmar quién asumirá la operación y con qué capacidad antes de autorizarlo."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-03-r5",
+          "case_id": "CF-03",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4630,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta entender qué motiva a los usuarios a seguir usando plantillas manuales y en qué situaciones ocurre, aunque la herramienta ahorre tiempo.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Frecuencia y alcance del uso de plantillas manuales",
+          "Diferencia entre el ahorro observado y el ahorro que los usuarios perciben o valoran"
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La herramienta parece resolver el trabajo más rápido, pero el ahorro no se mantiene porque el uso de plantillas manuales persiste. La causa puede estar en la confianza, el hábito, requisitos del trabajo o alguna limitación que aún no se ha descrito.",
+        "question": "¿Puedes dar un ejemplo concreto de cuándo un usuario elige una plantilla manual y qué motivo explica esa elección?",
+        "response": "La herramienta parece resolver el trabajo más rápido, pero el ahorro no se mantiene porque el uso de plantillas manuales persiste. La causa puede estar en la confianza, el hábito, requisitos del trabajo o alguna limitación que aún no se ha descrito.\n\n¿Puedes dar un ejemplo concreto de cuándo un usuario elige una plantilla manual y qué motivo explica esa elección?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-04-r5",
+          "case_id": "CF-04",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5177,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Patrocinador del piloto o instancia con autoridad sobre la operación",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es que la organización nombre quién puede aprobar su paso a operación.",
+        "question": null,
+        "response": "El siguiente paso debe confirmarlo el patrocinador del piloto o la instancia que tenga autoridad sobre la operación. Hace falta que esa parte designe explícitamente a la persona responsable de aprobar el paso a operación."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-05-r5",
+          "case_id": "CF-05",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8446,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta un criterio económico o de impacto concreto para determinar si el beneficio observado justifica continuar.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Cuantificación fiable del ahorro o valor actual generado.",
+          "Coste y esfuerzo necesarios para continuar."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La alta precisión y la fuerte reducción del tiempo apuntan a un beneficio, pero todavía no está claro si ese beneficio compensa lo que cuesta continuar.",
+        "question": "¿Qué beneficio mínimo tendría que generar —por ejemplo, en ahorro, ingresos o capacidad del equipo— para que consideres que merece la pena seguir, y cuánto está generando ahora?",
+        "response": "La alta precisión y la fuerte reducción del tiempo apuntan a un beneficio, pero todavía no está claro si ese beneficio compensa lo que cuesta continuar.\n\n¿Qué beneficio mínimo tendría que generar —por ejemplo, en ahorro, ingresos o capacidad del equipo— para que consideres que merece la pena seguir, y cuánto está generando ahora?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-06-r5",
+          "case_id": "CF-06",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5245,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "No existe una prioridad explícita comunicada por la dirección, por lo que no puede determinarse qué resultado debe orientar la evaluación de la propuesta.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Resultado esperado de la propuesta",
+          "Criterios para comparar alternativas",
+          "Responsable de tomar la decisión"
+        ],
+        "routing_target": "Dirección o patrocinador de la propuesta",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La propuesta no puede evaluarse todavía porque falta saber qué resultado considera prioritario la dirección.",
+        "question": null,
+        "response": "La propuesta no puede evaluarse todavía porque falta saber qué resultado considera prioritario la dirección. El siguiente paso es pedir a la dirección o al patrocinador que indique explícitamente esa prioridad y cómo se reconocerá que se ha logrado."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-07-r5",
+          "case_id": "CF-07",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4425,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Faltan los responsables y criterios internos para definir el proveedor, la arquitectura y el workflow.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Comparación concreta de proveedores",
+          "Decisión de arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": "Responsables de tecnología, compras y operaciones",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "La decisión de continuar ya está tomada. Lo que sigue no es reconsiderarla, sino reunir a las áreas responsables para concretar proveedor, arquitectura y workflow.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es reunir a tecnología, compras y operaciones para concretar el proveedor, la arquitectura y el workflow; todavía no hace falta diseñar esas opciones aquí."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-08-r5",
+          "case_id": "CF-08",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5135,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Faltan la definición concreta de los tres alcances y el criterio que la dirección usará para elegir entre ellos.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "No está claro cómo pesan las métricas, el presupuesto, las dependencias y la capacidad del equipo en la elección.",
+          "No se conoce el nivel de compromiso requerido por el sponsor ni las restricciones de los usuarios piloto."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Ya existen recursos, apoyo, usuarios piloto y varias alternativas; lo que falta para convertirlo en una decisión de este trimestre es hacer explícitas las opciones y qué resultado debe priorizar la dirección.",
+        "question": "¿Cuáles son exactamente los tres alcances posibles y qué criterio debe pesar más para elegir uno este trimestre (por ejemplo, impacto, coste, plazo o riesgo)?",
+        "response": "Ya existen recursos, apoyo, usuarios piloto y varias alternativas; lo que falta para convertirlo en una decisión de este trimestre es hacer explícitas las opciones y qué resultado debe priorizar la dirección.\n\n¿Cuáles son exactamente los tres alcances posibles y qué criterio debe pesar más para elegir uno este trimestre (por ejemplo, impacto, coste, plazo o riesgo)?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-09-r5",
+          "case_id": "CF-09",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4881,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta identificar la situación concreta y el resultado que la persona quiere obtener al ordenarla.",
+        "next_action": "ASK",
+        "deferred_gaps": [
+          "Contexto relevante, personas implicadas y restricciones."
+        ],
+        "routing_target": null,
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "Puedo ayudarte a darle estructura, pero todavía no sé qué situación quieres ordenar ni para qué la necesitas aclarar.",
+        "question": "¿Qué está pasando y qué te gustaría poder decidir o lograr primero?",
+        "response": "Puedo ayudarte a darle estructura, pero todavía no sé qué situación quieres ordenar ni para qué la necesitas aclarar.\n\n¿Qué está pasando y qué te gustaría poder decidir o lograr primero?"
+      },
+      "review": {
+        "naturalness": 2,
+        "user_job_alignment": 5,
+        "question_usefulness": 5,
+        "cognitive_invisibility": 5,
+        "flexibility": 2,
+        "action_clarity": 5,
+        "overstructured": true,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-10-r5",
+          "case_id": "CF-10",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3098,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Ninguna para el objetivo inmediato de presentar la iniciativa al comité; el diseño del experimento siguiente queda fuera de este turno.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya cuenta con validación, responsable, presupuesto, capacidad y criterio acordado. El siguiente paso ya está determinado: presentarla al comité."
+      },
+      "visible": {
+        "synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El diseño del experimento siguiente puede tratarse después de esa presentación.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. Con la información disponible, no hace falta resolver nada más para dar ese siguiente paso; el diseño del experimento siguiente puede quedar para después."
+      },
+      "review": {
+        "naturalness": 4,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-11-r5",
+          "case_id": "CF-11",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 4453,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "status": "PASS",
+      "internal": {
+        "selected_material_gap": "Falta la confirmación de gerencia sobre si existe una excepción al plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "Gerencia",
+        "stop_rationale": null
+      },
+      "visible": {
+        "synthesis": "El plan anual restringe las opciones y la decisión depende de saber si gerencia autoriza una excepción.",
+        "question": null,
+        "response": "La decisión queda pendiente de que gerencia confirme si existe una excepción al plan anual. Hasta recibir esa confirmación, no es posible definir cómo proceder."
+      },
+      "review": {
+        "naturalness": 5,
+        "user_job_alignment": 5,
+        "question_usefulness": 4,
+        "cognitive_invisibility": 5,
+        "flexibility": 5,
+        "action_clarity": 5,
+        "overstructured": false,
+        "unnecessary_question": false,
+        "user_job_drift": false,
+        "framework_leakage": false,
+        "unknown_loop": false,
+        "premature_route": false,
+        "late_stop": false,
+        "material_gap_missed": false
+      },
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": [],
+        "semantic_consistency_errors": [],
+        "metadata": {
+          "call_id": "decision-readiness-live-CF-12-r5",
+          "case_id": "CF-12",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 3347,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,3302 @@
+{
+  "run_version": "CURRENT-DECISION-LATER-WORK-v0.1",
+  "status": "LIVE_COMPLETED",
+  "provider": "openai_responses",
+  "requested_model": "gpt-5.6-luna",
+  "provider_reported_models": [
+    "gpt-5.6-luna"
+  ],
+  "schema_mode": "strict_json_schema",
+  "target_calls": 45,
+  "completed_calls": 45,
+  "fixture_path": "docs/portfolio-entry/testing/PORTFOLIO_ENTRY_CONVERSION_READINESS_FIXTURES_v0.1.json",
+  "boundary_spec_path": "docs/portfolio-entry/testing/PORTFOLIO_ENTRY_CURRENT_DECISION_LATER_WORK_BOUNDARY_v0.1.md",
+  "runs": [
+    {
+      "case_id": "CR-03",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que bloquee la decisión actual; quedan por definir proveedor, arquitectura y workflow.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Selección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión de continuar ya está tomada. Los temas pendientes corresponden al trabajo posterior y no impiden avanzar desde el punto de decisión actual.",
+        "visible_synthesis": "La decisión de continuar está resuelta. Lo que sigue es concretar el proveedor, la arquitectura y el workflow en la etapa de detalle.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está resuelta. El siguiente trabajo es concretar el proveedor, la arquitectura y el workflow; no hace falta reabrir la decisión actual.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Definir proveedor, arquitectura y workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Faltan detalles de proveedor, arquitectura y workflow.",
+          "Esos temas pertenecen a la etapa posterior a la decisión actual."
+        ],
+        "open_items": [
+          {
+            "description": "Seleccionar el proveedor",
+            "why_it_matters": "Es necesario para concretar la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de detalle de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo después de la decisión de continuar.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Diseñar el workflow",
+            "why_it_matters": "Es necesario para concretar cómo operará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en la fase de definición posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar al trabajo de detalle de la solución.",
+          "Definir proveedor, arquitectura y workflow sin reabrir la decisión de continuar."
+        ],
+        "continuation_summary": "La entrada está lista para continuar. Los próximos temas son de detalle de la solución: proveedor, arquitectura y workflow."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0d94857cc4b7fdae006ab5483d85a487d28ddc3a52b714b8a4",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No queda una brecha para decidir si continuar; el proveedor, la arquitectura y el workflow corresponden al trabajo posterior.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir el proveedor",
+          "Definir la arquitectura",
+          "Definir el workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión de continuar ya está tomada. Los puntos pendientes son detalles de la fase posterior y no impiden avanzar desde la decisión actual.",
+        "visible_synthesis": "La decisión de continuar está resuelta. El siguiente trabajo consiste en concretar el proveedor, la arquitectura y el workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar está resuelta. El siguiente trabajo es concretar el proveedor, la arquitectura y el workflow; no hace falta reabrir esa decisión.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar con los detalles de la solución después de haber decidido continuar.",
+        "desired_outcome": "Definir el proveedor, la arquitectura y el workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Faltan definir el proveedor, la arquitectura y el workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el proveedor",
+            "why_it_matters": "Es necesario para concretar la solución posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo junto con el proveedor en la fase posterior.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir el workflow",
+            "why_it_matters": "Es necesario para concretar cómo se operará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo después de cerrar la decisión de continuar.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la definición del proveedor, la arquitectura y el workflow."
+        ],
+        "continuation_summary": "La decisión de continuar está cerrada; el trabajo pendiente pertenece a la definición posterior de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0806bab09cb8af5d006ab5483d563087d2a73310ce641fcbb9",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La definición de proveedor, arquitectura y workflow queda pendiente para el trabajo posterior; no falta información para la decisión de continuar.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Proveedor",
+          "Arquitectura",
+          "Workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual ya está tomada. Los elementos pendientes corresponden a la definición posterior de la solución y no impiden avanzar desde esta decisión.",
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo pendiente es concretar el proveedor, la arquitectura y el workflow en la siguiente fase.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente trabajo consiste en concretar proveedor, arquitectura y workflow; no es necesario reabrir la decisión actual.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Desarrollar el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Definir proveedor, arquitectura y workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Aún faltan proveedor, arquitectura y workflow.",
+          "La solicitud se refiere a detalle de una etapa posterior."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el proveedor.",
+            "why_it_matters": "Es necesario para concretar la solución posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Incluirlo en el trabajo de definición posterior.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura.",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Incluirla en el trabajo de definición posterior.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir el workflow.",
+            "why_it_matters": "Es necesario para concretar cómo se operará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Incluirlo en el trabajo de definición posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la definición posterior de proveedor, arquitectura y workflow.",
+          "No reabrir la decisión de continuar."
+        ],
+        "continuation_summary": "La entrada está resuelta para la decisión actual; el trabajo pendiente es detallar la solución en la siguiente fase."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_077c449c58c69b66006ab5483d4bcc87d288e2891e00569630",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Faltan por definir el proveedor, la arquitectura y el workflow de la solución.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Selección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": "Trabajo posterior de diseño y definición de la solución",
+        "stop_rationale": null,
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo pendiente corresponde al trabajo posterior de concretar la solución: proveedor, arquitectura y workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. Lo pendiente es definir el proveedor, la arquitectura y el workflow; esto debe pasar al trabajo posterior de diseño y definición de la solución.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Contar con una definición concreta de proveedor, arquitectura y workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "El usuario busca detalle de una solución en una etapa posterior.",
+          "Aún faltan proveedor, arquitectura y workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Seleccionar el proveedor.",
+            "why_it_matters": "Forma parte de la concreción posterior de la solución, no de la decisión actual de continuar.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Trasladar la selección al trabajo de definición de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura.",
+            "why_it_matters": "Es un detalle posterior necesario para concretar la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordar la arquitectura en la fase de diseño de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Diseñar el workflow.",
+            "why_it_matters": "Es un detalle operativo posterior y no bloquea la decisión ya tomada.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definirlo como parte del trabajo posterior de la solución.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar al trabajo posterior de diseño y definición de la solución.",
+          "Resolver allí proveedor, arquitectura y workflow."
+        ],
+        "continuation_summary": "La entrada está resuelta; la conversación puede continuar directamente con el diseño posterior de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0131f00f6cf0a370006ab5483d4f0c87d2bd097cd62aa80454",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No falta información para decidir si continuar; quedan por definir el proveedor, la arquitectura y el workflow para la fase posterior.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Proveedor",
+          "Arquitectura",
+          "Workflow"
+        ],
+        "routing_target": "Diseño y planificación de la solución",
+        "stop_rationale": null,
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo pendiente pertenece a la definición posterior de la solución: proveedor, arquitectura y workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente paso es pasar a la definición de la solución, donde se concretarán el proveedor, la arquitectura y el workflow.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Definir el proveedor, la arquitectura y el workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Aún faltan el proveedor, la arquitectura y el workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el proveedor",
+            "why_it_matters": "Es necesario para concretar la solución posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Resolverlo durante la definición de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Resolverlo durante la definición de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir el workflow",
+            "why_it_matters": "Es necesario para concretar cómo se operará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Resolverlo durante la definición de la solución.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la definición detallada de la solución.",
+          "Concretar el proveedor, la arquitectura y el workflow."
+        ],
+        "continuation_summary": "La decisión actual está resuelta; la conversación puede continuar directamente con el trabajo de definición de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_04b53756c6c2a47b006ab5483d53f887d280bde934484f6b43",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 6,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La decisión de continuar ya está resuelta; proveedor, arquitectura y workflow son trabajo posterior de definición de la solución.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir el proveedor",
+          "Definir la arquitectura",
+          "Definir el workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual no está bloqueada. Los detalles pendientes corresponden a la elaboración posterior de la solución y no requieren reabrir la decisión de continuar.",
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo pendiente es definir el proveedor, la arquitectura y el workflow como parte del trabajo detallado de la solución.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente trabajo es concretar el proveedor, la arquitectura y el workflow, sin reabrir esa decisión.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Contar con una definición concreta de proveedor, arquitectura y workflow.",
+        "known_context": [
+          "La decisión de continuar ya fue tomada.",
+          "Aún faltan por definir el proveedor, la arquitectura y el workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el proveedor",
+            "why_it_matters": "Es necesario para concretar la solución posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo durante el diseño detallado de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo durante el diseño detallado de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir el workflow",
+            "why_it_matters": "Es necesario para concretar cómo funcionará la solución en la práctica.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo durante el diseño detallado de la solución.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar al diseño detallado de la solución.",
+          "Concretar proveedor, arquitectura y workflow sin reabrir la decisión de continuar."
+        ],
+        "continuation_summary": "La entrada está resuelta; la continuación corresponde al diseño detallado de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_09d77fec9bacf863006ab5483d4ec087d2afbc5deff1869cb9",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 7,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que impida la decisión actual; la continuación ya fue decidida y quedan detalles de ejecución por definir.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Selección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión de continuar ya está tomada. Proveedor, arquitectura y workflow pertenecen al trabajo posterior y no cambian esa decisión.",
+        "visible_synthesis": "La decisión de continuar está resuelta. El siguiente trabajo es concretar el proveedor, la arquitectura y el workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. Ahora corresponde pasar a definir el proveedor, la arquitectura y el workflow.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Contar con una definición concreta del proveedor, la arquitectura y el workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Aún faltan por definir el proveedor, la arquitectura y el workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Selección del proveedor",
+            "why_it_matters": "Determina quién proporcionará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de detalle de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definición de la arquitectura",
+            "why_it_matters": "Establece cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definirla después de la decisión de continuar.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Diseño del workflow",
+            "why_it_matters": "Aclara cómo se desarrollará el trabajo en la práctica.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Diseñarlo durante la fase de detalle posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar al trabajo de detalle de la solución.",
+          "Definir proveedor, arquitectura y workflow sin reabrir la decisión de continuar."
+        ],
+        "continuation_summary": "La decisión actual está cerrada; la conversación puede continuar en el detalle de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0dc0ae971308205f006ab54844fc4887d28f9088fa2b427b61",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 8,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La decisión de continuar ya está resuelta; los detalles pendientes corresponden al trabajo posterior.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir proveedor",
+          "Definir arquitectura",
+          "Definir el flujo de trabajo"
+        ],
+        "routing_target": null,
+        "stop_rationale": "No falta información para avanzar en la decisión actual. El proveedor, la arquitectura y el flujo de trabajo pueden definirse después, en la fase de detalle de la solución.",
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo que queda pendiente es concretar el proveedor, la arquitectura y el flujo de trabajo como parte del desarrollo posterior de la solución.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. Ahora corresponde pasar al detalle de la solución: definir el proveedor, la arquitectura y el flujo de trabajo.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de una solución ya aprobada para continuar.",
+        "desired_outcome": "Contar con una definición concreta de proveedor, arquitectura y flujo de trabajo.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Faltan definir proveedor, arquitectura y flujo de trabajo.",
+          "El usuario busca detalle de una solución en una etapa posterior."
+        ],
+        "open_items": [
+          {
+            "description": "Definir proveedor",
+            "why_it_matters": "Se necesita para concretar la solución posteriormente.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición detallada.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir arquitectura",
+            "why_it_matters": "Se necesita para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición detallada.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir el flujo de trabajo",
+            "why_it_matters": "Se necesita para concretar cómo funcionará la solución en la práctica.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición detallada.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la definición detallada de la solución.",
+          "Precisar proveedor, arquitectura y flujo de trabajo en esa fase."
+        ],
+        "continuation_summary": "La decisión actual está cerrada. La continuación debe centrarse en el detalle de la solución, sin reabrir si se debe continuar."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_004980bbc62c7c52006ab54845657887d2bf31aff4de39e847",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 9,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una brecha que impida la decisión actual; quedan por definir detalles posteriores de la solución.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Proveedor",
+          "Arquitectura",
+          "Workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión de continuar ya está tomada. Los puntos pendientes corresponden al trabajo posterior y no cambian esa decisión.",
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo pendiente ahora es concretar el proveedor, la arquitectura y el workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente trabajo es concretar el proveedor, la arquitectura y el workflow; no hace falta reabrir la decisión actual.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de decidir continuar.",
+        "desired_outcome": "Definir proveedor, arquitectura y workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Faltan por definir proveedor, arquitectura y workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el proveedor.",
+            "why_it_matters": "Es necesario para concretar la solución posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de detalle de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir la arquitectura.",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de detalle de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir el workflow.",
+            "why_it_matters": "Es necesario para concretar cómo se operará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de detalle de la solución.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar al trabajo de detalle de la solución y concretar proveedor, arquitectura y workflow."
+        ],
+        "continuation_summary": "La decisión de continuar está resuelta; el trabajo pendiente es de definición posterior de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_016d50672980e074006ab5484605d887d2800d39a8a0495b97",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-03",
+      "repeat_index": 10,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La decisión de continuar ya está resuelta; quedan pendientes detalles de implementación posteriores.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir proveedor",
+          "Definir arquitectura",
+          "Definir workflow"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual está tomada y los asuntos pendientes corresponden a trabajo posterior, no a la decisión de entrada.",
+        "visible_synthesis": "La decisión de continuar ya está tomada. El siguiente trabajo consiste en concretar el proveedor, la arquitectura y el workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente trabajo consiste en concretar el proveedor, la arquitectura y el workflow.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Avanzar hacia el detalle de la solución después de haber decidido continuar.",
+        "desired_outcome": "Contar con una definición concreta del proveedor, la arquitectura y el workflow.",
+        "known_context": [
+          "La decisión de continuar ya está tomada.",
+          "Faltan por definir proveedor, arquitectura y workflow."
+        ],
+        "open_items": [
+          {
+            "description": "Definir proveedor",
+            "why_it_matters": "Es necesario para concretar la solución posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición de la solución.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir arquitectura",
+            "why_it_matters": "Es necesario para concretar cómo se estructurará la solución.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición técnica posterior.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Definir workflow",
+            "why_it_matters": "Es necesario para concretar cómo funcionará la solución en la práctica.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordarlo en el trabajo de definición operativa posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la definición posterior del proveedor, la arquitectura y el workflow."
+        ],
+        "continuation_summary": "La decisión de continuar está cerrada; la conversación puede continuar directamente con la definición detallada de la solución."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_091b929a83908b1b006ab5484664e887d28bcb936920a4d3c3",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que impida cerrar la decisión actual; queda pendiente definir el experimento siguiente.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya cuenta con validación, responsable, presupuesto, capacidad y un criterio acordado. La única tarea pendiente pertenece al trabajo posterior y no cambia la decisión actual.",
+        "visible_synthesis": "La decisión actual está cerrada: la iniciativa está validada y cuenta con responsable, presupuesto, capacidad y un criterio acordado. Lo que sigue es preparar el experimento siguiente, sin reabrir esta decisión.",
+        "visible_question": null,
+        "visible_response": "La decisión actual está cerrada. La iniciativa ya tiene validación, responsable, presupuesto, capacidad y un criterio acordado; el siguiente trabajo es diseñar el experimento.",
+        "conversion_readiness": "READY",
+        "understood_need": "Confirmar que la iniciativa puede avanzar porque la decisión actual ya está completa.",
+        "desired_outcome": "Dar por cerrada la entrada de la iniciativa y pasar al diseño del experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene responsable asignado.",
+          "Cuenta con presupuesto.",
+          "Existe capacidad para avanzar.",
+          "Hay un criterio de decisión acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente",
+            "why_it_matters": "Define el trabajo posterior necesario para avanzar, pero no afecta la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Pasar a la preparación del experimento siguiente.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Dar por cerrada la decisión actual.",
+          "Pasar a diseñar el experimento siguiente."
+        ],
+        "continuation_summary": "La decisión actual está completa; la continuación consiste en preparar el experimento siguiente."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0c19593e8d70d427006ab54846cc1087d2b05a83963704964c",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que impida avanzar: la iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio acordado.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual está completa. Lo pendiente pertenece al trabajo posterior de diseño del experimento y no cambia la decisión de avanzar.",
+        "visible_synthesis": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio acordado. El siguiente trabajo es diseñar el experimento.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio acordado. El siguiente trabajo es diseñar el experimento.",
+        "conversion_readiness": "READY",
+        "understood_need": "Dar por completada la decisión actual de la iniciativa.",
+        "desired_outcome": "Pasar al diseño del experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Hay una persona responsable.",
+          "Existe presupuesto disponible.",
+          "Hay capacidad para avanzar.",
+          "El criterio de decisión está acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente.",
+            "why_it_matters": "Define el trabajo posterior necesario para continuar, pero no impide la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Iniciar el diseño del experimento en el trabajo posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Dar por cerrada la decisión actual.",
+          "Iniciar el diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La entrada está lista. Puede continuarse con el diseño del experimento sin reabrir la decisión actual."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_049c356b8696321f006ab5484b18a087d29cc7548c394a0ed0",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No queda ningún faltante que impida avanzar con la decisión actual; el diseño del experimento corresponde al trabajo posterior.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio acordado para decidir. La revisión actual puede cerrarse.",
+        "visible_synthesis": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. Lo que sigue es preparar el experimento posterior.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. Lo que sigue es preparar el experimento posterior; no hace falta resolver nada más en esta revisión.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Confirmar que la iniciativa está lista para pasar a la siguiente etapa.",
+        "desired_outcome": "Cerrar la revisión actual y dejar identificado el diseño del experimento como trabajo posterior.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Hay una persona responsable.",
+          "Existe presupuesto disponible.",
+          "Hay capacidad para avanzar.",
+          "El criterio de decisión está acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente.",
+            "why_it_matters": "Se necesita para continuar el trabajo, pero no impide cerrar la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Pasar a preparar el experimento siguiente.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Cerrar esta revisión.",
+          "Preparar el diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La decisión actual está completa; el siguiente trabajo es diseñar el experimento."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0a8633f113f2f192006ab5484cbd7087d2bc55c6446146bd1e",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Diseño del experimento siguiente",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseñar el experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual ya está completa: la iniciativa está validada, cuenta con responsable, presupuesto y capacidad, y tiene un criterio acordado. El diseño del experimento corresponde al trabajo posterior y no impide avanzar ahora.",
+        "visible_synthesis": "La iniciativa ya puede avanzar: está validada, tiene responsable, presupuesto, capacidad y un criterio de decisión acordado. Lo pendiente es diseñar el experimento siguiente, como trabajo posterior.",
+        "visible_question": null,
+        "visible_response": "La decisión actual está completa y puede avanzar. El siguiente trabajo es diseñar el experimento; no hace falta resolverlo para cerrar esta etapa.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Confirmar que la iniciativa está lista para avanzar en la decisión actual.",
+        "desired_outcome": "Dar por completa la decisión actual y dejar identificado el diseño del experimento siguiente como trabajo posterior.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene una persona responsable.",
+          "Cuenta con presupuesto.",
+          "Cuenta con capacidad.",
+          "Existe un criterio de decisión acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseñar el experimento siguiente.",
+            "why_it_matters": "Es necesario para el trabajo posterior, pero no bloquea la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Trasladar este punto al trabajo posterior de diseño del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Cerrar la decisión actual.",
+          "Continuar con el diseño del experimento siguiente como trabajo posterior."
+        ],
+        "continuation_summary": "La iniciativa está lista para avanzar; queda como siguiente trabajo el diseño del experimento."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_05876ed52bfeaf7a006ab5484cfb1487d2b4063c8f7c6ba4d2",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Diseño del experimento siguiente",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseñar el experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual ya está completa: la iniciativa está validada, cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento pertenece al trabajo posterior.",
+        "visible_synthesis": "La iniciativa ya puede avanzar: la decisión está tomada y cuenta con los recursos y criterios necesarios. Lo que queda es preparar el experimento siguiente.",
+        "visible_question": null,
+        "visible_response": "La decisión actual está completa y la iniciativa puede avanzar. El siguiente trabajo es diseñar el experimento siguiente.",
+        "conversion_readiness": "READY",
+        "understood_need": "Confirmar que la iniciativa está lista para avanzar en su estado actual.",
+        "desired_outcome": "Pasar al diseño del experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene una persona responsable.",
+          "Cuenta con presupuesto.",
+          "Tiene capacidad disponible.",
+          "Existe un criterio de decisión acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente",
+            "why_it_matters": "Es necesario para continuar el trabajo, pero no impide confirmar que la decisión actual está completa.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con el diseño del experimento siguiente.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Continuar con el diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La decisión actual queda cerrada; el trabajo pendiente es diseñar el experimento siguiente."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0389f70178e17066006ab5484de03087d2b1badde88d247a69",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 6,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No queda ninguna carencia que impida la decisión actual; falta únicamente preparar el experimento siguiente.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio acordado para decidir. El diseño del experimento pertenece al trabajo posterior y no cambia la decisión actual.",
+        "visible_synthesis": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio acordado para decidir. Lo que queda es preparar el experimento siguiente, sin reabrir esta decisión.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio acordado para decidir. Lo que queda es preparar el experimento siguiente, sin reabrir esta decisión.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Confirmar que la iniciativa puede avanzar porque la decisión actual ya está completa.",
+        "desired_outcome": "Cerrar la evaluación actual y dejar como trabajo posterior el diseño del experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene un responsable definido.",
+          "Cuenta con presupuesto.",
+          "Cuenta con capacidad.",
+          "Existe un criterio de decisión acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente",
+            "why_it_matters": "Permitirá definir el trabajo posterior a la decisión ya tomada.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Pasar al diseño del experimento siguiente sin reabrir la evaluación actual.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Cerrar la evaluación de la decisión actual.",
+          "Pasar al diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La decisión actual está completa; el siguiente trabajo es diseñar el experimento."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0e0cc4e4c81273c2006ab5484e4d9087d2968125846b4ccaa9",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 7,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No queda ningún vacío que impida la decisión actual; sólo resta diseñar el experimento siguiente.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El trabajo pendiente pertenece a la ejecución posterior, no a la decisión actual.",
+        "visible_synthesis": "La iniciativa está lista para avanzar: ya tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El siguiente trabajo es diseñar el experimento.",
+        "visible_question": null,
+        "visible_response": "La iniciativa ya está lista para avanzar. El próximo paso es diseñar el experimento siguiente; no queda nada pendiente para completar la decisión actual.",
+        "conversion_readiness": "READY",
+        "understood_need": "Confirmar que la decisión sobre la iniciativa está completa.",
+        "desired_outcome": "Pasar a diseñar el experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene responsable asignado.",
+          "Cuenta con presupuesto.",
+          "Existe capacidad para avanzar.",
+          "El criterio de decisión está acordado."
+        ],
+        "open_items": [
+          {
+            "description": "Diseñar el experimento siguiente.",
+            "why_it_matters": "Permite continuar con la ejecución de la iniciativa ya validada.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Pasar al trabajo de diseño del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Diseñar el experimento siguiente."
+        ],
+        "continuation_summary": "La decisión actual está completa; la continuación consiste en diseñar el experimento siguiente."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0d44b848b3cfe1a7006ab5484eb99c87d2951f75ca8ba56161",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 8,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que impida cerrar la decisión actual; queda pendiente únicamente el diseño del experimento siguiente.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento pertenece al trabajo posterior y no cambia el cierre actual.",
+        "visible_synthesis": "La iniciativa está lista para pasar de la decisión al diseño del experimento siguiente. La decisión actual queda cerrada, porque ya están confirmados la validación, la responsabilidad, los recursos y el criterio acordado. El próximo trabajo es preparar ese experimento.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para pasar al diseño del experimento siguiente. La decisión actual queda cerrada: ya están confirmados la validación, la responsabilidad, los recursos y el criterio acordado. El próximo paso es preparar ese experimento.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Dar por completada la decisión actual sobre la iniciativa.",
+        "desired_outcome": "Cerrar la decisión actual y dejar identificado el diseño del experimento siguiente como trabajo posterior.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene una persona responsable.",
+          "Cuenta con presupuesto.",
+          "Cuenta con capacidad disponible.",
+          "Existe un criterio de decisión acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente.",
+            "why_it_matters": "Es necesario para continuar el trabajo, pero no impide cerrar la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Preparar el diseño del experimento en la siguiente etapa de trabajo.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Dar por cerrada la decisión actual.",
+          "Pasar al diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La entrada está completa para la decisión actual. El trabajo puede continuar directamente con el diseño del experimento siguiente, sin reabrir esta decisión."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0dcb0b46e1850e9b006ab54851a55087d2bf9b87565afbfdc8",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 9,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que impida la decisión actual; queda pendiente diseñar el experimento siguiente.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La iniciativa ya está validada y cuenta con responsable, presupuesto, capacidad y un criterio de decisión acordado. La decisión actual está completa; el diseño del experimento corresponde al trabajo posterior.",
+        "visible_synthesis": "La iniciativa está lista para avanzar: tiene validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. Lo pendiente es preparar el experimento siguiente, sin que eso bloquee la decisión actual.",
+        "visible_question": null,
+        "visible_response": "La decisión actual está completa y la iniciativa puede avanzar. El siguiente trabajo es diseñar el experimento, que queda como una actividad posterior.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Confirmar que la decisión de entrada de la iniciativa está completa.",
+        "desired_outcome": "Pasar al diseño del experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene responsable asignado.",
+          "Cuenta con presupuesto.",
+          "Cuenta con capacidad.",
+          "Existe un criterio de decisión acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente.",
+            "why_it_matters": "Es necesario para continuar el trabajo, pero no impide la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abrir el trabajo posterior de diseño del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Dar por cerrada la decisión actual.",
+          "Pasar al trabajo de diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La decisión actual queda cerrada. El siguiente frente es diseñar el experimento."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0ae8ec5bdfa04f2b006ab5485305a887d2934a712430a849e3",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-04",
+      "repeat_index": 10,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No existe una brecha material para la decisión actual; la entrada está completa.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La decisión actual ya está completa: la iniciativa está validada y cuenta con responsable, presupuesto, capacidad y criterio acordado. El diseño del experimento pertenece al trabajo posterior.",
+        "visible_synthesis": "La iniciativa ya está lista para avanzar: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "visible_question": null,
+        "visible_response": "La decisión actual está completa. El siguiente trabajo es diseñar el experimento y preparar su ejecución, sin necesidad de reabrir esta decisión.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Confirmar que la iniciativa está lista para pasar al trabajo posterior.",
+        "desired_outcome": "Dar por completada la decisión actual y continuar con el diseño del experimento siguiente.",
+        "known_context": [
+          "La iniciativa está validada.",
+          "Tiene responsable asignado.",
+          "Cuenta con presupuesto.",
+          "Existe capacidad disponible.",
+          "El criterio de decisión está acordado.",
+          "Sólo queda diseñar el experimento siguiente."
+        ],
+        "open_items": [
+          {
+            "description": "Diseño del experimento siguiente.",
+            "why_it_matters": "Es necesario para continuar con la ejecución, pero no impide cerrar la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con el trabajo de diseño del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Dar por cerrada la decisión actual.",
+          "Continuar con el diseño del experimento siguiente."
+        ],
+        "continuation_summary": "La entrada está completa; el trabajo pendiente comienza después de esta decisión y consiste en diseñar el experimento siguiente."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_047888a175b99ebb006ab548535f2487d2b33c152e5405190b",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que impida avanzar: el problema y el proceso a mejorar están claros. Falta definir cómo se medirá el resultado, pero eso puede resolverse después.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir el indicador y la línea base para medir la reducción de errores."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La necesidad actual está suficientemente clara para continuar; la ausencia del indicador no cambia la decisión inmediata.",
+        "visible_synthesis": "Ya está claro que se busca reducir los errores de atención y cuál es el proceso que se quiere mejorar. La forma de medir el avance puede definirse en el trabajo posterior.",
+        "visible_question": null,
+        "visible_response": "Ya está claro qué se quiere mejorar y con qué objetivo. Pueden continuar con esa definición; después habrá que acordar cómo medir la reducción de errores y establecer una referencia inicial.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los errores de atención en un proceso ya identificado.",
+        "desired_outcome": "Contar con una definición clara de la mejora que se quiere impulsar, dejando la medición para una etapa posterior.",
+        "known_context": [
+          "El objetivo es reducir los errores de atención.",
+          "El proceso que se quiere mejorar ya está identificado.",
+          "Todavía no existe un indicador definido."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el indicador, la línea base y la forma de medir la reducción de errores.",
+            "why_it_matters": "Permitirá comprobar posteriormente si la mejora produjo el resultado esperado.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Acordar la medida de resultado cuando se prepare la continuación.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Continuar con la definición actual de la necesidad.",
+          "Definir más adelante el indicador y la referencia inicial."
+        ],
+        "continuation_summary": "La necesidad está lista para continuar; queda pendiente acordar cómo se medirá el resultado."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_05c463e980ce5b2f006ab54853c80887d295024d3cfd6be972",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Aún no está definido el KPI, pero esto no impide reconocer y avanzar con la necesidad actual.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir el KPI que permita medir la reducción de errores."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La necesidad está clara: reducir los errores en un proceso ya identificado. La ausencia del KPI no impide tomar la decisión actual; su definición corresponde al trabajo posterior.",
+        "visible_synthesis": "La necesidad está suficientemente clara: quieren reducir los errores de atención en un proceso ya identificado. No hace falta esperar al KPI para avanzar con esta definición; el indicador puede concretarse después.",
+        "visible_question": null,
+        "visible_response": "La necesidad está suficientemente clara: quieren reducir los errores de atención en un proceso ya identificado. No hace falta esperar al KPI para avanzar con esta definición; el indicador puede concretarse después.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los errores de atención en un proceso específico que ya está identificado.",
+        "desired_outcome": "Confirmar que la necesidad puede avanzar aunque todavía no exista un KPI.",
+        "known_context": [
+          "El objetivo es reducir los errores de atención.",
+          "El proceso que se quiere mejorar ya está identificado.",
+          "Todavía no hay un KPI definido."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el KPI para medir la reducción de errores.",
+            "why_it_matters": "Permitirá evaluar el resultado más adelante, pero no es necesario para confirmar la necesidad actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Abordar la definición del indicador en el trabajo posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Avanzar con la necesidad ya delimitada.",
+          "Definir el KPI en la etapa posterior."
+        ],
+        "continuation_summary": "La necesidad puede avanzar ahora. La definición del KPI queda como trabajo posterior para medir el resultado."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_051b6b11857ee67f006ab54854e39087d2acf83c9e6b7b94cd",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay una carencia que bloquee la decisión actual; el KPI queda pendiente para una etapa posterior de medición.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir el KPI y su forma de medición."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La necesidad está clara: reducir los errores de atención, y el proceso a mejorar ya fue identificado. La ausencia de un KPI no impide avanzar con esta definición inicial.",
+        "visible_synthesis": "La necesidad y el proceso que quieren mejorar ya están claros. No hace falta detenerse por no tener todavía un KPI; ese indicador puede definirse más adelante para medir el avance.",
+        "visible_question": null,
+        "visible_response": "La necesidad y el proceso que quieren mejorar ya están claros. No hace falta detenerse por no tener todavía un KPI; ese indicador puede definirse más adelante para medir el avance.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los errores de atención en un proceso ya identificado.",
+        "desired_outcome": "Contar con una definición clara de la mejora que se quiere impulsar, aunque la métrica todavía esté pendiente.",
+        "known_context": [
+          "El objetivo es reducir los errores de atención.",
+          "El proceso que se quiere mejorar ya fue identificado.",
+          "Todavía no existe un KPI definido."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el KPI y cómo se medirá el cambio.",
+            "why_it_matters": "Permitirá evaluar posteriormente si los errores de atención disminuyen.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Retomarlo al preparar la medición del avance.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Avanzar con la definición actual de la mejora.",
+          "Dejar la definición del KPI para el trabajo posterior de medición."
+        ],
+        "continuation_summary": "La entrada está suficientemente clara para continuar; queda pendiente definir cómo medir el resultado."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_06d364e3fea142d0006ab54855ef0c87d2ad172f74bf0a43f5",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está definido cómo se reconocerá que la mejora del proceso redujo los errores.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "El problema y el proceso a mejorar están claros; falta concretar qué cambio observable confirmaría que los errores disminuyeron.",
+        "visible_question": "¿Qué cambio observable usarían para saber que hay menos errores, aunque todavía no tenga el nombre de un KPI?",
+        "visible_response": "El problema y el proceso a mejorar están claros; falta concretar qué cambio observable confirmaría que los errores disminuyeron. ¿Qué cambio observable usarían para saber que hay menos errores, aunque todavía no tenga el nombre de un KPI?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Reducir los errores de atención mejorando un proceso ya identificado.",
+        "desired_outcome": "Contar con una forma observable de confirmar que los errores de atención disminuyeron.",
+        "known_context": [
+          "La necesidad es reducir los errores de atención.",
+          "El proceso que se quiere mejorar ya está identificado.",
+          "Todavía no existe un KPI definido."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el cambio observable que indicaría una reducción de errores.",
+            "why_it_matters": "Sin ello no se puede confirmar con claridad si la mejora cumple su propósito.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisar qué resultado observable se consideraría una mejora.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar el resultado observable que indicaría menos errores.",
+          "Después, convertir ese resultado en una medida adecuada."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_07c08c113f22aee0006ab5485864c487d29a723824c469fc57",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-01",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Aún no está definido el indicador con el que se comprobará la reducción de errores.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Definir el KPI o la medida observable para evaluar la reducción de errores."
+        ],
+        "routing_target": null,
+        "stop_rationale": "La necesidad y el proceso que se quiere mejorar ya están claros. La ausencia del KPI no impide avanzar con esta decisión; puede precisarse en el trabajo posterior.",
+        "visible_synthesis": "El objetivo está claro: reducir los errores de atención en un proceso ya identificado. No hace falta tener el KPI definido para avanzar ahora; más adelante habrá que acordar cómo se medirá la mejora.",
+        "visible_question": null,
+        "visible_response": "El objetivo y el proceso están suficientemente claros para avanzar. El siguiente trabajo será acordar el KPI o una medida observable que permita comprobar si los errores disminuyen.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los errores de atención en un proceso específico que ya está identificado.",
+        "desired_outcome": "Avanzar con una necesidad claramente delimitada y definir posteriormente cómo medir la reducción de errores.",
+        "known_context": [
+          "La meta es reducir los errores de atención.",
+          "El proceso que se quiere mejorar ya está identificado.",
+          "Todavía no existe un KPI definido."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el KPI o la medida observable para evaluar la reducción de errores.",
+            "why_it_matters": "Permitirá comprobar posteriormente si la mejora se está produciendo.",
+            "who_can_help_resolve_it": "La persona o el equipo responsable del proceso.",
+            "suggested_next_move": "Acordar qué cambio observable contará como una reducción de errores.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Avanzar con la definición actual de la necesidad y el proceso.",
+          "Acordar más adelante el indicador o medida para evaluar la mejora."
+        ],
+        "continuation_summary": "La necesidad está lista para avanzar; queda como trabajo posterior acordar cómo se medirá la reducción de errores."
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_060c39e4060c751a006ab5485a62e487d2ad35c7f83afba320",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay un sponsor asignado para respaldar el proceso candidato.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "La autoridad organizacional responsable de asignar sponsors",
+        "stop_rationale": null,
+        "visible_synthesis": "Ya existe un proceso candidato para reducir el tiempo de revisión, pero falta el respaldo formal de un sponsor.",
+        "visible_question": null,
+        "visible_response": "Ya existe un proceso candidato para reducir el tiempo de revisión, pero falta el respaldo formal de un sponsor. La organización debe asignarlo antes de poder avanzar con la decisión.",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Reducir el tiempo de revisión de solicitudes.",
+        "desired_outcome": "Avanzar con un proceso candidato respaldado por un sponsor asignado.",
+        "known_context": [
+          "Existe un proceso candidato.",
+          "El objetivo es reducir el tiempo de revisión de solicitudes.",
+          "Todavía no hay sponsor asignado."
+        ],
+        "open_items": [
+          {
+            "description": "Asignación de un sponsor.",
+            "why_it_matters": "Sin ese respaldo no se puede avanzar con la decisión actual.",
+            "who_can_help_resolve_it": "La autoridad organizacional responsable de asignar sponsors",
+            "suggested_next_move": "Solicitar que la organización asigne un sponsor.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Obtener la asignación organizacional de un sponsor.",
+          "Retomar la decisión una vez que el sponsor esté definido."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_063b9c90c0712e71006ab5485aa90887d2aaad9dfe1b2d0155",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay un sponsor asignado para respaldar el avance del proceso candidato.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "La autoridad organizacional responsable de asignar el sponsor",
+        "stop_rationale": null,
+        "visible_synthesis": "Ya existe un proceso candidato alineado con la meta de reducir el tiempo de revisión. Para avanzar, falta que la organización designe un sponsor que respalde la decisión.",
+        "visible_question": null,
+        "visible_response": "Ya existe un proceso candidato alineado con la meta de reducir el tiempo de revisión. Para avanzar, la organización debe designar un sponsor que respalde la decisión. Una vez asignado, se podrá continuar con la evaluación correspondiente.",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Avanzar con un proceso candidato para reducir el tiempo de revisión de solicitudes.",
+        "desired_outcome": "Contar con respaldo organizacional para avanzar con el proceso candidato.",
+        "known_context": [
+          "El objetivo es reducir el tiempo de revisión de solicitudes.",
+          "Ya existe un proceso candidato.",
+          "Todavía no hay sponsor asignado."
+        ],
+        "open_items": [
+          {
+            "description": "Asignación de un sponsor.",
+            "why_it_matters": "Sin una persona responsable del respaldo organizacional, el avance de la decisión queda bloqueado.",
+            "who_can_help_resolve_it": "La autoridad organizacional responsable de asignar el sponsor",
+            "suggested_next_move": "Solicitar a esa autoridad que designe un sponsor para el proceso candidato.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Obtener la designación organizacional de un sponsor.",
+          "Retomar la evaluación del proceso candidato después de esa asignación."
+        ],
+        "continuation_summary": "La decisión actual no puede avanzar hasta que se asigne un sponsor; los detalles posteriores pueden abordarse después."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0c9bf720d027ee22006ab5485d87cc87d2acf57490288ac7ee",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No se ha asignado un sponsor, y esa asignación es necesaria para continuar con la decisión actual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [
+          "Validar y desarrollar el proceso candidato una vez que exista un sponsor asignado."
+        ],
+        "routing_target": "La autoridad organizativa responsable de asignar el sponsor",
+        "stop_rationale": null,
+        "visible_synthesis": "Entiendo que buscan reducir el tiempo de revisión y ya tienen un proceso candidato, pero todavía no hay una persona patrocinadora asignada. Antes de avanzar, la organización debe hacer esa asignación; no es posible inferirla aquí.",
+        "visible_question": null,
+        "visible_response": "Entiendo que buscan reducir el tiempo de revisión y ya tienen un proceso candidato, pero todavía no hay una persona patrocinadora asignada. Antes de avanzar, la organización debe hacer esa asignación; no es posible inferirla aquí. Una vez definida, podrán retomar el siguiente paso.",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Reducir el tiempo de revisión de solicitudes mediante un proceso candidato.",
+        "desired_outcome": "Contar con un sponsor asignado para poder avanzar con la iniciativa.",
+        "known_context": [
+          "Existe un proceso candidato.",
+          "El objetivo es reducir el tiempo de revisión de solicitudes.",
+          "Todavía no hay sponsor asignado."
+        ],
+        "open_items": [
+          {
+            "description": "Asignar un sponsor para la iniciativa.",
+            "why_it_matters": "Sin esa asignación no hay una persona patrocinadora definida para continuar con la decisión actual.",
+            "who_can_help_resolve_it": "La autoridad organizativa responsable de realizar la asignación.",
+            "suggested_next_move": "Obtener la asignación formal del sponsor.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          },
+          {
+            "description": "Validar y desarrollar el proceso candidato.",
+            "why_it_matters": "Es trabajo posterior a la asignación del sponsor y no impide resolver el bloqueo actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Retomar esta labor después de que se asigne el sponsor.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Solicitar a la autoridad organizativa correspondiente que asigne un sponsor.",
+          "Retomar la evaluación del proceso candidato después de esa asignación."
+        ],
+        "continuation_summary": "La iniciativa queda pendiente de la asignación de un sponsor; después podrá retomarse la evaluación del proceso candidato."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 4,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_086136954a66c704006ab54860369887d2a7767778a81d7560",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay un sponsor asignado para respaldar y llevar adelante el proceso candidato.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "La autoridad organizacional responsable de asignar el sponsor",
+        "stop_rationale": null,
+        "visible_synthesis": "Ya existe un proceso candidato para reducir el tiempo de revisión, pero no puede avanzar sin que la organización asigne un sponsor. Esa asignación debe venir de la autoridad correspondiente; no conviene asumir quién será.",
+        "visible_question": null,
+        "visible_response": "Ya existe un proceso candidato para reducir el tiempo de revisión, pero no puede avanzar sin que la organización asigne un sponsor. Esa asignación debe venir de la autoridad correspondiente; no conviene asumir quién será.",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Avanzar con una iniciativa para reducir el tiempo de revisión de solicitudes.",
+        "desired_outcome": "Contar con un sponsor asignado que respalde y lleve adelante el proceso candidato.",
+        "known_context": [
+          "El objetivo es reducir el tiempo de revisión de solicitudes.",
+          "Ya existe un proceso candidato.",
+          "Todavía no hay sponsor asignado."
+        ],
+        "open_items": [
+          {
+            "description": "Asignar un sponsor para el proceso candidato.",
+            "why_it_matters": "Sin esa asignación, la iniciativa no tiene el respaldo necesario para avanzar.",
+            "who_can_help_resolve_it": "La autoridad organizacional responsable de asignar el sponsor",
+            "suggested_next_move": "Solicitar la asignación formal del sponsor.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Obtener de la organización la asignación del sponsor.",
+          "Retomar el avance de la iniciativa una vez que el sponsor esté confirmado."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0b09acee8bdc7e12006ab54860bd1887d2b04476dac3c089d3",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-02",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No hay un sponsor asignado para respaldar y orientar el avance del proceso candidato.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "deferred_gaps": [],
+        "routing_target": "La dirección o el liderazgo responsable de designar al sponsor",
+        "stop_rationale": null,
+        "visible_synthesis": "Ya tienen como objetivo reducir el tiempo de revisión y cuentan con un proceso candidato. Para avanzar, primero hace falta que la organización designe un sponsor.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso es que la dirección o el liderazgo responsable designe un sponsor. Cuando esa persona esté asignada, podremos continuar con el proceso candidato.",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Reducir el tiempo de revisión de solicitudes.",
+        "desired_outcome": "Contar con respaldo y orientación organizativa para avanzar con el proceso candidato.",
+        "known_context": [
+          "Existe un objetivo de reducir el tiempo de revisión de solicitudes.",
+          "Ya hay un proceso candidato.",
+          "Todavía no hay sponsor asignado."
+        ],
+        "open_items": [
+          {
+            "description": "Designar un sponsor.",
+            "why_it_matters": "Sin esa asignación no está definido quién respaldará y orientará el avance.",
+            "who_can_help_resolve_it": "La dirección o el liderazgo responsable",
+            "suggested_next_move": "Solicitar formalmente la designación del sponsor.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Obtener la designación del sponsor por parte de la dirección o el liderazgo responsable.",
+          "Retomar la evaluación del proceso candidato una vez asignado el sponsor."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_01b108831b1e6e35006ab548624a2887d2b78ced544395f4d0",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No existe todavía un problema concreto ni un resultado buscado que justifique evaluar la idea.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "La idea del chatbot está planteada como una tecnología, pero aún no está vinculada a una situación concreta que necesiten mejorar ni a un resultado que permita valorar si tendría sentido.",
+        "visible_question": "¿Qué situación concreta quieren mejorar con el chatbot y cómo sabrían que ha mejorado?",
+        "visible_response": "La idea del chatbot está planteada como una tecnología, pero aún no está vinculada a una situación concreta que necesiten mejorar ni a un resultado que permita valorar si tendría sentido. ¿Qué situación concreta quieren mejorar con el chatbot y cómo sabrían que ha mejorado?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Explorar una idea de chatbot con IA, todavía sin un problema de negocio o usuario definido.",
+        "desired_outcome": null,
+        "known_context": [
+          "Quieren poner un chatbot con IA.",
+          "Todavía no saben qué problema resolvería.",
+          "Todavía no saben qué resultado buscan."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el problema concreto que se quiere abordar y el resultado esperado.",
+            "why_it_matters": "Sin ello no se puede determinar si el chatbot es una respuesta adecuada ni avanzar con la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Aclarar qué situación quieren mejorar y qué cambio observable indicarían que se logró.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Aclarar el problema concreto y el resultado esperado antes de valorar la tecnología."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 4,
+          "MOMENTUM_PRESERVATION": 4,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_02f97371df6365b2006ab548627fa487d2bd7f526b7c77da6a",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está definido el problema concreto que se quiere resolver ni el resultado que justificaría usar un chatbot con IA.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "La idea técnica está planteada, pero todavía no hay un problema ni un resultado esperado que permitan decidir si merece la pena avanzar.",
+        "visible_question": "¿Qué problema concreto de usuarios, clientes o del equipo quieren resolver, y qué cambio observable indicaríamos como resultado?",
+        "visible_response": "La idea técnica está planteada, pero todavía no hay un problema ni un resultado esperado que permitan decidir si merece la pena avanzar.\n\n¿Qué problema concreto de usuarios, clientes o del equipo quieren resolver, y qué cambio observable indicaríamos como resultado?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Evaluar si la propuesta de un chatbot con IA tiene un uso concreto que justifique avanzar.",
+        "desired_outcome": null,
+        "known_context": [
+          "Se propone incorporar un chatbot con IA.",
+          "Aún no se ha identificado el problema que resolvería.",
+          "Aún no se ha definido el resultado buscado."
+        ],
+        "open_items": [
+          {
+            "description": "Definir un problema concreto y el resultado observable que se espera conseguir.",
+            "why_it_matters": "Sin ello no se puede valorar si la propuesta responde a una necesidad real ni decidir si avanzar.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisar una situación concreta que hoy cause dificultad y el cambio que se esperaría obtener.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar el problema concreto y el resultado esperado antes de valorar la solución tecnológica."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 4,
+          "MOMENTUM_PRESERVATION": 4,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_06c2fe7805779039006ab548647a4087d2b53c399ccdcb8b4b",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está definido qué problema concreto se quiere resolver ni qué resultado se espera obtener.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "Por ahora solo está definida la tecnología; todavía no hay un problema concreto ni un resultado que justifique avanzar con ella.",
+        "visible_question": "¿Qué dificultad concreta de una persona, equipo o cliente quieren resolver, aunque sea de forma preliminar?",
+        "visible_response": "Por ahora solo está definida la tecnología; todavía no hay un problema concreto ni un resultado que justifique avanzar con ella. ¿Qué dificultad concreta de una persona, equipo o cliente quieren resolver, aunque sea de forma preliminar?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Determinar si existe un problema real que justifique evaluar la idea del chatbot.",
+        "desired_outcome": "Identificar un problema concreto y el resultado esperado antes de seguir evaluando la solución.",
+        "known_context": [
+          "Se propone incorporar un chatbot con IA.",
+          "Aún no se conoce el problema que resolvería.",
+          "Aún no se conoce el resultado buscado."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el problema concreto que se quiere resolver.",
+            "why_it_matters": "Sin ese problema no se puede determinar si tiene sentido avanzar con la idea.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisar qué dificultad afecta a qué persona, equipo o cliente.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar el problema concreto y a quién afecta.",
+          "Definir el resultado que se consideraría valioso."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 4,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_06cb4e3b8cabf7ec006ab54865b10487d282777ed9c767dafb",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está definido qué problema concreto se quiere resolver ni qué resultado se espera obtener.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "Hay una idea de tecnología, pero todavía no hay un problema concreto ni un resultado esperado que permita decidir si tiene sentido avanzar.",
+        "visible_question": "¿Qué problema concreto de una persona, equipo o cliente quieren resolver, y qué cambio observable les gustaría conseguir?",
+        "visible_response": "Hay una idea de tecnología, pero todavía no hay un problema concreto ni un resultado esperado que permita decidir si tiene sentido avanzar.\n\n¿Qué problema concreto de una persona, equipo o cliente quieren resolver, y qué cambio observable les gustaría conseguir?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Evaluar una idea de chatbot con IA antes de desarrollarla.",
+        "desired_outcome": null,
+        "known_context": [
+          "Se propone incorporar un chatbot con IA.",
+          "Todavía no se sabe qué problema resolvería.",
+          "Todavía no se sabe qué resultado se busca."
+        ],
+        "open_items": [
+          {
+            "description": "Problema concreto que se quiere resolver",
+            "why_it_matters": "Sin este dato no se puede valorar si la idea responde a una necesidad real.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Aclarar quién tiene el problema y en qué consiste.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          },
+          {
+            "description": "Resultado esperado",
+            "why_it_matters": "Sin un resultado definido no se puede saber qué significaría que la iniciativa fuera útil.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisar qué cambio observable se espera conseguir.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Definir el problema concreto y el resultado esperado antes de valorar la idea tecnológica."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 4,
+          "MOMENTUM_PRESERVATION": 4,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_02ff55f1b2b6a966006ab54868157087d2bfc90546c1f31471",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-03",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Falta definir un problema concreto que el chatbot debería resolver y el resultado que se espera obtener.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "Por ahora solo está definida la herramienta; todavía no hay una necesidad concreta ni un resultado esperado que permita decidir si conviene seguir adelante.",
+        "visible_question": "¿Qué problema concreto de usuarios o del negocio quieren resolver, y qué cambio observable les indicaría que quedó resuelto?",
+        "visible_response": "Por ahora solo está definida la herramienta; todavía no hay una necesidad concreta ni un resultado esperado que permita decidir si conviene seguir adelante. ¿Qué problema concreto de usuarios o del negocio quieren resolver, y qué cambio observable les indicaría que quedó resuelto?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Evaluar si tiene sentido avanzar con la idea de un chatbot con IA.",
+        "desired_outcome": "Contar con un problema concreto y un resultado esperado para decidir si continuar.",
+        "known_context": [
+          "Se propone incorporar un chatbot con IA.",
+          "Aún no se ha identificado qué problema resolvería.",
+          "Aún no se ha definido qué resultado se busca."
+        ],
+        "open_items": [
+          {
+            "description": "Definir el problema concreto que se quiere resolver y el resultado esperado.",
+            "why_it_matters": "Sin esa definición no se puede decidir si la idea merece avanzar.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Aclarar el problema, las personas afectadas y el cambio observable que se espera lograr.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Aclarar el problema concreto y el resultado esperado antes de valorar la solución."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": true,
+        "relations_valid": true,
+        "question_classification": "NECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 4,
+          "MOMENTUM_PRESERVATION": 4,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 5
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0ed340d9dd2a0677006ab54869ecfc87d29f8eb5cd8fc1b4d1",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está identificado cuál es la evidencia pendiente que podría cambiar la decisión de avanzar con la iniciativa.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "Ya están claros el objetivo de reducir el tiempo de revisión y las restricciones de privacidad; lo que falta es precisar qué evidencia puede cambiar la decisión actual.",
+        "visible_question": "¿Cuál es la única afirmación que todavía necesitan confirmar antes de decidir si la iniciativa puede avanzar?",
+        "visible_response": "Ya están claros el objetivo de reducir el tiempo de revisión y las restricciones de privacidad; lo que falta es precisar qué evidencia puede cambiar la decisión actual.\n\n¿Cuál es la única afirmación que todavía necesitan confirmar antes de decidir si la iniciativa puede avanzar?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Identificar la evidencia pendiente necesaria para decidir si la iniciativa puede avanzar.",
+        "desired_outcome": "Definir con claridad qué evidencia falta y si su ausencia impide tomar la decisión actual.",
+        "known_context": [
+          "El objetivo es reducir el tiempo de revisión de contratos.",
+          "Ya existe una iniciativa.",
+          "Las restricciones de privacidad están claras.",
+          "Todavía no se ha recogido toda la evidencia."
+        ],
+        "open_items": [
+          {
+            "description": "No se ha especificado qué afirmación o hecho requiere confirmación.",
+            "why_it_matters": "Sin esa precisión no se puede saber si la evidencia faltante impide decidir ahora.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Identificar la afirmación cuya confirmación podría cambiar la decisión de avanzar.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar la afirmación pendiente de confirmación.",
+          "Comprobar si esa evidencia puede cambiar la decisión de avanzar."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_068d4ea6fa99ba6b006ab5486a14e887d29241c822f5ed5bb9",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está especificado qué evidencia falta ni qué decisión debe respaldar.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene restricciones de privacidad claras, pero aún no se puede determinar el siguiente paso porque falta precisar qué evidencia se necesita para decidir cómo avanzar.",
+        "visible_question": "¿Qué decisión concreta quieren tomar ahora y qué evidencia falta para poder tomarla?",
+        "visible_response": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene restricciones de privacidad claras, pero aún no se puede determinar el siguiente paso porque falta precisar qué evidencia se necesita para decidir cómo avanzar.\n\n¿Qué decisión concreta quieren tomar ahora y qué evidencia falta para poder tomarla?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Identificar la evidencia que todavía debe reunirse para orientar la iniciativa de reducción del tiempo de revisión de contratos.",
+        "desired_outcome": "Definir el siguiente paso a partir de la evidencia necesaria para la decisión actual.",
+        "known_context": [
+          "El objetivo es reducir el tiempo de revisión de contratos.",
+          "Existe una iniciativa relacionada.",
+          "Hay restricciones de privacidad claras.",
+          "Todavía no se ha reunido toda la evidencia."
+        ],
+        "open_items": [
+          {
+            "description": "Precisar la decisión actual y la evidencia que falta para respaldarla.",
+            "why_it_matters": "Sin ello no se puede determinar el siguiente paso.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Aclarar la decisión que quieren tomar ahora y la evidencia pendiente.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Aclarar la decisión concreta que debe tomarse ahora.",
+          "Identificar la evidencia pendiente que puede cambiar esa decisión."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0546e222551322d2006ab5486ae24c87d2b18c6cecf5d70abc",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está definido qué decisión inmediata debe respaldar la evidencia pendiente ni qué evidencia es indispensable para tomarla.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene restricciones de privacidad claras, pero aún falta precisar qué decisión debe sostener la evidencia pendiente.",
+        "visible_question": "¿Qué decisión concreta necesitan tomar ahora, y qué dato les falta para poder tomarla?",
+        "visible_response": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene restricciones de privacidad claras, pero aún falta precisar qué decisión debe sostener la evidencia pendiente.\n\n¿Qué decisión concreta necesitan tomar ahora, y qué dato les falta para poder tomarla?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Identificar la evidencia que todavía debe recopilarse.",
+        "desired_outcome": "Definir qué evidencia falta para avanzar con la decisión actual.",
+        "known_context": [
+          "La meta es reducir el tiempo de revisión de contratos.",
+          "Ya existe una iniciativa.",
+          "Hay restricciones de privacidad claras.",
+          "Todavía no se ha recopilado toda la evidencia."
+        ],
+        "open_items": [
+          {
+            "description": "Falta identificar la decisión inmediata y el dato o evidencia que la condiciona.",
+            "why_it_matters": "Sin ello no se puede determinar qué evidencia pendiente es necesaria para avanzar ahora.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Aclarar la decisión concreta y el dato faltante.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar la decisión inmediata.",
+          "Enumerar el dato o evidencia que falta para tomarla."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_01c9b6477e6ce5bf006ab5486ba31887d2b0cf4876c0429a8e",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está identificado qué evidencia falta ni cuál de ella determina si la iniciativa puede avanzar bajo las restricciones de privacidad.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene claras sus restricciones de privacidad. Antes de decidir el siguiente paso, falta precisar qué evidencia es necesaria para evaluar si puede avanzar.",
+        "visible_question": "¿Qué evidencia concreta falta recoger para poder decidir si la iniciativa puede avanzar, y qué decisión cambiaría si esa evidencia fuera favorable o desfavorable?",
+        "visible_response": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene claras sus restricciones de privacidad. Antes de decidir el siguiente paso, falta precisar qué evidencia es necesaria para evaluar si puede avanzar.\n\n¿Qué evidencia concreta falta recoger para poder decidir si la iniciativa puede avanzar, y qué decisión cambiaría si esa evidencia fuera favorable o desfavorable?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Reducir el tiempo de revisión de contratos mediante una iniciativa sujeta a restricciones claras de privacidad.",
+        "desired_outcome": "Determinar qué evidencia falta y si la iniciativa puede avanzar.",
+        "known_context": [
+          "Existe una iniciativa para reducir el tiempo de revisión de contratos.",
+          "Las restricciones de privacidad están claras.",
+          "Todavía no se ha recopilado toda la evidencia necesaria."
+        ],
+        "open_items": [
+          {
+            "description": "Identificar la evidencia faltante y su impacto en la decisión actual.",
+            "why_it_matters": "Sin ello no se puede determinar si la iniciativa está lista para avanzar.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisar la evidencia pendiente y la decisión que informaría.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar qué evidencia falta.",
+          "Vincular cada evidencia pendiente con la decisión que debe informar."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_03850d00c86ac305006ab5486ec96487d2a2a46eefcf255489",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-04",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No está especificado qué evidencia falta ni qué decisión debe respaldar.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene límites de privacidad claros, pero aún no se puede determinar el siguiente paso porque falta concretar la evidencia pendiente.",
+        "visible_question": "¿Qué evidencia falta exactamente y qué decisión debería permitir tomar?",
+        "visible_response": "La iniciativa busca reducir el tiempo de revisión de contratos y ya tiene límites de privacidad claros, pero aún no se puede determinar el siguiente paso porque falta concretar la evidencia pendiente. ¿Qué evidencia falta exactamente y qué decisión debería permitir tomar?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Identificar la evidencia que todavía debe recopilarse.",
+        "desired_outcome": "Definir el siguiente paso a partir de la evidencia pendiente.",
+        "known_context": [
+          "Se quiere reducir el tiempo de revisión de contratos.",
+          "Existe una iniciativa relacionada.",
+          "Hay restricciones de privacidad claras.",
+          "Todavía no se ha recopilado toda la evidencia."
+        ],
+        "open_items": [
+          {
+            "description": "Falta precisar qué evidencia está pendiente y qué decisión debe respaldar.",
+            "why_it_matters": "Sin esa precisión no se puede determinar si corresponde recopilar información adicional ni cuál sería el siguiente paso inmediato.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Enumerar la evidencia faltante y vincularla con la decisión que debe informar.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Precisar la evidencia pendiente y la decisión que debe respaldar."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0adef1779233c34c006ab5486fcdfc87d2af4f33b4d119213e",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "Faltan criterios y restricciones para seleccionar la arquitectura y el proveedor, pero esa información corresponde al trabajo posterior de solución y no impide avanzar ahora.",
+        "next_action": "STOP",
+        "deferred_gaps": [
+          "Criterios de selección de arquitectura y proveedor",
+          "Restricciones técnicas, operativas y económicas",
+          "Comparación de alternativas de solución"
+        ],
+        "routing_target": null,
+        "stop_rationale": "El objetivo actual está suficientemente claro: reducir los tiempos de respuesta. La elección de arquitectura y proveedor es el siguiente trabajo de solución, no requiere reabrir la definición de la necesidad.",
+        "visible_synthesis": "Está claro que la necesidad es reducir los tiempos de respuesta. La elección de arquitectura y proveedor queda como el siguiente trabajo, donde habrá que concretar criterios, restricciones y alternativas.",
+        "visible_question": null,
+        "visible_response": "La necesidad está clara: reducir los tiempos de respuesta. El siguiente trabajo es concretar los criterios y restricciones para comparar arquitecturas y proveedores; no hace falta seguir aclarando el objetivo actual.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los tiempos de respuesta.",
+        "desired_outcome": "Elegir una arquitectura y un proveedor adecuados para lograr esa reducción.",
+        "known_context": [
+          "La organización ya sabe que quiere reducir los tiempos de respuesta.",
+          "La elección de arquitectura y proveedor es la cuestión que sigue."
+        ],
+        "open_items": [
+          {
+            "description": "Definir criterios y restricciones para elegir la arquitectura y el proveedor.",
+            "why_it_matters": "Permite comparar alternativas y tomar la decisión técnica posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisar qué condiciones debe cumplir la solución y contrastar las alternativas disponibles.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Comparar alternativas de arquitectura y proveedores.",
+            "why_it_matters": "La selección final depende de esa comparación.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Realizar la evaluación técnica y de proveedores después de fijar los criterios.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a definir los criterios y restricciones de la solución.",
+          "Comparar las arquitecturas y proveedores que cumplan esas condiciones."
+        ],
+        "continuation_summary": "El objetivo ya está definido; la conversación puede continuar directamente con el trabajo de selección de arquitectura y proveedor."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 5,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "MATERIAL",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0f2f7c7088adda6b006ab548710fe087d2942bbb830ef21df3",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "No están definidos los criterios o restricciones que deben guiar la elección de arquitectura y proveedor, más allá de reducir los tiempos de respuesta.",
+        "next_action": "ASK",
+        "deferred_gaps": [],
+        "routing_target": null,
+        "stop_rationale": null,
+        "visible_synthesis": "El objetivo de reducir los tiempos de respuesta está claro, pero todavía falta saber qué condiciones deben cumplir la arquitectura y el proveedor para poder comparar opciones.",
+        "visible_question": "¿Qué criterios o restricciones no negociables deben cumplir —por ejemplo, presupuesto, seguridad, integraciones o plazo— para tomar esa decisión?",
+        "visible_response": "El objetivo de reducir los tiempos de respuesta está claro, pero todavía falta saber qué condiciones deben cumplir la arquitectura y el proveedor para poder comparar opciones.\n\n¿Qué criterios o restricciones no negociables deben cumplir —por ejemplo, presupuesto, seguridad, integraciones o plazo— para tomar esa decisión?",
+        "conversion_readiness": "NOT_READY",
+        "understood_need": "Elegir una arquitectura y un proveedor para reducir los tiempos de respuesta.",
+        "desired_outcome": "Contar con una base suficiente para seleccionar la arquitectura y el proveedor adecuados.",
+        "known_context": [
+          "La organización quiere reducir los tiempos de respuesta.",
+          "La necesidad actual es elegir la arquitectura y el proveedor.",
+          "No se han indicado otros criterios o restricciones de selección."
+        ],
+        "open_items": [
+          {
+            "description": "Criterios y restricciones que deben guiar la elección.",
+            "why_it_matters": "Sin ellos no se pueden comparar las alternativas ni saber cuál opción satisface la necesidad actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Aclarar las condiciones no negociables y las prioridades de la elección.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "suggested_next_moves": [
+          "Aclarar los criterios y restricciones de selección.",
+          "Después, comparar las alternativas frente a esas condiciones."
+        ],
+        "continuation_summary": null
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "UNNECESSARY",
+        "scores": {
+          "HUMAN_LANGUAGE": 2,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "MATERIAL",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_02dfc5a54a4b365c006ab54871b2b087d2aaa52490868153f7",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La necesidad de reducir los tiempos de respuesta está suficientemente establecida; la elección de arquitectura y proveedor corresponde al trabajo posterior de solución.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Criterios y restricciones para comparar arquitecturas y proveedores."
+        ],
+        "routing_target": "Evaluación de arquitectura y proveedores",
+        "stop_rationale": null,
+        "visible_synthesis": "El objetivo está claro: reducir los tiempos de respuesta. La cuestión pendiente ya no es si actuar, sino comparar alternativas de arquitectura y proveedores.",
+        "visible_question": null,
+        "visible_response": "El objetivo está claro: reducir los tiempos de respuesta. La cuestión pendiente ya no es si actuar, sino comparar alternativas de arquitectura y proveedores. El siguiente paso es llevarlo a esa evaluación técnica y comercial, donde se definirán los criterios y restricciones necesarios.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los tiempos de respuesta mediante la selección de una arquitectura y un proveedor adecuados.",
+        "desired_outcome": "Pasar a la evaluación de opciones de arquitectura y proveedores.",
+        "known_context": [
+          "El objetivo es reducir los tiempos de respuesta.",
+          "La selección de arquitectura y proveedor es la necesidad actual expresada."
+        ],
+        "open_items": [
+          {
+            "description": "Definir criterios y restricciones para comparar arquitecturas y proveedores.",
+            "why_it_matters": "Permitirá orientar la evaluación de opciones en el trabajo posterior.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Precisarlo durante la evaluación de la solución.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Derivar la necesidad a la evaluación de arquitectura y proveedores.",
+          "Definir allí los criterios y restricciones de comparación."
+        ],
+        "continuation_summary": "La entrada está lista para continuar con la evaluación de la solución; quedan por concretar los criterios de comparación en esa fase."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_05e7792d058bbd97006ab54872168c87d2bb609bcf7cb90461",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La elección de arquitectura y proveedor pertenece al trabajo posterior necesario para ejecutar la meta, no impide reconocer ahora la dirección: reducir los tiempos de respuesta.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Definir y comparar las alternativas de arquitectura.",
+          "Evaluar y seleccionar un proveedor."
+        ],
+        "routing_target": "evaluación técnica y de proveedores",
+        "stop_rationale": null,
+        "visible_synthesis": "La meta está clara: reducir los tiempos de respuesta. Elegir la arquitectura y el proveedor es el siguiente trabajo práctico para llevarla a cabo.",
+        "visible_question": null,
+        "visible_response": "La meta está clara: reducir los tiempos de respuesta. La elección de arquitectura y proveedor corresponde al siguiente trabajo práctico; conviene llevarla a una evaluación técnica y de proveedores, sin reabrir la definición de la necesidad.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los tiempos de respuesta.",
+        "desired_outcome": "Elegir una arquitectura y un proveedor adecuados para lograr esa reducción.",
+        "known_context": [
+          "La organización quiere reducir los tiempos de respuesta.",
+          "La elección de arquitectura y proveedor aún está pendiente.",
+          "La necesidad principal ya está expresada con claridad."
+        ],
+        "open_items": [
+          {
+            "description": "Definir y comparar las alternativas de arquitectura.",
+            "why_it_matters": "Determina cómo se puede alcanzar la reducción de tiempos de respuesta.",
+            "who_can_help_resolve_it": "Equipo técnico",
+            "suggested_next_move": "Realizar la evaluación técnica correspondiente.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Evaluar y seleccionar un proveedor.",
+            "why_it_matters": "Determina con quién se implementará la solución elegida.",
+            "who_can_help_resolve_it": "Evaluación técnica y de proveedores",
+            "suggested_next_move": "Comparar proveedores después de precisar las necesidades técnicas.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la evaluación técnica de arquitecturas.",
+          "Evaluar proveedores con base en las necesidades resultantes."
+        ],
+        "continuation_summary": "La necesidad actual está suficientemente clara; la arquitectura y el proveedor deben resolverse en el trabajo posterior de evaluación técnica y de proveedores."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_0e41b41aa586ac54006ab548726e5887d28af791da41574b6d",
+        "response_status": "completed",
+        "error": null
+      }
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "schema_valid": true,
+      "output": {
+        "selected_material_gap": "La necesidad actual está clara: reducir los tiempos de respuesta. La elección de arquitectura y proveedor corresponde al trabajo posterior de selección de solución.",
+        "next_action": "ROUTE",
+        "deferred_gaps": [
+          "Definir y aplicar los criterios para comparar arquitecturas",
+          "Comparar proveedores y seleccionar una opción"
+        ],
+        "routing_target": "Selección de arquitectura y proveedor",
+        "stop_rationale": null,
+        "visible_synthesis": "Ya está claro el objetivo: reducir los tiempos de respuesta. El siguiente paso es pasar a la selección de la arquitectura y del proveedor, sin reabrir la definición de la necesidad.",
+        "visible_question": null,
+        "visible_response": "El objetivo está claro: reducir los tiempos de respuesta. La conversación puede pasar ahora a la selección de la arquitectura y del proveedor; esa evaluación es el siguiente trabajo.",
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "understood_need": "Reducir los tiempos de respuesta.",
+        "desired_outcome": "Elegir la arquitectura y el proveedor adecuados.",
+        "known_context": [
+          "La organización quiere reducir los tiempos de respuesta.",
+          "La siguiente necesidad expresada es elegir arquitectura y proveedor."
+        ],
+        "open_items": [
+          {
+            "description": "Definir los criterios para comparar arquitecturas.",
+            "why_it_matters": "Permitirá evaluar las alternativas de forma consistente en la siguiente etapa.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Trasladar la conversación a la evaluación de alternativas de arquitectura.",
+            "relation": "LATER_WORK"
+          },
+          {
+            "description": "Comparar proveedores y seleccionar una opción.",
+            "why_it_matters": "Es necesario para concretar la solución que se utilizará.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Iniciar la evaluación de proveedores junto con la arquitectura elegida.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "suggested_next_moves": [
+          "Pasar a la evaluación de arquitecturas.",
+          "Continuar con la comparación de proveedores."
+        ],
+        "continuation_summary": "La necesidad está suficientemente definida para avanzar; la arquitectura y el proveedor deben resolverse en la siguiente etapa."
+      },
+      "evaluation": {
+        "state_correct": false,
+        "relations_valid": true,
+        "question_classification": "NONE",
+        "scores": {
+          "HUMAN_LANGUAGE": 5,
+          "MOMENTUM_PRESERVATION": 3,
+          "ACTIONABILITY": 5,
+          "VALUE_VISIBILITY": 4,
+          "CONTINUATION_CLARITY": 3
+        },
+        "failure_flags": {
+          "PLATFORM_JARGON": "NONE",
+          "INVENTED_AUTHORITY": "NONE",
+          "INVENTED_GOVERNANCE": "NONE",
+          "PREMATURE_STOP": "NONE",
+          "UNNECESSARY_QUESTION": "NONE",
+          "FORCED_CONVERSION": "NONE",
+          "DECISION_READINESS_REGRESSION": "NONE"
+        }
+      },
+      "execution": {
+        "http_status": 200,
+        "response_id": "resp_08c421d4766bde76006ab54875362487d2a512727f372fe492",
+        "response_status": "completed",
+        "error": null
+      }
+    }
+  ]
+}

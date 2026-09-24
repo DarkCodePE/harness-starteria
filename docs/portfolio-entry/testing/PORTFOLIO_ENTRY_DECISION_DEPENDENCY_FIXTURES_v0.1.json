@@ -1,0 +1,88 @@
+{
+  "fixture_version": "HYP-005.1-decision-dependency-v0.1",
+  "status": "TESTING",
+  "development": [
+    {
+      "id": "DD-01",
+      "title": "BLOCKING_USER_ANSWER",
+      "turns": ["La decisión actual es si lanzamos este trimestre, pero no hay equipo operativo para sostenerlo.", "Puedo explicar qué cobertura real tenemos y qué tendría que cambiar para lanzar."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_dependency": "BLOCKING",
+      "expected_answerability": "USER_CAN_ANSWER",
+      "expected_action": "ASK",
+      "expected_execution_classification": "CURRENT_DECISION_BLOCKER"
+    },
+    {
+      "id": "DD-02",
+      "title": "BLOCKING_ORGANIZATIONAL_AUTHORITY",
+      "turns": ["La decisión no puede habilitarse porque nadie está nombrado para responder por la operación.", "Solo gerencia puede designar esa responsabilidad."],
+      "expected_dimension": "DECISION",
+      "expected_dependency": "BLOCKING",
+      "expected_answerability": "ORGANIZATIONAL_AUTHORITY_REQUIRED",
+      "expected_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "expected_execution_classification": "NOT_EXECUTION_RELEVANT"
+    },
+    {
+      "id": "DD-03",
+      "title": "NON_BLOCKING_LATER_DETAIL",
+      "turns": ["La decisión de continuar está suficientemente encuadrada y la capacidad está confirmada.", "El workflow exacto de soporte se descubrirá al preparar la iniciativa."],
+      "expected_dimension": "ROUTING",
+      "expected_dependency": "NON_BLOCKING",
+      "expected_answerability": "LATER_STAGE_DISCOVERY",
+      "expected_action": "ROUTE",
+      "expected_execution_classification": "LATER_STAGE_EXECUTION_DETAIL"
+    },
+    {
+      "id": "DD-04",
+      "title": "CONSTRAINING_ONE_BOUNDED_ANSWER",
+      "turns": ["El valor y la autoridad están claros, pero la capacidad es limitada para un lanzamiento completo.", "Una respuesta sobre la ventana de lanzamiento puede cambiar el alcance y el timing."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_dependency": "CONSTRAINING",
+      "expected_answerability": "USER_CAN_ANSWER",
+      "expected_action": "ASK",
+      "expected_execution_classification": "CURRENT_DECISION_CONSTRAINT"
+    },
+    {
+      "id": "DD-05",
+      "title": "BLOCKER_BEATS_LATER_DETAIL",
+      "turns": ["No hay owner para la operación y tampoco está definido el workflow técnico.", "La decisión de avanzar depende primero de quién puede autorizar y responder."],
+      "expected_dimension": "DECISION",
+      "expected_dependency": "BLOCKING",
+      "expected_answerability": "ORGANIZATIONAL_AUTHORITY_REQUIRED",
+      "expected_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "expected_execution_classification": "NOT_EXECUTION_RELEVANT"
+    },
+    {
+      "id": "DD-06",
+      "title": "TECHNICAL_UNCERTAINTY_NON_BLOCKING",
+      "turns": ["No sabemos todavía qué proveedor, arquitectura ni pipeline usar.", "La prioridad, sponsor y decisión de continuar están confirmados; el diseño técnico se resolverá después."],
+      "expected_dimension": "ROUTING",
+      "expected_dependency": "NON_BLOCKING",
+      "expected_answerability": "LATER_STAGE_DISCOVERY",
+      "expected_action": "ROUTE",
+      "expected_execution_classification": "LATER_STAGE_EXECUTION_DETAIL"
+    }
+  ],
+  "paired_controls": [
+    {
+      "pair_id": "DD-PAIR-BLOCKER",
+      "cases": [
+        {"id": "DD-PAIR-BLOCKER-EXPLICIT", "turns": ["No podemos lanzar: no hay capacidad para operar y esta decisión queda bloqueada.", "Puedo describir la cobertura disponible." ]},
+        {"id": "DD-PAIR-BLOCKER-IMPLICIT", "turns": ["El equipo llega al límite y nadie puede hacerse cargo de la salida; la decisión queda pendiente.", "Puedo describir cómo está repartida la cobertura." ]}
+      ],
+      "expected_dependency": "BLOCKING",
+      "expected_answerability": "USER_CAN_ANSWER",
+      "expected_action": "ASK"
+    },
+    {
+      "pair_id": "DD-PAIR-LATER",
+      "cases": [
+        {"id": "DD-PAIR-LATER-CRITICAL", "turns": ["El pipeline técnico es crítico para ejecutar la siguiente fase, pero la decisión actual de continuar ya está tomada."]},
+        {"id": "DD-PAIR-LATER-NEUTRAL", "turns": ["El pipeline técnico se definirá en la siguiente fase; la decisión actual de continuar ya está tomada."]}
+      ],
+      "expected_dependency": "NON_BLOCKING",
+      "expected_answerability": "LATER_STAGE_DISCOVERY",
+      "expected_action": "ROUTE"
+    }
+  ]
+}

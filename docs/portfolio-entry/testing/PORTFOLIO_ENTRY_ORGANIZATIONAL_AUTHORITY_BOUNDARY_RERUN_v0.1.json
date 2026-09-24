@@ -1,0 +1,666 @@
+{
+  "candidate_id": "portfolio-entry-organizational-authority-boundary-v0.1",
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "prompt_path": "test/portfolio-entry-v02-isolated-validation/decision-readiness-live-prompt.v0.1.md",
+  "requested_runs": 40,
+  "completed_runs": 40,
+  "frozen_before_execution": true,
+  "results": [
+    {
+      "id": "CF-02-1",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "El resultado prioritario no está definido; la dirección debe establecer qué objetivo pesa más.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Hay varias ideas, pero no se puede decidir cuál merece prioridad hasta saber qué resultado considera más importante la dirección.",
+      "visible_question": null,
+      "visible_response": "Hay varias ideas, pero no se puede decidir cuál merece prioridad hasta que la dirección establezca qué resultado considera más importante. El siguiente paso es pedir esa definición a la dirección.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-2",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "La dirección no ha definido qué resultado debe pesar más al priorizar las ideas.",
+      "routing_target": "Dirección o patrocinador responsable de fijar la prioridad estratégica",
+      "visible_synthesis": "Hay varias ideas, pero todavía no pueden ordenarse porque falta saber qué resultado considera más importante la dirección.",
+      "visible_question": null,
+      "visible_response": "La siguiente acción es que la dirección o el patrocinador responsable defina qué resultado debe pesar más. Con esa orientación se podrá ordenar las ideas; por ahora no conviene pedirles a ustedes que lo supongan.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-3",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al comparar las ideas; esa prioridad corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para priorizar las ideas hace falta saber primero qué resultado considera más importante la dirección.",
+      "visible_question": null,
+      "visible_response": "El siguiente paso es pedir a la dirección que defina qué resultado debe pesar más. Sin esa decisión no se puede establecer una prioridad fiable entre las ideas.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-4",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas; esa preferencia corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para priorizar las ideas hace falta que la dirección aclare qué resultado considera más importante. Sin esa definición, no hay una base clara para decidir qué merece prioridad.",
+      "visible_question": null,
+      "visible_response": "Para priorizar las ideas hace falta que la dirección aclare qué resultado considera más importante. Sin esa definición, no hay una base clara para decidir qué merece prioridad. El siguiente paso es obtener esa orientación de la dirección.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-5",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "Falta que la dirección defina qué resultado debe pesar más al establecer prioridades.",
+      "routing_target": "Dirección o patrocinador con autoridad para fijar la prioridad",
+      "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta una orientación explícita sobre cuál resultado debe pesar más.",
+      "visible_question": null,
+      "visible_response": "La priorización no puede resolverse todavía porque falta que la dirección defina qué resultado considera más importante. Esa orientación debe venir de la dirección o de la persona patrocinadora con autoridad; después podrán compararse las ideas con ese criterio.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-6",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas; esa definición corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para priorizar las ideas hace falta que la dirección aclare qué resultado considera más importante. Sin esa definición no se puede establecer una prioridad defendible.",
+      "visible_question": null,
+      "visible_response": "La siguiente acción es pedir a la dirección que defina qué resultado debe pesar más. Hasta contar con esa definición, no se puede establecer una prioridad clara entre las ideas.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-7",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar, y esa decisión pertenece a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta que la dirección aclare qué resultado considera más importante.",
+      "visible_question": null,
+      "visible_response": "La priorización queda bloqueada hasta que la dirección defina qué resultado debe pesar más. Hay que pedirle esa definición antes de comparar las ideas.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-8",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas; esa decisión corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Hay varias ideas, pero no se puede establecer una prioridad fiable mientras la dirección no aclare qué resultado considera más importante.",
+      "visible_question": null,
+      "visible_response": "Hay varias ideas, pero no se puede establecer una prioridad fiable mientras la dirección no aclare qué resultado debe pesar más. El siguiente paso es pedir esa definición a la dirección; después se podrán comparar las ideas con un criterio común.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-9",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más; esa prioridad pertenece a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Hay varias ideas, pero no se pueden ordenar de forma fundada hasta conocer qué resultado considera más importante la dirección.",
+      "visible_question": null,
+      "visible_response": "Para priorizar las ideas, la dirección debe confirmar primero qué resultado pesa más. Con esa definición podremos ordenar las opciones.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-10",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al comparar las ideas; esa prioridad corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta que la dirección establezca qué resultado considera más importante. Sin esa definición, no hay una base común para ordenar las ideas.",
+      "visible_question": null,
+      "visible_response": "Para decidir qué merece prioridad, primero hace falta que la dirección establezca qué resultado considera más importante. Sin esa definición, no hay una base común para ordenar las ideas.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-11",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas; esa definición corresponde a la dirección.",
+      "routing_target": "Dirección responsable de establecer la prioridad",
+      "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta saber qué resultado considera más importante la dirección.",
+      "visible_question": null,
+      "visible_response": "Para decidir qué merece prioridad, primero hace falta que la dirección confirme qué resultado debe pesar más. Hasta contar con esa definición, no se puede establecer una prioridad entre las ideas.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-12",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más, y esa prioridad corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta que la dirección aclare qué resultado considera más importante. Sin esa definición, cualquier orden entre las ideas sería arbitrario.",
+      "visible_question": null,
+      "visible_response": "El siguiente paso es pedir a la dirección que defina qué resultado debe pesar más. Hasta contar con esa orientación, no es posible establecer una prioridad defendible entre las ideas.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-13",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar; esa definición corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para decidir qué merece prioridad, primero hace falta que la dirección aclare qué resultado considera más importante.",
+      "visible_question": null,
+      "visible_response": "Ahora no es posible establecer una prioridad con fundamento: la dirección debe definir qué resultado pesa más. Con esa orientación se podrán comparar las ideas y ordenar las prioridades.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-14",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas; esa decisión corresponde a la dirección.",
+      "routing_target": "Dirección",
+      "visible_synthesis": "Para ordenar las ideas hace falta que la dirección aclare qué resultado debe tener mayor peso, por ejemplo impacto, ingresos, reducción de costes o urgencia.",
+      "visible_question": null,
+      "visible_response": "Para poder priorizar, necesitamos que la dirección defina qué resultado debe pesar más entre las ideas. Hasta contar con esa orientación, no sería fiable decidir qué merece prioridad.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-02-15",
+      "category": "CF-02",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas; esa definición corresponde a la dirección.",
+      "routing_target": "Dirección o patrocinador con autoridad para fijar prioridades",
+      "visible_synthesis": "Para saber qué merece prioridad, primero hace falta que la dirección aclare qué resultado considera más importante.",
+      "visible_question": null,
+      "visible_response": "La prioridad no puede determinarse todavía porque no está claro qué resultado pesa más. Hace falta que la dirección o el patrocinador con autoridad defina ese criterio; después podrán compararse las ideas con esa orientación.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-1",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado ni confirmado el responsable con autoridad para decidir el paso del piloto a operación.",
+      "routing_target": "Patrocinador del piloto o dirección responsable de la operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo. Para avanzar, la organización debe confirmar quién tiene la autoridad para aprobar su paso a operación.",
+      "visible_question": null,
+      "visible_response": "El piloto ya cuenta con presupuesto y equipo. El siguiente paso es que el patrocinador o la dirección responsable confirme quién puede aprobar su paso a operación.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-2",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado quién posee la autoridad formal para aprobar el paso del piloto a operación.",
+      "routing_target": "Patrocinador o autoridad formal responsable de aprobar el paso a operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo, pero falta que la organización confirme quién tiene la autoridad para decidir su paso a operación.",
+      "visible_question": null,
+      "visible_response": "El siguiente paso es pedir al patrocinador o a la autoridad formal correspondiente que confirme quién debe aprobar el paso a operación. No conviene avanzar hasta tener ese responsable identificado.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-3",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado el responsable con autoridad formal para confirmar el paso del piloto a operación.",
+      "routing_target": "Patrocinador formal o dirección responsable del piloto",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo. Lo que falta para definir el siguiente paso es que una autoridad organizativa confirme quién puede decidir su paso a operación.",
+      "visible_question": null,
+      "visible_response": "El piloto ya cuenta con presupuesto y equipo. Para avanzar, el patrocinador formal o la dirección responsable debe confirmar quién tiene la autoridad para decidir el paso a operación.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-4",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado el propietario formal de la decisión de pasar el piloto a operación.",
+      "routing_target": "Patrocinador del piloto o autoridad formal responsable de operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo, pero falta confirmar quién tiene la autoridad para aprobar su paso a operación.",
+      "visible_question": null,
+      "visible_response": "Hace falta que el patrocinador del piloto o la autoridad formal de operación nombre explícitamente a la persona responsable de confirmar ese paso. Hasta entonces, no hay un siguiente responsable claro.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-5",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado ni confirmado el responsable formal de decidir el paso del piloto a operación.",
+      "routing_target": "Patrocinador, comité de dirección o autoridad formal responsable de aprobar el paso a operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo. Lo que falta es que la organización confirme quién tiene autoridad para aprobar su paso a operación.",
+      "visible_question": null,
+      "visible_response": "Debe confirmarlo el patrocinador o la instancia formal responsable de esa aprobación. Hasta que la organización designe a esa autoridad, no conviene avanzar con el paso a operación.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-6",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado quién tiene la autoridad formal para aprobar el paso del piloto a operación.",
+      "routing_target": "Patrocinador o autoridad formal responsable de aprobar la entrada en operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién tiene la autoridad para decidir su entrada en operación.",
+      "visible_question": null,
+      "visible_response": "Debe confirmarlo el patrocinador o la autoridad formal responsable de aprobar la entrada en operación. Hasta que esa persona o instancia quede identificada, no puede definirse el siguiente paso con seguridad.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-7",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado quién tiene autoridad para decidir el paso del piloto a operación.",
+      "routing_target": "Patrocinador o dirección responsable de autorizar el paso a operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo, pero falta confirmar quién puede autorizar su paso a operación. Esa confirmación debe venir del patrocinador o de la dirección responsable; hasta entonces, no hay un siguiente paso operativo confirmado.",
+      "visible_question": null,
+      "visible_response": "El piloto ya cuenta con presupuesto y equipo, pero falta confirmar quién puede autorizar su paso a operación. Esa confirmación debe venir del patrocinador o de la dirección responsable; hasta entonces, no hay un siguiente paso operativo confirmado.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-8",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está identificado el responsable con autoridad para confirmar el paso del piloto a operación.",
+      "routing_target": "Patrocinador o autoridad organizacional responsable de autorizar el paso a operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo, pero no tiene una persona o instancia designada para confirmar su paso a operación.",
+      "visible_question": null,
+      "visible_response": "Hace falta que el patrocinador o la autoridad organizacional correspondiente designe quién debe confirmar el paso del piloto a operación. Hasta que esa responsabilidad quede asignada, no hay un siguiente paso confirmado.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-9",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido quién tiene autoridad para confirmar el paso del piloto a operación.",
+      "routing_target": "Patrocinador del piloto o dirección responsable de aprobar el paso a operación",
+      "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo, pero el siguiente paso no puede confirmarse hasta que la organización designe claramente a la persona o instancia que puede autorizar el paso a operación.",
+      "visible_question": null,
+      "visible_response": "El piloto ya cuenta con presupuesto y equipo, pero el siguiente paso no puede confirmarse hasta que la organización designe claramente a la persona o instancia que puede autorizar el paso a operación. Debe confirmarlo el patrocinador del piloto o la dirección responsable.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "CF-05-10",
+      "category": "CF-05",
+      "expected": [
+        "REQUIRE_ORGANIZATIONAL_INPUT"
+      ],
+      "actual": "REQUIRE_ORGANIZATIONAL_INPUT",
+      "selected_material_gap": "No está definido quién tiene la autoridad para aprobar el paso del piloto a operación.",
+      "routing_target": "Patrocinador, comité de gobierno o liderazgo formal responsable de autorizar el paso a operación",
+      "visible_synthesis": "El piloto ya tiene presupuesto y equipo; lo que falta para avanzar es confirmar quién puede autorizar su paso a operación.",
+      "visible_question": null,
+      "visible_response": "El piloto ya tiene presupuesto y equipo; lo que falta para avanzar es confirmar quién puede autorizar su paso a operación. Esa confirmación debe venir del patrocinador o de la instancia formal de gobierno correspondiente, no del equipo del piloto.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-01-1",
+      "category": "AUTH-CTRL-01",
+      "expected": [
+        "ASK",
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Faltan las dos opciones concretas y la información disponible sobre cómo cada una afecta al riesgo operativo.",
+      "routing_target": null,
+      "visible_synthesis": "El criterio ya está claro: entre las dos alternativas, debe priorizarse la que reduzca más el riesgo operativo.",
+      "visible_question": "¿Cuáles son las dos opciones y qué sabes actualmente sobre el riesgo operativo que implica cada una?",
+      "visible_response": "El criterio ya está claro: entre las dos alternativas, debe priorizarse la que reduzca más el riesgo operativo.\n\n¿Cuáles son las dos opciones y qué sabes actualmente sobre el riesgo operativo que implica cada una?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-01-2",
+      "category": "AUTH-CTRL-01",
+      "expected": [
+        "ASK",
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Faltan las dos opciones y la información necesaria para comparar su riesgo operativo.",
+      "routing_target": null,
+      "visible_synthesis": "El criterio ya está definido: entre las dos opciones, debe priorizarse la que reduzca más el riesgo operativo. Para aplicarlo hace falta comparar qué riesgos introduce o evita cada una.",
+      "visible_question": "¿Cuáles son las dos opciones y qué impacto tendría cada una sobre el riesgo operativo?",
+      "visible_response": "El criterio ya está definido: entre las dos opciones, debe priorizarse la que reduzca más el riesgo operativo. Para aplicarlo hace falta comparar qué riesgos introduce o evita cada una.\n\n¿Cuáles son las dos opciones y qué impacto tendría cada una sobre el riesgo operativo?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-01-3",
+      "category": "AUTH-CTRL-01",
+      "expected": [
+        "ASK",
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Faltan la identificación de las dos opciones y la información necesaria para comparar cuál reduce más el riesgo operativo.",
+      "routing_target": null,
+      "visible_synthesis": "El criterio ya está claro: entre las dos opciones, debe priorizarse la que reduzca más el riesgo operativo. Para aplicarlo hace falta conocer qué alternativas se están comparando y sus efectos sobre ese riesgo.",
+      "visible_question": "¿Cuáles son las dos opciones y qué riesgo operativo relevante presenta cada una?",
+      "visible_response": "El criterio ya está claro: entre las dos opciones, debe priorizarse la que reduzca más el riesgo operativo. Para aplicarlo hace falta conocer qué alternativas se están comparando y sus efectos sobre ese riesgo.\n\n¿Cuáles son las dos opciones y qué riesgo operativo relevante presenta cada una?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-01-4",
+      "category": "AUTH-CTRL-01",
+      "expected": [
+        "ASK",
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "No se han descrito las dos opciones ni sus efectos sobre el riesgo operativo, por lo que aún no puede aplicarse el criterio de dirección.",
+      "routing_target": null,
+      "visible_synthesis": "El criterio ya está claro: entre las alternativas, debe priorizarse la que reduzca más el riesgo operativo. Para aplicarlo hace falta conocer qué se está comparando y qué consecuencias tiene cada opción.",
+      "visible_question": "¿Cuáles son las dos opciones y qué riesgo operativo concreto se espera que reduzca o introduzca cada una?",
+      "visible_response": "El criterio ya está claro: entre las alternativas, debe priorizarse la que reduzca más el riesgo operativo. Para aplicarlo hace falta conocer qué se está comparando y qué consecuencias tiene cada opción.\n\n¿Cuáles son las dos opciones y qué riesgo operativo concreto se espera que reduzca o introduzca cada una?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-01-5",
+      "category": "AUTH-CTRL-01",
+      "expected": [
+        "ASK",
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Faltan las dos opciones concretas y la información disponible sobre el riesgo operativo que implica cada una.",
+      "routing_target": null,
+      "visible_synthesis": "El criterio ya está claro: debe priorizarse la opción que reduzca más el riesgo operativo. Para aplicarlo hace falta comparar las dos alternativas concretas.",
+      "visible_question": "¿Cuáles son las dos opciones y qué riesgos operativos observables presenta cada una?",
+      "visible_response": "El criterio ya está claro: debe priorizarse la opción que reduzca más el riesgo operativo. Para aplicarlo hace falta comparar las dos alternativas concretas. ¿Cuáles son las dos opciones y qué riesgos operativos observables presenta cada una?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-02-1",
+      "category": "AUTH-CTRL-02",
+      "expected": [
+        "ASK"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Número actual de usuarios activos esta semana",
+      "routing_target": null,
+      "visible_synthesis": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos hay actualmente; ese dato puede cambiar la decisión.",
+      "visible_question": "¿Puedes comprobarlo en el panel de analítica y decirme cuántos usuarios activos hubo esta semana?",
+      "visible_response": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos hay actualmente; ese dato puede cambiar la decisión. ¿Puedes comprobarlo en el panel de analítica y decirme cuántos usuarios activos hubo esta semana?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-02-2",
+      "category": "AUTH-CTRL-02",
+      "expected": [
+        "ASK"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Número de usuarios activos durante esta semana, que el usuario puede comprobar en el panel de analítica.",
+      "routing_target": null,
+      "visible_synthesis": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos hay ahora.",
+      "visible_question": "¿Puedes revisar el panel de analítica y decirme cuántos usuarios activos hay esta semana?",
+      "visible_response": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos hay ahora. ¿Puedes revisar el panel de analítica y decirme cuántos usuarios activos hay esta semana?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-02-3",
+      "category": "AUTH-CTRL-02",
+      "expected": [
+        "ASK"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Número de usuarios activos durante esta semana.",
+      "routing_target": null,
+      "visible_synthesis": "Para decidir si la iniciativa puede continuar esta semana, necesitamos confirmar cuántos usuarios activos hay actualmente.",
+      "visible_question": "¿Puedes comprobar ese dato en el panel de analítica y decirme cuántos usuarios activos hay esta semana?",
+      "visible_response": "Para decidir si la iniciativa puede continuar esta semana, necesitamos confirmar cuántos usuarios activos hay actualmente. ¿Puedes comprobar ese dato en el panel de analítica y decirme cuántos usuarios activos hay esta semana?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-02-4",
+      "category": "AUTH-CTRL-02",
+      "expected": [
+        "ASK"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Número de usuarios activos durante esta semana",
+      "routing_target": null,
+      "visible_synthesis": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos hubo durante esta semana.",
+      "visible_question": "¿Puedes comprobar ese dato en el panel de analítica y decirme cuántos usuarios activos hay esta semana?",
+      "visible_response": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos hubo durante esta semana. ¿Puedes comprobar ese dato en el panel de analítica y decirme cuántos usuarios activos hay esta semana?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-02-5",
+      "category": "AUTH-CTRL-02",
+      "expected": [
+        "ASK"
+      ],
+      "actual": "ASK",
+      "selected_material_gap": "Número de usuarios activos durante esta semana",
+      "routing_target": null,
+      "visible_synthesis": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos ha habido.",
+      "visible_question": "¿Puedes consultar el panel de analítica y decirme ese número?",
+      "visible_response": "Para decidir si la iniciativa puede continuar esta semana, falta confirmar cuántos usuarios activos ha habido. ¿Puedes consultar el panel de analítica y decirme ese número?",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-03-1",
+      "category": "AUTH-CTRL-03",
+      "expected": [
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "STOP",
+      "selected_material_gap": "Falta confirmar quién patrocinará la fase posterior, pero no afecta la decisión actual de presentar la iniciativa.",
+      "routing_target": null,
+      "visible_synthesis": "La iniciativa está lista para presentarse y la falta de confirmación sobre el patrocinio posterior no impide hacerlo ahora. Puede presentarse al comité y dejar esa confirmación para una fase posterior.",
+      "visible_question": null,
+      "visible_response": "La iniciativa está lista para presentarse. La confirmación de quién patrocinará la fase posterior puede resolverse después, porque no cambia la decisión de presentarla ahora.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-03-2",
+      "category": "AUTH-CTRL-03",
+      "expected": [
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "STOP",
+      "selected_material_gap": "Confirmación del patrocinador para la fase posterior",
+      "routing_target": null,
+      "visible_synthesis": "La iniciativa está lista para presentarse y la decisión de hacerlo ya está tomada. La definición del patrocinio de la fase posterior puede quedar pendiente sin impedir esta presentación.",
+      "visible_question": null,
+      "visible_response": "Puedes presentar la iniciativa al comité ahora. Deja pendiente la confirmación de quién patrocinará la fase posterior para cuando sea necesario tomar esa decisión.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-03-3",
+      "category": "AUTH-CTRL-03",
+      "expected": [
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "STOP",
+      "selected_material_gap": "No está confirmado quién patrocinará la fase posterior, pero ese dato no cambia la decisión ya tomada de presentar la iniciativa.",
+      "routing_target": null,
+      "visible_synthesis": "La iniciativa está lista para presentarse ante el comité. Aunque aún no se ha confirmado quién patrocinará la fase posterior, ese dato no impide hacer la presentación.",
+      "visible_question": null,
+      "visible_response": "La iniciativa está lista para presentarse ante el comité. La falta de confirmación sobre el patrocinador de la fase posterior no impide avanzar con la presentación.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-03-4",
+      "category": "AUTH-CTRL-03",
+      "expected": [
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "STOP",
+      "selected_material_gap": "No está confirmado quién patrocinará la fase posterior, pero ese dato no afecta la decisión ya tomada de presentar la iniciativa al comité.",
+      "routing_target": null,
+      "visible_synthesis": "La iniciativa está lista para presentarse y la decisión de llevarla al comité ya está tomada. La falta de confirmación sobre el patrocinio de la fase posterior puede quedar pendiente por ahora.",
+      "visible_question": null,
+      "visible_response": "La iniciativa puede presentarse al comité ahora. La confirmación de quién patrocinará la fase posterior queda pendiente para cuando sea necesario decidir sobre esa fase.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    },
+    {
+      "id": "AUTH-CTRL-03-5",
+      "category": "AUTH-CTRL-03",
+      "expected": [
+        "STOP",
+        "ROUTE"
+      ],
+      "actual": "STOP",
+      "selected_material_gap": "Patrocinio de la fase posterior aún no confirmado, pero no afecta la decisión de presentar la iniciativa.",
+      "routing_target": null,
+      "visible_synthesis": "La iniciativa está lista para presentarse y la falta de patrocinador para la fase posterior no impide llevarla al comité ahora.",
+      "visible_question": null,
+      "visible_response": "Puedes presentar la iniciativa al comité. La confirmación del patrocinador para la fase posterior puede quedar pendiente sin retrasar esta presentación.",
+      "semantic_errors": [],
+      "validation_status": "VALID_OUTPUT",
+      "schema_errors": []
+    }
+  ]
+}

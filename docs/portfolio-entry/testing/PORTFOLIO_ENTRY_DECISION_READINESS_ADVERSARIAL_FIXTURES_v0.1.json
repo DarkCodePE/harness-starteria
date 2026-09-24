@@ -1,0 +1,218 @@
+{
+  "fixture_version": "HYP-005-adversarial-v0.1",
+  "status": "TESTING",
+  "development": [
+    {
+      "id": "ADV-01",
+      "title": "TECHNICAL_HEAVY_ADOPTION_CRITICAL",
+      "turns": [
+        "El modelo tiene 96% de precisión, latencia de 180 ms y una matriz de errores detallada.",
+        "Hemos revisado muchas veces la arquitectura y el presupuesto está aprobado, pero los usuarios siguen trabajando como antes.",
+        "La dirección quiere decidir si continúa el despliegue."
+      ],
+      "expected_invariants": ["ADOPTION/EXECUTION_REALITY outranks technical detail.", "No ask for more model validation.", "Decision is continuation of deployment."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "ADV-02",
+      "title": "VALUE_STRONG_CAPACITY_WEAK",
+      "turns": [
+        "La iniciativa está vinculada al KPI de incidentes críticos y ya mostró una reducción validada del 30%.",
+        "El comité ejecutivo quiere avanzar y la evidencia de valor es suficiente.",
+        "No hay equipo operativo ni horas disponibles para sostener el despliegue."
+      ],
+      "expected_invariants": ["EXECUTION_REALITY becomes decision-critical.", "Do not ask again about value.", "Capacity may route or block continuation."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "ADV-03",
+      "title": "GOVERNANCE_CLEAR_EVIDENCE_WEAK",
+      "turns": [
+        "El sponsor, la persona accountable y quien decide el paso a escala están explícitamente designados.",
+        "Hay presupuesto y equipo, pero el beneficio se apoya en una sola anécdota de un equipo.",
+        "La decisión pendiente es si escalar."
+      ],
+      "expected_invariants": ["EVIDENCE_AUTHORITY outranks governance.", "Governance is ALREADY_SUFFICIENT.", "Do not ask who owns the decision."],
+      "expected_dimension": "EVIDENCE_AUTHORITY",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "ADV-04",
+      "title": "OWNERSHIP_WORDS_ALREADY_SOLVED",
+      "turns": [
+        "El sponsor, owner, manager, comité e IT owner aparecen en el acuerdo de accountability.",
+        "El documento designa quién decide, quién recomienda y quién responde por operación.",
+        "Lo que no sabemos es si el beneficio justifica mantener la iniciativa."
+      ],
+      "expected_invariants": ["Do not select governance because of repeated words.", "RELEVANCE/EVIDENCE is the unresolved gap.", "Governance is sufficient."],
+      "expected_dimension": "RELEVANCE",
+      "expected_final_action": "REQUIRE_ORGANIZATIONAL_INPUT"
+    },
+    {
+      "id": "ADV-05",
+      "title": "OPERATIONAL_DECISION_WITH_STRATEGY",
+      "turns": [
+        "La iniciativa está alineada con el objetivo estratégico y el KPI ya está definido.",
+        "La decisión inmediata es si la capacidad actual permite un lanzamiento controlado.",
+        "El equipo está sobrecargado y no hay cobertura para operar la salida."
+      ],
+      "expected_invariants": ["No strategy-first bias.", "EXECUTION_REALITY outranks established relevance.", "Do not reopen KPI alignment."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "ADV-06",
+      "title": "TECHNICAL_UNCERTAINTY_LATER_STAGE",
+      "turns": [
+        "Todavía no sabemos qué proveedor, arquitectura ni pipeline de datos usaríamos.",
+        "La pregunta actual es si la organización quiere continuar; la prioridad, sponsor y criterio de decisión están claros.",
+        "El diseño técnico se resolverá al preparar la iniciativa."
+      ],
+      "expected_invariants": ["Technical uncertainty alone is not ASK_NOW.", "Route to later initiative stage.", "Do not confuse missing information with current decision need."],
+      "expected_dimension": "ROUTING",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "ADV-07",
+      "title": "VALUE_VS_ADOPTION",
+      "turns": [
+        "La solución evita costes importantes, pero la adopción de los equipos es irregular.",
+        "No sabemos si conviene continuar el rollout porque el valor aparece solo cuando se usa de forma consistente."
+      ],
+      "expected_invariants": ["Explain value vs adoption tradeoff.", "Adoption can outrank already plausible value.", "No automatic strategy-first question."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "ADV-08",
+      "title": "CAPACITY_VS_AUTHORITY",
+      "turns": [
+        "Hay poco tiempo disponible y nadie está nombrado como owner de la operación.",
+        "Necesitamos saber si existe capacidad real y quién puede autorizar el paso siguiente."
+      ],
+      "expected_invariants": ["Explain which gap changes routing first.", "Do not treat capacity and authority as identical.", "Authority may route to organizational input."],
+      "expected_dimension": "DECISION",
+      "expected_final_action": "REQUIRE_ORGANIZATIONAL_INPUT"
+    },
+    {
+      "id": "ADV-09",
+      "title": "EVIDENCE_VS_STRATEGIC_ALIGNMENT",
+      "turns": [
+        "La propuesta está dentro de una prioridad estratégica importante.",
+        "La relevancia parece plausible, pero solo tenemos una observación anecdótica y la decisión es si escalar."
+      ],
+      "expected_invariants": ["Strategic alignment does not establish evidence.", "Evidence outranks relevance completeness.", "No governance question."],
+      "expected_dimension": "EVIDENCE_AUTHORITY",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "STOP-01",
+      "title": "MATERIAL_CONTEXT_SUFFICIENT",
+      "turns": [
+        "La decisión, sponsor, accountability, capacidad, criterio de valor y routing están confirmados.",
+        "Solo falta elegir proveedor y diseñar el detalle técnico de implementación."
+      ],
+      "expected_invariants": ["Stop or route; no completeness questioning.", "Technical details are later-stage."],
+      "expected_dimension": "ROUTING",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "STOP-02",
+      "title": "MANAGEMENT_ONLY_GAP",
+      "turns": [
+        "La evidencia, capacidad y etapa están suficientemente claras.",
+        "Solo gerencia puede confirmar si esta prioridad sigue vigente."
+      ],
+      "expected_invariants": ["Require organizational input.", "Do not ask the current user to guess management intent."],
+      "expected_dimension": "RELEVANCE",
+      "expected_final_action": "REQUIRE_ORGANIZATIONAL_INPUT"
+    },
+    {
+      "id": "STOP-03",
+      "title": "LATER_INITIATIVE_AMBIGUITY",
+      "turns": [
+        "La decisión de portfolio está suficientemente encuadrada y el owner está confirmado.",
+        "La ambigüedad restante es cómo rediseñar el workflow de la iniciativa."
+      ],
+      "expected_invariants": ["Defer to later initiative stage.", "Stop or route; do not design workflow now."],
+      "expected_dimension": "ROUTING",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "PAIR-GOV-KEYWORDS",
+      "title": "PAIR_GOVERNANCE_EXPLICIT",
+      "turns": ["Sponsor y owner están formalmente designados; una persona decide, otra recomienda y otra responde por operación.", "La duda restante es si el valor justifica continuar."],
+      "pair_id": "PAIR-GOV",
+      "expected_dimension": "RELEVANCE",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "PAIR-GOV-PLAIN",
+      "title": "PAIR_GOVERNANCE_PLAIN",
+      "turns": ["Las responsabilidades están formalmente repartidas: una persona decide, otra recomienda y otra responde por operación.", "La duda restante es si el valor justifica continuar."],
+      "pair_id": "PAIR-GOV",
+      "expected_dimension": "RELEVANCE",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "PAIR-VALUE-KEYWORDS",
+      "title": "PAIR_VALUE_EXPLICIT",
+      "turns": ["La prioridad de la organización es reducir reprocesos y el resultado esperado es claro.", "La decisión pendiente es si el impacto justifica continuar."],
+      "pair_id": "PAIR-VALUE",
+      "expected_dimension": "RELEVANCE",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "PAIR-VALUE-PLAIN",
+      "title": "PAIR_VALUE_PLAIN",
+      "turns": ["La organización quiere trabajar con menos reprocesos y todos entienden qué cambio se busca.", "La decisión pendiente es si el impacto justifica continuar."],
+      "pair_id": "PAIR-VALUE",
+      "expected_dimension": "RELEVANCE",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "PAIR-CAPACITY-KEYWORDS",
+      "title": "PAIR_CAPACITY_EXPLICIT",
+      "turns": ["El equipo tiene poca capacidad, pocas horas y recursos limitados para operar la solución.", "La decisión pendiente es si puede sostenerse."],
+      "pair_id": "PAIR-CAPACITY",
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ROUTE"
+    },
+    {
+      "id": "PAIR-CAPACITY-PLAIN",
+      "title": "PAIR_CAPACITY_IMPLICIT",
+      "turns": ["El equipo llega al final de cada semana con trabajo pendiente y no puede hacerse cargo de otra responsabilidad.", "La decisión pendiente es si puede sostenerse."],
+      "pair_id": "PAIR-CAPACITY",
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ROUTE"
+    }
+  ],
+  "new_holdout": [
+    {
+      "id": "ADV-HO-01",
+      "title": "COMPETING_MATERIAL_GAPS",
+      "turns": ["La propuesta reduce un riesgo importante, pero su adopción se estancó y nadie tiene tiempo asignado para corregirlo.", "El comité debe decidir si continúa o pausa."],
+      "expected_invariants": ["Choose execution/adoption over generic value.", "Explain competing gap tradeoff."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "ADV-HO-02",
+      "title": "LOW_KEYWORD_IMPLICIT",
+      "turns": ["El equipo está al límite y la persona que podría responder por la salida ya tiene todas sus semanas comprometidas.", "La decisión es si se puede poner en marcha de forma responsable."],
+      "expected_invariants": ["Infer execution constraint without capacity keywords.", "Do not choose strategy by absence of KPI words."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_final_action": "ASK"
+    },
+    {
+      "id": "ADV-HO-03",
+      "title": "CORRECT_EARLY_STOP",
+      "turns": ["La decisión, autoridad, capacidad y valor están confirmados; el siguiente trabajo es configurar el pipeline y probar el umbral técnico."],
+      "expected_invariants": ["Stop or route immediately.", "Do not ask for technical detail in Portfolio Entry."],
+      "expected_dimension": "ROUTING",
+      "expected_final_action": "ROUTE"
+    }
+  ]
+}

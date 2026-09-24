@@ -1,0 +1,1766 @@
+{
+  "candidate_id": "portfolio-entry-conversational-realization-v0.1",
+  "source_prompt_path": "test/portfolio-entry-v02-isolated-validation/decision-readiness-live-prompt.v0.1.md",
+  "cases": [
+    "CF-01",
+    "CF-02",
+    "CF-03",
+    "CF-04",
+    "CF-05",
+    "CF-06",
+    "CF-07",
+    "CF-08",
+    "CF-09",
+    "CF-10",
+    "CF-11",
+    "CF-12"
+  ],
+  "repetitions": 5,
+  "requested_runs": 60,
+  "completed_runs": 60,
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "runs": [
+    {
+      "case_id": "CF-01",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No está confirmado quién asumirá la responsabilidad operativa ni si tendrá capacidad para sostener la implementación pequeña.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsable del área y persona propuesta para confirmar titularidad y disponibilidad sostenida.",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La continuidad solo parece viable si existe una persona claramente responsable y con tiempo suficiente para mantenerla.",
+        "question": null,
+        "response": "Antes de decidir, hay que confirmar con el área responsable quién se hará cargo de sostener la implementación y si cuenta con capacidad disponible. Hasta tener esa confirmación, no conviene continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La continuidad solo parece viable si existe una persona claramente responsable y con tiempo suficiente para mantenerla.",
+        "visible_question": null,
+        "visible_response": "Antes de decidir, hay que confirmar con el área responsable quién se hará cargo de sostener la implementación y si cuenta con capacidad disponible. Hasta tener esa confirmación, no conviene continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "Falta definir qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o responsables con autoridad para fijar la prioridad",
+        "deferred_gaps": [
+          "Comparar las ideas entre sí una vez acordado el resultado prioritario."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para priorizar con sentido, primero hace falta acordar qué resultado importa más para la dirección.",
+        "question": null,
+        "response": "Necesitamos que la dirección defina cuál es el resultado prioritario —por ejemplo, impacto, ingresos, ahorro o rapidez— antes de ordenar las ideas."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para priorizar con sentido, primero hace falta acordar qué resultado importa más para la dirección.",
+        "visible_question": null,
+        "visible_response": "Necesitamos que la dirección defina cuál es el resultado prioritario —por ejemplo, impacto, ingresos, ahorro o rapidez— antes de ordenar las ideas."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No existe un equipo operativo asignado para sostener el lanzamiento, lo que constituye un impedimento organizativo inmediato.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección y operaciones",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La falta de un equipo operativo para sostener el lanzamiento impide recomendar que continúe por ahora.",
+        "question": null,
+        "response": "La falta de un equipo operativo para sostener el lanzamiento impide recomendar que continúe por ahora. Dirección y operaciones deben confirmar quién asumirá esa responsabilidad y con qué capacidad antes de tomar la decisión."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La falta de un equipo operativo para sostener el lanzamiento impide recomendar que continúe por ahora.",
+        "visible_question": null,
+        "visible_response": "La falta de un equipo operativo para sostener el lanzamiento impide recomendar que continúe por ahora. Dirección y operaciones deben confirmar quién asumirá esa responsabilidad y con qué capacidad antes de tomar la decisión."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "La causa concreta por la que los usuarios mantienen las plantillas manuales, pese a que la herramienta ahorra tiempo.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Si el ahorro se mantiene cuando la herramienta se usa de forma habitual.",
+          "Qué equipos o tipos de trabajo presentan más resistencia.",
+          "Si existen requisitos formales que obliguen a conservar las plantillas manuales."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La herramienta parece aportar ahorro, pero ese beneficio no se consolida porque los usuarios siguen recurriendo a plantillas manuales. Para entender el problema, primero hay que distinguir si se trata de una obligación, una falta de confianza o una carencia de la herramienta.",
+        "question": "¿Qué motivo pesa más para que sigan usando las plantillas manuales: una obligación formal, falta de confianza o control, o que la herramienta no cubre alguna parte del trabajo?",
+        "response": "La herramienta parece aportar ahorro, pero ese beneficio no se consolida porque los usuarios siguen recurriendo a plantillas manuales. Para entender el problema, primero hay que distinguir si se trata de una obligación, una falta de confianza o una carencia de la herramienta.\n\n¿Qué motivo pesa más para que sigan usando las plantillas manuales: una obligación formal, falta de confianza o control, o que la herramienta no cubre alguna parte del trabajo?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué motivo pesa más para que sigan usando las plantillas manuales: una obligación formal, falta de confianza o control, o que la herramienta no cubre alguna parte del trabajo?",
+        "visible_response": "La herramienta parece aportar ahorro, pero ese beneficio no se consolida porque los usuarios siguen recurriendo a plantillas manuales. Para entender el problema, primero hay que distinguir si se trata de una obligación, una falta de confianza o una carencia de la herramienta.\n\n¿Qué motivo pesa más para que sigan usando las plantillas manuales: una obligación formal, falta de confianza o control, o que la herramienta no cubre alguna parte del trabajo?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No está identificado el rol o la persona con autoridad formal para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto o responsable con autoridad de operaciones",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya tiene presupuesto y equipo; lo que falta para avanzar es confirmar quién puede autorizar formalmente su paso a operación.",
+        "question": null,
+        "response": "El siguiente paso es confirmar esta autoridad con el patrocinador del piloto o con el responsable de operaciones antes de continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya tiene presupuesto y equipo; lo que falta para avanzar es confirmar quién puede autorizar formalmente su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso es confirmar esta autoridad con el patrocinador del piloto o con el responsable de operaciones antes de continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No está cuantificado el valor económico u operativo que aportan la mayor precisión y la reducción del tiempo, ni el umbral que justificaría seguir.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Coste y esfuerzo necesarios para continuar",
+          "Riesgos o condiciones que podrían impedir capturar el valor"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La precisión alta y el ahorro de tiempo son señales positivas, pero todavía no muestran si el resultado compensa el coste de continuar.",
+        "question": "¿Qué resultado concreto —por ejemplo, ahorro, ingresos o capacidad adicional— tendría que producir para que merezca la pena seguir, y tenéis una estimación de cuánto aporta hoy?",
+        "response": "La precisión alta y el ahorro de tiempo son señales positivas, pero todavía no muestran si el resultado compensa el coste de continuar. ¿Qué resultado concreto —por ejemplo, ahorro, ingresos o capacidad adicional— tendría que producir para que merezca la pena seguir, y tenéis una estimación de cuánto aporta hoy?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado concreto —por ejemplo, ahorro, ingresos o capacidad adicional— tendría que producir para que merezca la pena seguir, y tenéis una estimación de cuánto aporta hoy?",
+        "visible_response": "La precisión alta y el ahorro de tiempo son señales positivas, pero todavía no muestran si el resultado compensa el coste de continuar. ¿Qué resultado concreto —por ejemplo, ahorro, ingresos o capacidad adicional— tendría que producir para que merezca la pena seguir, y tenéis una estimación de cuánto aporta hoy?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "Falta conocer qué resultado prioriza la dirección para evaluar la propuesta.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o responsable de tomar la decisión",
+        "deferred_gaps": [
+          "Criterios para comparar la propuesta",
+          "Beneficios esperados y riesgos",
+          "Siguiente paso de evaluación"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La propuesta no puede valorarse todavía porque no está claro qué resultado considera prioritario la dirección. El siguiente paso es pedir esa definición a la dirección o a la persona responsable de decidir.",
+        "question": null,
+        "response": "La propuesta no puede valorarse todavía porque no está claro qué resultado considera prioritario la dirección. Pide esa definición a la dirección o a la persona responsable de tomar la decisión antes de seguir evaluándola."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La propuesta no puede valorarse todavía porque no está claro qué resultado considera prioritario la dirección. El siguiente paso es pedir esa definición a la dirección o a la persona responsable de decidir.",
+        "visible_question": null,
+        "visible_response": "La propuesta no puede valorarse todavía porque no está claro qué resultado considera prioritario la dirección. Pide esa definición a la dirección o a la persona responsable de tomar la decisión antes de seguir evaluándola."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No está identificado el equipo o las personas con autoridad para definir el proveedor, la arquitectura y el workflow.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsables de compras, arquitectura y operaciones del proyecto",
+        "deferred_gaps": [
+          "Criterios y elección del proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La decisión de continuar ya está tomada. Lo que sigue no es volver a evaluarla, sino encargar las definiciones de proveedor, arquitectura y workflow a quienes tienen la autoridad y el conocimiento para concretarlas.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es reunir a los responsables de compras, arquitectura y operaciones para que definan el proveedor, la arquitectura y el workflow."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo que sigue no es volver a evaluarla, sino encargar las definiciones de proveedor, arquitectura y workflow a quienes tienen la autoridad y el conocimiento para concretarlas.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente paso es reunir a los responsables de compras, arquitectura y operaciones para que definan el proveedor, la arquitectura y el workflow."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "Faltan los tres alcances concretos y la comparación mínima entre ellos para determinar qué opción puede decidirse este trimestre.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Métricas y umbrales de éxito",
+          "Presupuesto disponible por opción",
+          "Capacidad real del equipo",
+          "Dependencias externas y sus fechas",
+          "Preferencias o límites del sponsor"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ya existen varios insumos y apoyo para decidir, pero aún no se ve con claridad qué alternativas concretas están sobre la mesa ni qué implicaría elegir cada una.",
+        "question": "¿Cuáles son los tres alcances propuestos y, para cada uno, cuál sería el resultado esperado, el coste aproximado, la fecha posible y la principal dependencia?",
+        "response": "Ya existen varios insumos y apoyo para decidir, pero aún no se ve con claridad qué alternativas concretas están sobre la mesa ni qué implicaría elegir cada una.\n\n¿Cuáles son los tres alcances propuestos y, para cada uno, cuál sería el resultado esperado, el coste aproximado, la fecha posible y la principal dependencia?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Cuáles son los tres alcances propuestos y, para cada uno, cuál sería el resultado esperado, el coste aproximado, la fecha posible y la principal dependencia?",
+        "visible_response": "Ya existen varios insumos y apoyo para decidir, pero aún no se ve con claridad qué alternativas concretas están sobre la mesa ni qué implicaría elegir cada una.\n\n¿Cuáles son los tres alcances propuestos y, para cada uno, cuál sería el resultado esperado, el coste aproximado, la fecha posible y la principal dependencia?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "Falta saber qué situación concreta quiere ordenar y con qué propósito inmediato.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Parece que quieres transformar una situación todavía vaga en algo más claro y manejable.",
+        "question": "¿Qué situación concreta quieres ordenar y qué te gustaría poder aclarar o decidir primero?",
+        "response": "Parece que quieres transformar una situación todavía vaga en algo más claro y manejable.\n\n¿Qué situación concreta quieres ordenar y qué te gustaría poder aclarar o decidir primero?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué situación concreta quieres ordenar y qué te gustaría poder aclarar o decidir primero?",
+        "visible_response": "Parece que quieres transformar una situación todavía vaga en algo más claro y manejable.\n\n¿Qué situación concreta quieres ordenar y qué te gustaría poder aclarar o decidir primero?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "No hay una carencia material para presentar la iniciativa al comité; el diseño del experimento siguiente es posterior a esa presentación.",
+        "next_action": "STOP",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": "La iniciativa ya cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El siguiente paso para el objetivo declarado es presentarla al comité."
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede tratarse después de la decisión del comité.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede tratarse después de la decisión del comité."
+      },
+      "realized_visible": {
+        "presentation_mode": "SYNTHESIS_ONLY",
+        "visible_synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede tratarse después de la decisión del comité.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. El diseño del experimento siguiente puede tratarse después de la decisión del comité."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 1,
+      "internal": {
+        "selected_material_gap": "Falta la confirmación de gerencia sobre si existe una excepción al límite del plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Gerencia",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La decisión está condicionada por el plan anual y no puede resolverse sin saber si gerencia autoriza una excepción.",
+        "question": null,
+        "response": "La decisión está condicionada por el plan anual y no puede resolverse sin saber si gerencia autoriza una excepción. El siguiente paso es solicitar a gerencia esa confirmación."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La decisión está condicionada por el plan anual y no puede resolverse sin saber si gerencia autoriza una excepción.",
+        "visible_question": null,
+        "visible_response": "La decisión está condicionada por el plan anual y no puede resolverse sin saber si gerencia autoriza una excepción. El siguiente paso es solicitar a gerencia esa confirmación."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "No está confirmado quién asumirá la responsabilidad de mantener la implementación ni si tendrá capacidad para hacerlo.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La continuidad de una implementación pequeña parece depender principalmente de contar con una persona responsable y con tiempo disponible para sostenerla.",
+        "question": "¿Quién sería esa persona responsable y puede confirmar que tendrá capacidad para mantenerla durante el periodo previsto?",
+        "response": "La continuidad de una implementación pequeña parece depender principalmente de contar con una persona responsable y con tiempo disponible para sostenerla. ¿Quién sería esa persona responsable y puede confirmar que tendrá capacidad para mantenerla durante el periodo previsto?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Quién sería esa persona responsable y puede confirmar que tendrá capacidad para mantenerla durante el periodo previsto?",
+        "visible_response": "La continuidad de una implementación pequeña parece depender principalmente de contar con una persona responsable y con tiempo disponible para sostenerla. ¿Quién sería esa persona responsable y puede confirmar que tendrá capacidad para mantenerla durante el periodo previsto?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más ni quién tiene autoridad para establecer esa prioridad.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección y responsables del negocio",
+        "deferred_gaps": [
+          "No se conocen todavía las ideas concretas ni la información necesaria para compararlas."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para ordenar las ideas primero hay que acordar qué resultado importa más —por ejemplo, ingresos, clientes, reducción de riesgos o velocidad—. Esa definición debe venir de dirección o de los responsables del negocio; sin ella, cualquier orden sería arbitrario.",
+        "question": null,
+        "response": "El siguiente paso es pedir a dirección y a los responsables del negocio que indiquen qué resultado debe pesar más. Hasta contar con esa definición, no conviene ordenar las ideas."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para ordenar las ideas primero hay que acordar qué resultado importa más —por ejemplo, ingresos, clientes, reducción de riesgos o velocidad—. Esa definición debe venir de dirección o de los responsables del negocio; sin ella, cualquier orden sería arbitrario.",
+        "visible_question": null,
+        "visible_response": "El siguiente paso es pedir a dirección y a los responsables del negocio que indiquen qué resultado debe pesar más. Hasta contar con esa definición, no conviene ordenar las ideas."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Falta confirmar si habrá capacidad operativa asignada para sostener el lanzamiento; sin ella, la decisión de continuar no está respaldada.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección responsable de asignar capacidad operativa",
+        "deferred_gaps": [
+          "Alcance del lanzamiento",
+          "Recursos técnicos y presupuesto",
+          "Plan de soporte y métricas"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El punto crítico es que hoy no hay un equipo operativo para sostener el lanzamiento. Antes de continuar, la dirección debe confirmar que esa capacidad estará asignada; de lo contrario, no conviene avanzar este trimestre.",
+        "question": null,
+        "response": "El punto crítico es que hoy no hay un equipo operativo para sostener el lanzamiento. Antes de continuar, la dirección debe confirmar que esa capacidad estará asignada; de lo contrario, no conviene avanzar este trimestre."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El punto crítico es que hoy no hay un equipo operativo para sostener el lanzamiento. Antes de continuar, la dirección debe confirmar que esa capacidad estará asignada; de lo contrario, no conviene avanzar este trimestre.",
+        "visible_question": null,
+        "visible_response": "El punto crítico es que hoy no hay un equipo operativo para sostener el lanzamiento. Antes de continuar, la dirección debe confirmar que esa capacidad estará asignada; de lo contrario, no conviene avanzar este trimestre."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Causa principal de que los usuarios sigan usando plantillas manuales pese al ahorro de tiempo de la herramienta.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Si el uso de plantillas manuales se concentra en determinados equipos o situaciones.",
+          "Qué cambio permitiría sostener el ahorro en el trabajo cotidiano."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La herramienta parece aportar ahorro, pero ese beneficio no se mantiene porque las plantillas manuales siguen formando parte del trabajo. Para entender el motivo, hace falta distinguir si el problema es de confianza, encaje con ciertos casos, facilidad de uso o exigencias del proceso.",
+        "question": "¿Qué motivo concreto mencionan los usuarios para seguir usando las plantillas manuales?",
+        "response": "La herramienta parece aportar ahorro, pero ese beneficio no se mantiene porque las plantillas manuales siguen formando parte del trabajo. ¿Qué motivo concreto mencionan los usuarios para seguir usándolas?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué motivo concreto mencionan los usuarios para seguir usando las plantillas manuales?",
+        "visible_response": "La herramienta parece aportar ahorro, pero ese beneficio no se mantiene porque las plantillas manuales siguen formando parte del trabajo. ¿Qué motivo concreto mencionan los usuarios para seguir usándolas?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "La persona o instancia con autoridad formal para aprobar la entrada en operación",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién tiene la autoridad formal para aprobar su paso a operación.",
+        "question": "¿Qué persona o comité tiene la autoridad formal para confirmar ese paso?",
+        "response": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién tiene la autoridad formal para aprobar su paso a operación. ¿Qué persona o comité tiene esa autoridad?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién tiene la autoridad formal para aprobar su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El piloto ya cuenta con presupuesto y equipo; lo que falta para avanzar es confirmar quién tiene la autoridad formal para aprobar su paso a operación. ¿Qué persona o comité tiene esa autoridad?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Falta evidencia del valor concreto y del umbral mínimo que justificaría continuar.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Coste total de continuar y posibles riesgos."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La alta precisión y la gran reducción del tiempo son señales favorables, pero todavía no permiten saber si el beneficio compensa el coste de seguir.",
+        "question": "¿Qué resultado concreto tendría que mejorar y qué beneficio mínimo haría que mereciera la pena continuar?",
+        "response": "La alta precisión y la gran reducción del tiempo son señales favorables, pero todavía no permiten saber si el beneficio compensa el coste de seguir. ¿Qué resultado concreto tendría que mejorar y qué beneficio mínimo haría que mereciera la pena continuar?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado concreto tendría que mejorar y qué beneficio mínimo haría que mereciera la pena continuar?",
+        "visible_response": "La alta precisión y la gran reducción del tiempo son señales favorables, pero todavía no permiten saber si el beneficio compensa el coste de seguir. ¿Qué resultado concreto tendría que mejorar y qué beneficio mínimo haría que mereciera la pena continuar?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado considera prioritario la dirección, y la persona usuaria no tiene acceso a esa información.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección de la organización",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La propuesta no puede evaluarse todavía porque falta saber qué resultado debe priorizarse. Como nadie te lo ha comunicado, el siguiente paso es pedir a la dirección que establezca esa prioridad antes de continuar.",
+        "question": null,
+        "response": "La propuesta no puede evaluarse todavía porque falta saber qué resultado debe priorizarse. Como nadie te lo ha comunicado, el siguiente paso es pedir a la dirección que establezca esa prioridad antes de continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La propuesta no puede evaluarse todavía porque falta saber qué resultado debe priorizarse. Como nadie te lo ha comunicado, el siguiente paso es pedir a la dirección que establezca esa prioridad antes de continuar.",
+        "visible_question": null,
+        "visible_response": "La propuesta no puede evaluarse todavía porque falta saber qué resultado debe priorizarse. Como nadie te lo ha comunicado, el siguiente paso es pedir a la dirección que establezca esa prioridad antes de continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Faltan los responsables y criterios necesarios para definir el proveedor, la arquitectura y el flujo de trabajo.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsables de compras, arquitectura y operaciones del proceso",
+        "deferred_gaps": [
+          "Comparación concreta de proveedores",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La decisión de continuar ya está tomada. Lo que sigue es reunir a las áreas responsables para concretar el proveedor, la arquitectura y el workflow.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es involucrar a compras, arquitectura y operaciones para que definan conjuntamente el proveedor, la arquitectura y el workflow."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La decisión de continuar ya está tomada. Lo que sigue es reunir a las áreas responsables para concretar el proveedor, la arquitectura y el workflow.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente paso es involucrar a compras, arquitectura y operaciones para que definan conjuntamente el proveedor, la arquitectura y el workflow."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Faltan los tres alcances concretos y el criterio principal con el que dirección elegirá entre ellos.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Métricas y umbrales de éxito",
+          "Presupuesto disponible y restricciones",
+          "Dependencias externas y capacidad del equipo",
+          "Evidencia de los usuarios piloto"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ya están identificados los principales recursos y condicionantes; para llegar a una decisión este trimestre hay que precisar qué alternativas se compararán y qué debe priorizar dirección.",
+        "question": "¿Cuáles son los tres alcances concretos y qué resultado o restricción debe pesar más al elegir entre ellos?",
+        "response": "Ya están identificados los principales recursos y condicionantes; para llegar a una decisión este trimestre hay que precisar qué alternativas se compararán y qué debe priorizar dirección.\n\n¿Cuáles son los tres alcances concretos y qué resultado o restricción debe pesar más al elegir entre ellos?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Cuáles son los tres alcances concretos y qué resultado o restricción debe pesar más al elegir entre ellos?",
+        "visible_response": "Ya están identificados los principales recursos y condicionantes; para llegar a una decisión este trimestre hay que precisar qué alternativas se compararán y qué debe priorizar dirección.\n\n¿Cuáles son los tres alcances concretos y qué resultado o restricción debe pesar más al elegir entre ellos?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "El usuario no ha indicado qué situación quiere ordenar ni qué resultado necesita obtener.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Contexto de la situación",
+          "Resultado deseado",
+          "Urgencia o restricciones relevantes"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Puedo ayudarte a ponerlo en orden, pero todavía falta saber de qué se trata y qué necesitas conseguir.",
+        "question": "¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?",
+        "response": "Puedo ayudarte a ponerlo en orden, pero todavía falta saber de qué se trata y qué necesitas conseguir. ¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?",
+        "visible_response": "Puedo ayudarte a ponerlo en orden, pero todavía falta saber de qué se trata y qué necesitas conseguir. ¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Ninguna brecha material para presentar la iniciativa al comité; queda pendiente definir el experimento siguiente.",
+        "next_action": "ROUTE",
+        "routing_target": "Diseño del experimento siguiente",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. Lo pendiente pertenece a la fase posterior de definición del experimento.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité, con los elementos clave ya acordados. El siguiente paso es pasar a definir el experimento posterior."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa está lista para presentarse: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado. Lo pendiente pertenece a la fase posterior de definición del experimento.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité, con los elementos clave ya acordados. El siguiente paso es pasar a definir el experimento posterior."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 2,
+      "internal": {
+        "selected_material_gap": "Falta confirmación de gerencia sobre si existe una excepción al límite establecido por el plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Gerencia",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El plan anual marca el límite actual, y la posibilidad de avanzar depende de que gerencia confirme si puede autorizar una excepción.",
+        "question": null,
+        "response": "El plan anual marca el límite actual. Como avanzar depende de una posible excepción, hay que pedir a gerencia que confirme si puede autorizarla."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El plan anual marca el límite actual, y la posibilidad de avanzar depende de que gerencia confirme si puede autorizar una excepción.",
+        "visible_question": null,
+        "visible_response": "El plan anual marca el límite actual. Como avanzar depende de una posible excepción, hay que pedir a gerencia que confirme si puede autorizarla."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No está confirmado quién tendrá la responsabilidad y el tiempo para sostener la implementación pequeña.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsable operativo y patrocinador del área",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La intención de continuar está clara, pero la viabilidad depende de contar con una persona responsable y con capacidad para mantener la implementación.",
+        "question": null,
+        "response": "Antes de decidir, necesitamos que el área confirme quién asumirá la responsabilidad y qué tiempo podrá dedicarle. Con esa confirmación se podrá decidir si continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La intención de continuar está clara, pero la viabilidad depende de contar con una persona responsable y con capacidad para mantener la implementación.",
+        "visible_question": null,
+        "visible_response": "Antes de decidir, necesitamos que el área confirme quién asumirá la responsabilidad y qué tiempo podrá dedicarle. Con esa confirmación se podrá decidir si continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "No se conocen aún las ideas concretas ni la evidencia disponible sobre sus posibles resultados."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección; sin ese criterio, cualquier prioridad sería provisional.",
+        "question": "¿Qué resultado debe pesar más al decidir —por ejemplo, ingresos, reducción de costes, satisfacción del cliente, rapidez o cumplimiento— y cómo lo priorizaría la dirección frente a los demás?",
+        "response": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección; sin ese criterio, cualquier prioridad sería provisional.\n\n¿Qué resultado debe pesar más al decidir —por ejemplo, ingresos, reducción de costes, satisfacción del cliente, rapidez o cumplimiento— y cómo lo priorizaría la dirección frente a los demás?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado debe pesar más al decidir —por ejemplo, ingresos, reducción de costes, satisfacción del cliente, rapidez o cumplimiento— y cómo lo priorizaría la dirección frente a los demás?",
+        "visible_response": "Para ordenar las ideas, primero hay que aclarar qué resultado considera más importante la dirección; sin ese criterio, cualquier prioridad sería provisional.\n\n¿Qué resultado debe pesar más al decidir —por ejemplo, ingresos, reducción de costes, satisfacción del cliente, rapidez o cumplimiento— y cómo lo priorizaría la dirección frente a los demás?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No existe capacidad operativa confirmada para sostener el lanzamiento; falta una decisión organizacional sobre la asignación de un equipo responsable.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección responsable de asignar el equipo y la capacidad operativa del lanzamiento",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La continuidad del lanzamiento depende de contar con un equipo operativo que pueda sostenerlo durante este trimestre.",
+        "question": null,
+        "response": "No se puede confirmar que el lanzamiento pueda continuar mientras no se asigne y confirme un equipo operativo responsable. Esta confirmación debe venir de la dirección encargada de esa capacidad."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La continuidad del lanzamiento depende de contar con un equipo operativo que pueda sostenerlo durante este trimestre.",
+        "visible_question": null,
+        "visible_response": "No se puede confirmar que el lanzamiento pueda continuar mientras no se asigne y confirme un equipo operativo responsable. Esta confirmación debe venir de la dirección encargada de esa capacidad."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Causa principal por la que los usuarios siguen recurriendo a las plantillas manuales, especialmente si responden a una exigencia, riesgo percibido o necesidad que la herramienta no cubre.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Qué usuarios mantienen el uso manual y en qué momentos",
+          "Si existe una exigencia formal o una consecuencia por no usar las plantillas",
+          "Si el ahorro de tiempo se pierde por retrabajo o por falta de adopción"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La herramienta sí genera ahorro de tiempo, pero ese beneficio no se mantiene porque las plantillas manuales siguen cumpliendo una función importante para los usuarios. Para entender el problema, primero hay que identificar qué los lleva a volver a ellas.",
+        "question": "¿Qué les aporta la plantilla manual que la herramienta no les da —por ejemplo, cumplir una exigencia, reducir un riesgo o resolver un caso concreto— y en qué situaciones vuelven a usarla?",
+        "response": "La herramienta sí genera ahorro de tiempo, pero ese beneficio no se mantiene porque las plantillas manuales siguen cumpliendo una función importante para los usuarios. Para entender el problema, primero hay que identificar qué los lleva a volver a ellas.\n\n¿Qué les aporta la plantilla manual que la herramienta no les da —por ejemplo, cumplir una exigencia, reducir un riesgo o resolver un caso concreto— y en qué situaciones vuelven a usarla?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué les aporta la plantilla manual que la herramienta no les da —por ejemplo, cumplir una exigencia, reducir un riesgo o resolver un caso concreto— y en qué situaciones vuelven a usarla?",
+        "visible_response": "La herramienta sí genera ahorro de tiempo, pero ese beneficio no se mantiene porque las plantillas manuales siguen cumpliendo una función importante para los usuarios. Para entender el problema, primero hay que identificar qué los lleva a volver a ellas.\n\n¿Qué les aporta la plantilla manual que la herramienta no les da —por ejemplo, cumplir una exigencia, reducir un riesgo o resolver un caso concreto— y en qué situaciones vuelven a usarla?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No está identificado quién tiene autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "La persona o instancia con autoridad formal para aprobar el paso del piloto a operación",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo, pero falta identificar a la persona o instancia que puede autorizar su paso a operación.",
+        "question": null,
+        "response": "El piloto ya tiene presupuesto y equipo; lo que falta es identificar a la persona o instancia con autoridad formal para confirmar el paso a operación. Ese responsable debe señalarse antes de continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo, pero falta identificar a la persona o instancia que puede autorizar su paso a operación.",
+        "visible_question": null,
+        "visible_response": "El piloto ya tiene presupuesto y equipo; lo que falta es identificar a la persona o instancia con autoridad formal para confirmar el paso a operación. Ese responsable debe señalarse antes de continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Falta cuantificar el valor concreto que aportan la mayor precisión y el ahorro de tiempo, y compararlo con el umbral mínimo para justificar continuar.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Coste de continuar y posibles riesgos o condiciones para mantener el beneficio."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La mayor precisión y la reducción del tiempo parecen prometedoras, pero aún no está claro si se traducen en un beneficio suficiente para justificar seguir.",
+        "question": "¿Qué beneficio concreto esperas obtener y cuál sería el mínimo necesario para considerar que merece la pena continuar?",
+        "response": "La mayor precisión y la reducción del tiempo parecen prometedoras, pero aún no está claro si se traducen en un beneficio suficiente para justificar seguir.\n\n¿Qué beneficio concreto esperas obtener y cuál sería el mínimo necesario para considerar que merece la pena continuar?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué beneficio concreto esperas obtener y cuál sería el mínimo necesario para considerar que merece la pena continuar?",
+        "visible_response": "La mayor precisión y la reducción del tiempo parecen prometedoras, pero aún no está claro si se traducen en un beneficio suficiente para justificar seguir.\n\n¿Qué beneficio concreto esperas obtener y cuál sería el mínimo necesario para considerar que merece la pena continuar?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Falta conocer el resultado que la dirección considera prioritario; la persona usuaria confirma que no tiene esa información y que no le ha sido comunicada.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o responsable institucional que define las prioridades",
+        "deferred_gaps": [
+          "Aclarar el contenido y los beneficios de la propuesta una vez que se confirme la prioridad institucional.",
+          "Comparar la propuesta con otras alternativas después de conocer el resultado prioritario."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La propuesta no puede valorarse todavía porque falta saber qué resultado debe priorizar la organización.",
+        "question": null,
+        "response": "La propuesta no puede valorarse todavía porque falta saber qué resultado considera prioritario la organización. Conviene pedir esa definición a la dirección o a la persona responsable de establecer prioridades; con esa respuesta podremos determinar el siguiente paso."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La propuesta no puede valorarse todavía porque falta saber qué resultado debe priorizar la organización.",
+        "visible_question": null,
+        "visible_response": "La propuesta no puede valorarse todavía porque falta saber qué resultado considera prioritario la organización. Conviene pedir esa definición a la dirección o a la persona responsable de establecer prioridades; con esa respuesta podremos determinar el siguiente paso."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "La decisión de continuar ya está tomada; falta que los responsables correspondientes definan proveedor, arquitectura y workflow.",
+        "next_action": "ROUTE",
+        "routing_target": "Responsables de arquitectura, compras/proveedores y operaciones",
+        "deferred_gaps": [
+          "Criterios para elegir el proveedor",
+          "Definición de la arquitectura",
+          "Diseño del workflow"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Continuar ya está decidido. Lo que queda no es evaluar si seguir, sino concretar el proveedor, la arquitectura y el workflow con los responsables técnicos y operativos.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. El siguiente paso es pasar el trabajo a los responsables de arquitectura, compras/proveedores y operaciones para que concreten esas tres definiciones; todavía no hace falta diseñarlas aquí."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Continuar ya está decidido. Lo que queda no es evaluar si seguir, sino concretar el proveedor, la arquitectura y el workflow con los responsables técnicos y operativos.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. El siguiente paso es pasar el trabajo a los responsables de arquitectura, compras/proveedores y operaciones para que concreten esas tres definiciones; todavía no hace falta diseñarlas aquí."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "No está formulada la decisión concreta que debe tomarse ni el criterio principal para escoger entre los tres alcances.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Detalles comparables de los tres alcances",
+          "Métricas y umbrales de éxito",
+          "Restricciones de presupuesto, equipo y dependencias externas",
+          "Nivel de compromiso del sponsor y de los usuarios piloto"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ya existen los insumos básicos —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía falta convertirlos en una elección explícita para este trimestre.",
+        "question": "¿Qué decisión exacta debe tomar la dirección este trimestre y cuál es el criterio principal para elegir entre los tres alcances?",
+        "response": "Ya existen los insumos básicos —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía falta convertirlos en una elección explícita para este trimestre.\n\n¿Qué decisión exacta debe tomar la dirección este trimestre y cuál es el criterio principal para elegir entre los tres alcances?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué decisión exacta debe tomar la dirección este trimestre y cuál es el criterio principal para elegir entre los tres alcances?",
+        "visible_response": "Ya existen los insumos básicos —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía falta convertirlos en una elección explícita para este trimestre.\n\n¿Qué decisión exacta debe tomar la dirección este trimestre y cuál es el criterio principal para elegir entre los tres alcances?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Falta conocer cuál es la situación concreta que la persona quiere ordenar.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Qué resultado necesita obtener",
+          "Qué opciones o dificultades existen"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Puedo ayudarte a ponerlo en orden, pero todavía no sé qué situación tienes delante.",
+        "question": "¿Qué está pasando y qué te gustaría poder aclarar primero?",
+        "response": "Puedo ayudarte a ponerlo en orden, pero todavía no sé qué situación tienes delante. ¿Qué está pasando y qué te gustaría poder aclarar primero?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué está pasando y qué te gustaría poder aclarar primero?",
+        "visible_response": "Puedo ayudarte a ponerlo en orden, pero todavía no sé qué situación tienes delante. ¿Qué está pasando y qué te gustaría poder aclarar primero?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Ninguno para presentar la iniciativa al comité; el diseño del experimento siguiente es posterior a esa presentación.",
+        "next_action": "ROUTE",
+        "routing_target": "Comité",
+        "deferred_gaps": [
+          "Diseño del experimento siguiente"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa parece lista para llevar al comité: ya cuenta con validación, responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El siguiente paso es presentarla al comité; el diseño del experimento puede tratarse después o como seguimiento.",
+        "question": null,
+        "response": "La iniciativa parece lista para llevar al comité: ya cuenta con validación, responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El siguiente paso es presentarla al comité; el diseño del experimento puede tratarse después o como seguimiento."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa parece lista para llevar al comité: ya cuenta con validación, responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El siguiente paso es presentarla al comité; el diseño del experimento puede tratarse después o como seguimiento.",
+        "visible_question": null,
+        "visible_response": "La iniciativa parece lista para llevar al comité: ya cuenta con validación, responsable, presupuesto, capacidad disponible y un criterio de decisión acordado. El siguiente paso es presentarla al comité; el diseño del experimento puede tratarse después o como seguimiento."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 3,
+      "internal": {
+        "selected_material_gap": "Falta confirmar si gerencia autoriza una excepción al límite del plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Gerencia",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El plan anual limita las opciones y la decisión depende de saber si gerencia puede autorizar una excepción.",
+        "question": null,
+        "response": "La siguiente acción es pedir a gerencia que confirme si existe y puede autorizar una excepción al límite del plan anual."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El plan anual limita las opciones y la decisión depende de saber si gerencia puede autorizar una excepción.",
+        "visible_question": null,
+        "visible_response": "La siguiente acción es pedir a gerencia que confirme si existe y puede autorizar una excepción al límite del plan anual."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Falta confirmar un responsable concreto y su capacidad disponible para sostener la implementación pequeña.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La continuidad parece depender de contar con una persona o equipo que asuma explícitamente el mantenimiento de la implementación pequeña; sin esa capacidad, seguir ahora podría dejarla sin sostén.",
+        "question": "¿Quién sería el responsable y tiene capacidad confirmada para mantenerla durante el periodo previsto?",
+        "response": "La continuidad parece depender de contar con una persona o equipo que asuma explícitamente el mantenimiento de la implementación pequeña; sin esa capacidad, seguir ahora podría dejarla sin sostén.\n\n¿Quién sería el responsable y tiene capacidad confirmada para mantenerla durante el periodo previsto?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Quién sería el responsable y tiene capacidad confirmada para mantenerla durante el periodo previsto?",
+        "visible_response": "La continuidad parece depender de contar con una persona o equipo que asuma explícitamente el mantenimiento de la implementación pequeña; sin esa capacidad, seguir ahora podría dejarla sin sostén.\n\n¿Quién sería el responsable y tiene capacidad confirmada para mantenerla durante el periodo previsto?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más al comparar las ideas.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para priorizar las ideas, primero hace falta acordar qué resultado considera más importante la dirección.",
+        "question": "¿Qué resultado debería pesar más en la decisión: aumentar ingresos, reducir costes, disminuir riesgos, acelerar la entrega u otro?",
+        "response": "Para priorizar las ideas, primero hace falta acordar qué resultado considera más importante la dirección.\n\n¿Qué resultado debería pesar más en la decisión: aumentar ingresos, reducir costes, disminuir riesgos, acelerar la entrega u otro?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado debería pesar más en la decisión: aumentar ingresos, reducir costes, disminuir riesgos, acelerar la entrega u otro?",
+        "visible_response": "Para priorizar las ideas, primero hace falta acordar qué resultado considera más importante la dirección.\n\n¿Qué resultado debería pesar más en la decisión: aumentar ingresos, reducir costes, disminuir riesgos, acelerar la entrega u otro?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "No existe capacidad operativa asignada para sostener el lanzamiento; falta confirmación organizativa sobre responsables y recursos.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del lanzamiento y dirección responsable de asignar el equipo operativo",
+        "deferred_gaps": [
+          "Criterios concretos para decidir si el lanzamiento puede continuar una vez confirmada la capacidad operativa."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La falta de un equipo operativo para sostener el lanzamiento impide confirmar que pueda continuar de forma responsable.",
+        "question": null,
+        "response": "La falta de un equipo operativo para sostener el lanzamiento impide confirmar que pueda continuar de forma responsable. El siguiente paso es que el patrocinador y la dirección responsable confirmen si asignarán ese equipo; hasta entonces, no debería avanzarse con el lanzamiento."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La falta de un equipo operativo para sostener el lanzamiento impide confirmar que pueda continuar de forma responsable.",
+        "visible_question": null,
+        "visible_response": "La falta de un equipo operativo para sostener el lanzamiento impide confirmar que pueda continuar de forma responsable. El siguiente paso es que el patrocinador y la dirección responsable confirmen si asignarán ese equipo; hasta entonces, no debería avanzarse con el lanzamiento."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "No se sabe qué lleva a los usuarios a seguir usando las plantillas manuales pese a que la herramienta ahorra tiempo.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "No está claro quién puede cambiar las prácticas o requisitos que mantienen el uso de plantillas manuales.",
+          "No hay evidencia sobre si el ahorro observado se mantiene en el trabajo cotidiano."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La herramienta parece funcionar y generar ahorro, pero ese beneficio no se sostiene porque el uso de las plantillas manuales continúa. Para entender la causa, necesitamos distinguir si se debe a requisitos del proceso, falta de confianza, casos que la herramienta no cubre u otro motivo.",
+        "question": "¿Qué motivo concreto dan los usuarios para seguir usando las plantillas manuales?",
+        "response": "La herramienta parece funcionar y generar ahorro, pero ese beneficio no se sostiene porque el uso de las plantillas manuales continúa. Para entender la causa, necesitamos distinguir si se debe a requisitos del proceso, falta de confianza, casos que la herramienta no cubre u otro motivo.\n\n¿Qué motivo concreto dan los usuarios para seguir usando las plantillas manuales?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué motivo concreto dan los usuarios para seguir usando las plantillas manuales?",
+        "visible_response": "La herramienta parece funcionar y generar ahorro, pero ese beneficio no se sostiene porque el uso de las plantillas manuales continúa. Para entender la causa, necesitamos distinguir si se debe a requisitos del proceso, falta de confianza, casos que la herramienta no cubre u otro motivo.\n\n¿Qué motivo concreto dan los usuarios para seguir usando las plantillas manuales?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "No está identificado el rol o la persona con autoridad para aprobar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "La autoridad organizativa responsable de aprobar el paso a operación",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para definir el siguiente paso es confirmar quién tiene la autoridad para decidir su entrada en operación.",
+        "question": null,
+        "response": "Hace falta que la organización confirme quién es la persona o el órgano responsable de aprobar el paso del piloto a operación. Esa confirmación debe venir del patrocinador del piloto o de la autoridad operativa correspondiente."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta para definir el siguiente paso es confirmar quién tiene la autoridad para decidir su entrada en operación.",
+        "visible_question": null,
+        "visible_response": "Hace falta que la organización confirme quién es la persona o el órgano responsable de aprobar el paso del piloto a operación. Esa confirmación debe venir del patrocinador del piloto o de la autoridad operativa correspondiente."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Falta cuantificar el valor concreto que aporta la mejora en precisión y tiempo, comparándolo con el coste de continuar.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Coste total de mantener o ampliar la solución",
+          "Riesgos y condiciones para sostener el rendimiento"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La precisión y el ahorro de tiempo son prometedores, pero todavía no muestran por sí solos que continuar aporte suficiente valor.",
+        "question": "¿Qué resultado concreto mejora gracias a esto y cuánto valor económico u operativo representa frente al coste de seguir adelante?",
+        "response": "La precisión y el ahorro de tiempo son prometedores, pero todavía no muestran por sí solos que continuar aporte suficiente valor.\n\n¿Qué resultado concreto mejora gracias a esto y cuánto valor económico u operativo representa frente al coste de seguir adelante?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué resultado concreto mejora gracias a esto y cuánto valor económico u operativo representa frente al coste de seguir adelante?",
+        "visible_response": "La precisión y el ahorro de tiempo son prometedores, pero todavía no muestran por sí solos que continuar aporte suficiente valor.\n\n¿Qué resultado concreto mejora gracias a esto y cuánto valor económico u operativo representa frente al coste de seguir adelante?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Falta conocer el resultado que la dirección considera prioritario; el usuario confirma que no ha recibido esa información.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o patrocinador de la propuesta",
+        "deferred_gaps": [
+          "Criterios secundarios para comparar la propuesta una vez confirmado el resultado principal."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La propuesta no puede priorizarse todavía porque falta saber qué resultado valora más la dirección. El siguiente paso es pedir a la dirección o al patrocinador que confirme explícitamente el resultado principal que debe guiar la decisión.",
+        "question": null,
+        "response": "La propuesta no puede priorizarse todavía porque falta saber qué resultado valora más la dirección. Pide a la dirección o al patrocinador que confirme explícitamente el resultado principal que debe guiar la decisión; con esa respuesta se podrá continuar."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La propuesta no puede priorizarse todavía porque falta saber qué resultado valora más la dirección. El siguiente paso es pedir a la dirección o al patrocinador que confirme explícitamente el resultado principal que debe guiar la decisión.",
+        "visible_question": null,
+        "visible_response": "La propuesta no puede priorizarse todavía porque falta saber qué resultado valora más la dirección. Pide a la dirección o al patrocinador que confirme explícitamente el resultado principal que debe guiar la decisión; con esa respuesta se podrá continuar."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "La decisión de continuar ya está resuelta; falta asignar la definición de proveedor, arquitectura y workflow a los responsables correspondientes.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsables de compras, arquitectura y operaciones",
+        "deferred_gaps": [
+          "Criterios para elegir el proveedor",
+          "Requisitos de arquitectura",
+          "Diseño del workflow"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ya está resuelto que se continuará. Lo que sigue es encargar la definición del proveedor, la arquitectura y el workflow a las áreas responsables, antes de elegir una solución concreta.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada. Ahora corresponde pasar el tema a compras, arquitectura y operaciones para que definan conjuntamente el proveedor, los requisitos técnicos y el workflow. No hace falta decidir esos detalles en este momento."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Ya está resuelto que se continuará. Lo que sigue es encargar la definición del proveedor, la arquitectura y el workflow a las áreas responsables, antes de elegir una solución concreta.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada. Ahora corresponde pasar el tema a compras, arquitectura y operaciones para que definan conjuntamente el proveedor, los requisitos técnicos y el workflow. No hace falta decidir esos detalles en este momento."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Falta definir qué decisión concreta debe tomar la dirección y cómo se comparan los tres alcances.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Detalles comparables de cada alcance: resultado esperado, presupuesto, dependencias y riesgos.",
+          "Criterio no negociable para decidir este trimestre.",
+          "Nivel de compromiso disponible del sponsor y del equipo."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ya existen varios elementos para decidir —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no está claro qué debe aprobar la dirección ni qué distingue a cada alcance.",
+        "question": "¿Qué tres alcances se están considerando y cuál es el criterio principal para elegir entre ellos este trimestre (por ejemplo, impacto, coste, plazo o reducción de riesgo)?",
+        "response": "Ya existen varios elementos para decidir —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no está claro qué debe aprobar la dirección ni qué distingue a cada alcance.\n\n¿Qué tres alcances se están considerando y cuál es el criterio principal para elegir entre ellos este trimestre (por ejemplo, impacto, coste, plazo o reducción de riesgo)?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué tres alcances se están considerando y cuál es el criterio principal para elegir entre ellos este trimestre (por ejemplo, impacto, coste, plazo o reducción de riesgo)?",
+        "visible_response": "Ya existen varios elementos para decidir —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no está claro qué debe aprobar la dirección ni qué distingue a cada alcance.\n\n¿Qué tres alcances se están considerando y cuál es el criterio principal para elegir entre ellos este trimestre (por ejemplo, impacto, coste, plazo o reducción de riesgo)?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "El objetivo concreto o la situación específica que la persona quiere ordenar no está definido.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Qué resultado espera obtener al ordenar la situación.",
+          "Qué hechos, opciones o dificultades componen el problema."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Parece que quieres poner en claro una situación, pero todavía no sé cuál es el asunto central ni qué te gustaría conseguir.",
+        "question": "¿Qué situación concreta quieres ordenar y qué te gustaría poder decidir o entender sobre ella?",
+        "response": "Parece que quieres poner en claro una situación, pero todavía no sé cuál es el asunto central ni qué te gustaría conseguir.\n\n¿Qué situación concreta quieres ordenar y qué te gustaría poder decidir o entender sobre ella?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué situación concreta quieres ordenar y qué te gustaría poder decidir o entender sobre ella?",
+        "visible_response": "Parece que quieres poner en claro una situación, pero todavía no sé cuál es el asunto central ni qué te gustaría conseguir.\n\n¿Qué situación concreta quieres ordenar y qué te gustaría poder decidir o entender sobre ella?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Diseño del experimento siguiente",
+        "next_action": "ROUTE",
+        "routing_target": "Diseño del experimento siguiente",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa está lista para presentarse al comité: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. El único pendiente es pasar al diseño del experimento siguiente."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa está lista para presentarse al comité: cuenta con validación, responsable, presupuesto, capacidad y un criterio de decisión acordado.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité. El único pendiente es pasar al diseño del experimento siguiente."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 4,
+      "internal": {
+        "selected_material_gap": "Confirmación de si gerencia autoriza una excepción al límite del plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Gerencia",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La decisión está limitada por el plan anual y depende de una autorización que sólo gerencia puede confirmar.",
+        "question": null,
+        "response": "La decisión está limitada por el plan anual y sólo gerencia puede confirmar si existe una excepción. El siguiente paso es solicitar esa confirmación explícita; hasta recibirla, no conviene cerrar la decisión."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La decisión está limitada por el plan anual y depende de una autorización que sólo gerencia puede confirmar.",
+        "visible_question": null,
+        "visible_response": "La decisión está limitada por el plan anual y sólo gerencia puede confirmar si existe una excepción. El siguiente paso es solicitar esa confirmación explícita; hasta recibirla, no conviene cerrar la decisión."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-01",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No está confirmado quién asumirá la responsabilidad operativa ni si tendrá capacidad para sostener la implementación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsable operativo y liderazgo del área",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La continuidad de la implementación pequeña depende principalmente de contar con una persona responsable que pueda mantenerla después del inicio.",
+        "question": "¿Quién asumiría esa responsabilidad y puede confirmar que tendrá tiempo y respaldo para sostenerla?",
+        "response": "La continuidad de la implementación pequeña depende principalmente de contar con una persona responsable que pueda mantenerla después del inicio. Necesitamos confirmarlo con el responsable operativo y el liderazgo del área: ¿quién asumiría esa responsabilidad y puede confirmar que tendrá tiempo y respaldo para sostenerla?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La continuidad de la implementación pequeña depende principalmente de contar con una persona responsable que pueda mantenerla después del inicio.",
+        "visible_question": null,
+        "visible_response": "La continuidad de la implementación pequeña depende principalmente de contar con una persona responsable que pueda mantenerla después del inicio. Necesitamos confirmarlo con el responsable operativo y el liderazgo del área: ¿quién asumiría esa responsabilidad y puede confirmar que tendrá tiempo y respaldo para sostenerla?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-02",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No está definido qué resultado debe pesar más al priorizar las ideas.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección u órgano responsable de fijar las prioridades",
+        "deferred_gaps": [
+          "Criterios para comparar las ideas",
+          "Información sobre beneficios, costes y riesgos de cada idea"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Para saber qué merece prioridad, primero hace falta que la dirección aclare qué resultado quiere proteger o maximizar.",
+        "question": "¿Qué resultado debe pesar más para la dirección: impacto esperado, urgencia, ahorro, reducción de riesgos u otro?",
+        "response": "Para saber qué merece prioridad, primero hace falta que la dirección aclare qué resultado quiere proteger o maximizar. ¿Qué resultado debe pesar más para la dirección: impacto esperado, urgencia, ahorro, reducción de riesgos u otro?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Para saber qué merece prioridad, primero hace falta que la dirección aclare qué resultado quiere proteger o maximizar.",
+        "visible_question": null,
+        "visible_response": "Para saber qué merece prioridad, primero hace falta que la dirección aclare qué resultado quiere proteger o maximizar. ¿Qué resultado debe pesar más para la dirección: impacto esperado, urgencia, ahorro, reducción de riesgos u otro?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-03",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "Falta confirmar la disponibilidad y asignación de un equipo operativo capaz de sostener el lanzamiento.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Liderazgo y operaciones",
+        "deferred_gaps": [
+          "Alcance exacto de la operación requerida",
+          "Fecha y condiciones concretas del lanzamiento"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Con la información disponible, el lanzamiento no está en condiciones de continuar: no hay un equipo operativo para sostenerlo. La decisión depende de que liderazgo y operaciones confirmen una asignación real de personal antes del lanzamiento.",
+        "question": null,
+        "response": "Con la información disponible, el lanzamiento no está en condiciones de continuar: no hay un equipo operativo para sostenerlo. La decisión debe pasar a liderazgo y operaciones para que confirmen una asignación real de personal antes del lanzamiento."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "Con la información disponible, el lanzamiento no está en condiciones de continuar: no hay un equipo operativo para sostenerlo. La decisión depende de que liderazgo y operaciones confirmen una asignación real de personal antes del lanzamiento.",
+        "visible_question": null,
+        "visible_response": "Con la información disponible, el lanzamiento no está en condiciones de continuar: no hay un equipo operativo para sostenerlo. La decisión debe pasar a liderazgo y operaciones para que confirmen una asignación real de personal antes del lanzamiento."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-04",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No está claro por qué los usuarios siguen usando las plantillas manuales: si es por un requisito del proceso, por una necesidad que la herramienta no cubre o por hábito/preferencia.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Quién decide qué herramienta debe usarse y cómo se mide el ahorro sostenido.",
+          "En qué situaciones concretas se abandona la herramienta y se vuelve a la plantilla manual."
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La herramienta demuestra que puede ahorrar tiempo, pero ese beneficio no se mantiene porque las plantillas manuales siguen formando parte del trabajo. Para entender la causa, primero hay que distinguir entre una obligación del proceso y una elección de los usuarios.",
+        "question": "¿Las plantillas manuales se siguen usando porque algún requisito de aprobación, auditoría o formato las hace obligatorias, o porque los usuarios las prefieren aunque no sean necesarias?",
+        "response": "La herramienta demuestra que puede ahorrar tiempo, pero ese beneficio no se mantiene porque las plantillas manuales siguen formando parte del trabajo. Para entender la causa, primero hay que distinguir entre una obligación del proceso y una elección de los usuarios.\n\n¿Las plantillas manuales se siguen usando porque algún requisito de aprobación, auditoría o formato las hace obligatorias, o porque los usuarios las prefieren aunque no sean necesarias?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Las plantillas manuales se siguen usando porque algún requisito de aprobación, auditoría o formato las hace obligatorias, o porque los usuarios las prefieren aunque no sean necesarias?",
+        "visible_response": "La herramienta demuestra que puede ahorrar tiempo, pero ese beneficio no se mantiene porque las plantillas manuales siguen formando parte del trabajo. Para entender la causa, primero hay que distinguir entre una obligación del proceso y una elección de los usuarios.\n\n¿Las plantillas manuales se siguen usando porque algún requisito de aprobación, auditoría o formato las hace obligatorias, o porque los usuarios las prefieren aunque no sean necesarias?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-05",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No está identificado el responsable con autoridad para autorizar el paso del piloto a operación.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Patrocinador del piloto y responsable de operaciones",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta es que la organización nombre a una persona con autoridad para confirmar el paso a operación.",
+        "question": "¿Quién es el patrocinador del piloto o responsable de operaciones que debe asumir esa confirmación?",
+        "response": "El piloto ya cuenta con presupuesto y equipo; lo que falta es que la organización nombre a una persona con autoridad para confirmar el paso a operación. ¿Quién es el patrocinador del piloto o responsable de operaciones que debe asumir esa confirmación?"
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "El piloto ya cuenta con presupuesto y equipo; lo que falta es que la organización nombre a una persona con autoridad para confirmar el paso a operación.",
+        "visible_question": null,
+        "visible_response": "El piloto ya cuenta con presupuesto y equipo; lo que falta es que la organización nombre a una persona con autoridad para confirmar el paso a operación. ¿Quién es el patrocinador del piloto o responsable de operaciones que debe asumir esa confirmación?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-06",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "Falta cuantificar si el beneficio obtenido justifica el coste y el esfuerzo de continuar.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Coste total de mantener o ampliar la solución",
+          "Adopción y sostenibilidad del beneficio"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La precisión y el tiempo mejoran claramente, pero aún no sabemos si ese beneficio es suficientemente valioso para justificar seguir adelante.",
+        "question": "¿Qué ahorro o beneficio económico u operativo concreto genera esta mejora, y supera el coste previsto de continuar?",
+        "response": "La precisión y el tiempo mejoran claramente, pero aún no sabemos si ese beneficio es suficientemente valioso para justificar seguir adelante. ¿Qué ahorro o beneficio económico u operativo concreto genera esta mejora, y supera el coste previsto de continuar?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué ahorro o beneficio económico u operativo concreto genera esta mejora, y supera el coste previsto de continuar?",
+        "visible_response": "La precisión y el tiempo mejoran claramente, pero aún no sabemos si ese beneficio es suficientemente valioso para justificar seguir adelante. ¿Qué ahorro o beneficio económico u operativo concreto genera esta mejora, y supera el coste previsto de continuar?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-07",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "No se ha comunicado qué resultado considera prioritario la dirección.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Dirección o responsable de la decisión",
+        "deferred_gaps": [
+          "Criterios para comparar la propuesta con otras prioridades",
+          "Información necesaria para valorar la propuesta una vez definido el resultado prioritario"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La propuesta no puede priorizarse todavía porque no está claro qué resultado quiere priorizar la dirección. El siguiente paso es pedir esa definición a dirección o a la persona responsable de decidir; hasta entonces, conviene dejar la evaluación en espera.",
+        "question": null,
+        "response": "La propuesta no puede priorizarse todavía porque no está claro qué resultado quiere priorizar la dirección. El siguiente paso es pedir esa definición a dirección o a la persona responsable de decidir; hasta entonces, conviene dejar la evaluación en espera."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La propuesta no puede priorizarse todavía porque no está claro qué resultado quiere priorizar la dirección. El siguiente paso es pedir esa definición a dirección o a la persona responsable de decidir; hasta entonces, conviene dejar la evaluación en espera.",
+        "visible_question": null,
+        "visible_response": "La propuesta no puede priorizarse todavía porque no está claro qué resultado quiere priorizar la dirección. El siguiente paso es pedir esa definición a dirección o a la persona responsable de decidir; hasta entonces, conviene dejar la evaluación en espera."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-08",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "La decisión de continuar está resuelta; aún no están asignados los responsables para definir proveedor, arquitectura y workflow.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "Responsables de compras, arquitectura y operaciones",
+        "deferred_gaps": [
+          "Definición del proveedor",
+          "Definición de la arquitectura",
+          "Definición del workflow"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La decisión de continuar ya está tomada, así que no hace falta reabrirla. El siguiente paso es encargar la definición de proveedor, arquitectura y workflow a los responsables correspondientes, sin diseñar todavía esos elementos aquí.",
+        "question": null,
+        "response": "La decisión de continuar ya está tomada, así que no hace falta reabrirla. El siguiente paso es encargar la definición de proveedor, arquitectura y workflow a los responsables de compras, arquitectura y operaciones, sin diseñar todavía esos elementos aquí."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La decisión de continuar ya está tomada, así que no hace falta reabrirla. El siguiente paso es encargar la definición de proveedor, arquitectura y workflow a los responsables correspondientes, sin diseñar todavía esos elementos aquí.",
+        "visible_question": null,
+        "visible_response": "La decisión de continuar ya está tomada, así que no hace falta reabrirla. El siguiente paso es encargar la definición de proveedor, arquitectura y workflow a los responsables de compras, arquitectura y operaciones, sin diseñar todavía esos elementos aquí."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-09",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "Faltan los tres alcances concretos y el criterio con el que dirección elegirá entre ellos este trimestre.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [
+          "Resultados y calidad de las métricas",
+          "Presupuesto disponible por alcance",
+          "Disponibilidad real del equipo",
+          "Compromiso del sponsor",
+          "Evidencia de los usuarios piloto",
+          "Dependencias externas y sus fechas"
+        ],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Ya están identificados varios insumos importantes —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no se puede traducir ese contexto en una elección porque no están definidos los alcances que se compararán ni cómo se decidirá entre ellos.",
+        "question": "¿Cuáles son exactamente los tres alcances que se pueden ejecutar y qué criterio debe priorizar dirección para elegir uno este trimestre (por ejemplo, impacto, coste, plazo o riesgo)?",
+        "response": "Ya están identificados varios insumos importantes —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no se puede traducir ese contexto en una elección porque no están definidos los alcances que se compararán ni cómo se decidirá entre ellos.\n\n¿Cuáles son exactamente los tres alcances que se pueden ejecutar y qué criterio debe priorizar dirección para elegir uno este trimestre (por ejemplo, impacto, coste, plazo o riesgo)?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Cuáles son exactamente los tres alcances que se pueden ejecutar y qué criterio debe priorizar dirección para elegir uno este trimestre (por ejemplo, impacto, coste, plazo o riesgo)?",
+        "visible_response": "Ya están identificados varios insumos importantes —métricas, presupuesto, sponsor, equipo, usuarios piloto y dependencias—, pero todavía no se puede traducir ese contexto en una elección porque no están definidos los alcances que se compararán ni cómo se decidirá entre ellos.\n\n¿Cuáles son exactamente los tres alcances que se pueden ejecutar y qué criterio debe priorizar dirección para elegir uno este trimestre (por ejemplo, impacto, coste, plazo o riesgo)?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-10",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "La situación concreta y el resultado que la persona quiere obtener al ordenarla no están definidos.",
+        "next_action": "ASK",
+        "routing_target": null,
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "Puedo ayudarte a darle forma, pero primero necesito ubicar qué está pasando y para qué quieres ordenarlo.",
+        "question": "¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?",
+        "response": "Puedo ayudarte a darle forma, pero primero necesito ubicar qué está pasando y para qué quieres ordenarlo.\n\n¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?"
+      },
+      "realized_visible": {
+        "presentation_mode": "DIRECT_QUESTION",
+        "visible_synthesis": null,
+        "visible_question": "¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?",
+        "visible_response": "Puedo ayudarte a darle forma, pero primero necesito ubicar qué está pasando y para qué quieres ordenarlo.\n\n¿Qué situación quieres ordenar y qué te gustaría aclarar o decidir sobre ella?"
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-11",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "Diseño del experimento siguiente",
+        "next_action": "ROUTE",
+        "routing_target": "Equipo responsable de diseñar el experimento siguiente",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La iniciativa parece lista para presentarse al comité: ya cuenta con validación, responsable, presupuesto, capacidad y un criterio acordado para decidir. Lo pendiente es preparar el experimento siguiente.",
+        "question": null,
+        "response": "La iniciativa está lista para presentarse al comité. Derivo la preparación del experimento siguiente al equipo responsable; no hace falta resolver nada más para la presentación."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La iniciativa parece lista para presentarse al comité: ya cuenta con validación, responsable, presupuesto, capacidad y un criterio acordado para decidir. Lo pendiente es preparar el experimento siguiente.",
+        "visible_question": null,
+        "visible_response": "La iniciativa está lista para presentarse al comité. Derivo la preparación del experimento siguiente al equipo responsable; no hace falta resolver nada más para la presentación."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    },
+    {
+      "case_id": "CF-12",
+      "repeat_index": 5,
+      "internal": {
+        "selected_material_gap": "Falta confirmar si gerencia autoriza una excepción al límite establecido por el plan anual.",
+        "next_action": "REQUIRE_ORGANIZATIONAL_INPUT",
+        "routing_target": "gerencia",
+        "deferred_gaps": [],
+        "stop_rationale": null
+      },
+      "original_visible": {
+        "synthesis": "La decisión está condicionada por el límite del plan anual y por la autoridad de gerencia para aprobar una excepción.",
+        "question": null,
+        "response": "La decisión depende de confirmar si gerencia puede autorizar una excepción al límite del plan anual. El siguiente paso es solicitar esa confirmación a gerencia; hasta entonces no puede determinarse cómo proceder."
+      },
+      "realized_visible": {
+        "presentation_mode": "ROUTE_MESSAGE",
+        "visible_synthesis": "La decisión está condicionada por el límite del plan anual y por la autoridad de gerencia para aprobar una excepción.",
+        "visible_question": null,
+        "visible_response": "La decisión depende de confirmar si gerencia puede autorizar una excepción al límite del plan anual. El siguiente paso es solicitar esa confirmación a gerencia; hasta entonces no puede determinarse cómo proceder."
+      },
+      "reasoning_regression": false,
+      "execution": {
+        "validation_status": "VALID_OUTPUT",
+        "schema_errors": []
+      }
+    }
+  ]
+}
