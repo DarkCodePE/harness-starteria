@@ -32,7 +32,7 @@ Portfolio Lead does not execute Steps, does not replace Initiative Core, and doe
 Use this order when documents disagree:
 
 ```text
-Core Contract
+Core v0.2 factual
 -> Authority / approved ADRs
 -> Experience Contracts
 -> Agent/Skill Contracts
@@ -47,13 +47,15 @@ Important:
 - Target candidates are not automatically authority.
 - Current implementation does not invalidate higher authority.
 - Implementation prompts are historical execution aids, not source of truth.
+- Core v0.3 is an external reconciliation candidate only. Candidate gaps do
+  not authorize implementation without ADR, original evidence and re-test.
 - The repo may contain historical runtime folders; they do not authorize product evolution by themselves.
 
 Primary authority map:
 
 - [Starteria Authority](../STARTERIA_AUTHORITY.md)
 - [Current State](../../CURRENT_STATE.md)
-- [Core Logic Contract](../core/STARTERIA_CORE_LOGIC_CONTRACT.md)
+- [Core Logic Contract](../../doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md) — factual v0.2, por validar
 
 ## C. Current Implementation Status
 
@@ -68,10 +70,14 @@ Primary authority map:
 | Provisional Structuring | GO |
 | Human Material Review | GO |
 | PortfolioReading | GO |
-| HOME_D / HOME_E | GO |
+| HOME_D / HOME_E | implementation evidence; runtime certification pending |
 | PG-1 Projection | GO |
 | PG-2 Events / interaction_channel | GO |
 | PG-4 Permissions | GO |
+| Portfolio Home Governance PH-0 | GO documentation freeze; runtime not certified |
+| Portfolio Home PH-2 read model | Implementation evidence; `GET /api/v1/portfolio/home` present; runtime certification pending |
+| Portfolio Home PH-3A | UX reconciliation design/evidence only; PH-3B not implemented |
+| Strategic Framing SF-0 | APPROVED Experience baseline (human-approved 2026-09-24); runtime not implemented; SF-1–SF-8 not executed |
 | Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
 The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
@@ -195,14 +201,49 @@ ADR candidates still unresolved:
 
 Activation/Handoff is not implemented by this documentation freeze.
 
+## H.1 Portfolio Home Governance Pack
+
+Portfolio Home V2 is documented in the PH-0 frozen pack:
+
+- [Governance Pack](06-portfolio-home-governance/README_PORTFOLIO_HOME_GOVERNANCE_PACK_v0.1.md)
+- [Governance Target](06-portfolio-home-governance/PORTFOLIO_HOME_GOVERNANCE_TARGET_v0.1.md)
+- [Read Model Contract](06-portfolio-home-governance/PORTFOLIO_HOME_READ_MODEL_CONTRACT_v0.1.md)
+- [Activation/Handoff Traceability](06-portfolio-home-governance/PORTFOLIO_HOME_TO_INITIATIVE_HANDOFF_TRACEABILITY_v0.1.md)
+- [Acceptance Checklist](06-portfolio-home-governance/PORTFOLIO_HOME_ACCEPTANCE_CHECKLIST_v0.1.md)
+- [Implementation Sequence](06-portfolio-home-governance/PORTFOLIO_HOME_IMPLEMENTATION_SEQUENCE_v0.1.md)
+
+Implementation evidence:
+
+- [PH-2 read-model implementation report](90-implementation-reports/PORTFOLIO_HOME_READ_MODEL_IMPLEMENTATION_REPORT_v0.1.md)
+- [PH-3A UX reconciliation report](90-implementation-reports/PORTFOLIO_HOME_UX_RECONCILIATION_PH3A_v0.1.md)
+
+These reports do not certify runtime, and PH-3B is not implemented.
+
+Strategic Framing:
+
+- [SF-0 package](07-strategic-framing/README.md) — approved Experience
+  baseline; runtime not implemented and SF-1 not executed. SF-1 Current-State
+  Audit is the next authorized slice.
+- [Glossary and context map](00-authority/STARTERIA_GLOSSARY_AND_CONTEXT_MAP_v0.1.md)
+  — reference vocabulary; does not override Core or approved contracts.
+- [Portfolio Lead reconciliation plan](../reconciliation/STARTERIA_PORTFOLIO_LEAD_RECONCILIATION_PLAN_v0.1.md)
+  — reconciliation baseline; human review required.
+- [PH-2 post-merge revalidation](../reconciliation/PORTFOLIO_HOME_PH2_POST_MERGE_REVALIDATION_v0.1.md)
+  — evidence report; `GO_WITH_GAPS`.
+
+Candidate dependencies remain explicit: Activation Readiness, exact
+`pre_start`, ownership transitions, Challenge coverage/cardinality, exact Step
+materialization and expanded Decision Authority semantics. They require ADR,
+original evidence and re-test.
+
 ## I. Document Map
 
 Authority:
 
 - [Starteria Authority](../STARTERIA_AUTHORITY.md)
 - [Current State](../../CURRENT_STATE.md)
-- [Core Logic Contract](../core/STARTERIA_CORE_LOGIC_CONTRACT.md)
-- [Product ADR index](../product-adr/ADR-INDEX.md)
+- [Core Logic Contract](../../doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md)
+- [Product ADR index](../../doc/product-adr/ADR-INDEX.md)
 
 Architecture:
 

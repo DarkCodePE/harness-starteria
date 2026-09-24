@@ -36,7 +36,7 @@ Los cambios frontend de producto estan permitidos solo cuando el pedido declare 
 Cuando haya conflicto entre documentos, aplicar este orden y conservar el estado declarado de cada documento:
 
 1. `docs/STARTERIA_AUTHORITY.md`
-2. Core Contract, en su estado factual real: `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+2. Core Contract, en su estado factual real: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 3. ADRs de producto aprobados en `docs/product-adr/`
 4. Experience Logic Contracts aprobados
 5. Agent Contracts
@@ -55,6 +55,27 @@ Para Portfolio Entry, usar una sola autoridad:
 `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 
 No crear otro `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` paralelo si duplica ese contrato. Si el checkout productivo contiene una version aprobada distinta, registrar la diferencia en `CURRENT_STATE.md` o en una auditoria antes de copiar o reemplazar contenido.
+
+## Strategic Framing
+
+Before modifying Portfolio Lead strategic framing behavior, read:
+
+- `docs/STARTERIA_AUTHORITY.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+- `docs/portfolio-lead/07-strategic-framing/STRATEGIC_FRAMING_CONTEXT_v0.1.md`
+
+Preserve:
+
+- Core v0.2 as current factual authority;
+- human authority;
+- adaptive framing depth;
+- Strategic Lenses are not mandatory canonical entities;
+- Copilot is optional for completing framing;
+- AI observations do not automatically create Challenges;
+- gaps may remain in observation;
+- mental models SF-MM-01...07 must remain traceable to contracts, acceptance tests and implementation slices.
+
+Stop and classify as ADR candidate if implementation requires changing canonical Core/domain semantics.
 
 ## Separacion de ADRs
 
@@ -78,7 +99,7 @@ Todo cambio de Starteria debe comenzar leyendo, en este orden:
 1. `CURRENT_STATE.md`.
 2. `STARTERIA_V2_MANIFEST.md`.
 3. `docs/STARTERIA_AUTHORITY.md`.
-4. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
+4. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`.
 5. ADRs de producto aprobados relevantes.
 6. Experience Contract del slice afectado.
 7. Agent / Skill Contracts aplicables.

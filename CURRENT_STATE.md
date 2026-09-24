@@ -103,8 +103,11 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
 ## Autoridad vigente
 
 - Authority map: `docs/STARTERIA_AUTHORITY.md`.
-- Core Contract: `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`.
-  - Estado factual real: `v0.3 candidata`, `Candidata de gobernanza / Requiere re-test`.
+- Core Contract: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`.
+  - Estado factual real: `v0.2`, `Base fundacional revisada / Por validar`.
+  - `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` no esta materializado ni promovido.
+  - Core v0.3 es un candidate externo no autoritativo; requiere ADR, evidencia original y re-test antes de promocionarse.
+  - Evidencia: `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`.
   - Su presencia aqui no lo convierte en aprobado.
 - Portfolio Entry Experience Contract aprobado:
   - `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`.
@@ -115,6 +118,21 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   - Estado de implementación de esta slice: `IMPLEMENTED_UNVERIFIED` en
     `feat/portfolio-entry-portfolio-access`; la regla de concesión de acceso procede
     del requerimiento explícito de la slice y queda pendiente de validación E2E.
+
+- Portfolio Home Governance: PH-0 target freeze at `docs/portfolio-lead/06-portfolio-home-governance/`; runtime not certified.
+- PH-2 read-model implementation evidence is present on this branch, including
+  the read-only `GET /api/v1/portfolio/home` integration; current-main
+  compatibility and runtime certification remain pending.
+- PH-3A is design/evidence only at
+  `docs/portfolio-lead/90-implementation-reports/PORTFOLIO_HOME_UX_RECONCILIATION_PH3A_v0.1.md`;
+  PH-3B frontend implementation is not present.
+- Strategic Framing SF-0 documentation is materialized under
+  `docs/portfolio-lead/07-strategic-framing/` and human-approved on
+  2026-09-24. The Experience Contract is approved, Strategic Framing runtime
+  is not implemented, and SF-1 through SF-8 remain unexecuted.
+- The Portfolio Lead reconciliation plan, glossary/context map and PH-2
+  revalidation report are indexed evidence/reference artifacts, not new
+  authority.
 
 ## ADRs
 

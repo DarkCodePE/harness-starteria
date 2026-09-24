@@ -54,7 +54,7 @@ Debe registrarse el conflicto y reconciliarse segun esta Authority Map.
 
 Cuando dos fuentes entren en conflicto, aplicar este orden:
 
-1. `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+1. `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 2. ADRs de producto aprobados en `docs/product-adr/`
 3. Experience Logic Contracts aprobados
 4. Agent Contracts
@@ -70,12 +70,16 @@ Regla: si dos fuentes entran en conflicto, gobierna la de mayor autoridad y debe
 
 Core Contract:
 
-`docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+`doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 
 Estado declarado actual:
 
-- Version: `v0.3 candidata`
-- Estado: `Candidata de gobernanza / Requiere re-test`
+- Version: `v0.2`
+- Estado: `Base fundacional revisada / Por validar`
+
+The external `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` v0.3 artifact is not
+materialized or promoted in this checkout. It remains a reconciliation
+candidate and requires an ADR, original evidence and re-test before promotion.
 
 La presencia de este contrato en el repositorio no lo convierte en aprobado. Cualquier cambio que dependa de tratarlo como aprobado requiere ratificacion explicita.
 
@@ -94,6 +98,21 @@ No crear otro `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` si duplica este contrato.
 
 El desarrollo de este slice no debe modificar el comportamiento del Adaptive Core / Step 0-4.
 
+## 4.1 Portfolio Home and Strategic Framing reconciliation status
+
+PH-0 remains a frozen Portfolio Home governance target. PH-2 is implemented on
+this branch and post-merge revalidated as `GO_WITH_GAPS`; the report is evidence
+only and runtime is not globally certified. PH-3A is design/reconciliation
+evidence. PH-3B is not implemented and remains paused pending later SF-7
+reconciliation.
+
+The SF-0 Strategic Framing documentation package is materialized under
+`docs/portfolio-lead/07-strategic-framing/` and was human-approved on
+2026-09-24. The Experience Contract is an `APPROVED` Experience Contract,
+subordinate to Core v0.2 and approved ADRs. This approval does not imply
+runtime implementation, does not execute SF-1 and is not a canonical Core
+extension.
+
 ## 5. Contrato activo para Portfolio -> Initiative Activation/Handoff
 
 Para el bounded context:
@@ -108,7 +127,7 @@ el Experience Contract de referencia para implementacion posterior es:
 
 Este contrato:
 
-- no reemplaza `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`;
+- no reemplaza `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`;
 - no reemplaza este Authority Map;
 - gobierna especificamente la experiencia y lifecycle del bounded context Portfolio -> Initiative Activation/Handoff;
 - termina en la frontera `Start` y no autoriza modificar Steps 0-4.
@@ -141,7 +160,7 @@ queda fuera de la linea de autoridad. Es evidencia factual de current state para
 
 ### Core
 
-- `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md`
+- `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
 - `docs/core/STARTERIA_CRAZY8S_E2E_BASE_LOGIC_v0.1.md`
 
 ### Gobernanza de desarrollo
@@ -213,7 +232,7 @@ Antes de modificar producto:
 1. leer `../CURRENT_STATE.md`;
 2. leer `../STARTERIA_V2_MANIFEST.md`;
 3. leer este archivo;
-4. leer `docs/core/STARTERIA_CORE_LOGIC_CONTRACT.md` y conservar su estado factual;
+4. leer `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` y conservar su estado factual;
 5. identificar el Experience Contract afectado;
 6. revisar ADRs relevantes;
 7. revisar Agent/Skill Contracts;

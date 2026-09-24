@@ -10,8 +10,9 @@ Desde DS-05 y DS-06 existen pilotos frontend de producto autorizados por slice y
 
 - Estado actual: `CURRENT_STATE.md`
 - Instrucciones neutrales para agentes: `AGENTS.md`
-- Mapa de autoridad: `doc/STARTERIA_AUTHORITY.md`
-- Core Contract: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md`
+- Mapa de autoridad: `docs/STARTERIA_AUTHORITY.md`
+- Core Contract factual: `doc/CONTRATO_LOGICA_CORE_STARTERIA_MVP_v0.2_ES(1).md` (v0.2, por validar)
+- Core v0.3 candidate: externo, no autoritativo; requiere ADR, evidencia original y re-test. Ver `docs/reconciliation/CORE_0_CANDIDATE_RECONCILIATION.md`.
 - Portfolio Entry activo: `doc/experience/portfolio-entry/PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md`
 - ADRs del harness: `docs/adr/ADR-INDEX.md`
 - ADRs de producto: `doc/product-adr/ADR-INDEX.md`
