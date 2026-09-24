@@ -1,0 +1,920 @@
+{
+  "artifact": "STARTERIA_MULTI_MODEL_BLIND_REVIEW_v0.1",
+  "review_status": "PENDING_HUMAN_REVIEW",
+  "reviewer_type": "HUMAN_REQUIRED",
+  "blinded_fields": [
+    "provider",
+    "model",
+    "condition",
+    "internal_trace",
+    "expected_action"
+  ],
+  "records": [
+    {
+      "review_id": "BLIND-1",
+      "case_id": "CF-01",
+      "context": [
+        "Queremos continuar con una implementación pequeña, pero no sé si tenemos a alguien para sostenerla."
+      ],
+      "visible_response": "La decisión depende menos del tamaño inicial y más de si existe un responsable claro para mantenerla. ¿Quién podría asumir ese rol y cuánto tiempo real tendría disponible por semana? Si no pueden identificar a una persona con capacidad explícita, convendría no avanzar todavía o limitar la implementación a un piloto con fecha de cierre, criterios de éxito y una revisión para decidir si continuar.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-2",
+      "case_id": "CF-02",
+      "context": [
+        "Tenemos varias ideas y la dirección dice que hay que priorizar, pero no sabemos qué resultado pesa más."
+      ],
+      "visible_response": "Antes de ordenar las ideas, hay que acordar qué resultado tiene prioridad. Una pregunta útil para la dirección sería: **¿qué no puede fallar en los próximos 3–6 meses?**\n\nPidan que elija uno o, como máximo, dos criterios principales:\n- impacto en ingresos o ahorro,\n- satisfacción o retención de clientes,\n- reducción de riesgos o cumplimiento,\n- rapidez de entrega,\n- posicionamiento estratégico.\n\nCon esa respuesta pueden evaluar cada idea según impacto, esfuerzo y urgencia, en lugar de discutirlas solo por preferencia.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-3",
+      "case_id": "CF-03",
+      "context": [
+        "La decisión es lanzar este trimestre, pero no hay equipo operativo para sostenerlo."
+      ],
+      "visible_response": "Con la información actual, no recomendaría lanzar como está previsto: sin equipo operativo, el riesgo de interrupciones y de no poder atender incidencias es demasiado alto. La opción más segura es solicitar una decisión explícita entre:\n\n- **Posponer el lanzamiento** hasta contar con cobertura operativa mínima, o\n- **Hacer un lanzamiento limitado/piloto**, únicamente si se asignan responsables, soporte y un plan de respuesta para incidentes.\n\nAntes de continuar, documenta qué funciones deben estar cubiertas, quién las asumiría y qué ocurriría si algo falla. Si no hay responsables concretos ni capacidad de soporte, la recomendación debería ser **no lanzar este trimestre**.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-4",
+      "case_id": "CF-04",
+      "context": [
+        "La herramienta funciona y ahorra tiempo, pero los usuarios siguen usando plantillas manuales."
+      ],
+      "visible_response": "Que la herramienta funcione no garantiza que el ahorro se mantenga: el problema parece estar en la adopción o en cómo encaja en el trabajo diario. Las plantillas manuales pueden seguir usándose porque son más familiares, permiten excepciones, se comparten con otros equipos o no existe un incentivo claro para cambiar.\n\nPara identificar la causa, compararía casos concretos: ¿en qué momentos vuelven a las plantillas y qué necesidad resuelven allí que la herramienta no cubre? También conviene revisar si el uso de la herramienta es obligatorio, si el flujo manual sigue siendo más rápido en algunos escenarios y si los responsables miden el ahorro realmente obtenido.\n\nLa siguiente acción sería analizar 5–10 casos recientes de uso manual y clasificarlos por motivo. ¿Sabes si las plantillas se utilizan principalmente por comodidad, por falta de alguna función o porque otros participantes del proceso las exigen?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-5",
+      "case_id": "CF-05",
+      "context": [
+        "El piloto tiene presupuesto y equipo, pero nadie tiene claro quién decide si pasa a operación."
+      ],
+      "visible_response": "El presupuesto y el equipo no determinan por sí solos quién autoriza el paso a operación. La confirmación debería venir del **sponsor o responsable de negocio que tiene la rendición de cuentas por el piloto y sus resultados**, según el modelo de gobernanza de la organización.\n\nSiguiente acción: revisen el acta o documento del piloto para identificar al *accountable* y pregúntenle directamente:\n> “¿Eres tú quien debe aprobar el paso a operación? Si no, ¿quién tiene esa autoridad y qué criterios debemos cumplir?”\n\n¿Está identificado algún sponsor ejecutivo o responsable de negocio del piloto?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-6",
+      "case_id": "CF-06",
+      "context": [
+        "La precisión es alta y el tiempo baja mucho, pero no sé si esto genera suficiente valor para continuar."
+      ],
+      "visible_response": "La precisión y el ahorro de tiempo son buenas señales, pero por sí solos no demuestran que merezca la pena continuar. La pregunta clave es: **¿qué decisión o resultado mejora gracias a esto, y cuánto vale esa mejora?**\n\nAntes de seguir invirtiendo mucho, haría una validación breve:\n- Identificar un caso de uso concreto.\n- Medir el impacto frente a la situación actual: horas ahorradas, errores evitados, ingresos, costes o capacidad liberada.\n- Compararlo con el coste total de mantenerlo y ponerlo en producción.\n- Confirmar si alguien lo usaría de forma recurrente.\n\nSi el beneficio neto es claro y hay un usuario o proceso dispuesto a adoptarlo, continúa. Si solo mejora métricas técnicas pero nadie obtiene un resultado relevante, probablemente convenga parar o replantear el enfoque. ¿En qué proceso concreto se aplicaría y qué resultado medible debería mejorar?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-7",
+      "case_id": "CF-07",
+      "context": [
+        "Tenemos una propuesta, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "visible_response": "Si nadie lo ha comunicado, no conviene asumir la prioridad. Propón una breve alineación con la dirección o con tu responsable, presentando las opciones y pidiendo que elijan según el criterio principal. Por ejemplo:\n\n> “Tenemos esta propuesta y veo tres posibles resultados prioritarios: 1) impacto económico, 2) rapidez de implementación, o 3) reducción de riesgos. ¿Cuál debe guiar la decisión? Con esa prioridad ajustaré la propuesta y las métricas.”\n\nMientras esperas respuesta, puedes preparar la propuesta mostrando cómo cambia cada opción según esos tres criterios. Así avanzas sin presentar una interpretación personal como si fuera la prioridad oficial.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-8",
+      "case_id": "CF-08",
+      "context": [
+        "La decisión de continuar ya está tomada; falta definir el proveedor, la arquitectura y el workflow."
+      ],
+      "visible_response": "Ahora conviene separar la decisión en tres etapas, sin diseñar todavía la solución:\n\n1. **Alinear el marco de decisión**: documentar objetivos, restricciones, alcance inicial, riesgos aceptables, presupuesto y plazo.\n2. **Definir criterios de evaluación** para proveedor, arquitectura y workflow: por ejemplo, seguridad, integración, escalabilidad, coste, capacidad operativa y dependencia del proveedor.\n3. **Preparar la comparación**: identificar opciones plausibles, recoger la información necesaria y establecer quién decide y con qué evidencia.\n\nEl siguiente paso concreto sería organizar una sesión breve con las personas clave para acordar ese marco y convertirlo en una matriz de decisión. Después se podrán evaluar proveedores y alternativas de arquitectura de forma comparable, en lugar de empezar por una solución concreta.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-9",
+      "case_id": "CF-09",
+      "context": [
+        "Tenemos métricas, presupuesto, sponsor, equipo, usuarios piloto, varias dependencias externas y tres posibles alcances; la dirección quiere decidir qué pasa este trimestre."
+      ],
+      "visible_response": "Con la información disponible todavía no se puede elegir entre los tres alcances sin inventar supuestos. Para cerrar una decisión este trimestre, comparémoslos en una sola matriz:\n\n| Criterio | Alcance A | Alcance B | Alcance C |\n|---|---:|---:|---:|\n| Impacto esperado / métrica principal |  |  |  |\n| Esfuerzo y presupuesto |  |  |  |\n| Dependencias externas y riesgo |  |  |  |\n| Capacidad del equipo este trimestre |  |  |  |\n| Evidencia de usuarios piloto |  |  |  |\n| Fecha más temprana de entrega |  |  |  |\n\nLa regla de decisión puede ser: **elegir el alcance que entregue una métrica relevante este trimestre con el presupuesto y las dependencias ya controlables**, no el más ambicioso.\n\nSi ningún alcance cumple esas condiciones, la decisión debería ser **reducir el alcance o aplazarlo**, no mantener los tres abiertos.\n\nCompárteme para cada opción: objetivo, coste/esfuerzo, fecha, dependencia crítica y métrica de éxito. Con esos datos puedo devolverte una recomendación concreta —incluido qué descartar y qué condición llevar al sponsor—.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-10",
+      "case_id": "CF-10",
+      "context": [
+        "Necesito ordenar esto."
+      ],
+      "visible_response": "Claro. Para empezar, cuéntame en pocas líneas: ¿qué está pasando, qué parte te preocupa más y qué decisión o resultado necesitas alcanzar?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-11",
+      "case_id": "CF-11",
+      "context": [
+        "La iniciativa está validada, tiene owner, presupuesto, capacidad y criterio de decisión acordado; sólo queda diseñar el experimento siguiente."
+      ],
+      "visible_response": "La iniciativa está lista para pasar al comité. Prepararía una presentación breve centrada en la decisión solicitada:\n\n1. **Problema y oportunidad** — qué se quiere resolver y por qué ahora.\n2. **Iniciativa propuesta** — alcance y resultado esperado.\n3. **Validaciones realizadas** — owner, presupuesto y capacidad confirmados.\n4. **Criterio de decisión** — cómo se evaluará si avanzar o ajustar.\n5. **Siguiente paso** — diseñar y ejecutar el experimento siguiente, definiendo hipótesis, métricas, duración y umbral de éxito.\n6. **Decisión requerida al comité** — aprobación para iniciar el experimento bajo las condiciones ya acordadas.\n\nMensaje de cierre sugerido: **“Solicitamos la aprobación para avanzar al diseño y ejecución del siguiente experimento; los responsables, recursos y criterios de decisión ya están definidos.”**",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-12",
+      "case_id": "CF-12",
+      "context": [
+        "El plan anual limita lo que podemos hacer y sólo gerencia puede confirmar si existe una excepción."
+      ],
+      "visible_response": "La decisión debería quedar condicionada a una confirmación formal de gerencia. Mientras tanto, no asuman la excepción ni comprometan recursos: documenten qué parte del plan anual limita la iniciativa, qué excepción necesitan y qué impacto tendría no aprobarla. Luego envíen una solicitud concreta, por escrito, con una fecha límite para responder. ¿Qué acción específica necesitan autorizar y para cuándo?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-13",
+      "case_id": "CF-01",
+      "context": [
+        "Queremos continuar con una implementación pequeña, pero no sé si tenemos a alguien para sostenerla."
+      ],
+      "visible_response": "Antes de continuar, haría una comprobación mínima: ¿quién sería la persona responsable de sostener la implementación y cuánto tiempo real podría dedicarle por semana? Si no hay un responsable claro con capacidad disponible, conviene pausar o reducir aún más el alcance. Si sí lo hay, pueden continuar con un piloto acotado, definiendo duración, criterios de éxito y una fecha de revisión.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-14",
+      "case_id": "CF-02",
+      "context": [
+        "Tenemos varias ideas y la dirección dice que hay que priorizar, pero no sabemos qué resultado pesa más."
+      ],
+      "visible_response": "La prioridad no debería definirse por cuál idea parece mejor, sino por qué resultado necesita más la organización ahora. Antes de ordenar las ideas, pidan a dirección que elija explícitamente el criterio principal, por ejemplo: ingresos, reducción de costes, satisfacción del cliente, mitigación de riesgo o cumplimiento de una fecha.\n\nPodrían preguntar: «Si solo pudiéramos mejorar un resultado en los próximos ___ meses, ¿cuál tendría mayor impacto y cómo mediríamos que lo logramos?»\n\nCon esa respuesta podrán comparar cada idea según impacto esperado, esfuerzo, urgencia y riesgos, en lugar de discutirlas en abstracto.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-15",
+      "case_id": "CF-03",
+      "context": [
+        "La decisión es lanzar este trimestre, pero no hay equipo operativo para sostenerlo."
+      ],
+      "visible_response": "Con la información disponible, **no conviene hacer un lanzamiento completo este trimestre tal como está**: sin equipo operativo, el riesgo no es solo ejecutar mal el lanzamiento, sino no poder sostener incidencias, soporte y continuidad después.\n\nLa decisión puede ser:\n- **Continuar** solo si antes se confirma un equipo responsable, cobertura operativa, canal de soporte y plan de contingencia.\n- **Hacer un piloto limitado** si se puede reducir el alcance y atender manualmente los problemas.\n- **Aplazar** si ninguna de esas condiciones puede garantizarse.\n\nSiguiente paso: convertir esto en un criterio de go/no-go y pedir una confirmación explícita de quién cubrirá la operación y durante cuánto tiempo. Si no hay respuesta concreta, la recomendación es no lanzar a escala.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-16",
+      "case_id": "CF-04",
+      "context": [
+        "La herramienta funciona y ahorra tiempo, pero los usuarios siguen usando plantillas manuales."
+      ],
+      "visible_response": "El problema parece estar menos en la herramienta y más en la adopción: que funcione no significa que resulte la opción más fácil, confiable o conveniente en el momento de trabajar.\n\nPara entender por qué el ahorro no se sostiene, identifica qué ocurre justo cuando vuelven a las plantillas manuales:\n- ¿La herramienta requiere más pasos o conocimientos?\n- ¿Las plantillas permiten excepciones que la herramienta no cubre?\n- ¿Los usuarios confían en el resultado y saben corregir errores?\n- ¿Hay presión de tiempo, falta de capacitación o incentivos para seguir el proceso anterior?\n\nLa siguiente acción más útil sería observar algunos casos reales y comparar ambos recorridos: qué tarea intentaban hacer, en qué punto abandonaron la herramienta y qué les ofreció la plantilla manual que la herramienta no ofrecía. ¿En qué momento exacto suelen cambiar de una opción a la otra?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-17",
+      "case_id": "CF-05",
+      "context": [
+        "El piloto tiene presupuesto y equipo, pero nadie tiene claro quién decide si pasa a operación."
+      ],
+      "visible_response": "La confirmación debería hacerla el **sponsor o responsable de negocio que tenga autoridad sobre la operación**, no únicamente el equipo del piloto. Si esa persona no está definida, el siguiente paso es pedir que se designe explícitamente un **decision owner**.\n\nPuedes plantearlo así: “El piloto ya cuenta con presupuesto y equipo. ¿Quién tiene la autoridad final para decidir si pasa a operación, y en qué fecha tomaremos esa decisión?”\n\nDejen registrado quién decide, qué criterios se evaluarán y la fecha límite. Mientras no exista esa confirmación, el piloto no debería asumir que tiene autorización para pasar a operación.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-18",
+      "case_id": "CF-06",
+      "context": [
+        "La precisión es alta y el tiempo baja mucho, pero no sé si esto genera suficiente valor para continuar."
+      ],
+      "visible_response": "La mejora parece prometedora, pero la precisión y el ahorro de tiempo solo justifican continuar si se traducen en un impacto relevante. Antes de decidir, comprueba tres cosas:\n\n- **Valor económico:** cuánto tiempo o coste ahorra realmente por caso y con qué frecuencia se utiliza.\n- **Impacto en resultados:** si mejora ingresos, capacidad, calidad, riesgo o satisfacción, no solo la velocidad.\n- **Coste de mantenerlo:** desarrollo, operación, integración y posibles errores.\n\nTe propondría un piloto breve con usuarios reales y una métrica de éxito concreta, por ejemplo: “ahorrar X horas al mes sin aumentar errores y generar Y de valor”. Si alcanza ese umbral, merece la pena continuar; si no, conviene parar o replantearlo. La pregunta clave es: ¿qué proceso afecta y cuánto vale hoy cada hora o error que consigue evitar?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-19",
+      "case_id": "CF-07",
+      "context": [
+        "Tenemos una propuesta, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "visible_response": "Entonces, no conviene asumir la prioridad. El siguiente paso es pedir una definición explícita a la dirección, idealmente con alternativas concretas. Puedes enviar algo como:\n\n> “Para orientar la propuesta correctamente, necesitamos confirmar qué resultado es prioritario: [opción A], [opción B] o [opción C]. Según la prioridad, cambiarán el alcance, los tiempos y los recursos. ¿Cuál debemos priorizar?”\n\nMientras esperas respuesta, documenta los supuestos y evita comprometer alcance o recursos basándote en una prioridad no confirmada.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-20",
+      "case_id": "CF-08",
+      "context": [
+        "La decisión de continuar ya está tomada; falta definir el proveedor, la arquitectura y el workflow."
+      ],
+      "visible_response": "Ahora el siguiente paso no es diseñar la solución, sino estructurar la decisión. Conviene preparar una breve fase de definición con estos entregables:\n\n1. **Criterios de decisión** para evaluar proveedor, arquitectura y workflow.\n2. **Restricciones y requisitos no negociables**: presupuesto, plazos, seguridad, integraciones, operación, etc.\n3. **Alternativas que deben compararse**, sin desarrollarlas todavía.\n4. **Responsables y participantes** de la evaluación y de la decisión final.\n5. **Información pendiente** que haya que recopilar para poder comparar con fundamento.\n6. **Fecha y mecanismo de decisión**: qué se decidirá, cuándo y con qué evidencia.\n\nLa acción inmediata sería convocar una sesión de encuadre para acordar estos puntos y salir con un plan de evaluación, no con una arquitectura elegida.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-21",
+      "case_id": "CF-09",
+      "context": [
+        "Tenemos métricas, presupuesto, sponsor, equipo, usuarios piloto, varias dependencias externas y tres posibles alcances; la dirección quiere decidir qué pasa este trimestre."
+      ],
+      "visible_response": "Con la información actual todavía no se puede elegir entre los tres alcances sin inventar datos. Para cerrar una decisión este trimestre, resumiría el caso en una sola tabla:\n\n| Opción | Resultado esperado este trimestre | Coste | Métrica de éxito | Dependencias/riesgos | Confianza |\n|---|---|---:|---|---|---|\n| A |  |  |  |  |  |\n| B |  |  |  |  |  |\n| C |  |  |  |  |  |\n\nLa decisión debería formularse así: **“Elegimos [alcance] porque maximiza [resultado prioritario], cabe en [presupuesto/capacidad] y sus dependencias críticas son gestionables; dejamos [otras opciones] para [condición o fecha].”**\n\nRegla práctica: prioricen el alcance que pueda demostrar valor con usuarios piloto dentro del trimestre, usando métricas ya disponibles, y que no dependa de terceros sin compromiso confirmado. Si ninguno cumple eso, la decisión concreta es **reducir el alcance a un piloto medible**, no intentar ejecutar los tres.\n\nPara recomendar una opción concreta necesito solo estos datos: los tres alcances, presupuesto/capacidad disponible, métrica principal de éxito y las dependencias externas que podrían bloquear cada uno.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-22",
+      "case_id": "CF-10",
+      "context": [
+        "Necesito ordenar esto."
+      ],
+      "visible_response": "Claro. Podemos ordenarlo paso a paso. Cuéntame, aunque sea de forma desordenada: **¿qué situación está ocurriendo y qué necesitas decidir o aclarar?**",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-23",
+      "case_id": "CF-11",
+      "context": [
+        "La iniciativa está validada, tiene owner, presupuesto, capacidad y criterio de decisión acordado; sólo queda diseñar el experimento siguiente."
+      ],
+      "visible_response": "La iniciativa está lista para llevarla al comité como una **decisión de lanzamiento**, no como una idea por explorar. Te sugiero presentar una propuesta de una página con esta estructura:\n\n1. **Problema y oportunidad** — qué se quiere resolver y por qué ahora.\n2. **Propuesta** — qué se hará y para quién.\n3. **Validación existente** — evidencia que respalda la iniciativa.\n4. **Recursos comprometidos** — owner, presupuesto y capacidad disponibles.\n5. **Experimento siguiente** — hipótesis, alcance, duración, métrica principal y umbral de éxito.\n6. **Decisión solicitada al comité** — aprobar el experimento bajo esos parámetros.\n7. **Siguiente hito** — fecha de revisión y decisión posterior.\n\nPuedes cerrar con algo como:\n\n> “La iniciativa ya cuenta con validación, responsable y recursos asignados. Solicitamos aprobar el experimento de [duración], cuyo objetivo es comprobar [hipótesis], utilizando [métrica]. Si alcanzamos [criterio de éxito], pasaremos a [siguiente fase]; si no, revisaremos o detendremos la iniciativa.”\n\nEl siguiente paso concreto es convertir el diseño del experimento en esos cuatro elementos: **hipótesis, alcance, métrica y umbral de decisión**.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-24",
+      "case_id": "CF-12",
+      "context": [
+        "El plan anual limita lo que podemos hacer y sólo gerencia puede confirmar si existe una excepción."
+      ],
+      "visible_response": "La decisión depende de una confirmación de gerencia, así que conviene no asumir la excepción. Prepara una solicitud breve que incluya: qué acción se propone, cómo entra en conflicto con el plan anual, el impacto de no hacerla, la excepción concreta que se necesita y la fecha límite para decidir. Pide una respuesta explícita —aprobación, rechazo o condiciones— y, mientras tanto, trabaja sólo en las actividades permitidas por el plan. Si gerencia no confirma la excepción, aplica el plan anual como restricción vigente.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-25",
+      "case_id": "CF-01",
+      "context": [
+        "Queremos continuar con una implementación pequeña, pero no sé si tenemos a alguien para sostenerla."
+      ],
+      "visible_response": "Antes de decidir, definan un responsable concreto para sostenerla, con tiempo disponible y un reemplazo. ¿Hay alguna persona que pueda asumir ese rol explícitamente durante las próximas semanas? Si no pueden nombrarla, sería más prudente pausar la implementación o reducirla a una prueba muy acotada con fecha de revisión.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-26",
+      "case_id": "CF-02",
+      "context": [
+        "Tenemos varias ideas y la dirección dice que hay que priorizar, pero no sabemos qué resultado pesa más."
+      ],
+      "visible_response": "El primer paso no es comparar ideas, sino aclarar qué resultado quiere maximizar la dirección. Pidan que ordene explícitamente estos criterios: impacto en negocio, urgencia, reducción de riesgo, satisfacción del cliente y esfuerzo/coste. Una pregunta útil sería: «Si solo pudiéramos lograr un resultado este trimestre, ¿cuál tendría más valor y cómo mediríamos que lo conseguimos?». Con esa respuesta pueden puntuar cada idea según impacto, urgencia y esfuerzo, y hacer visible cualquier desacuerdo.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-27",
+      "case_id": "CF-03",
+      "context": [
+        "La decisión es lanzar este trimestre, pero no hay equipo operativo para sostenerlo."
+      ],
+      "visible_response": "Con la información disponible, no parece prudente lanzar tal como está: sin un equipo operativo, el riesgo no es solo de ejecución, sino de no poder atender incidencias, clientes o compromisos posteriores al lanzamiento.\n\nLa decisión debería dividirse en dos:\n- **Lanzamiento completo:** solo si existe un responsable operativo identificado, cobertura suficiente y un plan de soporte para las primeras semanas.\n- **Lanzamiento acotado o piloto:** posible este trimestre si se reduce el alcance, se limita el número de usuarios/clientes y se define quién atenderá los problemas.\n\nSiguiente paso: documentar hoy un criterio de go/no-go con tres puntos mínimos: responsable operativo, capacidad de soporte y plan de contingencia. Si alguno no está cubierto, recomendaría aplazar el lanzamiento completo o convertirlo en un piloto explícitamente limitado. ¿Existe al menos una persona o equipo que pueda asumir esa responsabilidad durante las primeras semanas?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-28",
+      "case_id": "CF-04",
+      "context": [
+        "La herramienta funciona y ahorra tiempo, pero los usuarios siguen usando plantillas manuales."
+      ],
+      "visible_response": "Esto sugiere que el problema no es la capacidad de la herramienta, sino su adopción dentro del flujo de trabajo. El ahorro no se sostiene si las plantillas manuales siguen siendo más conocidas, rápidas, flexibles o necesarias para ciertos casos.\n\nPara identificar la causa, compara ambos recorridos en casos reales:\n- ¿En qué momento abandonan la herramienta?\n- ¿Qué resuelven con la plantilla que la herramienta no permite?\n- ¿La plantilla es un requisito de aprobación, auditoría o colaboración?\n- ¿Hay algún incentivo o hábito que favorezca seguir usándola?\n\nLa siguiente acción más útil sería observar o entrevistar a algunos usuarios justo cuando eligen la plantilla manual. La pregunta clave es: **“¿Qué te hizo usar esta plantilla en lugar de la herramienta esta vez?”** Con esas respuestas podrás distinguir si hace falta mejorar el producto, integrarlo en el proceso o establecer una regla clara de uso.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-29",
+      "case_id": "CF-05",
+      "context": [
+        "El piloto tiene presupuesto y equipo, pero nadie tiene claro quién decide si pasa a operación."
+      ],
+      "visible_response": "Con la información disponible no se puede identificar aún a la persona responsable. Lo más probable es que deba confirmarlo quien tiene la autoridad sobre el presupuesto o quien patrocina el piloto, pero conviene hacerlo explícito.\n\nSiguiente paso: convocar una breve reunión con el sponsor del piloto, el responsable del equipo y el dueño del área operativa, y cerrar esta pregunta: «¿Quién tiene la decisión final de autorizar el paso a operación y qué criterios debemos cumplir?»\n\nPuedes enviar: «El piloto ya cuenta con presupuesto y equipo. Para evitar ambigüedad, necesitamos confirmar quién es el decisor final del paso a operación y cuáles son los criterios de aprobación. ¿Podemos dejarlo definido en la próxima reunión?»",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-30",
+      "case_id": "CF-06",
+      "context": [
+        "La precisión es alta y el tiempo baja mucho, pero no sé si esto genera suficiente valor para continuar."
+      ],
+      "visible_response": "Son señales prometedoras, pero por sí solas no demuestran valor suficiente. Para decidir si continuar, compara: **valor generado** (ahorro, ingresos o decisiones mejoradas) frente a **coste total** (desarrollo, operación y riesgos), y verifica si alguien lo usaría de forma recurrente. Como siguiente paso, estima estos tres datos con cifras: 1) horas o dinero ahorrado por caso, 2) número realista de casos al mes y 3) coste mensual de mantenerlo. Si el beneficio neto es claro y hay usuarios o casos recurrentes, merece la pena continuar; si no, conviene hacer una prueba acotada antes de invertir más.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-31",
+      "case_id": "CF-07",
+      "context": [
+        "Tenemos una propuesta, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "visible_response": "En ese caso, no conviene asumir la prioridad ni cerrar la propuesta todavía. Pide una definición explícita a la persona que decide, idealmente con opciones concretas:\n\n> “Para orientar la propuesta, necesito confirmar qué resultado es prioritario para dirección: ¿aumentar ingresos, reducir costes, acelerar la implementación o minimizar riesgos? Según esa prioridad cambiarían el alcance y los criterios de éxito. ¿Cuál debemos tomar como principal y cómo lo mediremos?”\n\nMientras esperas respuesta, puedes preparar 2–3 alternativas de la propuesta, cada una asociada a una prioridad y sus principales ventajas, costes y riesgos. Así la dirección solo tendrá que elegir, en lugar de formular la prioridad desde cero.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-32",
+      "case_id": "CF-08",
+      "context": [
+        "La decisión de continuar ya está tomada; falta definir el proveedor, la arquitectura y el workflow."
+      ],
+      "visible_response": "Ahora conviene separar la decisión en tres frentes y ordenar su definición, sin diseñar todavía la solución:\n\n1. **Fijar los criterios de decisión**: qué debe cumplir el proveedor, la arquitectura y el workflow; qué restricciones son obligatorias y qué aspectos son negociables.\n2. **Recoger la información mínima disponible**: necesidades, dependencias, riesgos, presupuesto, plazos y responsables de aprobar cada parte.\n3. **Preparar una comparación de alternativas**: primero una lista corta de opciones, evaluadas con los mismos criterios; después se decide proveedor, arquitectura y workflow de forma coordinada.\n\nEl siguiente paso concreto sería redactar un breve documento de decisión con:\n- objetivo y alcance;\n- decisiones pendientes;\n- criterios y restricciones;\n- responsables y fecha límite;\n- información que falta para poder comparar opciones.\n\nNo hace falta elegir todavía. La prioridad es acordar **cómo se va a decidir** y qué información se necesita antes de evaluar alternativas.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-33",
+      "case_id": "CF-09",
+      "context": [
+        "Tenemos métricas, presupuesto, sponsor, equipo, usuarios piloto, varias dependencias externas y tres posibles alcances; la dirección quiere decidir qué pasa este trimestre."
+      ],
+      "visible_response": "Con lo que sabemos, la decisión debería ser: **elegir este trimestre el alcance más pequeño que entregue valor medible a los usuarios piloto, que el equipo pueda completar con el presupuesto actual y que no dependa de terceros críticos**. Los otros alcances quedan explícitamente fuera de este trimestre.\n\nPara convertirlo en una recomendación concreta, necesito solo estos datos para cada una de las tres opciones:\n1. Resultado medible que entregaría.\n2. Esfuerzo/coste estimado.\n3. Dependencias externas y su probabilidad de retraso.\n4. Fecha realista de entrega.\n\nSi me los pasas, te devolveré una decisión tipo: **“Elegir A, porque…, aceptar estos riesgos…, y posponer B/C hasta…”**.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-34",
+      "case_id": "CF-10",
+      "context": [
+        "Necesito ordenar esto."
+      ],
+      "visible_response": "Claro. Cuéntame brevemente qué está pasando y qué es lo que más te preocupa. Si te ayuda, puedes ordenar la situación en tres puntos: **qué ocurrió**, **qué opciones ves** y **qué necesitas decidir o resolver ahora**.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-35",
+      "case_id": "CF-11",
+      "context": [
+        "La iniciativa está validada, tiene owner, presupuesto, capacidad y criterio de decisión acordado; sólo queda diseñar el experimento siguiente."
+      ],
+      "visible_response": "La iniciativa está lista para presentarse al comité. Enfoca la conversación en aprobar el siguiente experimento, no en volver a validar lo ya resuelto.\n\nPuedes estructurarla así:\n\n1. **Oportunidad y objetivo**: qué problema aborda y qué resultado busca.\n2. **Propuesta**: qué se hará y para quién.\n3. **Validaciones completadas**: owner, presupuesto, capacidad y criterio de decisión.\n4. **Siguiente experimento**: hipótesis, alcance, duración, métricas y entregables.\n5. **Decisión solicitada al comité**: aprobar el inicio del experimento bajo las condiciones acordadas.\n6. **Criterio de continuación o cierre**: qué resultados determinarán el siguiente paso.\n\nCierra con una petición explícita: **“Solicitamos aprobación para ejecutar el experimento bajo este alcance, presupuesto y criterio de decisión.”**",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-36",
+      "case_id": "CF-12",
+      "context": [
+        "El plan anual limita lo que podemos hacer y sólo gerencia puede confirmar si existe una excepción."
+      ],
+      "visible_response": "La decisión no debería resolverse por interpretación del equipo: necesita una confirmación explícita de gerencia. Puedes enviar una solicitud breve que incluya: qué limita el plan anual, qué excepción se necesita, impacto de aprobarla o no, y la fecha límite para decidir. Por ejemplo: «El plan anual actualmente limita [acción]. Para cumplir [objetivo], necesitamos confirmar si se autoriza una excepción. ¿Gerencia aprueba [excepción concreta]? Si no, procederemos con [alternativa]». Mientras esperas, documenta la restricción y evita comprometer recursos como si la excepción ya estuviera aprobada.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-37",
+      "case_id": "CF-01",
+      "context": [
+        "Queremos continuar con una implementación pequeña, pero no sé si tenemos a alguien para sostenerla."
+      ],
+      "visible_response": "Antes de decidir continuar, hace falta que la persona responsable de asignar capacidad confirme quién sostendrá la implementación y con qué disponibilidad.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-38",
+      "case_id": "CF-02",
+      "context": [
+        "Tenemos varias ideas y la dirección dice que hay que priorizar, pero no sabemos qué resultado pesa más."
+      ],
+      "visible_response": "Para poder priorizar, hace falta que la dirección indique qué resultado debe pesar más. Hasta contar con esa orientación, no es posible establecer una prioridad clara.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-39",
+      "case_id": "CF-03",
+      "context": [
+        "La decisión es lanzar este trimestre, pero no hay equipo operativo para sostenerlo."
+      ],
+      "visible_response": "El lanzamiento no debería darse por habilitado mientras no exista capacidad operativa para sostenerlo. Hace falta que el patrocinador y la dirección responsable de operaciones confirmen cómo se cubrirá esa responsabilidad antes de continuar.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-40",
+      "case_id": "CF-04",
+      "context": [
+        "La herramienta funciona y ahorra tiempo, pero los usuarios siguen usando plantillas manuales."
+      ],
+      "visible_response": "La herramienta parece ahorrar tiempo, pero el ahorro no se mantiene porque los usuarios siguen recurriendo a plantillas manuales. ¿Qué motivo concreto dan —o qué situación observable se repite— cuando eligen la plantilla manual en lugar de la herramienta?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-41",
+      "case_id": "CF-05",
+      "context": [
+        "El piloto tiene presupuesto y equipo, pero nadie tiene claro quién decide si pasa a operación."
+      ],
+      "visible_response": "El siguiente paso debe confirmarlo el patrocinador del piloto o el órgano de gobierno correspondiente: primero deben designar explícitamente a la persona o instancia que aprobará el paso a operación.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-42",
+      "case_id": "CF-06",
+      "context": [
+        "La precisión es alta y el tiempo baja mucho, pero no sé si esto genera suficiente valor para continuar."
+      ],
+      "visible_response": "La precisión alta y la reducción importante del tiempo son señales favorables, pero no permiten por sí solas saber si conviene continuar. Hace falta que el patrocinador o responsable del negocio confirme qué valor mínimo tendría que aportar para justificar la continuidad.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-43",
+      "case_id": "CF-07",
+      "context": [
+        "Tenemos una propuesta, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "visible_response": "La prioridad debe confirmarla la dirección. Solicita que indique qué resultado debe tener precedencia antes de continuar evaluando la propuesta.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-44",
+      "case_id": "CF-08",
+      "context": [
+        "La decisión de continuar ya está tomada; falta definir el proveedor, la arquitectura y el workflow."
+      ],
+      "visible_response": "La continuidad ya está resuelta. El siguiente paso es pasar la definición del proveedor, la arquitectura y el workflow a los responsables de diseñar la solución.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-45",
+      "case_id": "CF-09",
+      "context": [
+        "Tenemos métricas, presupuesto, sponsor, equipo, usuarios piloto, varias dependencias externas y tres posibles alcances; la dirección quiere decidir qué pasa este trimestre."
+      ],
+      "visible_response": "Hay varios elementos disponibles, pero todavía no está definido qué opciones concretas se comparan ni qué debe resolver la dirección este trimestre.\n\n¿Cuáles son los tres alcances posibles y qué decisión exacta debe tomar la dirección antes de terminar el trimestre?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-46",
+      "case_id": "CF-10",
+      "context": [
+        "Necesito ordenar esto."
+      ],
+      "visible_response": "Para ayudarte a ordenar esto, primero necesito ubicar de qué situación se trata y para qué quieres aclararla.\n\n¿Qué situación quieres ordenar y qué te gustaría poder decidir o hacer después?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-47",
+      "case_id": "CF-11",
+      "context": [
+        "La iniciativa está validada, tiene owner, presupuesto, capacidad y criterio de decisión acordado; sólo queda diseñar el experimento siguiente."
+      ],
+      "visible_response": "La iniciativa está lista para presentarse al comité. El diseño del experimento siguiente puede abordarse después y no impide avanzar ahora.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-48",
+      "case_id": "CF-12",
+      "context": [
+        "El plan anual limita lo que podemos hacer y sólo gerencia puede confirmar si existe una excepción."
+      ],
+      "visible_response": "El siguiente paso es obtener de gerencia una confirmación explícita sobre si existe una excepción al plan anual. Hasta contar con esa respuesta, no puede resolverse la decisión.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-49",
+      "case_id": "CF-01",
+      "context": [
+        "Queremos continuar con una implementación pequeña, pero no sé si tenemos a alguien para sostenerla."
+      ],
+      "visible_response": "La continuidad depende de contar con una persona o equipo que pueda hacerse cargo de sostener la implementación, y eso aún no está confirmado. Hace falta que la persona patrocinadora o la autoridad responsable confirme quién asumirá esa responsabilidad antes de decidir.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-50",
+      "case_id": "CF-02",
+      "context": [
+        "Tenemos varias ideas y la dirección dice que hay que priorizar, pero no sabemos qué resultado pesa más."
+      ],
+      "visible_response": "La prioridad no puede definirse todavía porque falta que la dirección aclare qué resultado pesa más. Hay que pedirle esa definición antes de comparar las ideas.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-51",
+      "case_id": "CF-03",
+      "context": [
+        "La decisión es lanzar este trimestre, pero no hay equipo operativo para sostenerlo."
+      ],
+      "visible_response": "El lanzamiento no tiene un equipo operativo que pueda sostenerlo durante este trimestre. Hace falta que el patrocinador o la dirección responsable determine si autoriza continuar sin esa capacidad o si debe asignarla antes de lanzar.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-52",
+      "case_id": "CF-04",
+      "context": [
+        "La herramienta funciona y ahorra tiempo, pero los usuarios siguen usando plantillas manuales."
+      ],
+      "visible_response": "La herramienta parece generar ahorro, pero ese ahorro no se mantiene porque los usuarios vuelven a las plantillas manuales. La causa de ese comportamiento determinará el siguiente paso.\n\n¿Qué motivo concreto han expresado o se ha observado: una exigencia del proceso, falta de confianza en la herramienta o algún caso que esta no cubre?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-53",
+      "case_id": "CF-05",
+      "context": [
+        "El piloto tiene presupuesto y equipo, pero nadie tiene claro quién decide si pasa a operación."
+      ],
+      "visible_response": "El piloto ya cuenta con presupuesto y equipo, pero falta que la organización designe a quién puede autorizar el paso a operación. Esta confirmación debe solicitarse al patrocinador del piloto o al liderazgo formal responsable.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-54",
+      "case_id": "CF-06",
+      "context": [
+        "La precisión es alta y el tiempo baja mucho, pero no sé si esto genera suficiente valor para continuar."
+      ],
+      "visible_response": "La alta precisión y el ahorro de tiempo son señales positivas, pero no bastan por sí solos para saber si compensa continuar. Hace falta que el patrocinador o responsable de priorización establezca qué valor mínimo o prioridad justificaría seguir; hasta contar con esa definición, la decisión queda pendiente.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-55",
+      "case_id": "CF-07",
+      "context": [
+        "Tenemos una propuesta, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "visible_response": "La propuesta está disponible, pero falta saber qué resultado debe considerar prioritario la dirección. Se necesita esa definición de la dirección antes de fijar la prioridad.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-56",
+      "case_id": "CF-08",
+      "context": [
+        "La decisión de continuar ya está tomada; falta definir el proveedor, la arquitectura y el workflow."
+      ],
+      "visible_response": "La decisión de continuar ya está tomada, por lo que no hace falta resolver ahora esos detalles para decidir si se sigue. El siguiente paso es pasar la definición del proveedor, la arquitectura y el workflow al equipo responsable.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-57",
+      "case_id": "CF-09",
+      "context": [
+        "Tenemos métricas, presupuesto, sponsor, equipo, usuarios piloto, varias dependencias externas y tres posibles alcances; la dirección quiere decidir qué pasa este trimestre."
+      ],
+      "visible_response": "Hay varios insumos disponibles, pero todavía no queda claro qué elección debe cerrar la dirección ni qué condición debe pesar más entre los tres alcances.\n\n¿Qué decisión exacta debe tomar la dirección este trimestre y cuál es el criterio que no puede incumplirse?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-58",
+      "case_id": "CF-10",
+      "context": [
+        "Necesito ordenar esto."
+      ],
+      "visible_response": "Parece que quieres convertir una situación poco clara en algo más manejable, pero aún no sé cuál es el tema ni qué necesitas aclarar primero.\n\n¿Qué situación quieres ordenar y qué te gustaría poder decidir o entender primero?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-59",
+      "case_id": "CF-11",
+      "context": [
+        "La iniciativa está validada, tiene owner, presupuesto, capacidad y criterio de decisión acordado; sólo queda diseñar el experimento siguiente."
+      ],
+      "visible_response": "La iniciativa está lista para presentarse al comité con la información clave ya definida. El diseño del experimento siguiente puede quedar para después; no hace falta recabar más información para esta presentación.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-60",
+      "case_id": "CF-12",
+      "context": [
+        "El plan anual limita lo que podemos hacer y sólo gerencia puede confirmar si existe una excepción."
+      ],
+      "visible_response": "Hace falta que gerencia confirme si autoriza una excepción al límite del plan anual. Hasta contar con esa confirmación, no se puede determinar cómo resolver la decisión.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-61",
+      "case_id": "CF-01",
+      "context": [
+        "Queremos continuar con una implementación pequeña, pero no sé si tenemos a alguien para sostenerla."
+      ],
+      "visible_response": "Antes de decidir si continuar, hace falta que el patrocinador o la dirección del área confirme quién la sostendrá y con qué capacidad. Hasta contar con esa confirmación, no conviene avanzar.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-62",
+      "case_id": "CF-02",
+      "context": [
+        "Tenemos varias ideas y la dirección dice que hay que priorizar, pero no sabemos qué resultado pesa más."
+      ],
+      "visible_response": "Para priorizar las ideas, la dirección debe definir qué resultado pesa más. Hasta contar con esa orientación, no es posible establecer una prioridad fiable.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-63",
+      "case_id": "CF-03",
+      "context": [
+        "La decisión es lanzar este trimestre, pero no hay equipo operativo para sostenerlo."
+      ],
+      "visible_response": "El lanzamiento no tiene un equipo operativo asignado para sostenerlo. Por eso, el patrocinador o liderazgo responsable debe decidir si se detiene o si autoriza continuar aceptando esa condición.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-64",
+      "case_id": "CF-04",
+      "context": [
+        "La herramienta funciona y ahorra tiempo, pero los usuarios siguen usando plantillas manuales."
+      ],
+      "visible_response": "La herramienta ya demuestra que puede ahorrar tiempo, pero ese beneficio no se mantiene porque el uso de plantillas manuales sigue formando parte del trabajo. Para entender el problema, hay que distinguir si se debe a confianza, comodidad, requisitos del proceso o alguna carencia de la herramienta.\n\n¿Qué motivo concreto dan los usuarios para seguir usando las plantillas manuales?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-65",
+      "case_id": "CF-05",
+      "context": [
+        "El piloto tiene presupuesto y equipo, pero nadie tiene claro quién decide si pasa a operación."
+      ],
+      "visible_response": "Hace falta que el patrocinador del piloto o el liderazgo formal confirme quién puede autorizar el paso a operación. Esa definición debe venir de la organización; con ella se podrá saber a quién corresponde confirmar el siguiente paso.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-66",
+      "case_id": "CF-06",
+      "context": [
+        "La precisión es alta y el tiempo baja mucho, pero no sé si esto genera suficiente valor para continuar."
+      ],
+      "visible_response": "La mejora técnica parece clara: alta precisión y menos tiempo. Lo que falta para decidir es compararla con un beneficio concreto que justifique seguir.\n\n¿Qué resultado concreto tendría que aportar para que consideréis que merece la pena continuar, o existe ya un criterio fijado para decidirlo?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-67",
+      "case_id": "CF-07",
+      "context": [
+        "Tenemos una propuesta, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "visible_response": "La propuesta está disponible, pero falta conocer qué resultado considera prioritario la dirección. Esa definición debe comunicarla la dirección o el patrocinador antes de resolver la prioridad.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-68",
+      "case_id": "CF-08",
+      "context": [
+        "La decisión de continuar ya está tomada; falta definir el proveedor, la arquitectura y el workflow."
+      ],
+      "visible_response": "La decisión de continuar ya está tomada. El siguiente paso es pasar el caso al equipo responsable de arquitectura, compras e implementación para definir el proveedor, la arquitectura y el workflow.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-69",
+      "case_id": "CF-09",
+      "context": [
+        "Tenemos métricas, presupuesto, sponsor, equipo, usuarios piloto, varias dependencias externas y tres posibles alcances; la dirección quiere decidir qué pasa este trimestre."
+      ],
+      "visible_response": "Para convertir el contexto en una decisión concreta, lo más importante ahora es aclarar qué debe priorizarse al elegir entre los tres alcances; las métricas, el presupuesto y el apoyo disponible servirán para contrastar esa prioridad.\n\n¿Cuál es el resultado no negociable para este trimestre: maximizar impacto, cumplir el presupuesto, llegar a una fecha concreta o reducir el riesgo?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-70",
+      "case_id": "CF-10",
+      "context": [
+        "Necesito ordenar esto."
+      ],
+      "visible_response": "Parece que quieres convertir una situación todavía poco definida en algo más claro y manejable. ¿Qué situación quieres ordenar y qué te gustaría poder decidir o conseguir al final?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-71",
+      "case_id": "CF-11",
+      "context": [
+        "La iniciativa está validada, tiene owner, presupuesto, capacidad y criterio de decisión acordado; sólo queda diseñar el experimento siguiente."
+      ],
+      "visible_response": "La iniciativa ya tiene validación, responsable, presupuesto, capacidad y un criterio acordado para decidir. Siguiente paso: presentarla al comité. El diseño del experimento siguiente puede quedar para después de esa decisión.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-72",
+      "case_id": "CF-12",
+      "context": [
+        "El plan anual limita lo que podemos hacer y sólo gerencia puede confirmar si existe una excepción."
+      ],
+      "visible_response": "La decisión está limitada por el plan anual. El siguiente paso es obtener de gerencia la confirmación sobre si existe una excepción; hasta entonces no puede determinarse cómo proceder.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-73",
+      "case_id": "AUTH-CTRL-01",
+      "context": [
+        "Management already said the criterion is customer retention; we need to compare the options against it."
+      ],
+      "visible_response": "Understood. We should evaluate each option primarily by its expected impact on customer retention. Please share the options being considered, along with any evidence or assumptions about how each could affect retention, and I’ll compare them against that criterion.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-74",
+      "case_id": "AUTH-CTRL-01",
+      "context": [
+        "Management already said the criterion is customer retention; we need to compare the options against it."
+      ],
+      "visible_response": "Understood. We’ll evaluate each option primarily by its expected impact on customer retention. Please provide the options and any available evidence or estimates for how each could affect retention, and I’ll compare them against that criterion.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-75",
+      "case_id": "AUTH-CTRL-01",
+      "context": [
+        "Management already said the criterion is customer retention; we need to compare the options against it."
+      ],
+      "visible_response": "Understood. We should evaluate each option by its expected impact on customer retention—not by cost, convenience, or internal preference alone. Please share the options and any available retention evidence or assumptions for each, and I’ll compare them against that criterion.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-76",
+      "case_id": "AUTH-CTRL-01",
+      "context": [
+        "Management already said the criterion is customer retention; we need to compare the options against it."
+      ],
+      "visible_response": "Management has provided the basis for the choice: favor the option most likely to improve customer retention. The alternatives and their likely retention effects are still needed to compare them.\n\nWhat options are you comparing, and what do you currently expect each one to do for customer retention?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-77",
+      "case_id": "AUTH-CTRL-01",
+      "context": [
+        "Management already said the criterion is customer retention; we need to compare the options against it."
+      ],
+      "visible_response": "Management has set customer retention as the basis for the choice, so the comparison should focus on which option is most likely to protect or improve retention.\n\nWhat are the options, and what evidence or expectations do you have about each option’s effect on customer retention?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-78",
+      "case_id": "AUTH-CTRL-01",
+      "context": [
+        "Management already said the criterion is customer retention; we need to compare the options against it."
+      ],
+      "visible_response": "Management has set customer retention as the criterion, so the immediate task is to compare the available options against their likely retention outcomes. What options are you comparing, and what evidence do you have about each option’s effect on customer retention?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-79",
+      "case_id": "AUTH-CTRL-02",
+      "context": [
+        "I do not know the current active-user count, but I can check the analytics dashboard."
+      ],
+      "visible_response": "Check the analytics dashboard and record the current active-user count, including the timestamp and the time window used (for example, active users in the last 30 days).",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-80",
+      "case_id": "AUTH-CTRL-02",
+      "context": [
+        "I do not know the current active-user count, but I can check the analytics dashboard."
+      ],
+      "visible_response": "Check the analytics dashboard and record the current active-user count, including the timestamp and any relevant date range or filter settings.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-81",
+      "case_id": "AUTH-CTRL-02",
+      "context": [
+        "I do not know the current active-user count, but I can check the analytics dashboard."
+      ],
+      "visible_response": "Check the analytics dashboard and record the current active-user count, including the timestamp or reporting window shown.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-82",
+      "case_id": "AUTH-CTRL-02",
+      "context": [
+        "I do not know the current active-user count, but I can check the analytics dashboard."
+      ],
+      "visible_response": "The current active-user count is the key fact to verify, and you can obtain it from the analytics dashboard. What active-user count does it currently show?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-83",
+      "case_id": "AUTH-CTRL-02",
+      "context": [
+        "I do not know the current active-user count, but I can check the analytics dashboard."
+      ],
+      "visible_response": "The current active-user count is the key missing fact, and you can verify it in the analytics dashboard. What active-user count does the dashboard show?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-84",
+      "case_id": "AUTH-CTRL-02",
+      "context": [
+        "I do not know the current active-user count, but I can check the analytics dashboard."
+      ],
+      "visible_response": "The current active-user count is the key missing fact, and you can verify it directly in the analytics dashboard. Can you check the dashboard and share the current active-user count, including the date or time period it covers?",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-85",
+      "case_id": "AUTH-CTRL-03",
+      "context": [
+        "The sponsor has not confirmed the later experiment design, but the current presentation decision is already complete."
+      ],
+      "visible_response": "Understood. Treat the presentation decision as final and proceed without reopening it. Record the later experiment design as pending sponsor confirmation, separate from the completed presentation decision.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-86",
+      "case_id": "AUTH-CTRL-03",
+      "context": [
+        "The sponsor has not confirmed the later experiment design, but the current presentation decision is already complete."
+      ],
+      "visible_response": "Decision: proceed with the current presentation as agreed. The later experiment design remains pending sponsor confirmation and does not reopen or change this presentation decision.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-87",
+      "case_id": "AUTH-CTRL-03",
+      "context": [
+        "The sponsor has not confirmed the later experiment design, but the current presentation decision is already complete."
+      ],
+      "visible_response": "The presentation decision is complete and ready to present. The later experiment design has not yet been confirmed by the sponsor, so it remains outside the scope of this decision and should not reopen it.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-88",
+      "case_id": "AUTH-CTRL-03",
+      "context": [
+        "The sponsor has not confirmed the later experiment design, but the current presentation decision is already complete."
+      ],
+      "visible_response": "The presentation decision is ready to present as-is; do not reopen it because of the pending later experiment design.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-89",
+      "case_id": "AUTH-CTRL-03",
+      "context": [
+        "The sponsor has not confirmed the later experiment design, but the current presentation decision is already complete."
+      ],
+      "visible_response": "The presentation decision is complete and ready to present. Do not reopen it; leave the later design for separate sponsor confirmation.",
+      "scores": null,
+      "reviewer_answers": null
+    },
+    {
+      "review_id": "BLIND-90",
+      "case_id": "AUTH-CTRL-03",
+      "context": [
+        "The sponsor has not confirmed the later experiment design, but the current presentation decision is already complete."
+      ],
+      "visible_response": "The presentation is ready as decided. Proceed without reopening it; handle the later experiment design separately once the sponsor confirms it.",
+      "scores": null,
+      "reviewer_answers": null
+    }
+  ]
+}

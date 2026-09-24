@@ -1,0 +1,107 @@
+{
+  "fixture_version": "HYP-005.2-sensitivity-v0.1",
+  "status": "TESTING",
+  "development": [
+    {
+      "id": "DS-01",
+      "title": "CONSTRAINING_ROUTE_CHANGES",
+      "turns": ["La capacidad actual es limitada y una respuesta sobre si podemos cubrir el lanzamiento cambia entre seguir este trimestre o enrutarlo a otra ventana."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_sensitivity": "HIGH",
+      "expected_answer_shape": "BOUNDED_FACT",
+      "expected_action": "ASK"
+    },
+    {
+      "id": "DS-02",
+      "title": "CONSTRAINING_SCOPE_CONDITION",
+      "turns": ["El valor y la autoridad están claros; saber si podemos cubrir media jornada o jornada completa cambia el alcance y las condiciones del handoff, aunque la ruta siga siendo Portfolio."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_sensitivity": "MEDIUM",
+      "expected_answer_shape": "BOUNDED_FACT",
+      "expected_action": "ASK"
+    },
+    {
+      "id": "DS-03",
+      "title": "CONSTRAINING_IMPLEMENTATION_DETAIL",
+      "turns": ["La capacidad para decidir está confirmada; queda por descubrir el workflow exacto de soporte y los turnos de mantenimiento en la iniciativa."],
+      "expected_dimension": "ROUTING",
+      "expected_sensitivity": "LOW",
+      "expected_answer_shape": "OPEN_EXPLORATION",
+      "expected_action": "ROUTE"
+    },
+    {
+      "id": "DS-04",
+      "title": "BLOCKING_USER_ANSWER",
+      "turns": ["No hay equipo operativo para el lanzamiento actual y eso bloquea decidir si se puede avanzar; el usuario sí puede confirmar qué cobertura existe."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_sensitivity": "HIGH",
+      "expected_answer_shape": "BOUNDED_FACT",
+      "expected_action": "ASK"
+    },
+    {
+      "id": "DS-05",
+      "title": "BLOCKING_ORGANIZATIONAL_AUTHORITY",
+      "turns": ["Nadie está nombrado para responder por la operación y solo gerencia puede confirmar quién tiene esa autoridad."],
+      "expected_dimension": "DECISION",
+      "expected_sensitivity": "HIGH",
+      "expected_answer_shape": "ORGANIZATIONAL_CONFIRMATION",
+      "expected_action": "REQUIRE_ORGANIZATIONAL_INPUT"
+    },
+    {
+      "id": "DS-06",
+      "title": "HIGH_UNCERTAINTY_LOW_SENSITIVITY",
+      "turns": ["No sabemos todavía qué proveedor, arquitectura o pipeline técnico usar; la decisión de continuar y el routing actual ya están confirmados."],
+      "expected_dimension": "ROUTING",
+      "expected_sensitivity": "LOW",
+      "expected_answer_shape": "OPEN_EXPLORATION",
+      "expected_action": "ROUTE"
+    },
+    {
+      "id": "DS-07",
+      "title": "LOW_UNCERTAINTY_HIGH_SENSITIVITY",
+      "turns": ["Casi todo está claro, pero confirmar si existe cobertura para la única ventana de lanzamiento cambia directamente si avanzamos o pausamos."],
+      "expected_dimension": "EXECUTION_REALITY",
+      "expected_sensitivity": "HIGH",
+      "expected_answer_shape": "BOUNDED_FACT",
+      "expected_action": "ASK"
+    },
+    {
+      "id": "DS-08",
+      "title": "OPEN_EXPLORATION",
+      "turns": ["Para entender la adopción habría que explorar en profundidad hábitos, incentivos y rediseño del workflow; no hay un blocker actual para la decisión de Portfolio."],
+      "expected_dimension": "ROUTING",
+      "expected_sensitivity": "LOW",
+      "expected_answer_shape": "OPEN_EXPLORATION",
+      "expected_action": "ROUTE"
+    }
+  ],
+  "paired_controls": [
+    {
+      "pair_id": "DS-PAIR-HIGH",
+      "cases": [
+        {"id": "DS-PAIR-HIGH-EXPLICIT", "turns": ["La decisión queda bloqueada si no confirmamos quién puede cubrir la operación; la persona usuaria puede responderlo."]},
+        {"id": "DS-PAIR-HIGH-IMPLICIT", "turns": ["Sin alguien que cubra la operación no se puede tomar la decisión de salida; la persona usuaria conoce la cobertura disponible."]}
+      ],
+      "expected_sensitivity": "HIGH",
+      "expected_action": "ASK"
+    },
+    {
+      "pair_id": "DS-PAIR-LOW",
+      "cases": [
+        {"id": "DS-PAIR-LOW-DRAMATIC", "turns": ["El diseño técnico crítico y absolutamente imprescindible para la fase siguiente todavía no está definido; la decisión actual de continuar ya está tomada."]},
+        {"id": "DS-PAIR-LOW-NEUTRAL", "turns": ["El diseño técnico de la fase siguiente todavía no está definido; la decisión actual de continuar ya está tomada."]}
+      ],
+      "expected_sensitivity": "LOW",
+      "expected_action": "ROUTE"
+    },
+    {
+      "pair_id": "DS-PAIR-CAPACITY",
+      "cases": [
+        {"id": "DS-PAIR-CAPACITY-NUMERIC", "turns": ["Tenemos solo dos horas semanales para operar; saber si podemos ampliar esa cobertura cambia el alcance del lanzamiento."]},
+        {"id": "DS-PAIR-CAPACITY-IMPLICIT", "turns": ["El equipo llega al límite y ampliar la cobertura cambiaría el alcance del lanzamiento."]}
+      ],
+      "expected_sensitivity": "MEDIUM",
+      "expected_action": "ASK"
+    }
+  ]
+}

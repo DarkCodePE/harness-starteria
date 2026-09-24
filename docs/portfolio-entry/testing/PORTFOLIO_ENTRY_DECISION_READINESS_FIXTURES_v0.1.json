@@ -1,0 +1,131 @@
+{
+  "fixture_version": "HYP-005-v0.1",
+  "status": "TESTING",
+  "authority": "experimental-only",
+  "development": [
+    {
+      "id": "DR-01",
+      "title": "CAPACITY",
+      "turns": [
+        "El prototipo funciona bien y redujo aproximadamente un 40% el tiempo. Dirección quiere implementarlo y el presupuesto está aprobado.",
+        "TI solo podrá dedicar unas dos horas por semana y el área usuaria nunca ha operado IA.",
+        "No sabemos todavía quién se hará cargo después del piloto."
+      ],
+      "expected_invariants": [
+        "Reevaluar EXECUTION_REALITY después de cada respuesta.",
+        "CAPACITY y ownership post-piloto son gaps materiales.",
+        "No asumir que el beneficio técnico justifica implementación.",
+        "No hacer tres preguntas consecutivas de ownership ni profundizar repetidamente en mechanics.",
+        "Puede preguntar una vez por la decisión/accountability si cambia el handoff; después puede enrutar a input organizacional."
+      ],
+      "expected_routes": ["Portfolio", "Organizational input", "Stop / sufficient context"]
+    },
+    {
+      "id": "DR-02",
+      "title": "VALUE",
+      "turns": [
+        "La clasificación con IA alcanza 92% de precisión y el tiempo baja de 15 minutos a menos de 3.",
+        "TI puede soportarla, hay presupuesto y gerencia dice que quiere usar más IA.",
+        "No sé si esto genera suficiente valor ni qué quiere priorizar realmente gerencia."
+      ],
+      "expected_invariants": [
+        "Separar mejora operacional de business value confirmado.",
+        "Separar presión de adopción tecnológica de prioridad de negocio.",
+        "Clasificar lo que gerencia no ha definido como REQUIRES_ORGANIZATIONAL_INPUT.",
+        "No repetir el mismo gap con otra redacción.",
+        "Las hipótesis provisionales deben ser AI_SUGGESTED."
+      ],
+      "expected_routes": ["Organizational input", "Portfolio", "External evidence"]
+    },
+    {
+      "id": "DR-03",
+      "title": "ADOPTION",
+      "turns": [
+        "La herramienta de reportes comerciales funciona y el presupuesto está aprobado.",
+        "TI puede mantenerla, pero los usuarios siguen usando plantillas manuales.",
+        "La revisión manual elimina parte del ahorro; no sabemos aún la causa exacta."
+      ],
+      "expected_invariants": [
+        "Detectar adoption readiness como gap material.",
+        "No diseñar training, rollout, experimento ni workflow redesign.",
+        "Preguntar solo si una respuesta puede cambiar el routing; si la causa exacta pertenece a desarrollo posterior, detener y enrutar.",
+        "No convertir soporte técnico en evidencia de adopción."
+      ],
+      "expected_routes": ["Initiative", "Steps/later-stage", "Stop / sufficient context"]
+    },
+    {
+      "id": "DR-04",
+      "title": "GOVERNANCE",
+      "turns": [
+        "El piloto tiene métricas, presupuesto y equipo disponible.",
+        "Nadie tiene claro quién decide si pasa a operación.",
+        "Hay una persona que lideró el piloto, un sponsor ejecutivo y un equipo técnico de soporte."
+      ],
+      "expected_invariants": [
+        "Distinguir decision authority, recommendation ownership, operational accountability y technical support.",
+        "No inferir pilot leader = accountable, sponsor = owner.",
+        "No profundizar indefinidamente en quién designa a quién.",
+        "Si falta designación formal, enrutar a Organizational input."
+      ],
+      "expected_routes": ["Organizational input", "Portfolio", "Stop when route is clear"]
+    },
+    {
+      "id": "DR-05",
+      "title": "ANNUAL_PLAN_ALIGNMENT",
+      "turns": [
+        "Somos una universidad estatal con tres actividades en el Plan anual. La nueva dirección ha cambiado prioridades.",
+        "El Plan no puede modificarse fácilmente; solo hay una persona operativa, no hay presupuesto y dependemos de cooperación externa.",
+        "Alguien dice que podemos ser flexibles, pero no sabemos si esa interpretación tiene autoridad formal."
+      ],
+      "expected_invariants": [
+        "Detectar compromisos fijos frente a ejecución flexible, capacity, dependencia externa y realineamiento de liderazgo.",
+        "No asumir que flexible equivale a autorización formal de cumplimiento.",
+        "No diseñar la metodología del Mapping.",
+        "Enrutar la interpretación de compliance/authority a Organizational input y la dependencia a External evidence cuando corresponda.",
+        "No crear iniciativas canónicas."
+      ],
+      "expected_routes": ["Organizational input", "External evidence", "Portfolio", "Stop when route is clear"]
+    }
+  ],
+  "holdout": [
+    {
+      "id": "H5-HO-A",
+      "title": "SERVICE_LEVEL_NOT_STRATEGY",
+      "turns": [
+        "Un equipo de atención recibe una cola impredecible y quiere decidir si una automatización puede entrar en operación.",
+        "El problema principal es la cobertura de turnos y la responsabilidad fuera de horario; el KPI todavía no está acordado."
+      ],
+      "expected_invariants": [
+        "Priorizar EXECUTION_REALITY/ownership sobre KPI o strategy.",
+        "No preguntar por objetivo estratégico como primera respuesta.",
+        "Identificar la decisión operativa y el routing de autoridad."
+      ]
+    },
+    {
+      "id": "H5-HO-B",
+      "title": "EXPLICIT_UNKNOWN",
+      "turns": [
+        "Tenemos una propuesta para reducir errores, pero no sé qué resultado considera prioritario la dirección.",
+        "No lo sé y nadie me lo ha comunicado."
+      ],
+      "expected_invariants": [
+        "Marcar el gap como REQUIRES_ORGANIZATIONAL_INPUT o unresolved.",
+        "No repetir la pregunta sobre el resultado con otra redacción.",
+        "Puede dejar una hipótesis AI_SUGGESTED sin presentarla como hecho."
+      ]
+    },
+    {
+      "id": "H5-HO-C",
+      "title": "EARLY_STOP",
+      "turns": [
+        "Necesito decidir si presentamos al comité una iniciativa ya validada, con owner, presupuesto, capacidad y criterio de decisión acordados.",
+        "La única información que falta es el detalle del experimento de la siguiente fase."
+      ],
+      "expected_invariants": [
+        "STOP temprano con sufficient_context o later_stage_detail.",
+        "No pedir detalles de experimento, muestra, threshold o workflow.",
+        "No abrir una nueva línea de Question Planning por completitud."
+      ]
+    }
+  ]
+}

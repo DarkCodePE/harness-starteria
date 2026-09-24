@@ -1,0 +1,62 @@
+{
+  "model_version": "PORTFOLIO_ENTRY_FIXTURE_EVALUATION_MODEL_v0.2",
+  "authority": "experimental-only",
+  "historical_fixture_text_preserved": true,
+  "classification_groups": [
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_READINESS_FIXTURES_v0.1",
+      "ids": ["DR-01", "DR-02", "DR-03", "DR-04", "DR-05", "H5-HO-A", "H5-HO-B", "H5-HO-C"],
+      "expectation_mode": "INVARIANT_BASED",
+      "acceptable_actions": ["ASK", "ROUTE", "REQUIRE_ORGANIZATIONAL_INPUT", "STOP"],
+      "required_invariants": ["cross-dimension reassessment", "explicit unknown is not repeated", "routing preserves unresolved authority or stage boundary"],
+      "rationale": "The fixtures declare behavioral invariants and multiple acceptable routes rather than one materially mandatory action."
+    },
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_READINESS_ADVERSARIAL_FIXTURES_v0.1",
+      "ids": ["ADV-01", "ADV-02", "ADV-05", "ADV-06", "ADV-08", "STOP-01", "STOP-02", "STOP-03", "PAIR-GOV-KEYWORDS", "PAIR-GOV-PLAIN", "PAIR-VALUE-KEYWORDS", "PAIR-VALUE-PLAIN"],
+      "expectation_mode": "STRICT_ACTION",
+      "rationale": "The current decision, authority boundary, or later-stage boundary makes the recorded action materially required."
+    },
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_READINESS_ADVERSARIAL_FIXTURES_v0.1",
+      "ids": ["ADV-03", "ADV-04", "ADV-07", "ADV-09"],
+      "expectation_mode": "INVARIANT_BASED",
+      "acceptable_actions": ["ASK", "ROUTE", "REQUIRE_ORGANIZATIONAL_INPUT"],
+      "required_invariants": ["established governance is not reopened", "uncertain evidence or value remains explicit", "no false sufficiency"],
+      "rationale": "Evidence/value gaps can be asked or routed safely when uncertainty and authority boundaries are preserved."
+    },
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_READINESS_ADVERSARIAL_FIXTURES_v0.1",
+      "ids": ["PAIR-CAPACITY-KEYWORDS", "PAIR-CAPACITY-PLAIN"],
+      "expectation_mode": "INVARIANT_BASED",
+      "acceptable_actions": ["ASK", "ROUTE"],
+      "required_invariants": ["capacity uncertainty remains explicit", "no false readiness", "no later-stage detail is presented as current certainty"],
+      "decision_loss_if_action_differs": "NONE",
+      "rationale": "Historical pair is preserved as insufficient for a strict action; both actions can be safe until the decision threshold is stated."
+    },
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_READINESS_ADVERSARIAL_FIXTURES_v0.1",
+      "ids": ["ADV-HO-01", "ADV-HO-02", "ADV-HO-03"],
+      "expectation_mode": "STRICT_ACTION",
+      "rationale": "Frozen holdouts have explicit expected actions and materially test competing gaps, implicit execution constraints, and early stop."
+    },
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_DEPENDENCY_FIXTURES_v0.1",
+      "ids": ["DD-01", "DD-02", "DD-03", "DD-04", "DD-05", "DD-06", "DD-PAIR-BLOCKER-EXPLICIT", "DD-PAIR-BLOCKER-IMPLICIT", "DD-PAIR-LATER-CRITICAL", "DD-PAIR-LATER-NEUTRAL"],
+      "expectation_mode": "STRICT_ACTION",
+      "rationale": "Dependency and answerability are explicit; the required action follows directly from blocker, authority, or later-stage status."
+    },
+    {
+      "suite": "PORTFOLIO_ENTRY_DECISION_SENSITIVITY_FIXTURES_v0.1",
+      "ids": ["DS-01", "DS-02", "DS-03", "DS-04", "DS-05", "DS-06", "DS-07", "DS-08", "DS-PAIR-HIGH-EXPLICIT", "DS-PAIR-HIGH-IMPLICIT", "DS-PAIR-LOW-DRAMATIC", "DS-PAIR-LOW-NEUTRAL", "DS-PAIR-CAPACITY-NUMERIC", "DS-PAIR-CAPACITY-IMPLICIT"],
+      "expectation_mode": "STRICT_ACTION",
+      "rationale": "Sensitivity and answer shape are explicit enough to require the recorded action."
+    }
+  ],
+  "decision_loss_severity_legend": {
+    "NONE": "No decision-integrity loss or insufficient-case quarantine.",
+    "MINOR": "One bounded unnecessary question.",
+    "MATERIAL": "Premature routing or asking loses material current-decision context.",
+    "SEVERE": "Missed blocker, invented authority, false evidence sufficiency, or Step leakage."
+  }
+}
