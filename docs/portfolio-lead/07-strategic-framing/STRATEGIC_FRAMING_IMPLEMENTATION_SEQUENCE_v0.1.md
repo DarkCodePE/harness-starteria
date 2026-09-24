@@ -1,13 +1,17 @@
 ﻿# Strategic Framing Implementation Sequence v0.1
 
-**Estado:** `APPROVED EXECUTION PLAN` — SF-1 es la siguiente slice; ninguna slice posterior se ejecuta en este cambio.
+**Estado:** `APPROVED EXECUTION PLAN` — SF-1, SF-2, SF-3A y SF-3B tienen
+evidencia separada en este checkout; SF-3C+ no están implementadas.
 
-| Slice | Scope | Exit evidence | Status at SF-0 |
+| Slice | Scope | Exit evidence | Status in this checkout |
 |---|---|---|---|
-| SF-0 | Contract + scenario freeze | Experience Contract, scenarios, checklist and traceability human-approved on 2026-09-24 | APPROVED; runtime not implemented |
-| SF-1 | Current-state audit | Route/UI/service/state/AI/persistence/permissions/tests map classified | Not started |
-| SF-2 | Strategic Framing Read Model | Read model aligned with contract and current authority | Not started |
-| SF-3 | Editable Front Workspace | Direct structured editing and sufficiency feedback | Not started |
+| SF-0 | Contract + scenario freeze | Experience Contract, scenarios, checklist and traceability human-approved on 2026-09-24 | APPROVED contract |
+| SF-1 | Current-state audit | Route/UI/service/state/AI/persistence/permissions/tests map classified | COMPLETED |
+| SF-2 | Strategic Framing Read Model | Read model aligned with contract and current authority | IMPLEMENTED |
+| SF-3A | Provisional-state decision | SF-owned provisional state decision and boundaries | APPROVED |
+| SF-3B | Provisional persistence/application state | Durable provisional state, re-entry, human correction and history | IMPLEMENTED_UNVERIFIED |
+| SF-3C | Editable Framing workspace/API boundary | Structured editing and sufficiency feedback beyond the application service | NOT IMPLEMENTED |
+| SF-3D+ | Copilot/orchestration and later framing slices | Routes, UI, Copilot, canonical promotion and later integrations | NOT IMPLEMENTED |
 | SF-4 | Adaptive Lens Suggestions | Relevant, explainable, non-mandatory perspective suggestions | Not started |
 | SF-5 | Gap Prioritization | Capacity/horizon-aware prioritization with observable remainder | Not started |
 | SF-6 | Promote Gap â†’ Challenge | Explicit human confirmation with downstream boundaries preserved | Not started |
@@ -16,8 +20,8 @@
 
 **Status:** `APPROVED EXECUTION PLAN`
 **Human approval:** 2026-09-24
-**Next authorized slice:** SF-1 Current-State Audit
-No slice after SF-0 is executed by this approval materialization.
+**Current implementation boundary:** SF-3B provisional persistence/application
+state. SF-3C+ remains unimplemented.
 
 ## Sequence guardrails
 
@@ -29,7 +33,10 @@ No slice after SF-0 is executed by this approval materialization.
 
 ## SF-0 non-actions
 
-This package does not modify frontend, backend, Prisma, Core, routes, endpoints, Copilot runtime, PH-3A or PH-3B. It does not execute SF-1.
+SF-0 documentation does not modify frontend, backend, Prisma, Core, routes,
+endpoints, Copilot runtime, PH-3A or PH-3B. SF-1 through SF-3B are tracked as
+separate implementation evidence; SF-3C+ remains outside the implemented
+boundary.
 
 ## SF-0.1 amendment guardrails
 
@@ -47,11 +54,13 @@ SF-1 must audit before implementation:
 The implementation sequence remains:
 
 ```text
-SF-0
-  → SF-1 Current-state Audit
-  → SF-2 Strategic Framing Read Model
-  → ...
+SF-0 approved contract
+  → SF-1 completed current-state audit
+  → SF-2 implemented read model
+  → SF-3A approved provisional-state decision
+  → SF-3B implemented provisional persistence/application state
+  → SF-3C+ not implemented
 ```
 
 If implementation requires a canonical Challenge without a Strategic Front,
-stop and raise an ADR candidate. SF-0.1 does not execute SF-1.
+stop and raise an ADR candidate. SF-0.1 does not authorize SF-3C+.

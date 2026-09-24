@@ -2,7 +2,8 @@
 
 **Estado:** `APPROVED` â€” human-approved SF-0 Experience baseline (2026-09-24)
 **Slice:** `SF-0 â€” Strategic Framing Contract + Scenario Freeze`
-**Alcance:** exclusivamente documental; no implementa runtime ni modifica Core.
+**Alcance:** contrato y estado documental del bounded context; SF-1, SF-2 y
+SF-3B tienen evidencia de implementación separada y no modifican Core.
 
 ```text
 SF-0 documentation package:
@@ -34,7 +35,7 @@ Este directorio define el bounded context **Strategic Framing** entre las rutas 
 **Estado vigente:** `APPROVED` — human-approved SF-0 Experience baseline
 **Approval date:** 2026-09-24
 **Scope:** Experience Contract, scenarios and acceptance baseline only
-**Runtime:** NOT IMPLEMENTED · **SF-1:** NOT EXECUTED · **Core change:** NO · **ADR blocker:** NO
+**Runtime:** PARTIAL / IMPLEMENTED_UNVERIFIED · **SF-1:** COMPLETED · **SF-2:** IMPLEMENTED · **SF-3A:** APPROVED · **SF-3B:** IMPLEMENTED_UNVERIFIED · **SF-3C+:** NOT IMPLEMENTED · **Core change:** NO · **ADR blocker:** NO
 
 ## SF-0 HUMAN APPROVAL
 
@@ -43,7 +44,10 @@ Decision: APPROVED
 ADR blocker: NO
 Core change: NO
 Schema change: NO
-Next authorized slice: SF-1 Current-State Audit
+Current implementation boundary: SF-3B provisional persistence/application state.
+No routes, frontend UI, Copilot integration or canonical promotion are
+implemented; end-to-end Strategic Framing runtime is not implemented. SF-3C+
+remains unimplemented.
 
 ## Documentos
 
@@ -60,5 +64,7 @@ Next authorized slice: SF-1 Current-State Audit
 ADR assessment: `ADR REQUIRED NOW: NO`. If implementation requires a canonical
 Challenge without a Strategic Front, stop and raise an ADR candidate.
 
-Implementation remains `SF-0 -> SF-1 Current-state Audit -> SF-2 ...`; SF-1 is
-not executed by this documentation amendment.
+Implementation truth is `SF-0 approved contract -> SF-1 completed audit ->
+SF-2 implemented read model -> SF-3A approved provisional-state decision ->
+SF-3B implemented provisional persistence/application state -> SF-3C+ not
+implemented`.

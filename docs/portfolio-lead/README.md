@@ -77,7 +77,7 @@ Primary authority map:
 | Portfolio Home Governance PH-0 | GO documentation freeze; runtime not certified |
 | Portfolio Home PH-2 read model | Implementation evidence; `GET /api/v1/portfolio/home` present; runtime certification pending |
 | Portfolio Home PH-3A | UX reconciliation design/evidence only; PH-3B not implemented |
-| Strategic Framing SF-0 | APPROVED Experience baseline (human-approved 2026-09-24); runtime not implemented; SF-1–SF-8 not executed |
+| Strategic Framing | SF-0 approved contract; SF-1 audit completed; SF-2 read model implemented; SF-3A approved decision; SF-3B provisional persistence/application state implemented but unverified; SF-3C+ not implemented |
 | Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
 The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
@@ -221,9 +221,10 @@ These reports do not certify runtime, and PH-3B is not implemented.
 
 Strategic Framing:
 
-- [SF-0 package](07-strategic-framing/README.md) — approved Experience
-  baseline; runtime not implemented and SF-1 not executed. SF-1 Current-State
-  Audit is the next authorized slice.
+- [SF-0–SF-3B package](07-strategic-framing/README.md) — SF-0 approved
+  contract, SF-1 audit completed, SF-2 read model implemented, SF-3A approved
+  decision and SF-3B provisional persistence/application state implemented but
+  unverified. SF-3C+ remains unimplemented; this is not end-to-end runtime.
 - [Glossary and context map](00-authority/STARTERIA_GLOSSARY_AND_CONTEXT_MAP_v0.1.md)
   — reference vocabulary; does not override Core or approved contracts.
 - [Portfolio Lead reconciliation plan](../reconciliation/STARTERIA_PORTFOLIO_LEAD_RECONCILIATION_PLAN_v0.1.md)
