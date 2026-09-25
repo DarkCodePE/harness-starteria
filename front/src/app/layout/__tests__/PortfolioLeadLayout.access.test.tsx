@@ -16,10 +16,16 @@ import { render, screen } from '@testing-library/react';
 import { PortfolioLeadLayout } from '../PortfolioLeadLayout';
 
 const navigate = vi.fn();
+let currentLocation = { pathname: '/portfolio/inicio', search: '' };
+let scopedEntryContext: {
+  data: unknown;
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  error: string | null;
+} = { data: null, status: 'idle', error: null };
 vi.mock('react-router', () => ({
   Outlet: () => <div data-testid="contenido-portafolio" />,
   useNavigate: () => navigate,
-  useLocation: () => ({ pathname: '/portfolio/inicio' }),
+  useLocation: () => currentLocation,
 }));
 
 // Lo que el backend envía en el payload del usuario para cada rol (ADR-029).
@@ -48,10 +54,18 @@ vi.mock('../../portfolio/PortfolioLeadContext', () => ({
   usePortfolioLead: () => ({ initiatives: [] }),
 }));
 
+vi.mock('../../../features/portfolio-entry/home/usePortfolioHomeEntryContext', () => ({
+  usePortfolioHomeEntryContext: () => scopedEntryContext,
+}));
+
 const entra = () => screen.queryByTestId('contenido-portafolio') !== null;
 
 describe('PortfolioLeadLayout — quién accede a /portfolio', () => {
-  beforeEach(() => navigate.mockReset());
+  beforeEach(() => {
+    navigate.mockReset();
+    currentLocation = { pathname: '/portfolio/inicio', search: '' };
+    scopedEntryContext = { data: null, status: 'idle', error: null };
+  });
 
   it('un portfolio_lead entra', () => {
     currentUser = sesion('portfolio_lead');
@@ -78,5 +92,70 @@ describe('PortfolioLeadLayout — quién accede a /portfolio', () => {
     render(<PortfolioLeadLayout />);
     expect(entra()).toBe(false);
     expect(navigate).toHaveBeenCalledWith('/auth', { replace: true });
+  });
+
+  it('LAYOUT-SCOPE-02: un participante con contexto scoped autorizado entra solo al Home', () => {
+    currentUser = sesion('owner');
+    currentLocation = { pathname: '/portfolio/inicio', search: '?portfolioEntryContinuationId=cont-1' };
+    scopedEntryContext = {
+      data: { continuationId: 'cont-1', organization: { id: 'org-1', name: 'Organizacion E2E' } },
+      status: 'ready',
+      error: null,
+    };
+
+    render(<PortfolioLeadLayout />);
+
+    expect(entra()).toBe(true);
+    expect(screen.getByTestId('scoped-portfolio-entry-layout')).toBeInTheDocument();
+    expect(screen.queryByText('Frentes estrategicos')).not.toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalledWith('/dashboard', { replace: true });
+  });
+
+  it('LAYOUT-SCOPE-03: un participante sin continuation no entra al Portfolio', () => {
+    currentUser = sesion('owner');
+    render(<PortfolioLeadLayout />);
+
+    expect(entra()).toBe(false);
+    expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+  });
+
+  it.each([
+    ['fake', 'error'],
+    ['revoked', 'error'],
+  ] as const)('LAYOUT-SCOPE-04/05: continuation %s denegada no entra', (continuationId, status) => {
+    currentUser = sesion('owner');
+    currentLocation = { pathname: '/portfolio/inicio', search: `?portfolioEntryContinuationId=${continuationId}` };
+    scopedEntryContext = { data: null, status, error: 'No autorizado.' };
+
+    render(<PortfolioLeadLayout />);
+
+    expect(entra()).toBe(false);
+    expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+  });
+
+  it('LAYOUT-SCOPE-06: un continuation valido en otra ruta no habilita el Portfolio', () => {
+    currentUser = sesion('owner');
+    currentLocation = { pathname: '/portfolio/frentes-estrategicos', search: '?portfolioEntryContinuationId=cont-1' };
+    scopedEntryContext = {
+      data: { continuationId: 'cont-1', organization: { id: 'org-1', name: 'Organizacion E2E' } },
+      status: 'ready',
+      error: null,
+    };
+
+    render(<PortfolioLeadLayout />);
+
+    expect(entra()).toBe(false);
+    expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+  });
+
+  it('LAYOUT-SCOPE-07: un query param sin contexto server-owned nunca habilita el acceso', () => {
+    currentUser = sesion('owner');
+    currentLocation = { pathname: '/portfolio/inicio', search: '?portfolioEntryContinuationId=fake' };
+    scopedEntryContext = { data: null, status: 'ready', error: null };
+
+    render(<PortfolioLeadLayout />);
+
+    expect(entra()).toBe(false);
+    expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
   });
 });
