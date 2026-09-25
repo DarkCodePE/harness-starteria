@@ -155,6 +155,35 @@ export type StrategicFramingRecommendationSnapshot = {
   sourceRefs: string[];
 };
 
+export type StrategicFramingRecommendationEvidenceQuality = 'low' | 'medium' | 'high';
+
+export type StrategicFramingPriorityRecommendationItem = {
+  candidateId: string;
+  kind: StrategicFramingPriorityCandidateKind;
+  statementSnapshot: string;
+  recommendedDisposition: StrategicFramingRecommendationDisposition;
+  recommendedRank: number | null;
+  rationale: string[];
+  whyNow: string[];
+  whyNotNow: string[];
+  sourceRefs: string[];
+  evidenceQuality: StrategicFramingRecommendationEvidenceQuality;
+  humanDisposition: StrategicFramingHumanDisposition;
+  recommendationSnapshot: StrategicFramingRecommendationSnapshot;
+};
+
+export type StrategicFramingPrioritizationRecommendationResult = {
+  stateId: string;
+  stateVersion: number;
+  sourceMode: StrategicFramingProvisionalSourceMode;
+  focusSlots: number | null;
+  capacityStatus: 'unknown' | 'none' | 'limited' | 'available';
+  recommendations: StrategicFramingPriorityRecommendationItem[];
+  warnings: string[];
+  limitations: string[];
+  recommendationVersion: string;
+};
+
 export type StrategicFramingPriorityHumanDecision = {
   disposition: StrategicFramingHumanDisposition;
   actorUserId: string;

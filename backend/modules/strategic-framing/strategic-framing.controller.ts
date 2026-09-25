@@ -4,10 +4,11 @@ import { prisma } from '../../shared/db/prisma';
 import type { StrategicFramingProvisionalStateService } from './strategic-framing.provisional-state.service';
 import type { StrategicFramingEntryService } from './strategic-framing.entry.service';
 import type { StrategicFramingLensSuggestionEvaluator } from './strategic-framing.lens-suggestions';
+import type { StrategicFramingPrioritizationRecommendationEvaluator } from './strategic-framing.prioritization-recommendation';
 import { strategicFramingCorrectionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
 
 export class StrategicFramingController {
-  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator) {}
+  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator, private readonly prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator) {}
 
   createOrReuseFromSource = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -36,6 +37,16 @@ export class StrategicFramingController {
       const state = await this.service.getCurrent({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions });
       if (!this.lensEvaluator) throw AppError.internal('El evaluador de lenses no está configurado.');
       res.json({ success: true, data: this.lensEvaluator.evaluate(state) });
+    } catch (error) { next(error); }
+  };
+
+  getPrioritizationRecommendations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const actor = await this.resolveActor(req);
+      const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
+      const state = await this.service.getCurrent({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions });
+      if (!this.prioritizationRecommendationEvaluator) throw AppError.internal('El evaluador de recomendación SF-5C no está configurado.');
+      res.json({ success: true, data: this.prioritizationRecommendationEvaluator.evaluate(state) });
     } catch (error) { next(error); }
   };
 
