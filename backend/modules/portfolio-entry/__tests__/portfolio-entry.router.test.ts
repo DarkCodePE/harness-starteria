@@ -488,11 +488,19 @@ describe('Portfolio Entry Experimental Session API', () => {
       .set('X-Starteria-Entry-Token', first.token)
       .expect(200);
 
+    const firstClaim = await request(app)
+      .post(`${base}/sessions/${first.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', first.token)
+      .set('Idempotency-Key', 'confirm-claim-1')
+      .send({ expectedRevision: handoff.body.data.revision })
+      .expect(200);
+
     const confirmed = await request(app)
       .post(`${base}/sessions/${first.sessionId}/handoff/confirmation`)
-      .set('X-Starteria-Entry-Token', first.token)
+      .set('Authorization', 'Bearer user-1')
       .set('Idempotency-Key', 'confirm-1')
-      .send({ expectedRevision: handoff.body.data.revision, action: 'confirm', acceptedFields: ['understanding'] })
+      .send({ expectedRevision: firstClaim.body.data.revision, action: 'confirm', acceptedFields: ['understood_need'] })
       .expect(200);
     expect(confirmed.body.data.lifecycleStatus).toBe('CONFIRMED');
     expect(confirmed.body.data.confirmation.status).toBe('CONFIRMED');
@@ -505,32 +513,40 @@ describe('Portfolio Entry Experimental Session API', () => {
       .set('Idempotency-Key', 'handoff-2')
       .send({ expectedRevision: second.revision })
       .expect(200);
+    const secondClaim = await request(app)
+      .post(`${base}/sessions/${second.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', second.token)
+      .set('Idempotency-Key', 'correct-claim-1')
+      .send({ expectedRevision: secondHandoff.body.data.revision })
+      .expect(200);
     const corrected = await request(app)
       .post(`${base}/sessions/${second.sessionId}/handoff/confirmation`)
-      .set('X-Starteria-Entry-Token', second.token)
+      .set('Authorization', 'Bearer user-1')
       .set('Idempotency-Key', 'correct-1')
       .send({
-        expectedRevision: secondHandoff.body.data.revision,
+        expectedRevision: secondClaim.body.data.revision,
         action: 'correct',
-        correctedFields: { understanding: { value: 'Correccion humana', origin: 'USER_CONFIRMED' } },
+        correctedFields: { understood_need: 'Correccion humana' },
       })
       .expect(200);
     expect(corrected.body.data.lifecycleStatus).toBe('REVISIONS_REQUESTED');
-    expect(corrected.body.data.confirmation.correctedFields.understanding.origin).toBe('USER_CONFIRMED');
+    expect(corrected.body.data.confirmation.correctedFields.understood_need).toBe('Correccion humana');
     expect(secondHandoff.body.data.handoff.handoff.recommended_approach.origin).toBe('AI_SUGGESTED');
 
     const confirmedAfterCorrection = await request(app)
       .post(`${base}/sessions/${second.sessionId}/handoff/confirmation`)
-      .set('X-Starteria-Entry-Token', second.token)
+      .set('Authorization', 'Bearer user-1')
       .set('Idempotency-Key', 'confirm-after-correct-1')
-      .send({ expectedRevision: corrected.body.data.revision, action: 'confirm', acceptedFields: ['understanding', 'recommended_approach'] })
+      .send({ expectedRevision: corrected.body.data.revision, action: 'confirm', acceptedFields: ['understood_need', 'desired_outcome', 'known_context'] })
       .expect(200);
     expect(confirmedAfterCorrection.body.data.lifecycleStatus).toBe('CONFIRMED');
     expect(confirmedAfterCorrection.body.data.lifecycleStatus).not.toBe('CONVERSION_ELIGIBLE');
   });
 
   it('claims anonymous sessions with auth, then requires the owner and rejects the anonymous token', async () => {
-    const { app } = makeApp();
+    const adapter = new FakeAgentAdapter();
+    const { app } = makeApp({ adapter });
     const created = await createSession(app);
 
     await request(app)
@@ -556,6 +572,42 @@ describe('Portfolio Entry Experimental Session API', () => {
       .expect(200);
     expect(claimed.body.data.ownership.state).toBe('CLAIMED');
     expect(claimed.body.data.ownership.ownerUserId).toBe('user-1');
+    expect(claimed.body.data.provisionalContinuation.state).toBe('AUTHENTICATED_PROVISIONAL_CONTINUATION');
+    expect(claimed.body.data.provisionalContinuation.access.portfolio).toBe('PROVISIONAL_ONLY');
+    expect(adapter.calls).toHaveLength(0);
+
+    const continuation = await request(app)
+      .get(`${base}/sessions/${created.sessionId}/provisional-continuation`)
+      .set('Authorization', 'Bearer user-1')
+      .expect(200);
+    expect(continuation.body.data.id).toBe(created.sessionId);
+    expect(continuation.body.data.provisionalContinuation.sessionId).toBe(created.sessionId);
+    expect(continuation.body.data.provisionalContinuation.state).toBe('AUTHENTICATED_PROVISIONAL_CONTINUATION');
+    expect(adapter.calls).toHaveLength(0);
+
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}/provisional-continuation`)
+      .expect(401);
+    await request(app)
+      .get(`${base}/sessions/${created.sessionId}/provisional-continuation`)
+      .set('Authorization', 'Bearer user-2')
+      .expect(403);
+
+    const retry = await request(app)
+      .post(`${base}/sessions/${created.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'claim-retry')
+      .send({ expectedRevision: 0 })
+      .expect(200);
+    expect(retry.body.data.id).toBe(claimed.body.data.id);
+    expect(retry.body.data.revision).toBe(claimed.body.data.revision);
+    expect(retry.body.data.provisionalContinuation).toEqual(claimed.body.data.provisionalContinuation);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-2')
+      .send({ expectedRevision: 0 })
+      .expect(403);
 
     await request(app)
       .get(`${base}/sessions/${created.sessionId}`)
@@ -569,6 +621,152 @@ describe('Portfolio Entry Experimental Session API', () => {
       .get(`${base}/sessions/${created.sessionId}`)
       .set('Authorization', 'Bearer user-1')
       .expect(200);
+  });
+
+  it('rejects a stale claim revision without changing ownership', async () => {
+    const { app, repository } = makeApp();
+    const created = await createSession(app);
+
+    await request(app)
+      .post(`${base}/sessions/${created.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', created.token)
+      .set('Idempotency-Key', 'claim-stale')
+      .send({ expectedRevision: 9 })
+      .expect(409);
+
+    const stored = await repository.findSessionById(created.sessionId);
+    expect(stored?.ownershipState).toBe('ANONYMOUS');
+    expect(stored?.ownerUserId).toBeNull();
+    expect(stored?.revision).toBe(0);
+  });
+
+  it('preserves the frozen handoff, provenance, open items, and organizational unknowns during claim', async () => {
+    const adapter = new FakeAgentAdapter();
+    const { app, repository } = makeApp({ adapter });
+    const ready = await readySession(app);
+    const handoff = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff`)
+      .set('X-Starteria-Entry-Token', ready.token)
+      .set('Idempotency-Key', 'claim-handoff')
+      .send({ expectedRevision: ready.revision })
+      .expect(200);
+    const claimedBeforeConfirm = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', ready.token)
+      .set('Idempotency-Key', 'claim-before-confirm')
+      .send({ expectedRevision: handoff.body.data.revision })
+      .expect(200);
+    const confirmed = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'claim-confirm')
+      .send({ expectedRevision: claimedBeforeConfirm.body.data.revision, action: 'confirm', acceptedFields: ['understood_need'] })
+      .expect(200);
+    const callsBeforeClaim = adapter.calls.length;
+    const storedBeforeClaim = await repository.findSessionById(ready.sessionId);
+
+    const claimed = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', ready.token)
+      .set('Idempotency-Key', 'claim-preserve')
+      .send({ expectedRevision: confirmed.body.data.revision })
+      .expect(200);
+    const projection = claimed.body.data.provisionalContinuation;
+
+    expect(adapter.calls).toHaveLength(callsBeforeClaim);
+    expect(claimed.body.data.lifecycleStatus).toBe('CONFIRMED');
+    expect(claimed.body.data.handoff).toEqual(confirmed.body.data.handoff);
+    expect(claimed.body.data.confirmation).toEqual(confirmed.body.data.confirmation);
+    expect(projection.handoff).toEqual({ id: confirmed.body.data.handoff.id, version: confirmed.body.data.handoff.version });
+    expect(projection.payload.provenance).toEqual(confirmed.body.data.handoff.handoff.provenance_summary);
+    expect(projection.payload.organizationalUnknowns).toEqual(confirmed.body.data.handoff.handoff.unresolved_context);
+    expect(projection.payload.currentOpenItems).toEqual(confirmed.body.data.handoff.handoff.evidence_or_clarity_needed);
+    expect(projection.payload.rawPublicContext).toBe(storedBeforeClaim?.rawEntry);
+    expect(claimed.body.data.project).toBeUndefined();
+    expect(claimed.body.data.initiative).toBeUndefined();
+    expect(claimed.body.data.steps).toBeUndefined();
+
+    const storedAfterClaim = await repository.findSessionById(ready.sessionId);
+    expect(storedAfterClaim?.ownerUserId).toBe('user-1');
+    expect(storedAfterClaim?.revision).toBe(confirmed.body.data.revision);
+  });
+
+  it('enforces authenticated owner confirmation, explicit user fields, CAS, idempotency and zero cognition', async () => {
+    const adapter = new FakeAgentAdapter();
+    const { app } = makeApp({ adapter });
+    const ready = await readySession(app);
+    const handoff = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff`)
+      .set('X-Starteria-Entry-Token', ready.token)
+      .set('Idempotency-Key', 'conf-handoff')
+      .send({ expectedRevision: ready.revision })
+      .expect(200);
+    const claimed = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/claim`)
+      .set('Authorization', 'Bearer user-1')
+      .set('X-Starteria-Entry-Token', ready.token)
+      .set('Idempotency-Key', 'conf-claim')
+      .send({ expectedRevision: handoff.body.data.revision })
+      .expect(200);
+    const callsBefore = adapter.calls.length;
+
+    await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Idempotency-Key', 'anonymous-confirm')
+      .send({ expectedRevision: claimed.body.data.revision, action: 'confirm' })
+      .expect(401);
+    await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Authorization', 'Bearer user-2')
+      .set('Idempotency-Key', 'cross-user-confirm')
+      .send({ expectedRevision: claimed.body.data.revision, action: 'confirm' })
+      .expect(403);
+    await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'authority-confirm')
+      .send({ expectedRevision: claimed.body.data.revision, action: 'confirm', acceptedFields: ['sponsor'] })
+      .expect(400);
+
+    const corrected = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'owner-correction')
+      .send({
+        expectedRevision: claimed.body.data.revision,
+        action: 'correct',
+        correctedFields: { understood_need: 'La necesidad propia corregida.' },
+      })
+      .expect(200);
+    expect(corrected.body.data.provisionalContinuation.payload.understoodNeed.value).toBe('La necesidad propia corregida.');
+    expect(corrected.body.data.provisionalContinuation.payload.understoodNeed.provenance.review_disposition).toBe('USER_CONFIRMED');
+    expect(corrected.body.data.provisionalContinuation.payload.organizationalUnknowns).toHaveLength(1);
+    expect(adapter.calls).toHaveLength(callsBefore);
+
+    await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'stale-confirm')
+      .send({ expectedRevision: claimed.body.data.revision, action: 'confirm' })
+      .expect(409);
+    const repeated = await request(app)
+      .post(`${base}/sessions/${ready.sessionId}/handoff/confirmation`)
+      .set('Authorization', 'Bearer user-1')
+      .set('Idempotency-Key', 'owner-correction')
+      .send({
+        expectedRevision: claimed.body.data.revision,
+        action: 'correct',
+        correctedFields: { understood_need: 'La necesidad propia corregida.' },
+      })
+      .expect(200);
+    expect(repeated.body.data.revision).toBe(corrected.body.data.revision);
+    expect(repeated.body.data.provisionalContinuation.payload.organizationalUnknowns).toHaveLength(1);
+    expect(repeated.body.data.projectId).toBeUndefined();
+    expect(repeated.body.data.initiativeId).toBeUndefined();
+    expect(repeated.body.data.steps).toBeUndefined();
   });
 
   it('supports required custom CORS headers and rate limits public operations', async () => {

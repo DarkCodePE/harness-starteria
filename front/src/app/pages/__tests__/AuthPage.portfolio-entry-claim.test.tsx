@@ -68,7 +68,7 @@ describe('AuthPage Portfolio Entry claim continuation', () => {
     expect(portfolioEntryMocks.saveClaimedPortfolioEntrySession).toHaveBeenCalledWith({ sessionId: 'session-1' });
     expect(portfolioEntryMocks.savePortfolioEntryClaimedNotice).toHaveBeenCalledWith('session-1');
     expect(appMocks.createProjectFromPublicDraft).not.toHaveBeenCalled();
-    expect(navigateSpy).toHaveBeenCalledWith('/public/start', { replace: true });
+    expect(navigateSpy).toHaveBeenCalledWith('/public/provisional-continuation', { replace: true });
     expect(navigateSpy).not.toHaveBeenCalledWith('/continuar-piloto', expect.anything());
   });
 });

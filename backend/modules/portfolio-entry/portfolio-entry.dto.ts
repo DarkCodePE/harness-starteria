@@ -52,6 +52,39 @@ export type PortfolioEntrySessionClientDto = {
   confirmation?: PortfolioEntryConfirmationClientDto;
   pendingInput?: PortfolioEntrySession['semanticState']['pendingInput'];
   handoffMode?: 'live' | 'deterministic' | 'degraded';
+  provisionalContinuation?: PortfolioEntryAuthenticatedProvisionalContinuationDto;
+};
+
+export type PortfolioEntryAuthenticatedProvisionalContinuationDto = {
+  state: 'AUTHENTICATED_PROVISIONAL_CONTINUATION';
+  sessionId: string;
+  handoff: { id: string; version: number } | null;
+  revision: number;
+  ownerUserId: string;
+  access: {
+    portfolio: 'PROVISIONAL_ONLY';
+    organizationScope: 'ORGANIZATIONAL_UNKNOWN';
+    canonicalEntityCreation: false;
+  };
+  payload: {
+    rawPublicContext: string;
+    understoodNeed: PortfolioEntryHandoffRecord['handoff']['understanding'];
+    desiredOutcome: PortfolioEntryHandoffRecord['handoff']['desired_outcome'];
+    knownContext: PortfolioEntryHandoffRecord['handoff']['known_context'];
+    provenance: PortfolioEntryHandoffRecord['handoff']['provenance_summary'];
+    currentOpenItems: PortfolioEntryHandoffRecord['handoff']['evidence_or_clarity_needed'];
+    laterWorkItems: PortfolioEntryHandoffRecord['handoff']['starteria_path'];
+    organizationalUnknowns: PortfolioEntryHandoffRecord['handoff']['unresolved_context'];
+    continuationSummary: PortfolioEntryHandoffRecord['handoff']['recommended_approach'] | null;
+    selectedMaterialGap: PortfolioEntryHandoffRecord['handoff']['unresolved_context'][number] | null;
+    decisionMetadata: {
+      decisionToEnable: PortfolioEntryHandoffRecord['handoff']['decision_to_enable'];
+      handoffStatus: PortfolioEntryHandoffRecord['handoff']['handoff_status'];
+      starteriaPath: PortfolioEntryHandoffRecord['handoff']['starteria_path'];
+      conversionEligible: false;
+      initiativeProfileSelected: false;
+    };
+  };
 };
 
 export type PortfolioEntryHandoffClientDto = {
@@ -128,6 +161,81 @@ export function toPortfolioEntrySessionClientDto(
       ? session.semanticState.pendingInput?.status === 'FAILED_RETRYABLE' ? 'degraded' : 'deterministic'
       : undefined,
   };
+}
+
+export function toPortfolioEntryAuthenticatedProvisionalContinuationDto(
+  session: PortfolioEntrySession,
+  turns: PortfolioEntryTurn[],
+): PortfolioEntrySessionClientDto {
+  const dto = toPortfolioEntrySessionClientDto(session, turns);
+  const handoff = session.latestHandoff?.handoff;
+  if (!session.ownerUserId) return dto;
+
+  const confirmation = session.confirmation;
+  const payload = buildProvisionalPayload(session, handoff, confirmation);
+  return {
+    ...dto,
+    provisionalContinuation: {
+      state: 'AUTHENTICATED_PROVISIONAL_CONTINUATION',
+      sessionId: session.id,
+      handoff: session.latestHandoff
+        ? { id: session.latestHandoff.id, version: session.latestHandoff.version }
+        : null,
+      revision: session.revision,
+      ownerUserId: session.ownerUserId,
+      access: {
+        portfolio: 'PROVISIONAL_ONLY',
+        organizationScope: 'ORGANIZATIONAL_UNKNOWN',
+        canonicalEntityCreation: false,
+      },
+      payload,
+    },
+  };
+}
+
+function buildProvisionalPayload(
+  session: PortfolioEntrySession,
+  handoff: PortfolioEntryHandoffRecord['handoff'] | undefined,
+  confirmation: PortfolioEntryConfirmation | null | undefined,
+): PortfolioEntryAuthenticatedProvisionalContinuationDto['payload'] {
+  const corrected = confirmation?.correctedFields ?? {};
+  const accepted = new Set(confirmation?.acceptedFields ?? []);
+  const understoodCorrection = typeof corrected.understood_need === 'string' ? corrected.understood_need : undefined;
+  const desiredCorrection = typeof corrected.desired_outcome === 'string' ? corrected.desired_outcome : undefined;
+  const knownCorrection = Array.isArray(corrected.known_context) ? corrected.known_context as Array<{ key: string; value: string }> : undefined;
+  const understood = understoodCorrection
+    ? { value: understoodCorrection, provenance: { origin: 'USER_DECLARED' as const, source_path: 'confirmation.correctedFields.understood_need', source_text: understoodCorrection, review_disposition: 'USER_CONFIRMED' as const } }
+    : addUserReview(handoff?.understanding, accepted.has('understood_need'));
+  const desired = desiredCorrection
+    ? { value: desiredCorrection, provenance: { origin: 'USER_DECLARED' as const, source_path: 'confirmation.correctedFields.desired_outcome', source_text: desiredCorrection, review_disposition: 'USER_CONFIRMED' as const } }
+    : addUserReview(handoff?.desired_outcome, accepted.has('desired_outcome'));
+  const known = knownCorrection
+    ? knownCorrection.map((item) => ({ ...item, provenance: { origin: 'USER_DECLARED' as const, source_path: 'confirmation.correctedFields.known_context', source_text: item.value, review_disposition: 'USER_CONFIRMED' as const } }))
+    : (handoff?.known_context ?? []).map((item) => addUserReview(item, accepted.has('known_context')));
+  return {
+    rawPublicContext: session.rawEntry,
+    understoodNeed: understood ?? { value: '', provenance: undefined },
+    desiredOutcome: desired ?? { value: '', provenance: undefined },
+    knownContext: known,
+    provenance: handoff?.provenance_summary ?? [],
+    currentOpenItems: handoff?.evidence_or_clarity_needed ?? [],
+    laterWorkItems: handoff?.starteria_path ?? [],
+    organizationalUnknowns: handoff?.unresolved_context ?? [],
+    continuationSummary: handoff?.recommended_approach ?? null,
+    selectedMaterialGap: handoff?.unresolved_context?.[0] ?? null,
+    decisionMetadata: {
+      decisionToEnable: handoff?.decision_to_enable ?? 'unresolved',
+      handoffStatus: handoff?.handoff_status ?? 'insufficient_input',
+      starteriaPath: handoff?.starteria_path ?? [],
+      conversionEligible: false,
+      initiativeProfileSelected: false,
+    },
+  };
+}
+
+function addUserReview<T extends { provenance?: unknown }>(value: T | undefined, confirmed: boolean): T | undefined {
+  if (!value || !confirmed) return value;
+  return { ...value, provenance: { ...(value.provenance as Record<string, unknown> | undefined), review_disposition: 'USER_CONFIRMED' } } as T;
 }
 
 export function toHandoffClientDto(handoff: PortfolioEntryHandoffRecord): PortfolioEntryHandoffClientDto {

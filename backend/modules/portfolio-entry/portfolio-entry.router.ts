@@ -114,11 +114,12 @@ export function buildPortfolioEntryRouter(
 
   router.post('/sessions', createLimiter, controller.createSession);
   router.get('/sessions/:sessionId', optionalAuth, submitLimiter, controller.readSession);
+  router.get('/sessions/:sessionId/provisional-continuation', auth, submitLimiter, controller.readAuthenticatedProvisionalContinuation);
   router.post('/sessions/:sessionId/messages', optionalAuth, submitLimiter, controller.submitMessage);
   router.post('/sessions/:sessionId/guided-exploration', optionalAuth, submitLimiter, controller.guidedExploration);
   router.post('/sessions/:sessionId/handoff', optionalAuth, handoffLimiter, controller.materializeHandoff);
   router.get('/sessions/:sessionId/handoff', optionalAuth, submitLimiter, controller.readHandoff);
-  router.post('/sessions/:sessionId/handoff/confirmation', optionalAuth, handoffLimiter, controller.confirmOrCorrectHandoff);
+  router.post('/sessions/:sessionId/handoff/confirmation', auth, handoffLimiter, controller.confirmOrCorrectHandoff);
   router.post('/sessions/:sessionId/claim', auth, handoffLimiter, controller.claim);
   router.post('/sessions/:sessionId/convert', auth, handoffLimiter, conversionController.convert);
   router.post('/sessions/:sessionId/continue-portfolio', auth, handoffLimiter, continuationController.continueToPortfolio);

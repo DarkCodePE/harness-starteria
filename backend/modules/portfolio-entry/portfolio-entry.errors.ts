@@ -32,6 +32,10 @@ export class PortfolioEntryApiError extends Error {
     return new PortfolioEntryApiError('PORTFOLIO_ENTRY_IDEMPOTENCY_IN_PROGRESS', 'This Portfolio Entry operation is already in progress.');
   }
 
+  static invalidConfirmation(message = 'Solo puedes confirmar o corregir contexto propio de esta entrada.'): PortfolioEntryApiError {
+    return new PortfolioEntryApiError('PORTFOLIO_ENTRY_CONFIRMATION_FIELD_INVALID', message);
+  }
+
   static providerFailure(): PortfolioEntryApiError {
     return new PortfolioEntryApiError('PORTFOLIO_ENTRY_MODEL_PROVIDER_FAILURE', 'Portfolio Entry model execution failed.');
   }
@@ -72,6 +76,9 @@ export function mapPortfolioEntryError(err: unknown): AppError | unknown {
       err.code === 'PORTFOLIO_ENTRY_IDEMPOTENCY_IN_PROGRESS'
     ) {
       return AppError.conflict('La clave de idempotencia no puede reutilizarse para esta operacion.', err.code);
+    }
+    if (err.code === 'PORTFOLIO_ENTRY_CONFIRMATION_FIELD_INVALID') {
+      return AppError.badRequest(err.message, err.code);
     }
     if (err.code === 'PORTFOLIO_ENTRY_MODEL_PROVIDER_FAILURE') {
       return new AppError(503, 'No pudimos procesar la respuesta de IA en este momento.', err.code);

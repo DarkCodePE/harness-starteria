@@ -69,6 +69,17 @@ export type HandoffCorrectionInput = HandoffConfirmationInput & {
   correctedFields: Record<string, unknown>;
 };
 
+export type AuthenticatedProvisionalConfirmationInput = {
+  expectedRevision: number;
+  idempotencyKey: string;
+  acceptedFields?: Array<'understood_need' | 'desired_outcome' | 'known_context'>;
+  correctedFields?: {
+    understood_need?: string;
+    desired_outcome?: string;
+    known_context?: Array<{ key: string; value: string }>;
+  };
+};
+
 function authHeaders(credential: string, idempotencyKey?: string): Record<string, string> {
   return {
     [ENTRY_TOKEN_HEADER]: credential,
@@ -213,6 +224,48 @@ export async function getClaimedPortfolioEntrySession(sessionId: string): Promis
   const { default: api } = await import('../../../app/services/api');
   const response = await api.get<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
     `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}`,
+  );
+  return unwrap(response);
+}
+
+export async function getAuthenticatedProvisionalContinuation(sessionId: string): Promise<PortfolioEntrySessionDto> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.get<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/provisional-continuation`,
+  );
+  return unwrap(response);
+}
+
+export async function confirmAuthenticatedProvisionalContinuation(
+  sessionId: string,
+  input: AuthenticatedProvisionalConfirmationInput,
+): Promise<PortfolioEntrySessionDto> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.post<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/handoff/confirmation`,
+    {
+      expectedRevision: input.expectedRevision,
+      action: 'confirm',
+      ...(input.acceptedFields?.length ? { acceptedFields: input.acceptedFields } : {}),
+    },
+    { headers: { [IDEMPOTENCY_HEADER]: input.idempotencyKey } },
+  );
+  return unwrap(response);
+}
+
+export async function correctAuthenticatedProvisionalContinuation(
+  sessionId: string,
+  input: AuthenticatedProvisionalConfirmationInput & { correctedFields: NonNullable<AuthenticatedProvisionalConfirmationInput['correctedFields']> },
+): Promise<PortfolioEntrySessionDto> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.post<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/handoff/confirmation`,
+    {
+      expectedRevision: input.expectedRevision,
+      action: 'correct',
+      correctedFields: input.correctedFields,
+    },
+    { headers: { [IDEMPOTENCY_HEADER]: input.idempotencyKey } },
   );
   return unwrap(response);
 }
