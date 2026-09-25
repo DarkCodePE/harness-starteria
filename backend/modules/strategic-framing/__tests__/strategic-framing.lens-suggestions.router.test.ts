@@ -2,6 +2,7 @@ import express, { type RequestHandler } from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorHandler } from '../../../shared/errors/error-handler';
+import { AppError } from '../../../shared/errors/AppError';
 import { permissionsForRoles } from '../../../shared/authz/permissions';
 import { buildStrategicFramingRouter } from '../strategic-framing.router';
 
@@ -31,5 +32,19 @@ describe('SF-4B lens suggestions HTTP boundary', () => {
     expect(userLookup).toHaveBeenCalledWith({ where: { id: 'user-1' }, select: { id: true, organizationId: true } });
     expect(service.getCurrent).toHaveBeenCalledWith({ stateId: 'state-1', actorUserId: 'user-1', organizationId: 'org-1', permissions: expect.anything() });
     expect(evaluator.evaluate).toHaveBeenCalledWith(state);
+  });
+
+  it('preserves state access boundaries and handles missing state without writes', async () => {
+    service.getCurrent.mockRejectedValueOnce(AppError.notFound('Estado provisional', 'SF_PROVISIONAL_STATE_NOT_FOUND'));
+    await request(makeApp()).get('/api/v1/strategic-framing/states/missing/lens-suggestions').expect(404);
+
+    service.getCurrent.mockRejectedValueOnce(AppError.forbidden('No autorizado.', 'SF_PROVISIONAL_STATE_FORBIDDEN'));
+    await request(makeApp()).get('/api/v1/strategic-framing/states/other-user/lens-suggestions').expect(403);
+
+    service.getCurrent.mockRejectedValueOnce(AppError.forbidden('No autorizado.', 'SF_PROVISIONAL_STATE_FORBIDDEN'));
+    await request(makeApp()).get('/api/v1/strategic-framing/states/other-org/lens-suggestions').expect(403);
+
+    expect(evaluator.evaluate).not.toHaveBeenCalled();
+    expect(service).not.toHaveProperty('correct');
   });
 });

@@ -151,6 +151,11 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   Copilot behavior is added. Focused frontend, SF-3C regression, frontend build and
   SF-4B backend regression evidence pass. Runtime certification remains pending. See
   `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_LENS_WORKSPACE_SF4C_v0.1.md`.
+- SF-4D lens boundary verification is `GO_WITH_GAPS`: focused negative, HTTP and
+  workspace boundary evidence passes; no product runtime correction, schema or
+  persistence change was required. Deployed/browser runtime certification remains
+  pending. See
+  `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_LENS_BOUNDARY_VERIFICATION_SF4D_v0.1.md`.
 - The Portfolio Lead reconciliation plan, glossary/context map and PH-2
   revalidation report are indexed evidence/reference artifacts, not new
   authority.
