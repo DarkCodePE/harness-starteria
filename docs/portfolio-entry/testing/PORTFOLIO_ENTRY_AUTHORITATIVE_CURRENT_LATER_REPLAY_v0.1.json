@@ -1,0 +1,40 @@
+{
+  "artifact": "PORTFOLIO_ENTRY_AUTHORITATIVE_CURRENT_LATER_REPLAY_v0.1",
+  "status": "DETERMINISTIC_ONLY",
+  "source": "PORTFOLIO_ENTRY_LATER_WORK_RELATIONSHIP_RUNS_v0.1.json",
+  "attempt": "ATTEMPT_2",
+  "stored_runs": 35,
+  "replayed_runs": 35,
+  "authoritative_metadata_fields": [
+    "current_decision_dependency",
+    "decision_sensitivity",
+    "decision_branch_type",
+    "answerability"
+  ],
+  "metadata_available_in_stored_outputs": 0,
+  "projected_current": 0,
+  "projected_later": 0,
+  "projected_unresolved": 35,
+  "relationship_resolution_required": 35,
+  "false_current_corrected": 0,
+  "false_later_corrected": 0,
+  "true_current_downgraded_to_later": 0,
+  "true_later_elevated_to_current": 0,
+  "semantic_validator_failures": {
+    "AR-01": 0,
+    "AR-02": 0,
+    "AR-03": 0,
+    "AR-04": 0,
+    "AR-05": 0,
+    "AR-06": 0
+  },
+  "by_case": {
+    "CR-ADV-05": { "stored": 10, "unresolved": 10 },
+    "LW-CTRL-01": { "stored": 5, "unresolved": 5 },
+    "LW-CTRL-02": { "stored": 5, "unresolved": 5 },
+    "LW-CTRL-03": { "stored": 5, "unresolved": 5 },
+    "LW-CTRL-04": { "stored": 5, "unresolved": 5 },
+    "LW-CTRL-05": { "stored": 5, "unresolved": 5 }
+  },
+  "note": "The historical JSON schema did not preserve authoritative Decision Readiness metadata. Raw relationships were not used to fill the gap; historical artifacts remain unchanged."
+}
