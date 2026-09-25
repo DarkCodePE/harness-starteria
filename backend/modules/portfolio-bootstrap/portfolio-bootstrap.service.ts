@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from '@prisma/client';
 import * as XLSX from 'xlsx';
 import { AppError } from '../../shared/errors/AppError';
 import { can, type Permission } from '../../shared/authz/permissions';
+import { ScopedPortfolioAccessService } from '../../shared/authz/scoped-portfolio-access.service';
 import { logger } from '../../shared/utils/logger';
 import { deriveAnchorStatus, derivePortfolioAnchorFromContinuation } from './portfolio-anchor-derivation';
 import { DeterministicPortfolioBootstrapAnalyzer, type PortfolioBootstrapAnalysisOutput, type PortfolioBootstrapAnalyzer } from './portfolio-bootstrap.analyzer';
@@ -280,6 +281,17 @@ export class PortfolioBootstrapService {
         if (continuation.continuedByUserId !== input.authenticatedUserId) {
           throw AppError.forbidden('No autorizado.', 'PORTFOLIO_BOOTSTRAP_CONTINUATION_FORBIDDEN');
         }
+        const scope = continuation.portfolioScope && typeof continuation.portfolioScope === 'object'
+          ? (continuation.portfolioScope as Record<string, unknown>)
+          : null;
+        const organizationId = typeof scope?.organizationId === 'string' ? scope.organizationId : null;
+        if (!organizationId || !(await new ScopedPortfolioAccessService(db).canUserAccessPortfolio({
+          userId: input.authenticatedUserId,
+          organizationId,
+          capability: 'portfolio:read',
+        }))) {
+          throw AppError.forbidden('No tienes acceso a este espacio de Portfolio.', 'PORTFOLIO_BOOTSTRAP_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
+        }
 
         const existing = await this.findActiveSession(db, input.authenticatedUserId, continuation.id);
         if (existing) {
@@ -289,17 +301,11 @@ export class PortfolioBootstrapService {
           return existing;
         }
 
-        const user = await db.user.findUnique({
-          where: { id: input.authenticatedUserId },
-          select: { organizationId: true },
-        });
-        if (!user) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_BOOTSTRAP_AUTH_REQUIRED');
-
         const derived = derivePortfolioAnchorFromContinuation(continuation);
         const session = await db.portfolioBootstrapSession.create({
           data: {
             userId: input.authenticatedUserId,
-            organizationId: user.organizationId,
+            organizationId,
             sourceContinuationId: continuation.id,
             status: derived.status === 'anchor_sufficient' ? 'awaiting_work_intake' : 'awaiting_anchor_review',
             bootstrapPhase: derived.status === 'anchor_sufficient' ? 'B2_WORK_INTAKE' : 'B1_ANCHOR',

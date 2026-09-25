@@ -61,6 +61,21 @@ export class PortfolioEntryContinuationController {
       next(mapPortfolioEntryError(err));
     }
   };
+
+  readPortfolioHomeEntryContext = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { continuationId } = continuationParamsSchema.parse(req.params);
+      if (!req.user?.id) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_AUTH_REQUIRED');
+      const data = await this.service.readPortfolioHomeEntryContext({
+        continuationId,
+        authenticatedUserId: req.user.id,
+        permissions: req.user.permissions,
+      });
+      res.json({ success: true, data });
+    } catch (err) {
+      next(mapPortfolioEntryError(err));
+    }
+  };
 }
 
 function getIdempotencyKey(req: Request): string | undefined {

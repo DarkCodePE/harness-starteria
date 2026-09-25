@@ -125,6 +125,7 @@ export function buildPortfolioEntryRouter(
   router.post('/sessions/:sessionId/convert', auth, handoffLimiter, conversionController.convert);
   router.post('/sessions/:sessionId/continue-portfolio', auth, handoffLimiter, continuationController.continueToPortfolio);
   router.get('/continuations/:continuationId', auth, submitLimiter, continuationController.readContinuation);
+  router.get('/continuations/:continuationId/home-context', auth, submitLimiter, continuationController.readPortfolioHomeEntryContext);
 
   return router;
 }

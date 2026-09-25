@@ -53,6 +53,21 @@ export type ReadPortfolioEntryContinuationInput = {
   permissions: ReadonlySet<Permission>;
 };
 
+export type PortfolioHomeEntryContextDto = {
+  continuationId: string;
+  sessionId: string;
+  organization: { id: string; name: string };
+  arrival: {
+    understoodNeed: string | null;
+    desiredOutcome: string | null;
+    confirmedContext: string[];
+    openItems: string[];
+    laterWork: string[];
+    organizationalUnknowns: string[];
+    nextStep: string;
+  };
+};
+
 const IDEMPOTENCY_OPERATION = 'continue_portfolio_session';
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 const MAPPING_VERSION = 'portfolio-entry-portfolio-continuation-v0.1';
@@ -111,6 +126,10 @@ export class PortfolioEntryContinuationService {
     if (row.continuedByUserId !== input.authenticatedUserId) {
       throw AppError.forbidden('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_FORBIDDEN');
     }
+    const session = await this.prisma.portfolioEntrySession.findUnique({ where: { id: row.sessionId } });
+    if (!session || session.ownerUserId !== input.authenticatedUserId || session.ownershipState !== 'CLAIMED') {
+      throw AppError.forbidden('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_FORBIDDEN');
+    }
     const scope = readOrganizationScope(row.portfolioScope);
     if (!scope || !(await this.scopedPortfolioAccess.canUserAccessPortfolio({
       userId: input.authenticatedUserId,
@@ -120,6 +139,47 @@ export class PortfolioEntryContinuationService {
       throw AppError.forbidden('No tienes acceso Portfolio para esta organizacion.', 'PORTFOLIO_ENTRY_CONTINUATION_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
     }
     return this.toDto(row);
+  }
+
+  async readPortfolioHomeEntryContext(input: ReadPortfolioEntryContinuationInput): Promise<PortfolioHomeEntryContextDto> {
+    const row = await this.prisma.portfolioEntryPortfolioContinuation.findUnique({
+      where: { id: input.continuationId },
+    });
+    if (!row || row.continuedByUserId !== input.authenticatedUserId) {
+      throw AppError.forbidden('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_FORBIDDEN');
+    }
+    const session = await this.prisma.portfolioEntrySession.findUnique({ where: { id: row.sessionId } });
+    if (!session || session.ownerUserId !== input.authenticatedUserId || session.ownershipState !== 'CLAIMED') {
+      throw AppError.forbidden('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_FORBIDDEN');
+    }
+    const scope = readOrganizationScope(row.portfolioScope);
+    if (!scope || !(await this.scopedPortfolioAccess.canUserAccessPortfolio({
+      userId: input.authenticatedUserId,
+      organizationId: scope,
+      capability: 'portfolio:read',
+    }))) {
+      throw AppError.forbidden('No tienes acceso a este espacio de Portfolio.', 'PORTFOLIO_ENTRY_CONTINUATION_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
+    }
+    const organization = await this.prisma.organization.findUnique({ where: { id: scope }, select: { id: true, name: true } });
+    if (!organization) throw AppError.forbidden('No tienes acceso a este espacio de Portfolio.', 'PORTFOLIO_ENTRY_CONTINUATION_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
+
+    const snapshot = row.sourceSnapshot as Record<string, unknown>;
+    const handoff = (snapshot.handoff ?? {}) as Record<string, unknown>;
+    const confirmation = (snapshot.confirmation ?? {}) as Record<string, unknown>;
+    return {
+      continuationId: row.id,
+      sessionId: row.sessionId,
+      organization,
+      arrival: {
+        understoodNeed: publicText(handoff.understanding),
+        desiredOutcome: publicText(handoff.desired_outcome),
+        confirmedContext: confirmedContext(handoff, confirmation),
+        openItems: publicTexts(handoff.unresolved_context),
+        laterWork: publicTexts(handoff.later_work ?? handoff.later_stage_work),
+        organizationalUnknowns: publicTexts(handoff.organizational_unknowns ?? handoff.authority_owned_unknowns),
+        nextStep: 'Revisar este punto de partida y continuar estructurando el contexto del Portfolio.',
+      },
+    };
   }
 
   private async createContinuation(input: ContinuePortfolioEntryInput, organizationId: string): Promise<PortfolioEntryContinuationResultDto> {
@@ -403,6 +463,29 @@ function readOrganizationScope(value: Prisma.JsonValue): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const organizationId = (value as Record<string, unknown>).organizationId;
   return typeof organizationId === 'string' && organizationId.length > 0 ? organizationId : null;
+}
+
+function publicText(value: unknown): string | null {
+  if (typeof value === 'string') return value.trim() || null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  for (const candidate of [record.value, record.text, record.description, record.summary, record.statement]) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+  }
+  return null;
+}
+
+function publicTexts(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map(publicText).filter((item): item is string => Boolean(item));
+}
+
+function confirmedContext(handoff: Record<string, unknown>, confirmation: Record<string, unknown>): string[] {
+  const accepted = confirmation.acceptedFields;
+  if (accepted && typeof accepted === 'object' && !Array.isArray(accepted)) {
+    return Object.values(accepted as Record<string, unknown>).map(publicText).filter((item): item is string => Boolean(item));
+  }
+  return publicTexts(handoff.known_context);
 }
 
 function stableJson(value: unknown): string {
