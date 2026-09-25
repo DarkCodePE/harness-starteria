@@ -2,6 +2,7 @@ import axios from 'axios';
 import type {
   PortfolioEntryApiEnvelope,
   PortfolioEntryContinuationResult,
+  PortfolioEntryContextResolution,
   PortfolioEntryConversionResult,
   PortfolioEntrySessionDto,
 } from './types';
@@ -79,6 +80,8 @@ export type AuthenticatedProvisionalConfirmationInput = {
     known_context?: Array<{ key: string; value: string }>;
   };
 };
+
+export type PortfolioContextSelectionInput = MutationOptions & { organizationId?: string };
 
 function authHeaders(credential: string, idempotencyKey?: string): Record<string, string> {
   return {
@@ -285,13 +288,21 @@ export async function convertPortfolioEntrySession(
 
 export async function continuePortfolioEntryToPortfolio(
   sessionId: string,
-  input: MutationOptions,
+  input: PortfolioContextSelectionInput,
 ): Promise<PortfolioEntryContinuationResult> {
   const { default: api } = await import('../../../app/services/api');
   const response = await api.post<PortfolioEntryApiEnvelope<PortfolioEntryContinuationResult>>(
     `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/continue-portfolio`,
-    { expectedRevision: input.expectedRevision },
+    { expectedRevision: input.expectedRevision, ...(input.organizationId ? { organizationId: input.organizationId } : {}) },
     { headers: { [IDEMPOTENCY_HEADER]: input.idempotencyKey } },
+  );
+  return unwrap(response);
+}
+
+export async function getPortfolioEntryContexts(sessionId: string): Promise<PortfolioEntryContextResolution> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.get<PortfolioEntryApiEnvelope<PortfolioEntryContextResolution>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/portfolio-contexts`,
   );
   return unwrap(response);
 }

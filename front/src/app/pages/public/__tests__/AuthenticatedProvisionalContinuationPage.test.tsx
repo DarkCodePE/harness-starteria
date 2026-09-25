@@ -8,6 +8,8 @@ const serviceMocks = vi.hoisted(() => ({
   getAuthenticatedProvisionalContinuation: vi.fn(),
   confirmAuthenticatedProvisionalContinuation: vi.fn(),
   correctAuthenticatedProvisionalContinuation: vi.fn(),
+  getPortfolioEntryContexts: vi.fn(),
+  continuePortfolioEntryToPortfolio: vi.fn(),
   normalizePortfolioEntryApiError: vi.fn((err: { message?: string }) => ({ message: err.message ?? 'Error' })),
 }));
 const storageMocks = vi.hoisted(() => ({
@@ -79,6 +81,12 @@ describe('Authenticated provisional continuation page', () => {
     serviceMocks.getAuthenticatedProvisionalContinuation.mockResolvedValue(continuation);
     serviceMocks.confirmAuthenticatedProvisionalContinuation.mockResolvedValue(continuation);
     serviceMocks.correctAuthenticatedProvisionalContinuation.mockResolvedValue(continuation);
+    serviceMocks.getPortfolioEntryContexts.mockResolvedValue({
+      sessionId: 'session-1',
+      revision: 5,
+      contexts: [{ organizationId: 'org-1', name: 'Organización autorizada' }],
+    });
+    serviceMocks.continuePortfolioEntryToPortfolio.mockResolvedValue({ destinationRoute: '/portfolio/inicio' });
   });
 
   it('renders the same claimed session without internal terminology or restart intake', async () => {
@@ -115,5 +123,27 @@ describe('Authenticated provisional continuation page', () => {
       'session-1', expect.objectContaining({ correctedFields: expect.objectContaining({ understood_need: 'La necesidad corregida.' }) }),
     ));
     expect(await screen.findByTestId('understood-need')).toHaveTextContent('La necesidad corregida.');
+  });
+
+  it('CTX-UI-01/04/08 renders the safe no-context state without restarting intake', async () => {
+    serviceMocks.getPortfolioEntryContexts.mockResolvedValue({ sessionId: 'session-1', revision: 5, contexts: [] });
+    render(<MemoryRouter><AuthenticatedProvisionalContinuationPage /></MemoryRouter>);
+    expect(await screen.findByTestId('no-authorized-context')).toHaveTextContent('Tu avance está guardado');
+    expect(screen.getByTestId('understood-need')).toHaveTextContent('Ordenar las iniciativas');
+    expect(screen.getByText(/No necesitas empezar de nuevo/)).toBeTruthy();
+    expect(screen.queryByText(/OrganizationPortfolioAccessGrant|portfolio:read|tenant|provenance/i)).toBeNull();
+  });
+
+  it('CTX-UI-02/03/04 requires explicit selection for multiple authorized contexts', async () => {
+    serviceMocks.getPortfolioEntryContexts.mockResolvedValue({
+      sessionId: 'session-1', revision: 5,
+      contexts: [{ organizationId: 'org-1', name: 'Primera organización' }, { organizationId: 'org-2', name: 'Segunda organización' }],
+    });
+    render(<MemoryRouter><AuthenticatedProvisionalContinuationPage /></MemoryRouter>);
+    expect(await screen.findByRole('radio', { name: 'Primera organización' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Segunda organización' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Está bien, continuar/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('radio', { name: 'Segunda organización' }));
+    expect(screen.getByRole('button', { name: /Está bien, continuar/i })).not.toBeDisabled();
   });
 });

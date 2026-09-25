@@ -35,9 +35,16 @@ export type ContinuePortfolioEntryInput = {
   sessionId: string;
   expectedRevision: number;
   authenticatedUserId: string;
+  organizationId?: string;
   permissions: ReadonlySet<Permission>;
   idempotencyKey?: string;
   requestId?: string;
+};
+
+export type PortfolioContextResolutionDto = {
+  sessionId: string;
+  revision: number;
+  contexts: Array<{ organizationId: string; name: string }>;
 };
 
 export type ReadPortfolioEntryContinuationInput = {
@@ -67,9 +74,11 @@ export class PortfolioEntryContinuationService {
       target: 'PORTFOLIO',
       userId: input.authenticatedUserId,
       permission: 'portfolio:read',
+      organizationId: input.organizationId ?? null,
     };
     return this.withIdempotency(input, payload, async () => {
-      const continuation = await this.createContinuation(input);
+      const organizationId = input.organizationId ?? await this.requireSingleContext(input);
+      const continuation = await this.createContinuation(input, organizationId);
       logger.info({
         requestId: input.requestId,
         sessionId: input.sessionId,
@@ -78,6 +87,20 @@ export class PortfolioEntryContinuationService {
       }, 'portfolio_entry_portfolio_continuation_completed');
       return continuation;
     });
+  }
+
+  async listPortfolioContexts(input: { sessionId: string; authenticatedUserId: string }): Promise<PortfolioContextResolutionDto> {
+    if (!input.authenticatedUserId) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_AUTH_REQUIRED');
+    const row = await this.requireOwnedClaimedSession(input.sessionId, input.authenticatedUserId);
+    const contexts = await this.scopedPortfolioAccess.listAccessibleOrganizations({
+      userId: input.authenticatedUserId,
+      capability: 'portfolio:read',
+    });
+    return {
+      sessionId: row.id,
+      revision: row.revision,
+      contexts,
+    };
   }
 
   async readContinuation(input: ReadPortfolioEntryContinuationInput): Promise<PortfolioEntryContinuationResultDto> {
@@ -99,7 +122,7 @@ export class PortfolioEntryContinuationService {
     return this.toDto(row);
   }
 
-  private async createContinuation(input: ContinuePortfolioEntryInput): Promise<PortfolioEntryContinuationResultDto> {
+  private async createContinuation(input: ContinuePortfolioEntryInput, organizationId: string): Promise<PortfolioEntryContinuationResultDto> {
     try {
       const created = await this.prisma.$transaction(async (tx) => {
         const row = await tx.portfolioEntrySession.findUnique({ where: { id: input.sessionId } });
@@ -154,9 +177,9 @@ export class PortfolioEntryContinuationService {
           throw AppError.conflict('La confirmacion ya no corresponde al handoff vigente.', 'PORTFOLIO_ENTRY_CONTINUATION_STALE_CONFIRMATION');
         }
 
-        if (!user.organizationId || !(await this.scopedPortfolioAccess.canUserAccessPortfolio({
+        if (!(await this.scopedPortfolioAccess.canUserAccessPortfolio({
           userId: input.authenticatedUserId,
-          organizationId: user.organizationId,
+          organizationId,
           capability: 'portfolio:read',
         }))) {
           throw AppError.forbidden('No tienes acceso Portfolio para esta organizacion.', 'PORTFOLIO_ENTRY_CONTINUATION_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
@@ -167,7 +190,7 @@ export class PortfolioEntryContinuationService {
         const scope = {
           kind: 'scoped_portfolio_grant',
           userId: input.authenticatedUserId,
-          organizationId: user.organizationId,
+          organizationId,
         };
         const snapshot = buildSourceSnapshot(row, handoff, confirmation);
         const pendingItems = buildPendingItems(handoff.handoffPayload);
@@ -221,6 +244,29 @@ export class PortfolioEntryContinuationService {
       }
       throw err;
     }
+  }
+
+  private async requireSingleContext(input: ContinuePortfolioEntryInput): Promise<string> {
+    const resolved = await this.listPortfolioContexts({ sessionId: input.sessionId, authenticatedUserId: input.authenticatedUserId });
+    if (resolved.contexts.length === 0) {
+      throw AppError.forbidden('Tu avance esta guardado. Antes de seguir necesitamos ubicar en que espacio de tu organizacion corresponde trabajarlo.', 'PORTFOLIO_ENTRY_CONTINUATION_NO_AUTHORIZED_CONTEXT');
+    }
+    if (resolved.contexts.length !== 1) {
+      throw AppError.conflict('Selecciona un espacio autorizado para continuar.', 'PORTFOLIO_ENTRY_CONTINUATION_CONTEXT_SELECTION_REQUIRED');
+    }
+    return resolved.contexts[0].organizationId;
+  }
+
+  private async requireOwnedClaimedSession(sessionId: string, userId: string) {
+    const row = await this.prisma.portfolioEntrySession.findUnique({ where: { id: sessionId } });
+    if (!row) throw AppError.notFound('Portfolio Entry session', 'PORTFOLIO_ENTRY_SESSION_NOT_FOUND');
+    if (row.ownershipState !== 'CLAIMED' || row.ownerUserId !== userId) {
+      throw AppError.forbidden('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_FORBIDDEN');
+    }
+    if (row.expiresAt <= this.now() || row.expiredAt || row.lifecycleStatus === 'EXPIRED') {
+      throw new AppError(410, 'La sesion de Portfolio Entry expiro.', 'PORTFOLIO_ENTRY_SESSION_EXPIRED');
+    }
+    return row;
   }
 
   private async withIdempotency(

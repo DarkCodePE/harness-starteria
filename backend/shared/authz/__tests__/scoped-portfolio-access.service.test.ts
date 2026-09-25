@@ -13,6 +13,9 @@ function makeResolver(fixture: Fixture) {
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
         fixture.users.has(where.id) ? { id: where.id } : null),
     },
+    organization: {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => ({ id: where.id })),
+    },
     organizationMember: {
       findFirst: vi.fn(async ({ where }: { where: { userId: string; organizationId: string } }) =>
         fixture.memberships.has(`${where.userId}:${where.organizationId}`) ? { id: 'membership-1' } : null),

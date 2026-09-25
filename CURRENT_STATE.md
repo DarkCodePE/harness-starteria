@@ -115,6 +115,7 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   - Estado del contrato: `PROPOSED FOR REVIEW`; no es autoridad aprobada ni autoriza runtime productivo.
   - La continuación Portfolio es un `APPROVED_TARGET` de ADR-003 todavía `PROPOSED`, no una afirmación de que el flujo productivo canónico ya exista.
   - La implementación observada en este checkout es mixta: existe una superficie candidata de continuación Portfolio y permanecen rutas legacy de pilot/public-draft que pueden crear Project/Steps.
+  - La slice `AUTHENTICATED_PORTFOLIO_CONTEXT_ESTABLISHMENT` está implementada sobre autoridad scoped: resuelve y selecciona contextos existentes sin crear autoridad ni entidades de negocio. Ver `docs/portfolio-entry/implementation/PORTFOLIO_ENTRY_AUTHENTICATED_PORTFOLIO_CONTEXT_ESTABLISHMENT_v0.1.md`.
 
 ## ADR-003 — estado reconciliado
 

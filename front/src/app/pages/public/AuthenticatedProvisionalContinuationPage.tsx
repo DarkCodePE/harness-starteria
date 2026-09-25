@@ -8,11 +8,13 @@ import {
   getAuthenticatedProvisionalContinuation,
   confirmAuthenticatedProvisionalContinuation,
   correctAuthenticatedProvisionalContinuation,
+  getPortfolioEntryContexts,
+  continuePortfolioEntryToPortfolio,
   normalizePortfolioEntryApiError,
 } from '../../../features/portfolio-entry/public/portfolioEntryPublicService';
 import { createIdempotencyKey } from '../../../features/portfolio-entry/public/idempotency';
 import { readClaimedPortfolioEntrySession } from '../../../features/portfolio-entry/public/storage';
-import type { PortfolioEntrySessionDto } from '../../../features/portfolio-entry/public/types';
+import type { PortfolioEntryContextResolution, PortfolioEntrySessionDto } from '../../../features/portfolio-entry/public/types';
 
 function displayText(value: { value: string } | 'unresolved' | undefined): string {
   if (!value || value === 'unresolved') return 'Todavía necesitamos aclararlo.';
@@ -28,6 +30,8 @@ export function AuthenticatedProvisionalContinuationPage() {
   const [saving, setSaving] = useState(false);
   const [understoodNeed, setUnderstoodNeed] = useState('');
   const [desiredOutcome, setDesiredOutcome] = useState('');
+  const [contexts, setContexts] = useState<PortfolioEntryContextResolution | null>(null);
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -41,10 +45,15 @@ export function AuthenticatedProvisionalContinuationPage() {
       return;
     }
     let cancelled = false;
-    getAuthenticatedProvisionalContinuation(claimed.sessionId)
-      .then((next) => {
+    Promise.all([
+      getAuthenticatedProvisionalContinuation(claimed.sessionId),
+      getPortfolioEntryContexts(claimed.sessionId),
+    ])
+      .then(([next, resolvedContexts]) => {
         if (!cancelled) {
           setSession(next);
+          setContexts(resolvedContexts);
+          if (resolvedContexts.contexts.length === 1) setSelectedOrganizationId(resolvedContexts.contexts[0]?.organizationId ?? null);
           setUnderstoodNeed(next.provisionalContinuation?.payload.understoodNeed.value ?? '');
           setDesiredOutcome(next.provisionalContinuation?.payload.desiredOutcome.value ?? '');
         }
@@ -75,6 +84,11 @@ export function AuthenticatedProvisionalContinuationPage() {
   const { payload } = continuation;
 
   const saveConfirmation = async () => {
+    if (contexts?.contexts.length === 0) return;
+    if (contexts && contexts.contexts.length > 1 && !selectedOrganizationId) {
+      setError('Selecciona un espacio autorizado para continuar.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -90,6 +104,14 @@ export function AuthenticatedProvisionalContinuationPage() {
         });
       setSession(next);
       setEditing(false);
+      if (!editing) {
+        const selected = await continuePortfolioEntryToPortfolio(continuation.sessionId, {
+          expectedRevision: next.provisionalContinuation?.revision ?? continuation.revision,
+          organizationId: selectedOrganizationId ?? undefined,
+          idempotencyKey: createIdempotencyKey('portfolio-entry:context-selection'),
+        });
+        navigate(selected.destinationRoute);
+      }
     } catch (err) {
       setError(normalizePortfolioEntryApiError(err).message);
     } finally {
@@ -103,6 +125,21 @@ export function AuthenticatedProvisionalContinuationPage() {
         <h1 className="text-3xl font-semibold tracking-tight text-text-primary">Esto es lo que entendimos</h1>
         <p className="text-base leading-7 text-text-secondary">Retomamos la misma conversación después de iniciar sesión. No necesitas empezar de nuevo.</p>
       </header>
+
+      <Card data-testid="portfolio-context-selection">
+        <CardHeader><CardTitle>Elige dónde continuar</CardTitle></CardHeader>
+        <CardContent className="space-y-3 pb-6 text-sm leading-6 text-text-secondary">
+          {contexts && contexts.contexts.length === 0 && <p data-testid="no-authorized-context">Tu avance está guardado. Antes de seguir necesitamos ubicar en qué espacio de tu organización corresponde trabajarlo.</p>}
+          {contexts?.contexts.length === 1 && contexts.contexts[0] && <p data-testid="single-authorized-context">Continuaremos en <span className="font-semibold text-text-primary">{contexts.contexts[0].name}</span>.</p>}
+          {contexts && contexts.contexts.length > 1 && <fieldset className="space-y-2" aria-label="Espacios autorizados">
+            <legend>Selecciona un espacio para continuar:</legend>
+            {contexts.contexts.map((context) => <label key={context.organizationId} className="flex cursor-pointer items-center gap-2 rounded-md border border-border-default p-3 text-text-primary">
+              <input type="radio" name="portfolio-context" value={context.organizationId} checked={selectedOrganizationId === context.organizationId} onChange={() => setSelectedOrganizationId(context.organizationId)} />
+              {context.name}
+            </label>)}
+          </fieldset>}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Lo que quieres lograr</CardTitle></CardHeader>
@@ -155,7 +192,7 @@ export function AuthenticatedProvisionalContinuationPage() {
           ) : (
             <>
               <Button type="button" variant="outline" onClick={() => setEditing(true)}><PencilLine size={16} /> Corregir</Button>
-              <Button type="button" onClick={saveConfirmation} disabled={saving}>{saving ? 'Guardando…' : 'Está bien, continuar'} <ArrowRight size={16} /></Button>
+              <Button type="button" onClick={saveConfirmation} disabled={saving || contexts?.contexts.length === 0 || (contexts && contexts.contexts.length > 1 && !selectedOrganizationId)}>{saving ? 'Guardando…' : 'Está bien, continuar'} <ArrowRight size={16} /></Button>
             </>
           )}
         </div>

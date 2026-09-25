@@ -255,3 +255,9 @@ export type PortfolioEntryContinuationResult = {
     provenanceSummary?: unknown;
   };
 };
+
+export type PortfolioEntryContextResolution = {
+  sessionId: string;
+  revision: number;
+  contexts: Array<{ organizationId: string; name: string }>;
+};

@@ -5,7 +5,7 @@ export type ScopedPortfolioCapability = (typeof SCOPED_PORTFOLIO_CAPABILITIES)[n
 
 type ScopedPortfolioAccessDb = Pick<
   PrismaClient,
-  'user' | 'organizationMember' | 'organizationPortfolioAccessGrant'
+  'user' | 'organization' | 'organizationMember' | 'organizationPortfolioAccessGrant'
 >;
 
 export type CanUserAccessPortfolioInput = {
@@ -33,6 +33,12 @@ export class ScopedPortfolioAccessService {
     });
     if (!user) return false;
 
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: input.organizationId },
+      select: { id: true },
+    });
+    if (!organization) return false;
+
     const membership = await this.prisma.organizationMember.findFirst({
       where: {
         userId: input.userId,
@@ -51,6 +57,27 @@ export class ScopedPortfolioAccessService {
       select: { id: true },
     });
     return Boolean(grant);
+  }
+
+  async listAccessibleOrganizations(input: {
+    userId: string;
+    capability: ScopedPortfolioCapability;
+  }): Promise<Array<{ organizationId: string; name: string }>> {
+    if (!input.userId || !isScopedPortfolioCapability(input.capability)) return [];
+    const memberships = await this.prisma.organizationMember.findMany({
+      where: { userId: input.userId },
+      select: { organizationId: true, organization: { select: { id: true, name: true } } },
+    });
+    const eligible = await Promise.all(memberships.map(async (membership) => {
+      const allowed = await this.canUserAccessPortfolio({
+        userId: input.userId,
+        organizationId: membership.organizationId,
+        capability: input.capability,
+      });
+      return allowed ? { organizationId: membership.organization.id, name: membership.organization.name } : null;
+    }));
+    return eligible.filter((value): value is { organizationId: string; name: string } => value !== null)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 }
 
