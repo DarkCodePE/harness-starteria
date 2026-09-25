@@ -333,7 +333,7 @@ HYP-004 Program / accelerator support experience
 | Registration / continuation | CANDIDATE | IMPLEMENTED_UNVERIFIED | MIXED | TESTING | VERIFY grant and full E2E |
 | Portfolio Bootstrap | CANDIDATE | IMPLEMENTED_VERIFIED reported | V2_MIGRATED / VERIFY | VERIFIED reported | RECONCILE |
 | Portfolio Home | TARGET AUTHORITY FROZEN PH-0 / CANDIDATE | PH-2 read-model implementation evidence; post-merge `GO_WITH_GAPS`; runtime not certified | V2_TARGET_DEFINED; PH-3A evidence only | REQUIRES_RETEST | RECONCILE; PH-3B not implemented |
-| Strategic Framing | ACTIVE_V2_BASELINE / APPROVED EXPERIENCE BASELINE (SF-0) | PARTIAL_IMPLEMENTATION / IMPLEMENTED_UNVERIFIED (SF-1 through SF-5B) | V2_TARGET_DEFINED | TESTING | SF-5B noncanonical prioritization state implemented with focused evidence; runtime certification and canonical promotion remain pending |
+| Strategic Framing | ACTIVE_V2_BASELINE / APPROVED EXPERIENCE BASELINE (SF-0) | PARTIAL_IMPLEMENTATION / IMPLEMENTED_UNVERIFIED (SF-1 through SF-5C) | V2_TARGET_DEFINED | TESTING | SF-5B noncanonical prioritization state and SF-5C deterministic read recommendation implemented with focused evidence; runtime certification and canonical promotion remain pending |
 | Strategic Front | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
 | Challenge | CANDIDATE/Core-related | PARTIAL/IMPLEMENTED | V2_MIGRATED DS-07 | SUPPORTED | RECONCILE |
 | Activation / Invitation | TARGET CONTRACT | PARTIAL / PILOT | V2_PILOT DS-08 | SUPPORTED | VERIFY |

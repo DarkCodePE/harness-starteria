@@ -152,9 +152,16 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   SF-4B backend regression evidence pass. Runtime certification remains pending. See
   `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_LENS_WORKSPACE_SF4C_v0.1.md`.
 - SF-5B prioritization application state is implemented on
-  `feat/strategic-framing-sf5b-prioritization-state`: durable nullable JSON state,
-  SF-derived gap/opportunity candidate snapshots, human dispositions, optimistic
-  versioning and history; no recommendation engine, UI or canonical writes.
+`feat/strategic-framing-sf5b-prioritization-state`: durable nullable JSON state,
+SF-derived gap/opportunity candidate snapshots, human dispositions, optimistic
+versioning and history; no recommendation engine, UI or canonical writes.
+- SF-5C prioritization recommendation/read capability is implemented on
+`feat/strategic-framing-sf5c-prioritization-recommendation`: deterministic
+read-only evaluator and authenticated `portfolio:read` GET; no recommendation
+persistence, human-review mutation, UI, schema change or canonical writes.
+Focused evidence and backend typecheck pass; broader regression and runtime
+certification remain pending. See
+`docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_PRIORITIZATION_RECOMMENDATION_SF5C_v0.1.md`.
   Focused and strategic backend evidence passes; runtime certification remains
   pending. See
   `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_PRIORITIZATION_STATE_SF5B_v0.1.md`.

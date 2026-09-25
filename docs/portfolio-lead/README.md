@@ -77,7 +77,7 @@ Primary authority map:
 | Portfolio Home Governance PH-0 | GO documentation freeze; runtime not certified |
 | Portfolio Home PH-2 read model | Implementation evidence; `GET /api/v1/portfolio/home` present; runtime certification pending |
 | Portfolio Home PH-3A | UX reconciliation design/evidence only; PH-3B not implemented |
-| Strategic Framing | SF-0 approved contract; SF-1 audit completed; SF-2 read model implemented; SF-3A approved decision; SF-3B/SF-3C/SF-3D, SF-4B evaluator, SF-4C advisory workspace and SF-5B noncanonical prioritization state implemented but runtime certification remains pending |
+| Strategic Framing | SF-0 approved contract; SF-1 audit completed; SF-2 read model implemented; SF-3A approved decision; SF-3B/SF-3C/SF-3D, SF-4B evaluator, SF-4C advisory workspace, SF-5B noncanonical prioritization state and SF-5C deterministic read recommendation implemented but runtime certification remains pending |
 | Portfolio -> Initiative Activation/Handoff H-0 | GO documentation freeze; not implemented |
 
 The GO entries are factual implementation-report status, not a claim that every target candidate has become approved authority.
