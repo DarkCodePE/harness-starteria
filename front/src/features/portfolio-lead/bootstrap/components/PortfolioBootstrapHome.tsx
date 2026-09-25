@@ -31,6 +31,7 @@ export function PortfolioBootstrapHome({
   onRejectProposedMutation,
   onLeaveProposedMutationPending,
   onPublishFirstReading,
+  onContinueToStrategicFraming,
   analysisStatus,
   analysisError,
   publishStatus,
@@ -60,6 +61,7 @@ export function PortfolioBootstrapHome({
   onRejectProposedMutation: (mutationId: string, reviewNote?: string) => Promise<void>;
   onLeaveProposedMutationPending: (mutationId: string, reviewNote?: string) => Promise<void>;
   onPublishFirstReading: () => Promise<void>;
+  onContinueToStrategicFraming?: () => Promise<void>;
   publishStatus?: 'idle' | 'processing' | 'error';
   publishError?: string | null;
   importStatus?: 'idle' | 'uploading' | 'committing' | 'error';
@@ -101,7 +103,7 @@ export function PortfolioBootstrapHome({
   }
 
   if (projection.homeState === 'HOME_D' || projection.homeState === 'HOME_E') {
-    return <PortfolioFirstReading projection={projection} />;
+    return <PortfolioFirstReading projection={projection} onContinueToStrategicFraming={onContinueToStrategicFraming} />;
   }
 
   if (projection.homeState === 'HOME_C') {
@@ -636,7 +638,7 @@ function ImportWorkItemsPanel({
   );
 }
 
-function PortfolioFirstReading({ projection }: { projection: NonNullable<ReturnType<typeof projectBootstrapHome>> }) {
+function PortfolioFirstReading({ projection, onContinueToStrategicFraming }: { projection: NonNullable<ReturnType<typeof projectBootstrapHome>>; onContinueToStrategicFraming?: () => Promise<void> }) {
   const reading = projection.latestReading;
   if (!reading) return null;
   const attentionItems = reading.primaryAttentionItems ?? [];
@@ -720,6 +722,12 @@ function PortfolioFirstReading({ projection }: { projection: NonNullable<ReturnT
         label={reading.nextBestAction}
         description="Lectura versionada desde el Bootstrap revisado, sin crear objetos canonicos ni activar iniciativas."
       />
+
+      {onContinueToStrategicFraming ? (
+        <button type="button" onClick={() => void onContinueToStrategicFraming()} className="inline-flex items-center rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">
+          Continuar a Strategic Framing
+        </button>
+      ) : null}
 
       <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="portfolio-reading-provenance">
         <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-950">

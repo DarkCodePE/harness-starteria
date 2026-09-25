@@ -132,9 +132,11 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   implemented, SF-3A provisional-state decision is approved, and SF-3B
   provisional persistence/application state is implemented but unverified.
   SF-3C editable workspace is implemented on the dedicated feature branch with
-  GET/PATCH state routes and `/portfolio/framing/:stateId`; SF-3D initiation and
-  canonical promotion remain out of scope. See
-  `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_EDITABLE_WORKSPACE_SF3C_v0.1.md`.
+  GET/PATCH state routes and `/portfolio/framing/:stateId`. SF-3D multi-entry
+  orchestration is implemented but pending human review and runtime certification;
+  it adds one source boundary for Public Entry, Enterprise Direct and Existing
+  Portfolio without canonical promotion. See
+  `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_MULTI_ENTRY_ORCHESTRATION_SF3D_v0.1.md`.
 - The Portfolio Lead reconciliation plan, glossary/context map and PH-2
   revalidation report are indexed evidence/reference artifacts, not new
   authority.

@@ -20,4 +20,31 @@ export const strategicFramingCorrectionBodySchema = z.object({
   reason: nullableText,
 }).strict();
 
+const publicEntrySourceSchema = z.object({
+  sourceMode: z.literal('public_entry'),
+  bootstrapSessionId: z.string().trim().min(1),
+}).strict();
+
+const enterpriseDirectSourceSchema = z.object({
+  sourceMode: z.literal('enterprise_direct'),
+  intendedMovement: z.string().trim().min(1),
+  whyItMatters: nullableText,
+  movementSignalValue: nullableText,
+  decisionToEnable: nullableText,
+}).strict();
+
+const existingPortfolioSourceSchema = z.object({
+  sourceMode: z.literal('existing_portfolio'),
+  sourceType: z.enum(['strategic_front', 'challenge', 'initiative']),
+  sourceId: z.string().trim().min(1),
+}).strict();
+
+export const strategicFramingSourceBodySchema = z.discriminatedUnion('sourceMode', [
+  publicEntrySourceSchema,
+  enterpriseDirectSourceSchema,
+  existingPortfolioSourceSchema,
+]);
+
+export type StrategicFramingSourceBody = z.infer<typeof strategicFramingSourceBodySchema>;
+
 export type StrategicFramingCorrectionBody = z.infer<typeof strategicFramingCorrectionBodySchema>;

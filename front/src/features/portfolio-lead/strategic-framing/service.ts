@@ -18,4 +18,23 @@ export async function updateStrategicFramingState(stateId: string, correction: S
   } catch (error) { throw parseApiError(error); }
 }
 
+export type StrategicFramingEntryInput =
+  | { sourceMode: 'public_entry'; bootstrapSessionId: string }
+  | { sourceMode: 'enterprise_direct'; intendedMovement: string; whyItMatters?: string | null; movementSignalValue?: string | null; decisionToEnable?: string | null }
+  | { sourceMode: 'existing_portfolio'; sourceType: 'strategic_front' | 'challenge' | 'initiative'; sourceId: string };
+
+export type StrategicFramingEntryResult = {
+  state: StrategicFramingState;
+  reused: boolean;
+  sourceMode: StrategicFramingEntryInput['sourceMode'];
+  workspacePath: string;
+};
+
+export async function createOrReuseStrategicFramingFromSource(input: StrategicFramingEntryInput, idempotencyKey?: string): Promise<StrategicFramingEntryResult> {
+  try {
+    const { data } = await api.post<Envelope<StrategicFramingEntryResult>>('/strategic-framing/states/from-source', input, idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined);
+    return data.data;
+  } catch (error) { throw parseApiError(error); }
+}
+
 export type StrategicFramingError = AuthError;
