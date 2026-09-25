@@ -137,6 +137,13 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   it adds one source boundary for Public Entry, Enterprise Direct and Existing
   Portfolio without canonical promotion. See
   `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_MULTI_ENTRY_ORCHESTRATION_SF3D_v0.1.md`.
+- SF-4B adaptive lens evaluator is implemented on
+  `feat/strategic-framing-sf4b-lens-evaluator` as a deterministic, derived/read-only
+  backend capability with an authenticated `portfolio:read` endpoint. It adds no
+  persistence, schema changes, UI, Copilot dependency, or canonical mutations;
+  focused tests and backend typecheck pass. Broader regression/runtime certification
+  remains pending. See
+  `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_LENS_EVALUATOR_SF4B_v0.1.md`.
 - The Portfolio Lead reconciliation plan, glossary/context map and PH-2
   revalidation report are indexed evidence/reference artifacts, not new
   authority.

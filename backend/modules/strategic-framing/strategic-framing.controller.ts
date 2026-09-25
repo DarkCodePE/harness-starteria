@@ -3,10 +3,11 @@ import { AppError } from '../../shared/errors/AppError';
 import { prisma } from '../../shared/db/prisma';
 import type { StrategicFramingProvisionalStateService } from './strategic-framing.provisional-state.service';
 import type { StrategicFramingEntryService } from './strategic-framing.entry.service';
+import type { StrategicFramingLensSuggestionEvaluator } from './strategic-framing.lens-suggestions';
 import { strategicFramingCorrectionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
 
 export class StrategicFramingController {
-  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService) {}
+  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator) {}
 
   createOrReuseFromSource = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -25,6 +26,16 @@ export class StrategicFramingController {
       const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
       const data = await this.service.getCurrent({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions });
       res.json({ success: true, data });
+    } catch (error) { next(error); }
+  };
+
+  getLensSuggestions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const actor = await this.resolveActor(req);
+      const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
+      const state = await this.service.getCurrent({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions });
+      if (!this.lensEvaluator) throw AppError.internal('El evaluador de lenses no está configurado.');
+      res.json({ success: true, data: this.lensEvaluator.evaluate(state) });
     } catch (error) { next(error); }
   };
 
