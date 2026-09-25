@@ -1,6 +1,6 @@
 # ADR-003: Public Entry registration and continuation boundary
 
-**Estado:** `PROPOSED`  
+**Estado:** `ACCEPTED`  
 **Fecha:** 2026-09-25  
 **Scope:** Public Entry → registration/login → authenticated continuation → Portfolio / Initiative / Steps  
 **Supersedes:** none  
@@ -232,7 +232,7 @@ The implementation must additionally reject stale revisions, preserve idempotenc
 ## 12. Status and implementation boundary
 
 ```text
-STATUS: PROPOSED
+STATUS: ACCEPTED
 DECISION: CANDIDATE — OPTION C WITH OPTION A DEFAULT
 IMPLEMENTATION AUTHORIZED: NO
 RUNTIME CHANGED: NO
@@ -260,4 +260,4 @@ After explicit ADR approval, run a documentation/current-state reconciliation sl
 4. add a route audit for invitation continuation;
 5. only then plan the smallest Portfolio continuation implementation slice.
 
-No step above is authorized by this proposed ADR.
+No step above is authorized by this accepted ADR.

@@ -1,6 +1,6 @@
 # ADR-004 — Authenticated Continuation Access and Initiative Handoff Authority
 
-**Estado:** PROPOSED — ADR DESIGN ONLY  
+**Estado:** ACCEPTED — ADR DESIGN ONLY  
 **Fecha:** 2026-09-25  
 **Slice:** Authenticated continuation / Initiative handoff authority  
 **Decide:** minimum server-owned authority for Public Entry continuation and
@@ -344,7 +344,7 @@ full handoff payload.
 
 ## 14. Decision status and next authority gate
 
-**Decision status:** `PROPOSED`; not implementation-authorizing until accepted.
+**Decision status:** `ACCEPTED`; not implementation-authorizing.
 
 **Additional ADR still required:** NO for the two boundaries covered here if
 this ADR is accepted. Separate ADR or amendment remains required if the chosen
