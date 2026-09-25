@@ -38,6 +38,19 @@ export class PortfolioEntryController {
     }
   };
 
+  readAuthenticatedProvisionalContinuation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { sessionId } = sessionParamsSchema.parse(req.params);
+      const data = await this.service.readAuthenticatedProvisionalContinuation(
+        sessionId,
+        req.user ? { id: req.user.id } : undefined,
+      );
+      res.json({ success: true, data });
+    } catch (err) {
+      next(mapPortfolioEntryError(err));
+    }
+  };
+
   submitMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { sessionId } = sessionParamsSchema.parse(req.params);

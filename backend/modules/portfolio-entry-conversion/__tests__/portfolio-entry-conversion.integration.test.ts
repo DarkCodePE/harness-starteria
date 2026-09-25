@@ -22,6 +22,7 @@ const otherUserId = 'user-pe-conversion-other';
 const portfolioLeadId = 'user-pe-continuation-portfolio-lead';
 const touchedProjectIds = new Set<string>();
 const touchedSessionIds = new Set<string>();
+const touchedOrganizationIds = new Set<string>();
 
 const versioning = {
   contractVersion: 'portfolio-entry-contract-v0.1',
@@ -200,6 +201,7 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
       profile: 'PORTFOLIO_LEAD_ENTRY',
     });
     const before = await canonicalCounts();
+    const grantsBeforeContinuation = await prisma.organizationPortfolioAccessGrant.count();
 
     const first = await request(app)
       .post(`${base}/sessions/${seeded.sessionId}/continue-portfolio`)
@@ -219,6 +221,7 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
       value: 'Starteria entendio que hay que ordenar iniciativas comerciales',
     });
     expect(first.body.data.context.provenanceSummary).toEqual([{ origin: 'AI_INFERRED', source_path: 'analysis' }]);
+    expect(await prisma.organizationPortfolioAccessGrant.count()).toBe(grantsBeforeContinuation);
 
     const replay = await request(app)
       .post(`${base}/sessions/${seeded.sessionId}/continue-portfolio`)
@@ -276,7 +279,7 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
     expect(await canonicalCounts()).toEqual(before);
   });
 
-  it('grants Portfolio capability to a participant only after valid continuation, and rejects stale confirmation', async () => {
+  it('requires a pre-existing scoped grant and never escalates a participant during continuation', async () => {
     const app = makeApp();
     const unauthorized = await seedConfirmedClaimedSession({
       ownerUserId: ownerId,
@@ -284,19 +287,38 @@ describeIntegration('Portfolio Entry Conversion Boundary', () => {
       profile: 'PORTFOLIO_LEAD_ENTRY',
     });
     const before = await canonicalCounts();
+    const grantsBeforeUnauthorizedContinuation = await prisma.organizationPortfolioAccessGrant.count();
+    await request(app)
+      .post(`${base}/sessions/${unauthorized.sessionId}/continue-portfolio`)
+      .set('Authorization', `Bearer ${ownerId}`)
+      .set('Idempotency-Key', 'continue-without-scoped-grant')
+      .send({ expectedRevision: unauthorized.revision })
+      .expect(403);
+    expect(await prisma.portfolioEntryPortfolioContinuation.count({ where: { sessionId: unauthorized.sessionId } })).toBe(0);
+    expect(await prisma.organizationPortfolioAccessGrant.count()).toBe(grantsBeforeUnauthorizedContinuation);
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: ownerId }, select: { role: true, roles: true } }))
+      .toEqual({ role: 'participante', roles: ['participante'] });
+
+    const ownerOrganizationId = `org-${ownerId}`;
+    await prisma.organizationPortfolioAccessGrant.create({
+      data: {
+        id: `grant-${ownerId}-read`,
+        userId: ownerId,
+        organizationId: ownerOrganizationId,
+        capability: 'portfolio:read',
+      },
+    });
+    const grantsBeforeAuthorizedContinuation = await prisma.organizationPortfolioAccessGrant.count();
     const granted = await request(app)
       .post(`${base}/sessions/${unauthorized.sessionId}/continue-portfolio`)
       .set('Authorization', `Bearer ${ownerId}`)
-      .set('Idempotency-Key', 'continue-grants-portfolio-access')
+      .set('Idempotency-Key', 'continue-with-preexisting-scoped-grant')
       .send({ expectedRevision: unauthorized.revision })
       .expect(200);
-    expect(granted.body.data).toMatchObject({
-      sessionId: unauthorized.sessionId,
-      status: 'CONTINUED',
-      portfolioAccessGranted: true,
-    });
+    expect(granted.body.data.portfolioAccessGranted).toBe(true);
+    expect(await prisma.organizationPortfolioAccessGrant.count()).toBe(grantsBeforeAuthorizedContinuation);
     expect(await prisma.user.findUniqueOrThrow({ where: { id: ownerId }, select: { role: true, roles: true } }))
-      .toEqual({ role: 'participante', roles: ['participante', 'portfolio_lead'] });
+      .toEqual({ role: 'participante', roles: ['participante'] });
 
     const stale = await seedConfirmedClaimedSession({
       ownerUserId: portfolioLeadId,
@@ -577,6 +599,13 @@ async function seedConfirmedClaimedSession(options: {
 } = {}) {
   const userId = options.ownerUserId ?? ownerId;
   const role = options.ownerRole ?? 'participante';
+  const organizationId = `org-${userId}`;
+  await prisma.organization.upsert({
+    where: { id: organizationId },
+    create: { id: organizationId, name: `Organization ${userId}`, slug: organizationId },
+    update: {},
+  });
+  touchedOrganizationIds.add(organizationId);
   await prisma.user.upsert({
     where: { id: userId },
     create: {
@@ -587,9 +616,23 @@ async function seedConfirmedClaimedSession(options: {
       roles: [role],
       initials: 'PE',
       skills: [],
+      organizationId,
     },
-    update: {},
+    update: { organizationId },
   });
+  const existingMembership = await prisma.organizationMember.findFirst({ where: { userId, organizationId } });
+  if (!existingMembership) {
+    await prisma.organizationMember.create({
+      data: { id: `membership-${userId}`, userId, organizationId, role: 'member' },
+    });
+  }
+  if (options.profile === 'PORTFOLIO_LEAD_ENTRY' && options.ownerUserId === portfolioLeadId) {
+    await prisma.organizationPortfolioAccessGrant.upsert({
+      where: { userId_organizationId_capability: { userId, organizationId, capability: 'portfolio:read' } },
+      create: { id: `grant-${userId}-read`, userId, organizationId, capability: 'portfolio:read' },
+      update: {},
+    });
+  }
   await prisma.user.upsert({
     where: { id: otherUserId },
     create: { id: otherUserId, email: 'pe-conversion-other@starteria.test', name: 'PE Other', role: 'participante', roles: ['participante'], initials: 'PO', skills: [] },
@@ -602,7 +645,9 @@ async function seedConfirmedClaimedSession(options: {
     where: { id: created.session.id },
     data: { continuationProfile: options.profile ?? 'INITIATIVE_ENTRY' },
   });
+  const grantsBeforeClaim = await prisma.organizationPortfolioAccessGrant.count();
   await service.claimOwnership(created.session.id, userId, new Date(), 0);
+  expect(await prisma.organizationPortfolioAccessGrant.count()).toBe(grantsBeforeClaim);
   await service.transitionLifecycle(created.session.id, 'ANALYZING');
   await service.transitionLifecycle(created.session.id, 'HANDOFF_ELIGIBLE');
   const handoff = await service.saveHandoff({ sessionId: created.session.id, handoff: makeHandoff() });
@@ -622,6 +667,7 @@ async function seedConfirmedClaimedSession(options: {
     rejectedFields: [],
     confirmedByUserId: userId,
   });
+  expect(await prisma.organizationPortfolioAccessGrant.count()).toBe(grantsBeforeClaim);
   const current = await prisma.portfolioEntrySession.findUniqueOrThrow({ where: { id: created.session.id } });
   if (options.markEligible) {
     const eligible = await service.markConversionEligible(created.session.id);
@@ -719,9 +765,16 @@ async function cleanup() {
     await prisma.step.deleteMany({ where: { projectId: { in: projectIds } } });
     await prisma.project.deleteMany({ where: { id: { in: projectIds } } });
   }
+  if (touchedOrganizationIds.size > 0) {
+    const organizationIds = [...touchedOrganizationIds];
+    await prisma.organizationPortfolioAccessGrant.deleteMany({ where: { organizationId: { in: organizationIds } } });
+    await prisma.organizationMember.deleteMany({ where: { organizationId: { in: organizationIds } } });
+    await prisma.organization.deleteMany({ where: { id: { in: organizationIds } } });
+  }
   await prisma.user.deleteMany({ where: { id: { in: [ownerId, otherUserId, portfolioLeadId] } } });
   touchedProjectIds.clear();
   touchedSessionIds.clear();
+  touchedOrganizationIds.clear();
 }
 
 async function canonicalCounts() {

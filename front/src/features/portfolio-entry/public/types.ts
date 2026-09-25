@@ -89,6 +89,39 @@ export type PortfolioEntrySessionDto = {
     failure?: { errorType: string; technicalError?: string };
   };
   handoffMode?: 'live' | 'deterministic' | 'degraded';
+  provisionalContinuation?: PortfolioEntryAuthenticatedProvisionalContinuation;
+};
+
+export type PortfolioEntryAuthenticatedProvisionalContinuation = {
+  state: 'AUTHENTICATED_PROVISIONAL_CONTINUATION';
+  sessionId: string;
+  handoff: { id: string; version: number } | null;
+  revision: number;
+  ownerUserId: string;
+  access: {
+    portfolio: 'PROVISIONAL_ONLY';
+    organizationScope: 'ORGANIZATIONAL_UNKNOWN';
+    canonicalEntityCreation: false;
+  };
+  payload: {
+    rawPublicContext: string;
+    understoodNeed: ProvenancedText;
+    desiredOutcome: ProvenancedText;
+    knownContext: Array<{ key: string; value: string; provenance?: ProvenancedText['provenance'] }>;
+    provenance: Array<{ origin: ProvenanceOrigin; source_path?: string; source_text?: string }>;
+    currentOpenItems: ProvenancedText[];
+    laterWorkItems: Array<{ action: string; description: string }>;
+    organizationalUnknowns: Array<{ gap_id: string; description: string; provenance?: ProvenancedText['provenance'] }>;
+    continuationSummary: SuggestedApproach | null;
+    selectedMaterialGap: { gap_id: string; description: string; provenance?: ProvenancedText['provenance'] } | null;
+    decisionMetadata: {
+      decisionToEnable: PortfolioEntryHandoff['decision_to_enable'];
+      handoffStatus: PortfolioEntryHandoff['handoff_status'];
+      starteriaPath: Array<{ action: string; description: string }>;
+      conversionEligible: false;
+      initiativeProfileSelected: false;
+    };
+  };
 };
 
 export type ProvenanceOrigin = 'USER_DECLARED' | 'EXTRACTED_FROM_USER_TEXT' | 'AI_INFERRED' | 'AI_SUGGESTED';
@@ -98,6 +131,7 @@ export type ProvenancedText = {
   value: string;
   provenance?: {
     origin: ProvenanceOrigin;
+    review_disposition?: ReviewDisposition;
     source_path?: string;
     source_text?: string;
   };
@@ -207,7 +241,7 @@ export type PortfolioEntryContinuationResult = {
   continuedAt: string;
   portfolioAccessGranted: boolean;
   portfolioScope: {
-    kind: 'platform_portfolio_permission';
+    kind: 'scoped_portfolio_grant';
     userId: string;
     organizationId: string | null;
   };
@@ -220,4 +254,10 @@ export type PortfolioEntryContinuationResult = {
     evidenceOrClarityNeeded?: unknown;
     provenanceSummary?: unknown;
   };
+};
+
+export type PortfolioEntryContextResolution = {
+  sessionId: string;
+  revision: number;
+  contexts: Array<{ organizationId: string; name: string }>;
 };

@@ -430,7 +430,7 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.getByLabelText(/tu respuesta/i)).toBeInTheDocument();
   });
 
-  it('materializes handoff, displays provenance language and confirms explicitly', async () => {
+  it('materializes handoff and routes public signup through authentication', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(makeSession({
       lifecycleStatus: 'HANDOFF_ELIGIBLE',
@@ -478,11 +478,9 @@ describe('PortfolioEntryExperience', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /crear mi portafolio/i }));
 
-    expect(await screen.findByText(/Esta lectura esta lista para continuar/i)).toBeInTheDocument();
-    expect(screen.getByText('Propuesta de Starteria', { exact: true })).toBeInTheDocument();
-    expect(screen.getByText(/AsÃƒÂ­ la decisiÃƒÂ³n parte del portfolio real/i)).toBeInTheDocument();
-    expect(screen.getByText(/Decidir que iniciativas requieren continuidad/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /crear cuenta y conservar lectura/i }));
+    expect(navigateSpy).toHaveBeenCalledWith('/auth');
+    expect(serviceMocks.confirmPortfolioEntryHandoff).not.toHaveBeenCalled();
+    expect(serviceMocks.correctPortfolioEntryHandoff).not.toHaveBeenCalled();
     expect(readPendingPortfolioEntryClaim()).toEqual({
       sessionId: '11111111-1111-4111-8111-111111111111',
       credential: 'entry-token',
@@ -560,7 +558,7 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.getByRole('button', { name: /empezar de nuevo/i })).toBeInTheDocument();
   });
 
-  it('supports field-level correction without JSON editing', async () => {
+  it('routes public correction through authentication without persisting anonymously', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(sessionWithHandoff());
     serviceMocks.correctPortfolioEntryHandoff.mockResolvedValue(sessionWithHandoff({
@@ -581,19 +579,13 @@ describe('PortfolioEntryExperience', () => {
     renderExperience();
 
     fireEvent.click(await screen.findByRole('button', { name: /ajustar esta lectura/i }));
-    const fields = screen.getAllByLabelText(/que entendio Starteria/i);
-    fireEvent.change(fields[0], { target: { value: 'Correccion del usuario' } });
-    fireEvent.click(screen.getByRole('button', { name: /guardar correcciones/i }));
-
-    await waitFor(() => {
-      expect(serviceMocks.correctPortfolioEntryHandoff).toHaveBeenCalledWith(
-        '11111111-1111-4111-8111-111111111111',
-        'entry-token',
-        expect.objectContaining({
-          correctedFields: { 'understanding.value': 'Correccion del usuario' },
-        }),
-      );
+    expect(navigateSpy).toHaveBeenCalledWith('/auth');
+    expect(readPendingPortfolioEntryClaim()).toEqual({
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      credential: 'entry-token',
     });
+    expect(serviceMocks.confirmPortfolioEntryHandoff).not.toHaveBeenCalled();
+    expect(serviceMocks.correctPortfolioEntryHandoff).not.toHaveBeenCalled();
   });
 
   it('keeps deeper handoff material collapsed and reachable without changing the CTA', async () => {
@@ -682,25 +674,24 @@ describe('PortfolioEntryExperience', () => {
     expect(screen.queryByRole('button', { name: /continuar con mi portafolio/i })).not.toBeInTheDocument();
   });
 
-  it('uses the handoff CTA for confirmation before conversion', async () => {
+  it('does not confirm the handoff from the anonymous CTA', async () => {
     savePortfolioEntryCurrentSession({ sessionId: '11111111-1111-4111-8111-111111111111', credential: 'entry-token' });
     serviceMocks.getPortfolioEntrySession.mockResolvedValue(sessionWithHandoff({
       lifecycleStatus: 'HANDOFF_READY',
       revision: 4,
       ownership: { state: 'ANONYMOUS' },
     }));
-    serviceMocks.confirmPortfolioEntryHandoff.mockResolvedValue(sessionWithHandoff({
-      lifecycleStatus: 'CONFIRMED',
-      revision: 5,
-      nextAction: 'claim_or_close',
-      ownership: { state: 'ANONYMOUS' },
-    }));
-
     renderExperience();
 
     fireEvent.click(await screen.findByRole('button', { name: /crear mi portafolio/i }));
 
-    await waitFor(() => expect(serviceMocks.confirmPortfolioEntryHandoff).toHaveBeenCalled());
+    expect(navigateSpy).toHaveBeenCalledWith('/auth');
+    expect(readPendingPortfolioEntryClaim()).toEqual({
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      credential: 'entry-token',
+    });
+    expect(serviceMocks.confirmPortfolioEntryHandoff).not.toHaveBeenCalled();
+    expect(serviceMocks.correctPortfolioEntryHandoff).not.toHaveBeenCalled();
     expect(serviceMocks.continuePortfolioEntryToPortfolio).not.toHaveBeenCalled();
   });
 
@@ -718,7 +709,7 @@ describe('PortfolioEntryExperience', () => {
       status: 'CONTINUED',
       destinationRoute: '/portfolio/inicio?portfolioEntryContinuationId=continuation-1',
       continuedAt: new Date().toISOString(),
-      portfolioScope: { kind: 'platform_portfolio_permission', userId: 'user-1', organizationId: null },
+      portfolioScope: { kind: 'scoped_portfolio_grant', userId: 'user-1', organizationId: 'org-1' },
       context: {},
     });
 
@@ -759,7 +750,7 @@ describe('PortfolioEntryExperience', () => {
         status: 'CONTINUED',
         destinationRoute: '/portfolio/inicio?portfolioEntryContinuationId=continuation-1',
         continuedAt: new Date().toISOString(),
-        portfolioScope: { kind: 'platform_portfolio_permission', userId: 'user-1', organizationId: null },
+        portfolioScope: { kind: 'scoped_portfolio_grant', userId: 'user-1', organizationId: 'org-1' },
         context: {},
       });
 

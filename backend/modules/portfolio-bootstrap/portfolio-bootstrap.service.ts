@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from '@prisma/client';
 import * as XLSX from 'xlsx';
 import { AppError } from '../../shared/errors/AppError';
 import { can, type Permission } from '../../shared/authz/permissions';
+import { ScopedPortfolioAccessService } from '../../shared/authz/scoped-portfolio-access.service';
 import { logger } from '../../shared/utils/logger';
 import { deriveAnchorStatus, derivePortfolioAnchorFromContinuation } from './portfolio-anchor-derivation';
 import { DeterministicPortfolioBootstrapAnalyzer, type PortfolioBootstrapAnalysisOutput, type PortfolioBootstrapAnalyzer } from './portfolio-bootstrap.analyzer';
@@ -268,8 +269,6 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     requestId?: string;
   }): Promise<PortfolioBootstrapDto> {
-    this.assertPortfolioRead(input.permissions);
-
     try {
       const result = await this.prisma.$transaction(async (tx) => {
         const db = tx as any;
@@ -280,6 +279,20 @@ export class PortfolioBootstrapService {
         if (continuation.continuedByUserId !== input.authenticatedUserId) {
           throw AppError.forbidden('No autorizado.', 'PORTFOLIO_BOOTSTRAP_CONTINUATION_FORBIDDEN');
         }
+        const scope = continuation.portfolioScope && typeof continuation.portfolioScope === 'object'
+          ? (continuation.portfolioScope as Record<string, unknown>)
+          : null;
+        const organizationId = typeof scope?.organizationId === 'string' ? scope.organizationId : null;
+        const hasScopedRead = organizationId
+          ? await new ScopedPortfolioAccessService(db).canUserAccessPortfolio({
+            userId: input.authenticatedUserId,
+            organizationId,
+            capability: 'portfolio:read',
+          })
+          : false;
+        if (!organizationId || (!can(input.permissions, 'portfolio:read') && !hasScopedRead)) {
+          throw AppError.forbidden('No tienes acceso a este espacio de Portfolio.', 'PORTFOLIO_BOOTSTRAP_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
+        }
 
         const existing = await this.findActiveSession(db, input.authenticatedUserId, continuation.id);
         if (existing) {
@@ -289,17 +302,11 @@ export class PortfolioBootstrapService {
           return existing;
         }
 
-        const user = await db.user.findUnique({
-          where: { id: input.authenticatedUserId },
-          select: { organizationId: true },
-        });
-        if (!user) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_BOOTSTRAP_AUTH_REQUIRED');
-
         const derived = derivePortfolioAnchorFromContinuation(continuation);
         const session = await db.portfolioBootstrapSession.create({
           data: {
             userId: input.authenticatedUserId,
-            organizationId: user.organizationId,
+            organizationId,
             sourceContinuationId: continuation.id,
             status: derived.status === 'anchor_sufficient' ? 'awaiting_work_intake' : 'awaiting_anchor_review',
             bootstrapPhase: derived.status === 'anchor_sufficient' ? 'B2_WORK_INTAKE' : 'B1_ANCHOR',
@@ -353,13 +360,18 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapDto> {
-    this.assertPortfolioRead(input.permissions);
     const row = await (this.prisma as any).portfolioBootstrapSession.findUnique({
       where: { id: input.sessionId },
       include: this.sessionInclude(),
     });
     if (!row) throw AppError.notFound('Portfolio Bootstrap session', 'PORTFOLIO_BOOTSTRAP_SESSION_NOT_FOUND');
-    this.assertOwner(row, input.authenticatedUserId);
+    await this.authorizeSessionCapability({
+      db: this.prisma as any,
+      session: row,
+      authenticatedUserId: input.authenticatedUserId,
+      permissions: input.permissions,
+      capability: 'portfolio:read',
+    });
     return this.toDto(row);
   }
 
@@ -369,10 +381,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     body: UpdateAnchorBody;
   }): Promise<PortfolioBootstrapDto> {
-    this.assertPortfolioWrite(input.permissions);
     const result = await this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const anchor = session.anchor;
       if (!anchor) throw AppError.conflict('La sesion no tiene anchor.', 'PORTFOLIO_BOOTSTRAP_ANCHOR_MISSING');
       if (anchor.status === 'anchor_confirmed') {
@@ -418,10 +430,10 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapDto> {
-    this.assertPortfolioWrite(input.permissions);
     const result = await this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const anchor = session.anchor;
       if (!anchor) throw AppError.conflict('La sesion no tiene anchor.', 'PORTFOLIO_BOOTSTRAP_ANCHOR_MISSING');
       if (anchor.status === 'anchor_confirmed') return session;
@@ -458,7 +470,6 @@ export class PortfolioBootstrapService {
     body: PasteWorkItemsBody;
     idempotencyKey?: string;
   }): Promise<PortfolioBootstrapWorkItemsDto> {
-    this.assertPortfolioWrite(input.permissions);
     const rawInput = input.body.text;
     const labels = parsePastedWorkItems(rawInput);
     if (labels.length === 0) {
@@ -469,6 +480,7 @@ export class PortfolioBootstrapService {
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const existingSource = await db.portfolioBootstrapWorkIntakeSource.findUnique({
         where: {
           bootstrapSessionId_requestHash: {
@@ -525,7 +537,6 @@ export class PortfolioBootstrapService {
     body: ManualWorkItemBody;
     idempotencyKey?: string;
   }): Promise<PortfolioBootstrapWorkItemsDto> {
-    this.assertPortfolioWrite(input.permissions);
     const normalized = {
       label: input.body.label.trim(),
       purpose: input.body.purpose?.trim() ?? null,
@@ -536,6 +547,7 @@ export class PortfolioBootstrapService {
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const existingSource = await db.portfolioBootstrapWorkIntakeSource.findUnique({
         where: {
           bootstrapSessionId_requestHash: {
@@ -591,10 +603,10 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapWorkItemsDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       await this.markWorkIntakeComplete(db, session.id, 'no_existing_work');
       await this.writeAudit(db, input.authenticatedUserId, 'portfolio_no_existing_work_selected', session.id, {
         existingWorkStatus: 'no_existing_work',
@@ -608,9 +620,9 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapWorkItemsDto> {
-    this.assertPortfolioRead(input.permissions);
     const db = this.prisma as any;
-    await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:read' });
     return this.listWorkItemsForSession(db, input.sessionId);
   }
 
@@ -620,7 +632,6 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     body: UploadImportBody;
   }): Promise<PortfolioBootstrapImportBatchDto> {
-    this.assertPortfolioWrite(input.permissions);
     const file = decodeImportFile(input.body);
     const parsed = parseImportFile(file);
     const fileHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
@@ -629,6 +640,7 @@ export class PortfolioBootstrapService {
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const existing = await db.portfolioBootstrapImportBatch.findUnique({
         where: {
           bootstrapSessionId_fileHash: {
@@ -672,9 +684,9 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapImportBatchDto> {
-    this.assertPortfolioRead(input.permissions);
     const db = this.prisma as any;
-    await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:read' });
     const batch = await db.portfolioBootstrapImportBatch.findFirst({
       where: { id: input.importId, bootstrapSessionId: input.sessionId },
     });
@@ -689,10 +701,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     body: UpdateImportMappingBody;
   }): Promise<PortfolioBootstrapImportBatchDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
-      await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const batch = await db.portfolioBootstrapImportBatch.findFirst({
         where: { id: input.importId, bootstrapSessionId: input.sessionId },
       });
@@ -727,10 +739,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     idempotencyKey?: string;
   }): Promise<PortfolioBootstrapImportCommitDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
-      await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const batch = await db.portfolioBootstrapImportBatch.findFirst({
         where: { id: input.importId, bootstrapSessionId: input.sessionId },
       });
@@ -837,10 +849,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     body: UpdateWorkItemBody;
   }): Promise<PortfolioBootstrapWorkItemsDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
-      await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const item = await db.portfolioBootstrapWorkItem.findFirst({
         where: { id: input.workItemId, bootstrapSessionId: input.sessionId, status: { not: 'rejected' } },
       });
@@ -865,10 +877,10 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapWorkItemsDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
-      await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       const item = await db.portfolioBootstrapWorkItem.findFirst({
         where: { id: input.workItemId, bootstrapSessionId: input.sessionId, status: { not: 'rejected' } },
       });
@@ -888,10 +900,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     idempotencyKey?: string;
   }): Promise<PortfolioBootstrapAnalyzeDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       if (!session.anchor) throw AppError.conflict('La sesion no tiene anchor.', 'PORTFOLIO_BOOTSTRAP_ANCHOR_MISSING');
       if (session.existingWorkStatus === 'no_existing_work') {
         throw AppError.conflict('No hay trabajo existente declarado para analizar.', 'PORTFOLIO_BOOTSTRAP_NO_WORK_TO_ANALYZE');
@@ -1022,9 +1034,9 @@ export class PortfolioBootstrapService {
     status?: string;
     targetType?: string;
   }): Promise<PortfolioBootstrapProposedMutationsDto> {
-    this.assertPortfolioRead(input.permissions);
     const db = this.prisma as any;
     const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:read' });
     const proposedMutations = await db.portfolioBootstrapProposedMutation.findMany({
       where: {
         bootstrapSessionId: input.sessionId,
@@ -1048,10 +1060,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     idempotencyKey?: string;
   }): Promise<PortfolioBootstrapReadingPublishDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       await this.writeAudit(db, input.authenticatedUserId, 'portfolio_reading_publish_started', session.id, {
         sessionId: session.id,
       });
@@ -1123,9 +1135,9 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioReadingDto | null> {
-    this.assertPortfolioRead(input.permissions);
     const db = this.prisma as any;
-    await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    const session = await this.requireOwnedSession(db, input.sessionId, input.authenticatedUserId);
+    await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:read' });
     const reading = await db.portfolioReading.findFirst({
       where: { bootstrapSessionId: input.sessionId },
       orderBy: { version: 'desc' },
@@ -1139,10 +1151,10 @@ export class PortfolioBootstrapService {
     authenticatedUserId: string;
     permissions: ReadonlySet<Permission>;
   }): Promise<PortfolioBootstrapMutationReviewDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const { session, mutation } = await this.requireOwnedMutation(db, input.sessionId, input.mutationId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       if (mutation.status === 'confirmed') {
         return this.reviewResult(db, session.id, mutation);
       }
@@ -1191,7 +1203,6 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     reviewNote?: string;
   }): Promise<PortfolioBootstrapMutationReviewDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.reviewWithoutApplying(input, 'rejected', 'portfolio_mutation_rejected');
   }
 
@@ -1202,7 +1213,6 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     reviewNote?: string;
   }): Promise<PortfolioBootstrapMutationReviewDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.reviewWithoutApplying(input, 'reviewed', 'portfolio_mutation_left_pending');
   }
 
@@ -1213,10 +1223,10 @@ export class PortfolioBootstrapService {
     permissions: ReadonlySet<Permission>;
     body: CorrectProposedMutationBody;
   }): Promise<PortfolioBootstrapMutationReviewDto> {
-    this.assertPortfolioWrite(input.permissions);
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const { session, mutation } = await this.requireOwnedMutation(db, input.sessionId, input.mutationId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       this.assertReviewableMutation(mutation);
       const updated = await db.portfolioBootstrapProposedMutation.update({
         where: { id: mutation.id },
@@ -1244,15 +1254,30 @@ export class PortfolioBootstrapService {
     });
   }
 
-  private assertPortfolioRead(permissions: ReadonlySet<Permission>): void {
-    if (!can(permissions, 'portfolio:read')) {
-      throw AppError.forbidden('No tienes permiso Portfolio para leer Bootstrap.', 'PORTFOLIO_BOOTSTRAP_READ_REQUIRED');
-    }
-  }
+  private async authorizeSessionCapability(input: {
+    db: any;
+    session: any;
+    authenticatedUserId: string;
+    permissions: ReadonlySet<Permission>;
+    capability: 'portfolio:read' | 'portfolio:write';
+  }): Promise<void> {
+    this.assertOwner(input.session, input.authenticatedUserId);
+    if (can(input.permissions, input.capability)) return;
 
-  private assertPortfolioWrite(permissions: ReadonlySet<Permission>): void {
-    if (!can(permissions, 'portfolio:write')) {
-      throw AppError.forbidden('No tienes permiso Portfolio para modificar Bootstrap.', 'PORTFOLIO_BOOTSTRAP_WRITE_REQUIRED');
+    const organizationId = typeof input.session.organizationId === 'string' ? input.session.organizationId : null;
+    const allowed = organizationId
+      ? await new ScopedPortfolioAccessService(input.db).canUserAccessPortfolio({
+        userId: input.authenticatedUserId,
+        organizationId,
+        capability: input.capability,
+      })
+      : false;
+    if (!allowed) {
+      const mode = input.capability === 'portfolio:read' ? 'leer' : 'modificar';
+      const code = input.capability === 'portfolio:read'
+        ? 'PORTFOLIO_BOOTSTRAP_READ_REQUIRED'
+        : 'PORTFOLIO_BOOTSTRAP_WRITE_REQUIRED';
+      throw AppError.forbidden(`No tienes permiso Portfolio para ${mode} Bootstrap.`, code);
     }
   }
 
@@ -1359,11 +1384,13 @@ export class PortfolioBootstrapService {
     sessionId: string;
     mutationId: string;
     authenticatedUserId: string;
+    permissions: ReadonlySet<Permission>;
     reviewNote?: string;
   }, status: 'reviewed' | 'rejected', auditAction: string): Promise<PortfolioBootstrapMutationReviewDto> {
     return this.prisma.$transaction(async (tx) => {
       const db = tx as any;
       const { session, mutation } = await this.requireOwnedMutation(db, input.sessionId, input.mutationId, input.authenticatedUserId);
+      await this.authorizeSessionCapability({ db, session, authenticatedUserId: input.authenticatedUserId, permissions: input.permissions, capability: 'portfolio:write' });
       if (mutation.status === status) return this.reviewResult(db, session.id, mutation);
       this.assertReviewableMutation(mutation);
       const updated = await db.portfolioBootstrapProposedMutation.update({

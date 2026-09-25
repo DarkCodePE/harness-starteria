@@ -28,6 +28,27 @@ vi.mock('../../../features/portfolio-lead/bootstrap/services/portfolioBootstrapC
   },
 }));
 
+vi.mock('../../../features/portfolio-entry/home/usePortfolioHomeEntryContext', () => ({
+  usePortfolioHomeEntryContext: () => ({
+    data: {
+      continuationId: 'cont-1',
+      sessionId: 'session-1',
+      organization: { id: 'org-1', name: 'Acme' },
+      arrival: {
+        understoodNeed: 'Ordenar las iniciativas',
+        desiredOutcome: 'Decidir dónde concentrar atención',
+        confirmedContext: ['El portfolio tiene varias iniciativas'],
+        openItems: ['Falta validar el criterio de prioridad'],
+        laterWork: ['Revisar el detalle de cada iniciativa'],
+        organizationalUnknowns: ['La capacidad disponible aún debe confirmarse'],
+        nextStep: 'Revisar este punto de partida y continuar estructurando el contexto del Portfolio.',
+      },
+    },
+    status: 'ready',
+    error: null,
+  }),
+}));
+
 vi.mock('../../../features/portfolio-lead', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../features/portfolio-lead')>();
   return {
@@ -68,6 +89,8 @@ describe('PortfolioLeadHomePage Bootstrap integration', () => {
     expect(await screen.findByTestId('portfolio-bootstrap-home-b')).toBeInTheDocument();
     expect(createOrReuse).toHaveBeenCalledWith('cont-1');
     expect(screen.getByRole('button', { name: /Incorporar trabajo existente/i })).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-entry-arrival-panel')).toBeInTheDocument();
+    expect(screen.getByText('Ordenar las iniciativas')).toBeInTheDocument();
   });
 
   it('does not render object-first primary actions when continuation governs the page', async () => {

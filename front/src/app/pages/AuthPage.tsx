@@ -129,7 +129,7 @@ export function AuthPage() {
           saveClaimedPortfolioEntrySession({ sessionId: pendingPortfolioEntryClaim.sessionId });
           savePortfolioEntryClaimedNotice(pendingPortfolioEntryClaim.sessionId);
           trackPortfolioEntryEvent('portfolio_entry_claimed', { sessionId: pendingPortfolioEntryClaim.sessionId });
-          navigate('/public/start', { replace: true });
+          navigate('/public/provisional-continuation', { replace: true });
         } catch {
           clearPendingPortfolioEntryClaim();
           clearPortfolioEntryCurrentSession();

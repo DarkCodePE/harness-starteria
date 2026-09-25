@@ -19,7 +19,11 @@ import type { PortfolioEntrySessionRepository } from '../../portfolio-entry-sess
 import { PortfolioEntrySessionError } from '../../portfolio-entry-sessions/application/portfolio-entry-session-errors';
 import type { PortfolioEntrySession, PortfolioEntryTurn } from '../../portfolio-entry-sessions/domain/portfolio-entry-session.types';
 import type { PortfolioEntryModelExecutionRecord } from '../../portfolio-entry-sessions/observability/portfolio-entry-execution-metadata';
-import { toPortfolioEntrySessionClientDto, type PortfolioEntrySessionClientDto } from '../portfolio-entry.dto';
+import {
+  toPortfolioEntryAuthenticatedProvisionalContinuationDto,
+  toPortfolioEntrySessionClientDto,
+  type PortfolioEntrySessionClientDto,
+} from '../portfolio-entry.dto';
 import { PortfolioEntryApiError } from '../portfolio-entry.errors';
 import type { ConfirmationBody, CreateSessionBody, GuidedExplorationBody, SubmitMessageBody } from '../portfolio-entry.schemas';
 import type {
@@ -36,6 +40,14 @@ type RequestContext = {
   idempotencyRecordId?: string;
 };
 type Operation = 'submit_message' | 'guided_exploration_choice' | 'materialize_handoff' | 'confirm_handoff' | 'claim_session';
+const USER_CONFIRMABLE_FIELDS = new Set(['understood_need', 'desired_outcome', 'known_context', 'understanding']);
+const ORGANIZATIONAL_FIELDS = new Set([
+  'organization', 'organization_id', 'portfolio', 'portfolio_membership', 'portfolio_authority',
+  'sponsor', 'sponsor_decision', 'management_priority', 'organizational_role', 'owner',
+  'ownership', 'permission', 'permissions', 'access', 'initiative_owner', 'initiative',
+  'project', 'steps', 'kpi', 'approval', 'organizational_unknowns', 'unresolved_context',
+  'decision_to_enable',
+]);
 type RecoveryHint = {
   kind: 'portfolio-entry-recovery';
   operation: Operation;
@@ -77,6 +89,16 @@ export class PortfolioEntryExperimentalSessionService {
   async readSession(input: { sessionId: string; publicAccessToken?: string; principal?: Principal }): Promise<PortfolioEntrySessionClientDto> {
     const session = await this.authorize(input.sessionId, input);
     return this.toDto(session);
+  }
+
+  async readAuthenticatedProvisionalContinuation(sessionId: string, principal?: Principal): Promise<PortfolioEntrySessionClientDto> {
+    if (!principal) throw PortfolioEntrySessionError.unauthorized();
+    const session = await this.requireSession(sessionId);
+    if (session.ownershipState !== 'CLAIMED' || session.ownerUserId !== principal.id) {
+      throw PortfolioEntryApiError.forbiddenOwner();
+    }
+    if (session.expiresAt <= this.now()) throw PortfolioEntrySessionError.expired();
+    return this.toProvisionalDto(session);
   }
 
   async submitMessage(sessionId: string, body: SubmitMessageBody, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
@@ -268,6 +290,8 @@ export class PortfolioEntryExperimentalSessionService {
   }
 
   async confirmOrCorrect(sessionId: string, body: ConfirmationBody, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
+    if (!context.principal) throw PortfolioEntrySessionError.unauthorized();
+    validateConfirmationCommand(body);
     const initial = await this.authorize(sessionId, context);
     assertNotConverted(initial);
     return this.withIdempotency('confirm_handoff', sessionId, body, context, async () => {
@@ -277,25 +301,38 @@ export class PortfolioEntryExperimentalSessionService {
       this.assertExpectedRevision(session, body.expectedRevision);
       if (!session.latestHandoff) throw PortfolioEntrySessionError.invalidTransition('Portfolio Entry handoff is not available.');
       const status = body.action === 'confirm' ? 'CONFIRMED' : 'REVISIONS_REQUESTED';
+      const acceptedFields = normalizeAcceptedFields(body);
+      const correctedFields = normalizeCorrectedFields(body.correctedFields);
       await this.storeRecovery(context, { kind: 'portfolio-entry-recovery', operation: 'confirm_handoff', expectedRevision: body.expectedRevision });
       await this.sessionService.saveConfirmation({
         sessionId,
         handoffId: session.latestHandoff.id,
         status,
-        acceptedFields: body.acceptedFields,
-        correctedFields: body.correctedFields,
+        acceptedFields,
+        correctedFields,
         rejectedFields: body.rejectedFields,
         notes: body.notes,
         confirmedByUserId: context.principal?.id,
         expectedRevision: body.expectedRevision,
         now: this.now(),
       });
-      return this.toDto(await this.requireSession(sessionId));
+      return this.toProvisionalDto(await this.requireSession(sessionId));
     }, (record) => this.recoverSessionRevision(sessionId, record, body.expectedRevision));
   }
 
   async claim(sessionId: string, expectedRevision: number, context: RequestContext): Promise<PortfolioEntrySessionClientDto> {
-    if (!context.principal || !context.publicAccessToken) throw PortfolioEntrySessionError.unauthorized();
+    if (!context.principal) throw PortfolioEntrySessionError.unauthorized();
+    const current = await this.requireSession(sessionId);
+    if (current.expiresAt <= this.now()) throw PortfolioEntrySessionError.expired();
+
+    // A claimed session is readable only by its owner. Returning the existing
+    // projection makes same-user retries deterministic without a second CAS.
+    if (current.ownershipState === 'CLAIMED') {
+      if (current.ownerUserId !== context.principal.id) throw PortfolioEntryApiError.forbiddenOwner();
+      return this.toProvisionalDto(current);
+    }
+
+    if (!context.publicAccessToken) throw PortfolioEntrySessionError.unauthorized();
     const initial = await this.sessionService.getForPublicAccess({ sessionId, publicAccessToken: context.publicAccessToken, now: this.now() });
     return this.withIdempotency('claim_session', sessionId, { expectedRevision }, context, async () => {
       this.assertExpectedRevision(initial, expectedRevision);
@@ -303,7 +340,7 @@ export class PortfolioEntryExperimentalSessionService {
       this.assertExpectedRevision(session, expectedRevision);
       await this.storeRecovery(context, { kind: 'portfolio-entry-recovery', operation: 'claim_session', expectedRevision, ownerUserId: context.principal!.id });
       await this.sessionService.claimOwnership(sessionId, context.principal!.id, this.now(), expectedRevision);
-      return this.toDto(await this.requireSession(sessionId));
+      return this.toProvisionalDto(await this.requireSession(sessionId));
     }, (record) => this.recoverClaim(sessionId, record, expectedRevision));
   }
 
@@ -329,6 +366,13 @@ export class PortfolioEntryExperimentalSessionService {
 
   private async toDto(session: PortfolioEntrySession): Promise<PortfolioEntrySessionClientDto> {
     return toPortfolioEntrySessionClientDto(session, await this.sessionRepository.listTurns(session.id));
+  }
+
+  private async toProvisionalDto(session: PortfolioEntrySession): Promise<PortfolioEntrySessionClientDto> {
+    return toPortfolioEntryAuthenticatedProvisionalContinuationDto(
+      session,
+      await this.sessionRepository.listTurns(session.id),
+    );
   }
 
   private assertExpectedRevision(session: PortfolioEntrySession, expectedRevision: number): void {
@@ -411,7 +455,7 @@ export class PortfolioEntryExperimentalSessionService {
     if (!hint?.ownerUserId) return null;
     const session = await this.requireSession(sessionId);
     if (session.revision !== expectedRevision + 1 || session.ownerUserId !== hint.ownerUserId) return null;
-    return this.toDto(session);
+    return this.toProvisionalDto(session);
   }
 
   private async recordFailure(sessionId: string, error: unknown): Promise<void> {
@@ -519,6 +563,78 @@ function stableJson(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
   return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => `${JSON.stringify(key)}:${stableJson(entry)}`).join(',')}}`;
+}
+
+function validateConfirmationCommand(body: ConfirmationBody): void {
+  const acceptedFields = body.acceptedFields ?? [];
+  for (const field of acceptedFields) {
+    if (ORGANIZATIONAL_FIELDS.has(field) || !USER_CONFIRMABLE_FIELDS.has(field)) {
+      throw PortfolioEntryApiError.invalidConfirmation(`El campo "${field}" no puede confirmarse en esta etapa.`);
+    }
+  }
+  const correctedFields = body.correctedFields ?? {};
+  for (const field of Object.keys(correctedFields)) {
+    if (ORGANIZATIONAL_FIELDS.has(field) || !USER_CONFIRMABLE_FIELDS.has(field)) {
+      throw PortfolioEntryApiError.invalidConfirmation(`El campo "${field}" no puede corregirse en esta etapa.`);
+    }
+  }
+  if (body.action === 'correct' && Object.keys(correctedFields).length === 0) {
+    throw PortfolioEntryApiError.invalidConfirmation('Indica al menos un dato propio que quieras corregir.');
+  }
+  validateUserValue(correctedFields.understood_need, 'understood_need');
+  validateUserValue(correctedFields.desired_outcome, 'desired_outcome');
+  if (correctedFields.known_context !== undefined) validateKnownContext(correctedFields.known_context);
+  if (correctedFields.understanding !== undefined) validateUserValue(correctedFields.understanding, 'understanding');
+}
+
+function normalizeAcceptedFields(body: ConfirmationBody): string[] {
+  if (body.action === 'confirm' && !body.acceptedFields?.length) {
+    return ['understood_need', 'desired_outcome', 'known_context'];
+  }
+  return [...new Set((body.acceptedFields ?? []).map((field) => field === 'understanding' ? 'understood_need' : field))];
+}
+
+function normalizeCorrectedFields(fields: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!fields) return {};
+  const normalized: Record<string, unknown> = {};
+  if (fields.understood_need !== undefined) normalized.understood_need = normalizeTextValue(fields.understood_need);
+  if (fields.understanding !== undefined) normalized.understood_need = normalizeTextValue(fields.understanding);
+  if (fields.desired_outcome !== undefined) normalized.desired_outcome = normalizeTextValue(fields.desired_outcome);
+  if (fields.known_context !== undefined) normalized.known_context = normalizeKnownContext(fields.known_context);
+  return normalized;
+}
+
+function validateUserValue(value: unknown, field: string): void {
+  if (value === undefined) return;
+  const text = normalizeTextValue(value);
+  if (!text) throw PortfolioEntryApiError.invalidConfirmation(`El campo "${field}" no puede estar vacío.`);
+}
+
+function normalizeTextValue(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value === 'object' && 'value' in value && typeof value.value === 'string') return value.value.trim();
+  throw PortfolioEntryApiError.invalidConfirmation('Los datos corregidos deben ser texto propio de la entrada.');
+}
+
+function validateKnownContext(value: unknown): void {
+  normalizeKnownContext(value);
+}
+
+function normalizeKnownContext(value: unknown): Array<{ key: string; value: string }> {
+  const entries = Array.isArray(value)
+    ? value
+    : value && typeof value === 'object'
+      ? Object.entries(value).map(([key, item]) => ({ key, value: item }))
+      : null;
+  if (!entries) throw PortfolioEntryApiError.invalidConfirmation('El contexto conocido debe ser una lista de datos propios.');
+  return entries.map((item) => {
+    if (!item || typeof item !== 'object' || typeof item.key !== 'string') {
+      throw PortfolioEntryApiError.invalidConfirmation('Cada dato de contexto necesita una clave y un valor.');
+    }
+    const valueText = normalizeTextValue(item.value);
+    if (!item.key.trim() || !valueText) throw PortfolioEntryApiError.invalidConfirmation('Cada dato de contexto necesita una clave y un valor.');
+    return { key: item.key.trim(), value: valueText };
+  });
 }
 
 function assertNotConverted(session: PortfolioEntrySession): void {

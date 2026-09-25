@@ -18,6 +18,7 @@ import { isDemoDataEnabled } from '../featureFlags';
 import { can } from '../authz/permissions';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { usePortfolioLead } from '../portfolio/PortfolioLeadContext';
+import { usePortfolioHomeEntryContext } from '../../features/portfolio-entry/home/usePortfolioHomeEntryContext';
 
 const ROLE_LABELS = {
   owner: 'Participante',
@@ -38,6 +39,15 @@ function PortfolioLeadLayoutContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const hasGlobalPortfolioAccess = can(user, 'portfolio:read');
+  const isPortfolioHomeArrival = location.pathname === '/portfolio/inicio';
+  const continuationId = isPortfolioHomeArrival
+    ? new URLSearchParams(location.search).get('portfolioEntryContinuationId')
+    : null;
+  const scopedEntryArrival = Boolean(isAuthenticated && !hasGlobalPortfolioAccess && continuationId);
+  const scopedEntryContext = usePortfolioHomeEntryContext(scopedEntryArrival ? continuationId : null);
+  const scopedEntryAuthorized = scopedEntryArrival && scopedEntryContext.status === 'ready' && Boolean(scopedEntryContext.data);
+  const scopedEntryChecking = scopedEntryArrival && (scopedEntryContext.status === 'idle' || scopedEntryContext.status === 'loading');
 
   const pendingDecisions = useMemo(
     () => initiatives.filter(item => item.readyForDecision || item.status === 'bloqueada').length,
@@ -67,8 +77,6 @@ function PortfolioLeadLayoutContent() {
   //
   // Ya nadie queda encerrado aquí: el redirect-cárcel de AppLayout desapareció, así que
   // un portfolio lead que además es participante conserva su dashboard.
-  const canViewPortfolio = can(user, 'portfolio:read');
-
   useEffect(() => {
     if (authLoading) return;
 
@@ -77,12 +85,28 @@ function PortfolioLeadLayoutContent() {
       return;
     }
 
-    if (!canViewPortfolio) {
+    if (hasGlobalPortfolioAccess || scopedEntryAuthorized) return;
+
+    if (!scopedEntryChecking) {
       navigate('/dashboard', { replace: true });
     }
-  }, [authLoading, isAuthenticated, navigate, canViewPortfolio]);
+  }, [authLoading, isAuthenticated, navigate, hasGlobalPortfolioAccess, scopedEntryAuthorized, scopedEntryChecking]);
 
-  if (authLoading || !isAuthenticated || !canViewPortfolio) return null;
+  if (authLoading || !isAuthenticated) return null;
+  if (scopedEntryChecking) {
+    return <p data-testid="portfolio-scoped-access-checking" className="py-16 text-center text-sm text-text-muted">Estamos verificando tu acceso al Portfolio.</p>;
+  }
+  if (!hasGlobalPortfolioAccess && !scopedEntryAuthorized) return null;
+
+  if (scopedEntryAuthorized) {
+    return (
+      <div data-testid="scoped-portfolio-entry-layout" className="flex h-screen overflow-hidden bg-[#f5f4ef]">
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   const isActive = (path: string) => {
     if (path === '/portfolio/decisiones') {

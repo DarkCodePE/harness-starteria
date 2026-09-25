@@ -1,0 +1,1521 @@
+{
+  "run_version": "LATER-WORK-RELATIONSHIP-v0.1",
+  "status": "LIVE_COMPLETED",
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "target_calls": 35,
+  "completed_calls": 35,
+  "deterministic_runs": [
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "elegir arquitectura y proveedor",
+            "why_it_matters": "pertenece al trabajo posterior",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "trabajarlo después",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y podemos continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true
+    },
+    {
+      "case_id": "LW-CTRL-01",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "diseñar la arquitectura",
+            "why_it_matters": "pertenece al trabajo posterior",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "trabajarlo después",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y podemos continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true
+    },
+    {
+      "case_id": "LW-CTRL-02",
+      "expected_relation": "CURRENT_DECISION_BLOCKER",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "continuation_mode": "CONTINUE_WITH_OPEN_ITEM"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "demostrar cumplimiento regulatorio",
+            "why_it_matters": "cambia la decisión actual",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "resolverlo antes de continuar",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y podemos continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true
+    },
+    {
+      "case_id": "LW-CTRL-03",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "seleccionar el proveedor",
+            "why_it_matters": "pertenece al trabajo posterior",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "trabajarlo después",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y podemos continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true
+    },
+    {
+      "case_id": "LW-CTRL-04",
+      "expected_relation": "CURRENT_DECISION_CONDITION",
+      "observed_relation": "CURRENT_DECISION_CONDITION",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "continuation_mode": "CONTINUE_WITH_OPEN_ITEM"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "confirmar el coste del proveedor",
+            "why_it_matters": "cambia la decisión actual",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "resolverlo antes de continuar",
+            "relation": "CURRENT_DECISION_CONDITION"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y podemos continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true
+    },
+    {
+      "case_id": "LW-CTRL-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "diseñar el siguiente experimento",
+            "why_it_matters": "pertenece al trabajo posterior",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "trabajarlo después",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y podemos continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true
+    }
+  ],
+  "runs": [
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Sin esta elección no puede completarse responsablemente la decisión actual sobre cómo reducir los tiempos de respuesta.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir criterios de evaluación y comparar las alternativas de arquitectura y proveedor frente a los objetivos de latencia, coste, operación y escalabilidad.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Qué criterios y alternativas deben usarse para comparar la arquitectura y el proveedor?",
+        "visible_response": "La decisión actual aún no está completa: elegir la arquitectura y el proveedor es necesario para poder avanzar responsablemente.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_CURRENT_ITEM",
+        "LATER_WORK_QUESTION",
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_039f55042f9313ca006ab59a9af9a087d2b850910f3cf6cf08",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "elegir arquitectura y proveedor",
+            "why_it_matters": "Es un paso posterior de diseño y selección para ejecutar la decisión actual de reducir los tiempos de respuesta.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Avanzar a la comparación de arquitecturas y proveedores según los requisitos de rendimiento, coste y operación.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara: reducir los tiempos de respuesta. La elección de arquitectura y proveedor puede abordarse como el siguiente paso.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0ad61c5b432383cd006ab59a9e726c87d281106047177bb263",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "La selección es el trabajo actual solicitado y debe resolverse para poder avanzar responsablemente con la reducción de los tiempos de respuesta.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir y comparar los criterios de decisión para la arquitectura y el proveedor, como latencia, fiabilidad, coste, escalabilidad y requisitos operativos.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Qué criterios y restricciones deben guiar la elección de la arquitectura y el proveedor?",
+        "visible_response": "La elección de la arquitectura y el proveedor es el siguiente paso necesario antes de continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_CURRENT_ITEM",
+        "LATER_WORK_QUESTION",
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0a95b2d32a35a272006ab59aa4cb2487d2af74a1555cd60546",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Determina cómo se implementará la reducción de los tiempos de respuesta, pero corresponde a la fase posterior a la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir los requisitos técnicos y comparar las opciones de arquitectura y proveedores.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar; la elección de arquitectura y proveedor queda para el trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0983d1013ecf30a8006ab59aaa52e887d2b9f353df8b66e38d",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Es trabajo posterior de diseño y selección de proveedor para ejecutar la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con la evaluación de opciones de arquitectura y proveedores cuando corresponda.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. La elección de arquitectura y proveedor puede abordarse como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0633c89118e0db56006ab59aade96087d2a1dcd68785085bc8",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Es necesario para ejecutar la solución, pero no cambia la decisión actual de reducir los tiempos de respuesta.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con la evaluación de alternativas de arquitectura y proveedores.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. La elección de arquitectura y proveedor queda para el trabajo posterior de ejecución.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 6,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0e1f67fb8c5fc30e006ab59ab1e64487d2aa8aa1a37b8222fd",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Es un paso posterior de diseño y selección para ejecutar la decisión ya tomada de reducir los tiempos de respuesta.",
+            "who_can_help_resolve_it": "Equipo técnico, arquitectura y compras/proveedores",
+            "suggested_next_move": "Definir los requisitos técnicos y criterios de evaluación, comparar alternativas y seleccionar la opción adecuada.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. La elección de arquitectura y proveedor puede abordarse como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 7,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0df5c02f6fac9a8e006ab59ab5153487d2bf73cee81c2807d0",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor.",
+            "why_it_matters": "Es la decisión que el usuario necesita tomar ahora para poder avanzar responsablemente.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir y comparar los criterios de selección, las alternativas de arquitectura y los proveedores disponibles.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Qué criterios y restricciones deben guiar la elección de la arquitectura y el proveedor?",
+        "visible_response": "La elección de la arquitectura y el proveedor sigue siendo necesaria para completar la decisión actual.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_CURRENT_ITEM",
+        "LATER_WORK_QUESTION",
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 8,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0adb24a62c82ef69006ab59aba187487d293a1a8d8044bb48b",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Es trabajo posterior de diseño y selección para ejecutar la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con la evaluación de alternativas de arquitectura y proveedores.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y puede continuar; la elección de arquitectura y proveedor queda para el trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 9,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0620cbcdbd870656006ab59abe39f087d2a711164565547eb3",
+      "error": null
+    },
+    {
+      "case_id": "CR-ADV-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Elegir la arquitectura y el proveedor",
+            "why_it_matters": "Es la decisión actual que debe tomarse para poder avanzar de forma responsable.",
+            "who_can_help_resolve_it": "Equipo de arquitectura y compras/procurement",
+            "suggested_next_move": "Definir los criterios de evaluación, comparar las opciones y seleccionar una arquitectura y un proveedor.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Qué criterios y restricciones deben usarse para comparar la arquitectura y los proveedores?",
+        "visible_response": "La decisión actual aún no está cerrada: elegir la arquitectura y el proveedor es necesario para poder avanzar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_CURRENT_ITEM",
+        "LATER_WORK_QUESTION",
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 10,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0b32376e28efec10006ab59ac1796087d2998178b38f75c3b0",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-01",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar la arquitectura",
+            "why_it_matters": "Es necesario para ejecutar la continuación, pero no impide avanzar con la decisión ya tomada.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir y evaluar las opciones de arquitectura en la siguiente fase.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y se puede continuar; el diseño de la arquitectura queda para la siguiente fase.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0e93ce6ad778137b006ab59ac4ee1487d2970a1a760ab7b747",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-01",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar la arquitectura",
+            "why_it_matters": "Define cómo se ejecutará la decisión ya tomada, pero no impide continuar con la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con el diseño de la arquitectura como siguiente etapa de trabajo.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y se puede continuar. El diseño de la arquitectura queda como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0685967844b9554f006ab59ac6ef7087d2aeb73b325be55e9b",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-01",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar la arquitectura",
+            "why_it_matters": "Define cómo se ejecutará y materializará la decisión ya tomada.",
+            "who_can_help_resolve_it": "Equipo de arquitectura e ingeniería",
+            "suggested_next_move": "Iniciar el diseño arquitectónico y documentar las decisiones técnicas relevantes.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y se puede continuar. El diseño de la arquitectura queda para el trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0a053422cb777a1e006ab59ac9965087d2a6bcc988fd1745c1",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-01",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar la arquitectura",
+            "why_it_matters": "Es necesario para ejecutar y concretar la decisión posteriormente, pero no impide continuar con la decisión actual, que ya está tomada.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con el diseño de la arquitectura como trabajo posterior.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y se puede continuar. El diseño de la arquitectura puede abordarse como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0cf76741cee5546d006ab59acc5bfc87d2ba51506a6fff79af",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-01",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar la arquitectura",
+            "why_it_matters": "Es necesario para la ejecución posterior, pero no impide continuar con la decisión ya tomada.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir y documentar la arquitectura en la siguiente fase de trabajo.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": false,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar; el diseño de la arquitectura queda como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_073a489a0ce87563006ab59acf4b0487d286ffbbac811dba70",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-02",
+      "expected_relation": "CURRENT_DECISION_BLOCKER",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Demostrar que la arquitectura cumple el requisito regulatorio obligatorio.",
+            "why_it_matters": "Sin esta demostración no es responsable tomar la decisión actual.",
+            "who_can_help_resolve_it": "Equipo de cumplimiento regulatorio y arquitectura",
+            "suggested_next_move": "Obtener y validar evidencia documentada de cumplimiento antes de decidir.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Qué evidencia documentada exige el requisito regulatorio y quién debe validarla?",
+        "visible_response": "La decisión actual no está lista: primero debe demostrarse el cumplimiento regulatorio obligatorio.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_01004adef59256b1006ab59ad153c087d29f0b2b302b1ff635",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-02",
+      "expected_relation": "CURRENT_DECISION_BLOCKER",
+      "observed_relation": "CURRENT_DECISION_CONDITION",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Demostrar el cumplimiento de la arquitectura con el requisito regulatorio obligatorio.",
+            "why_it_matters": "Sin esta demostración no puede tomarse responsablemente la decisión actual.",
+            "who_can_help_resolve_it": "El equipo de cumplimiento regulatorio y los responsables técnicos de la arquitectura.",
+            "suggested_next_move": "Documentar y validar la evidencia de cumplimiento antes de decidir.",
+            "relation": "CURRENT_DECISION_CONDITION"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Puede aportarse evidencia verificable de que la arquitectura cumple el requisito regulatorio obligatorio?",
+        "visible_response": "La decisión actual no está suficientemente fundamentada hasta demostrar el cumplimiento regulatorio obligatorio.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_LATER_WORK"
+      ],
+      "pass": false,
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_01633717659c0095006ab59ad584b887d2bcd510055fb15a8c",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-02",
+      "expected_relation": "CURRENT_DECISION_BLOCKER",
+      "observed_relation": "CURRENT_DECISION_CONDITION",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "continuation_mode": "CONTINUE_WITH_OPEN_ITEM"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Demostrar que la arquitectura cumple el requisito regulatorio obligatorio.",
+            "why_it_matters": "Sin esta demostración no se puede tomar responsablemente la decisión de arquitectura.",
+            "who_can_help_resolve_it": "Equipo de cumplimiento regulatorio y arquitectura",
+            "suggested_next_move": "Obtener una evaluación documentada de cumplimiento y verificarla antes de decidir.",
+            "relation": "CURRENT_DECISION_CONDITION"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": true,
+        "visible_question": "¿Qué evidencia documentada demuestra que la arquitectura cumple el requisito regulatorio obligatorio?",
+        "visible_response": "La decisión aún no está completa: primero debe demostrarse el cumplimiento regulatorio obligatorio.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_LATER_WORK"
+      ],
+      "pass": false,
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0ce05b772ee16cc0006ab59adf8cb087d2930c96e8c22359c1",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-02",
+      "expected_relation": "CURRENT_DECISION_BLOCKER",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Demostrar que la arquitectura puede cumplir el requisito regulatorio obligatorio.",
+            "why_it_matters": "Sin esta demostración, no se puede decidir responsablemente si la arquitectura es aceptable.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Obtener evidencia verificable de cumplimiento, como un análisis regulatorio, una evaluación formal o la validación de un especialista en cumplimiento.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Qué evidencia verificable demuestra que la arquitectura cumple el requisito regulatorio obligatorio?",
+        "visible_response": "La decisión aún no está lista para cerrarse: primero hay que demostrar el cumplimiento regulatorio obligatorio.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0736184dce9f8982006ab59ae3085087d29441b156e3fb9f31",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-02",
+      "expected_relation": "CURRENT_DECISION_BLOCKER",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "continuation_mode": "CONTINUE_WITH_OPEN_ITEM"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Demostrar que la arquitectura cumple el requisito regulatorio obligatorio.",
+            "why_it_matters": "Sin esta demostración no puede tomarse responsablemente la decisión actual sobre la arquitectura.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Obtener evidencia verificable de cumplimiento regulatorio antes de decidir.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": true,
+        "visible_question": "¿Qué evidencia verificable demuestra que la arquitectura cumple el requisito regulatorio obligatorio?",
+        "visible_response": "La decisión actual no está lista: primero debe demostrarse el cumplimiento regulatorio obligatorio.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0de2446477f2c340006ab59ae641bc87d2b9747b62d34bc3a8",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-03",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Seleccionar el proveedor",
+            "why_it_matters": "Es necesario para la ejecución posterior, pero no impide continuar con la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con el siguiente paso y abordar la selección del proveedor durante la ejecución.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y se puede continuar; la selección del proveedor puede resolverse después.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_04903401a7af569e006ab59ae9433887d280a7c268ba7d64c4",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-03",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Seleccionar el proveedor",
+            "why_it_matters": "Es necesario para la ejecución posterior, pero no impide continuar con la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar ahora y seleccionar el proveedor en la siguiente etapa de trabajo.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar; la selección del proveedor puede resolverse después.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0d503a23eebc15a4006ab59aeba12087d2b3f6e19207ec4adf",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-03",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Seleccionar el proveedor",
+            "why_it_matters": "Es necesario para la ejecución posterior, pero no impide decidir responsablemente si se continúa ahora.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con la decisión actual y abordar la selección del proveedor en la siguiente etapa.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar; la selección del proveedor puede resolverse después.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_06bd1b6bec98afe6006ab59aee793087d2a3144d2667b1ff22",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-03",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Seleccionar el proveedor",
+            "why_it_matters": "Es necesario para la ejecución posterior, pero no impide decidir responsablemente continuar ahora.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con la decisión actual y abordar la selección del proveedor en la siguiente fase.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar; la selección del proveedor puede resolverse después.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0892738fc7fd3e2a006ab59af0ecf087d2a67b9f550a753d4a",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-03",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Seleccionar el proveedor",
+            "why_it_matters": "Es necesario para la ejecución posterior, pero no impide continuar con la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Continuar con la selección del proveedor en la siguiente fase.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar; la selección del proveedor queda para una fase posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_08836f4966c6643a006ab59af3876c87d2ac028e218883e722",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-04",
+      "expected_relation": "CURRENT_DECISION_CONDITION",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Confirmar el coste del proveedor.",
+            "why_it_matters": "Es necesario para verificar si el proyecto cabe en el presupuesto aprobado y decidir responsablemente si puede continuar.",
+            "who_can_help_resolve_it": "El proveedor o la persona responsable de compras/presupuesto.",
+            "suggested_next_move": "Solicitar y validar el coste total del proveedor frente al presupuesto aprobado.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Cuál es el coste total confirmado del proveedor y cómo se compara con el presupuesto aprobado?",
+        "visible_response": "Este dato sigue siendo necesario para decidir si el proyecto puede continuar dentro del presupuesto.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_LATER_WORK"
+      ],
+      "pass": false,
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_03bfb35b97ba0e0b006ab59af60f2487d2a5a69eb3fc5e899d",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-04",
+      "expected_relation": "CURRENT_DECISION_CONDITION",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "continuation_mode": "CONTINUE_WITH_OPEN_ITEM"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Confirmar el coste del proveedor.",
+            "why_it_matters": "Es necesario comprobar si el gasto cabe en el presupuesto aprobado y determinar si se puede continuar responsablemente.",
+            "who_can_help_resolve_it": "El proveedor o el responsable de compras/finanzas.",
+            "suggested_next_move": "Solicitar y validar la cotización o el coste total del proveedor frente al presupuesto aprobado.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": true,
+        "visible_question": "¿Cuál es el coste total del proveedor y cabe dentro del presupuesto aprobado?",
+        "visible_response": "Este punto debe resolverse antes de decidir si se puede continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_LATER_WORK"
+      ],
+      "pass": false,
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_03a092324b1e0d8d006ab59af8e20887d2941d33bd79b905c4",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-04",
+      "expected_relation": "CURRENT_DECISION_CONDITION",
+      "observed_relation": "CURRENT_DECISION_CONDITION",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+        "continuation_mode": "CONTINUE_WITH_OPEN_ITEM"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Confirmar el coste del proveedor.",
+            "why_it_matters": "Es necesario para comprobar si la opción cabe en el presupuesto aprobado y determinar si se puede continuar responsablemente.",
+            "who_can_help_resolve_it": "El proveedor o el equipo de compras/finanzas.",
+            "suggested_next_move": "Solicitar y validar el coste total del proveedor frente al presupuesto aprobado.",
+            "relation": "CURRENT_DECISION_CONDITION"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": true,
+        "visible_question": "¿Cuál es el coste total confirmado del proveedor y cabe dentro del presupuesto aprobado?",
+        "visible_response": "El coste del proveedor sigue siendo necesario para completar la decisión actual y determinar si se puede continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_075e5ecbbf6c9513006ab59afc717c87d2a6755a3aa32cb0c5",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-04",
+      "expected_relation": "CURRENT_DECISION_CONDITION",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Confirmar el coste del proveedor",
+            "why_it_matters": "Es necesario para verificar si el proyecto cabe en el presupuesto aprobado y decidir responsablemente si puede continuar.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Obtener y validar la cotización o el coste total del proveedor.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Cuál es el coste total confirmado del proveedor?",
+        "visible_response": "Aún falta confirmar el coste del proveedor; sin ese dato no se puede determinar si el proyecto cabe en el presupuesto aprobado ni si puede continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_LATER_WORK"
+      ],
+      "pass": false,
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_029779baa82a87f0006ab59aff98b087d2801f85775ed23129",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-04",
+      "expected_relation": "CURRENT_DECISION_CONDITION",
+      "observed_relation": "CURRENT_DECISION_BLOCKER",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": false,
+        "current_open_items": [
+          {
+            "description": "Confirmar el coste del proveedor.",
+            "why_it_matters": "Es necesario comprobar si el gasto cabe en el presupuesto aprobado y si el trabajo puede continuar.",
+            "who_can_help_resolve_it": "El proveedor y la persona responsable de compras o del presupuesto.",
+            "suggested_next_move": "Solicitar y validar una cotización o desglose de costes actualizado.",
+            "relation": "CURRENT_DECISION_BLOCKER"
+          }
+        ],
+        "later_work_items": [],
+        "need_sufficient": false,
+        "visible_question": "¿Cuál es el coste confirmado del proveedor, incluido cualquier cargo adicional?",
+        "visible_response": "Este dato sigue siendo necesario para determinar si el presupuesto permite continuar.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "FALSE_LATER_WORK"
+      ],
+      "pass": false,
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_043943d3fcd115fe006ab59b02e0f887d296ce18bb3582dcba",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar el siguiente experimento",
+            "why_it_matters": "Es necesario para ejecutar y avanzar la iniciativa aprobada, pero no impide que la decisión actual continúe.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir el objetivo, la hipótesis, las métricas, el alcance y el plan de ejecución del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": false,
+        "visible_question": null,
+        "visible_response": "La parte actual está clara y puede continuar; el diseño del siguiente experimento queda para el trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 1,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0e86b7f487498d59006ab59b06377c87d280d20744038d1792",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar el siguiente experimento",
+            "why_it_matters": "Es trabajo posterior a la aprobación de la iniciativa y no impide avanzar responsablemente con la decisión actual.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir el objetivo, la hipótesis, las métricas y el plan de ejecución del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. El diseño del siguiente experimento queda como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 2,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0ac70956e6d9969e006ab59b0865a087d2b759c3db8d36b100",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar el siguiente experimento",
+            "why_it_matters": "Es necesario para ejecutar y evaluar la iniciativa aprobada, pero no impide que la decisión actual avance.",
+            "who_can_help_resolve_it": "Equipo responsable de experimentación",
+            "suggested_next_move": "Definir el objetivo, la hipótesis, las métricas, el alcance y el plan de ejecución del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. El diseño del siguiente experimento queda como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 3,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0fdd71dae2715443006ab59b0f37d487d2b921048af2b15c39",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "NOT_READY",
+        "continuation_mode": "CLARIFY"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar el siguiente experimento",
+            "why_it_matters": "Es necesario para ejecutar la iniciativa aprobada, pero no impide que la decisión actual avance porque ya está completa.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir el objetivo, la hipótesis, las métricas, el diseño y los criterios de éxito del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": false,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. El diseño del siguiente experimento queda como trabajo posterior.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [
+        "PREMATURE_STOP"
+      ],
+      "pass": false,
+      "repeat_index": 4,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0c9b5eafcb73d1f8006ab59b11c3a087d2a58f013f77db39ee",
+      "error": null
+    },
+    {
+      "case_id": "LW-CTRL-05",
+      "expected_relation": "LATER_WORK",
+      "observed_relation": "LATER_WORK",
+      "schema_valid": true,
+      "projection": {
+        "conversion_readiness": "READY",
+        "continuation_mode": "CONTINUE_TO_NEXT_WORK"
+      },
+      "output": {
+        "current_decision_complete": true,
+        "current_open_items": [],
+        "later_work_items": [
+          {
+            "description": "Diseñar el siguiente experimento",
+            "why_it_matters": "Es necesario para ejecutar la iniciativa aprobada, pero no impide que la decisión actual avance responsablemente.",
+            "who_can_help_resolve_it": null,
+            "suggested_next_move": "Definir el objetivo, la hipótesis, las métricas y el plan de ejecución del experimento.",
+            "relation": "LATER_WORK"
+          }
+        ],
+        "need_sufficient": true,
+        "visible_question": null,
+        "visible_response": "La decisión actual está clara y puede continuar. El diseño del siguiente experimento queda para la fase posterior de ejecución.",
+        "decision_readiness_regression": false,
+        "grounding_regression": false
+      },
+      "failures": [],
+      "pass": true,
+      "repeat_index": 5,
+      "provider": "openai_responses",
+      "requested_model": "gpt-5.6-luna",
+      "provider_reported_model": "gpt-5.6-luna",
+      "http_status": 200,
+      "response_id": "resp_0d48095560e569c2006ab59b142c9c87d2980cf0e69363d3fd",
+      "error": null
+    }
+  ]
+}

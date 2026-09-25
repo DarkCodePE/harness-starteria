@@ -39,6 +39,7 @@ import { PublicProposalEditorPage } from './pages/public/PublicProposalEditorPag
 import { PublicProposalResultPage } from './pages/public/PublicProposalResultPage';
 import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePage';
+import { AuthenticatedProvisionalContinuationPage } from './pages/public/AuthenticatedProvisionalContinuationPage';
 import { ContinuePilotPage } from './pages/ContinuePilotPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { StrategicFramingWorkspacePage } from '../features/portfolio-lead/strategic-framing/StrategicFramingWorkspacePage';
@@ -72,6 +73,7 @@ export const appRoutes = [
         Component: PublicLayout,
         children: [
           { path: 'start', Component: PublicStartPage },
+          { path: 'provisional-continuation', Component: AuthenticatedProvisionalContinuationPage },
           { path: 'start/initiative', Component: PublicInitiativeStartPage },
           { path: 'continuar', Component: PublicResumeWithCodePage },
           { path: 'draft/:draftId/edit', Component: PublicProposalEditorPage },

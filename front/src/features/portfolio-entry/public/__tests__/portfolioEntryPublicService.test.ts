@@ -129,7 +129,7 @@ describe('portfolioEntryPublicService', () => {
             status: 'CONTINUED',
             destinationRoute: '/portfolio/inicio?portfolioEntryContinuationId=continuation-1',
             continuedAt: new Date().toISOString(),
-            portfolioScope: { kind: 'platform_portfolio_permission', userId: 'user-1', organizationId: null },
+            portfolioScope: { kind: 'scoped_portfolio_grant', userId: 'user-1', organizationId: 'org-1' },
             context: {},
           },
         });

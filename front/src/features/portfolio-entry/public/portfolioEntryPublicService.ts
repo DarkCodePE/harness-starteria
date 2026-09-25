@@ -2,6 +2,7 @@ import axios from 'axios';
 import type {
   PortfolioEntryApiEnvelope,
   PortfolioEntryContinuationResult,
+  PortfolioEntryContextResolution,
   PortfolioEntryConversionResult,
   PortfolioEntrySessionDto,
 } from './types';
@@ -68,6 +69,19 @@ export type HandoffConfirmationInput = MutationOptions & {
 export type HandoffCorrectionInput = HandoffConfirmationInput & {
   correctedFields: Record<string, unknown>;
 };
+
+export type AuthenticatedProvisionalConfirmationInput = {
+  expectedRevision: number;
+  idempotencyKey: string;
+  acceptedFields?: Array<'understood_need' | 'desired_outcome' | 'known_context'>;
+  correctedFields?: {
+    understood_need?: string;
+    desired_outcome?: string;
+    known_context?: Array<{ key: string; value: string }>;
+  };
+};
+
+export type PortfolioContextSelectionInput = MutationOptions & { organizationId?: string };
 
 function authHeaders(credential: string, idempotencyKey?: string): Record<string, string> {
   return {
@@ -217,6 +231,48 @@ export async function getClaimedPortfolioEntrySession(sessionId: string): Promis
   return unwrap(response);
 }
 
+export async function getAuthenticatedProvisionalContinuation(sessionId: string): Promise<PortfolioEntrySessionDto> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.get<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/provisional-continuation`,
+  );
+  return unwrap(response);
+}
+
+export async function confirmAuthenticatedProvisionalContinuation(
+  sessionId: string,
+  input: AuthenticatedProvisionalConfirmationInput,
+): Promise<PortfolioEntrySessionDto> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.post<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/handoff/confirmation`,
+    {
+      expectedRevision: input.expectedRevision,
+      action: 'confirm',
+      ...(input.acceptedFields?.length ? { acceptedFields: input.acceptedFields } : {}),
+    },
+    { headers: { [IDEMPOTENCY_HEADER]: input.idempotencyKey } },
+  );
+  return unwrap(response);
+}
+
+export async function correctAuthenticatedProvisionalContinuation(
+  sessionId: string,
+  input: AuthenticatedProvisionalConfirmationInput & { correctedFields: NonNullable<AuthenticatedProvisionalConfirmationInput['correctedFields']> },
+): Promise<PortfolioEntrySessionDto> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.post<PortfolioEntryApiEnvelope<PortfolioEntrySessionDto>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/handoff/confirmation`,
+    {
+      expectedRevision: input.expectedRevision,
+      action: 'correct',
+      correctedFields: input.correctedFields,
+    },
+    { headers: { [IDEMPOTENCY_HEADER]: input.idempotencyKey } },
+  );
+  return unwrap(response);
+}
+
 export async function convertPortfolioEntrySession(
   sessionId: string,
   input: MutationOptions,
@@ -232,13 +288,21 @@ export async function convertPortfolioEntrySession(
 
 export async function continuePortfolioEntryToPortfolio(
   sessionId: string,
-  input: MutationOptions,
+  input: PortfolioContextSelectionInput,
 ): Promise<PortfolioEntryContinuationResult> {
   const { default: api } = await import('../../../app/services/api');
   const response = await api.post<PortfolioEntryApiEnvelope<PortfolioEntryContinuationResult>>(
     `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/continue-portfolio`,
-    { expectedRevision: input.expectedRevision },
+    { expectedRevision: input.expectedRevision, ...(input.organizationId ? { organizationId: input.organizationId } : {}) },
     { headers: { [IDEMPOTENCY_HEADER]: input.idempotencyKey } },
+  );
+  return unwrap(response);
+}
+
+export async function getPortfolioEntryContexts(sessionId: string): Promise<PortfolioEntryContextResolution> {
+  const { default: api } = await import('../../../app/services/api');
+  const response = await api.get<PortfolioEntryApiEnvelope<PortfolioEntryContextResolution>>(
+    `/public/portfolio-entry/sessions/${encodeURIComponent(sessionId)}/portfolio-contexts`,
   );
   return unwrap(response);
 }

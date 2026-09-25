@@ -1,0 +1,2345 @@
+{
+  "artifact": "PORTFOLIO_ENTRY_DECISION_READINESS_METADATA_INTEGRATION_RUNS_v0.1",
+  "status": "LIVE_COMPLETED",
+  "provider": "openai_responses",
+  "model": "gpt-5.6-luna",
+  "target_calls": 35,
+  "completed_calls": 35,
+  "schema_valid": 35,
+  "metadata_complete": 35,
+  "unresolved": 0,
+  "cr_adv_05_later": 10,
+  "cr_adv_05_ready": 10,
+  "controls_correct": 25,
+  "false_current": 0,
+  "false_later": 0,
+  "ar_failures": {
+    "AR-01": 0,
+    "AR-02": 0,
+    "AR-03": 0,
+    "AR-04": 0,
+    "AR-05": 0,
+    "AR-06": 0
+  },
+  "regressions": {
+    "decision_readiness_regression": 0,
+    "grounding_regression": 0,
+    "premature_public_stop": 0,
+    "later_work_question": 0,
+    "forced_conversion": 0,
+    "invented_authority": 0,
+    "invented_governance": 0
+  },
+  "runs": [
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el tiempo de respuesta objetivo y qué restricciones no negociables debe cumplir la opción elegida, por ejemplo en presupuesto, seguridad, plazo o compatibilidad?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r1",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7643,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "Para orientar la elección, ¿qué requisitos y restricciones son obligatorios —por ejemplo, objetivo de tiempo de respuesta, carga esperada, presupuesto, seguridad o cumplimiento—?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r2",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7887,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué requisitos no negociables deben cumplirse —por ejemplo, mejora objetivo del tiempo de respuesta, presupuesto, cumplimiento e integraciones— para que una arquitectura y un proveedor sean aceptables?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r3",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8455,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué tiempo de respuesta tienen hoy, qué objetivo deben alcanzar y qué restricciones no negociables debe cumplir la solución?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r4",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8802,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué requisitos o restricciones son obligatorios para la elección —por ejemplo, tiempo de respuesta objetivo, presupuesto, seguridad, cumplimiento y compatibilidad con lo existente?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r5",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6080,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 6,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "Para elegir bien, ¿cuáles son las condiciones obligatorias que debe cumplir la solución —por ejemplo, objetivo de tiempo de respuesta, presupuesto, integraciones, seguridad o plazo—?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r6",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 6,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6934,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 7,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué condiciones son obligatorias para elegir, especialmente presupuesto, plazo, mejora esperada en los tiempos de respuesta y restricciones sobre proveedores o contratos?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r7",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 7,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8884,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 8,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "Para orientar la elección, ¿qué requisitos o restricciones no negociables debe cumplir la solución —por ejemplo, tiempo de respuesta objetivo, volumen, presupuesto, plazo o capacidades operativas—?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r8",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 8,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8892,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 9,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el tiempo de respuesta objetivo y qué restricciones no negociables —por ejemplo, presupuesto, cumplimiento, integraciones o carga esperada— deben respetarse?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r9",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 9,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 10765,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "CR-ADV-05",
+      "repeat_index": 10,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "elegir arquitectura y proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "CR-ADV-05",
+          "description": "elegir arquitectura y proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué tiempo de respuesta debe alcanzarse, bajo qué carga o condiciones, y qué restricciones no negociables deben respetarse al elegir la arquitectura y el proveedor?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-CR-ADV-05-r10",
+          "case_id": "CR-ADV-05",
+          "repeat_index": 10,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7806,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-01",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar la arquitectura",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-01",
+          "description": "diseñar la arquitectura",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-01-r1",
+          "case_id": "LW-CTRL-01",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 9214,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-01",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar la arquitectura",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-01",
+          "description": "diseñar la arquitectura",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-01-r2",
+          "case_id": "LW-CTRL-01",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7705,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-01",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar la arquitectura",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-01",
+          "description": "diseñar la arquitectura",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-01-r3",
+          "case_id": "LW-CTRL-01",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7068,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-01",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar la arquitectura",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-01",
+          "description": "diseñar la arquitectura",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-01-r4",
+          "case_id": "LW-CTRL-01",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7349,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-01",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar la arquitectura",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "DETAIL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-01",
+          "description": "diseñar la arquitectura",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-01-r5",
+          "case_id": "LW-CTRL-01",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5982,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-02",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "demostrar cumplimiento regulatorio",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "regulatory-proof"
+        },
+        "current_decision_dependency": "BLOCKING",
+        "decision_sensitivity": "HIGH",
+        "decision_branch_type": "ENABLEMENT_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-02",
+          "description": "demostrar cumplimiento regulatorio",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Contar con una base verificable para determinar si la arquitectura puede avanzar.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el texto exacto del requisito regulatorio y qué evidencia se aceptará formalmente para considerar demostrado su cumplimiento?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-02-r1",
+          "case_id": "LW-CTRL-02",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7286,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-02",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "demostrar cumplimiento regulatorio",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "regulatory-proof"
+        },
+        "current_decision_dependency": "BLOCKING",
+        "decision_sensitivity": "HIGH",
+        "decision_branch_type": "ENABLEMENT_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-02",
+          "description": "demostrar cumplimiento regulatorio",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Contar con una demostración aceptable y verificable de cumplimiento para poder decidir.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el requisito regulatorio concreto y qué evidencia formal se aceptará para demostrar que la arquitectura lo cumple?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-02-r2",
+          "case_id": "LW-CTRL-02",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7835,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-02",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "demostrar cumplimiento regulatorio",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "regulatory-proof"
+        },
+        "current_decision_dependency": "BLOCKING",
+        "decision_sensitivity": "HIGH",
+        "decision_branch_type": "ENABLEMENT_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-02",
+          "description": "demostrar cumplimiento regulatorio",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Contar con evidencia suficiente para confirmar o descartar el cumplimiento antes de decidir.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el requisito regulatorio obligatorio exacto y qué evidencia disponible demuestra que esta arquitectura lo cumple?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-02-r3",
+          "case_id": "LW-CTRL-02",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8012,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-02",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "demostrar cumplimiento regulatorio",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "regulatory-proof"
+        },
+        "current_decision_dependency": "BLOCKING",
+        "decision_sensitivity": "HIGH",
+        "decision_branch_type": "ENABLEMENT_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-02",
+          "description": "demostrar cumplimiento regulatorio",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Acordar la evidencia necesaria y obtenerla antes de decidir.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué evidencia concreta se considerará suficiente para demostrar que la arquitectura cumple el requisito regulatorio obligatorio?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-02-r4",
+          "case_id": "LW-CTRL-02",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6248,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-02",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "demostrar cumplimiento regulatorio",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "regulatory-proof"
+        },
+        "current_decision_dependency": "BLOCKING",
+        "decision_sensitivity": "HIGH",
+        "decision_branch_type": "ENABLEMENT_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-02",
+          "description": "demostrar cumplimiento regulatorio",
+          "relation": "CURRENT_DECISION_BLOCKER"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Contar con un criterio claro de cumplimiento y evidencia aceptable antes de decidir.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el requisito regulatorio exacto y qué evidencia será aceptada para demostrar que la arquitectura lo cumple?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-02-r5",
+          "case_id": "LW-CTRL-02",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6822,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-03",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "seleccionar el proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-03",
+          "description": "seleccionar el proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "STOP",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-03-r1",
+          "case_id": "LW-CTRL-03",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7086,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-03",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "seleccionar el proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-03",
+          "description": "seleccionar el proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "STOP",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-03-r2",
+          "case_id": "LW-CTRL-03",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5466,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-03",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "seleccionar el proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-03",
+          "description": "seleccionar el proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "STOP",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-03-r3",
+          "case_id": "LW-CTRL-03",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6858,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-03",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "seleccionar el proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-03",
+          "description": "seleccionar el proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "STOP",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-03-r4",
+          "case_id": "LW-CTRL-03",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6592,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-03",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "seleccionar el proveedor",
+        "next_action": {
+          "type": "ROUTE",
+          "route": "later_stage"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-03",
+          "description": "seleccionar el proveedor",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "STOP",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-03-r5",
+          "case_id": "LW-CTRL-03",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6107,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-04",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "confirmar el coste del proveedor",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "provider-cost"
+        },
+        "current_decision_dependency": "CONSTRAINING",
+        "decision_sensitivity": "MEDIUM",
+        "decision_branch_type": "CONDITION_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-04",
+          "description": "confirmar el coste del proveedor",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Contar con el coste confirmado del proveedor para compararlo con el presupuesto disponible.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "Para comprobar si puede continuar, ¿cuál es el coste total confirmado del proveedor?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-04-r1",
+          "case_id": "LW-CTRL-04",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5799,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-04",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "confirmar el coste del proveedor",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "provider-cost"
+        },
+        "current_decision_dependency": "CONSTRAINING",
+        "decision_sensitivity": "MEDIUM",
+        "decision_branch_type": "CONDITION_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-04",
+          "description": "confirmar el coste del proveedor",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Comparar el coste total del proveedor con el presupuesto aprobado y determinar si se puede continuar.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el coste total cotizado por el proveedor, incluidos los cargos aplicables?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-04-r2",
+          "case_id": "LW-CTRL-04",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 9171,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-04",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "confirmar el coste del proveedor",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "provider-cost"
+        },
+        "current_decision_dependency": "CONSTRAINING",
+        "decision_sensitivity": "MEDIUM",
+        "decision_branch_type": "CONDITION_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-04",
+          "description": "confirmar el coste del proveedor",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "A confirmed cost figure that supports the decision to continue or stop.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el coste confirmado del proveedor, incluidos posibles cargos adicionales?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-04-r3",
+          "case_id": "LW-CTRL-04",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5027,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-04",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "confirmar el coste del proveedor",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "provider-cost"
+        },
+        "current_decision_dependency": "CONSTRAINING",
+        "decision_sensitivity": "MEDIUM",
+        "decision_branch_type": "CONDITION_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-04",
+          "description": "confirmar el coste del proveedor",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Confirmar el coste aplicable del proveedor.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el coste total del proveedor, con su moneda y periodo de cobro aplicables?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-04-r4",
+          "case_id": "LW-CTRL-04",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5935,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-04",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "confirmar el coste del proveedor",
+        "next_action": {
+          "type": "ASK",
+          "gap_id": "provider-cost"
+        },
+        "current_decision_dependency": "CONSTRAINING",
+        "decision_sensitivity": "MEDIUM",
+        "decision_branch_type": "CONDITION_CHANGE",
+        "answerability": "EXTERNAL_EVIDENCE_REQUIRED"
+      },
+      "metadata_complete": true,
+      "current_relevance": "CURRENT",
+      "current_open_items": [
+        {
+          "id": "LW-CTRL-04",
+          "description": "confirmar el coste del proveedor",
+          "relation": "CURRENT_DECISION_CONDITION"
+        }
+      ],
+      "later_work_items": [],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY_WITH_OPEN_ITEMS",
+      "continuation_mode": "CONTINUE_WITH_OPEN_ITEM",
+      "visible_response": "Saber si el presupuesto permite continuar.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Cuál es el coste total del proveedor que debe compararse con el presupuesto aprobado?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-04-r5",
+          "case_id": "LW-CTRL-04",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 5431,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-05",
+      "repeat_index": 1,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar el siguiente experimento",
+        "next_action": {
+          "type": "STOP",
+          "reason": "later_stage_detail"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-05",
+          "description": "diseñar el siguiente experimento",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-05-r1",
+          "case_id": "LW-CTRL-05",
+          "repeat_index": 1,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6670,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-05",
+      "repeat_index": 2,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar el siguiente experimento",
+        "next_action": {
+          "type": "STOP",
+          "reason": "later_stage_detail"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-05",
+          "description": "diseñar el siguiente experimento",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "ROUTE",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-05-r2",
+          "case_id": "LW-CTRL-05",
+          "repeat_index": 2,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 7652,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-05",
+      "repeat_index": 3,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar el siguiente experimento",
+        "next_action": {
+          "type": "STOP",
+          "reason": "later_stage_detail"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-05",
+          "description": "diseñar el siguiente experimento",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": null,
+        "raw_next_action": "STOP",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-05-r3",
+          "case_id": "LW-CTRL-05",
+          "repeat_index": 3,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 8749,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-05",
+      "repeat_index": 4,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar el siguiente experimento",
+        "next_action": {
+          "type": "STOP",
+          "reason": "later_stage_detail"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-05",
+          "description": "diseñar el siguiente experimento",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "La iniciativa ya está aprobada; antes de definir el siguiente experimento, ¿qué decisión concreta debe orientar?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-05-r4",
+          "case_id": "LW-CTRL-05",
+          "repeat_index": 4,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6431,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    },
+    {
+      "provider": "openai_responses",
+      "model": "gpt-5.6-luna",
+      "case_id": "LW-CTRL-05",
+      "repeat_index": 5,
+      "schema_valid": true,
+      "provider_error": null,
+      "decision_readiness": {
+        "selected_material_gap": "diseñar el siguiente experimento",
+        "next_action": {
+          "type": "STOP",
+          "reason": "later_stage_detail"
+        },
+        "current_decision_dependency": "NON_BLOCKING",
+        "decision_sensitivity": "LOW",
+        "decision_branch_type": "NO_MATERIAL_CHANGE",
+        "answerability": "LATER_STAGE_DISCOVERY"
+      },
+      "metadata_complete": true,
+      "current_relevance": "LATER",
+      "current_open_items": [],
+      "later_work_items": [
+        {
+          "id": "LW-CTRL-05",
+          "description": "diseñar el siguiente experimento",
+          "relation": "LATER_WORK"
+        }
+      ],
+      "unresolved_relationship_items": [],
+      "conversion_readiness": "READY",
+      "continuation_mode": "CONTINUE_TO_NEXT_WORK",
+      "visible_response": "La decisión actual está clara y podemos continuar; este detalle pertenece al trabajo posterior.",
+      "semantic_consistency_errors": [],
+      "checks": {
+        "decision_readiness_regression": "NONE",
+        "grounding_regression": "NONE",
+        "premature_public_stop": "NONE",
+        "later_work_question": "NONE",
+        "forced_conversion": "NONE",
+        "invented_authority": "NONE",
+        "invented_governance": "NONE",
+        "current_realization_missing": "NONE",
+        "semantic_consistency": "NONE"
+      },
+      "execution": {
+        "error_type": null,
+        "schema_errors": [],
+        "technical_error": null,
+        "raw_visible_question": "¿Qué decisión concreta debe informar el siguiente experimento?",
+        "raw_next_action": "ASK",
+        "execution_metadata": {
+          "call_id": "decision-readiness-metadata-integration-LW-CTRL-05-r5",
+          "case_id": "LW-CTRL-05",
+          "repeat_index": 5,
+          "turn_index": 1,
+          "purpose": "analysis_turn",
+          "provider": "openai_responses",
+          "requested_model": "gpt-5.6-luna",
+          "model": "gpt-5.6-luna",
+          "seed_support": "not_requested",
+          "duration_ms": 6438,
+          "retry_count": 0,
+          "fallback_used": false
+        }
+      }
+    }
+  ]
+}

@@ -24,6 +24,7 @@ import {
 import { PortfolioCopilotDrawer, PortfolioCopilotLauncher } from '../../features/copilot';
 import { isPortfolioCopilotEnabled } from '../services/featureFlags';
 import { PortfolioBootstrapHome, usePortfolioBootstrap } from '../../features/portfolio-lead/bootstrap';
+import { usePortfolioHomeEntryContext } from '../../features/portfolio-entry/home/usePortfolioHomeEntryContext';
 
 export function PortfolioLeadHomePage() {
   const navigate = useNavigate();
@@ -35,7 +36,8 @@ export function PortfolioLeadHomePage() {
     const params = new URLSearchParams(location.search);
     return params.get('portfolioEntryContinuationId');
   }, [location.search]);
-  const bootstrap = usePortfolioBootstrap(entryContinuationId);
+  const entryContext = usePortfolioHomeEntryContext(entryContinuationId);
+  const bootstrap = usePortfolioBootstrap(entryContext.status === 'ready' ? entryContinuationId : null);
 
   const firstName = 'Ana';
 
@@ -55,6 +57,7 @@ export function PortfolioLeadHomePage() {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
         <PortfolioLeadBreadcrumbs items={[{ label: 'Portfolio Lead', path: '/portfolio/inicio' }, { label: 'Inicio' }]} />
+        <PortfolioEntryArrivalPanel context={entryContext.data} status={entryContext.status} error={entryContext.error} />
         <PortfolioBootstrapHome
           data={bootstrap.data}
           status={bootstrap.status}
@@ -273,4 +276,37 @@ export function PortfolioLeadHomePage() {
       </div>
     </div>
   );
+}
+
+function PortfolioEntryArrivalPanel({
+  context,
+  status,
+  error,
+}: {
+  context: ReturnType<typeof usePortfolioHomeEntryContext>['data'];
+  status: ReturnType<typeof usePortfolioHomeEntryContext>['status'];
+  error: string | null;
+}) {
+  if (status === 'loading') {
+    return <section className="rounded-ds-lg border border-border-default bg-surface-default p-5" aria-live="polite"><p className="text-sm font-semibold text-text-primary">Recuperando tu punto de partida…</p></section>;
+  }
+  if (status === 'error' || !context) {
+    return <section role="alert" className="rounded-ds-lg border border-amber-200 bg-amber-50 p-5 text-amber-950"><h2 className="text-base font-semibold">No pudimos abrir este espacio de Portfolio</h2><p className="mt-1 text-sm">{error ?? 'El enlace ya no está disponible o necesita autorización actual.'}</p></section>;
+  }
+  const { arrival } = context;
+  return (
+    <section className="space-y-5 rounded-ds-lg border border-brand-primary/20 bg-surface-default p-5 md:p-6" data-testid="portfolio-entry-arrival-panel">
+      <div><p className="text-sm font-semibold uppercase tracking-wide text-brand-primary">Llegaste desde Public Entry · {context.organization.name}</p><h1 className="mt-2 text-2xl font-semibold text-text-primary">Tu punto de partida</h1><p className="mt-2 text-sm text-text-secondary">Starteria conserva lo que ya trabajaste para que puedas seguir desde aquí.</p></div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <ArrivalList title="Lo que ya está claro" items={[arrival.understoodNeed, arrival.desiredOutcome, ...arrival.confirmedContext].filter((item): item is string => Boolean(item))} empty="Todavía no hay elementos confirmados para mostrar." />
+        <ArrivalList title="Lo que todavía necesitamos resolver" items={[...arrival.openItems, ...arrival.organizationalUnknowns]} empty="No hay asuntos abiertos relevantes ahora." />
+      </div>
+      {arrival.laterWork.length > 0 && <div><h2 className="text-sm font-semibold text-text-primary">Para más adelante</h2><p className="mt-1 text-sm text-text-secondary">{arrival.laterWork.join(' · ')}</p></div>}
+      <div className="rounded-ds-md bg-background-subtle p-4"><h2 className="text-sm font-semibold text-text-primary">Siguiente paso</h2><p className="mt-1 text-sm text-text-secondary">{arrival.nextStep}</p></div>
+    </section>
+  );
+}
+
+function ArrivalList({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+  return <div><h2 className="text-sm font-semibold text-text-primary">{title}</h2>{items.length > 0 ? <ul className="mt-2 space-y-2 text-sm text-text-secondary">{items.slice(0, 5).map((item, index) => <li key={`${item}-${index}`} className="rounded-md bg-background-subtle px-3 py-2">{item}</li>)}</ul> : <p className="mt-2 text-sm text-text-muted">{empty}</p>}</div>;
 }

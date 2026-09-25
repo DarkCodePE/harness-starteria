@@ -1717,10 +1717,10 @@ export function PortfolioEntryExperience({
           pending={pending}
           onEditChange={updateCorrectionDraft}
           onNotesChange={setCorrectionNotes}
-          onStartEditing={beginCorrection}
+          onStartEditing={continueToSignup}
           onCancelEditing={() => setEditingCorrection(false)}
           onCorrect={correctHandoff}
-          onConfirm={confirmHandoff}
+          onConfirm={continueToSignup}
         />
       );
     }
