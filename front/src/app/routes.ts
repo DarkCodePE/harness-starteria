@@ -41,6 +41,7 @@ import { ProgressiveSignupPage } from './pages/public/ProgressiveSignupPage';
 import { PublicResumeWithCodePage } from './pages/public/PublicResumeWithCodePage';
 import { ContinuePilotPage } from './pages/ContinuePilotPage';
 import { CompaniesPage } from './pages/CompaniesPage';
+import { StrategicFramingWorkspacePage } from '../features/portfolio-lead/strategic-framing/StrategicFramingWorkspacePage';
 
 export const appRoutes = [
   {
@@ -122,6 +123,7 @@ export const appRoutes = [
           { path: 'sponsors', Component: PortfolioLeadSectionPage },
           { path: 'reportes', Component: PortfolioLeadSectionPage },
           { path: 'empresa', Component: CompaniesPage },
+          { path: 'framing/:stateId', Component: StrategicFramingWorkspacePage },
         ],
       },
     ],
