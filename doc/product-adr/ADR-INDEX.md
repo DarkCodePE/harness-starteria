@@ -11,6 +11,9 @@ Este indice no reemplaza `docs/adr/`, que queda reservado para ADRs del harness.
 | ADR-001 | Portfolio Entry continuation to Portfolio | `ADR-001-portfolio-entry-continuation-to-portfolio.md` | Propuesto / no aprobado | Candidato de producto; no implementa runtime. |
 | ADR-002 | Portfolio Entry active question, answer resolution and clarification convergence | `ADR-002-portfolio-entry-active-question-clarification-convergence.md` | Aceptado | Formaliza interacción secuencial y convergencia; no implementa runtime. |
 
+| ADR-003 | Public Entry registration continuation boundary | `ADR-003-public-entry-registration-continuation-boundary.md` | Propuesto / no aprobado | Registro no canoniza negocio; Portfolio-first; excepción Initiative explícita. |
+| ADR-004 | Authenticated continuation access and Initiative handoff authority | `ADR-004-authenticated-continuation-access-and-initiative-handoff-authority.md` | Propuesto / no aprobado | Selecciona contexto provisional autenticado; define evidencia Initiative/Steps e issuer condicional. |
+
 ## Reglas
 
 - Registrar aqui solo ADRs de producto.
