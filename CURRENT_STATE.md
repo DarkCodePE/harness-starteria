@@ -111,10 +111,44 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   - Este es el unico `PORTFOLIO_ENTRY_LOGIC_CONTRACT_v0.1.md` que debe usarse como autoridad activa para Pantalla 1.
   - SHA-256 observado: `D34FDEA9A5E5BE843105DDC2A3CED4970144AE2596AC8BF5AB897A95B2A54E8A`.
 - Portfolio Post-Entry Continuation:
-  - El contrato propuesto de continuación no está presente en este checkout.
-  - Estado de implementación de esta slice: `IMPLEMENTED_UNVERIFIED` en
-    `feat/portfolio-entry-portfolio-access`; la regla de concesión de acceso procede
-    del requerimiento explícito de la slice y queda pendiente de validación E2E.
+  - El contrato presente es `doc/experience/portfolio-entry/PORTFOLIO_POST_ENTRY_CONTINUATION_CONTRACT_v0.1.md`.
+  - Estado del contrato: `PROPOSED FOR REVIEW`; no es autoridad aprobada ni autoriza runtime productivo.
+  - La continuación Portfolio es un `APPROVED_TARGET` de ADR-003 todavía `PROPOSED`, no una afirmación de que el flujo productivo canónico ya exista.
+  - La implementación observada en este checkout es mixta: existe una superficie candidata de continuación Portfolio y permanecen rutas legacy de pilot/public-draft que pueden crear Project/Steps.
+
+## ADR-003 — estado reconciliado
+
+`doc/product-adr/ADR-003-public-entry-registration-continuation-boundary.md` mantiene estado `PROPOSED`.
+
+La lectura activa para esta frontera es:
+
+```text
+IMPLEMENTED_TODAY:
+  - Public Entry, auth y rutas legacy Project/Steps coexisten en el checkout.
+  - Existe una rama candidata de continuación Portfolio y tests de sus límites.
+
+PROPOSED_TARGET (ADR-003; pendiente de aceptación e integración):
+  Public Entry → handoff provisional → registration/login →
+  restaurar contexto → Portfolio context por defecto.
+
+LEGACY_COMPATIBILITY:
+  - /auth/continue/:draftId → pilot lead.
+  - /public/continuar → claim de piloto.
+  - /continuar-piloto → Project + Steps.
+  - createProjectFromPublicDraft → Project / Step 0.
+
+DEPRECATION_TARGET:
+  - Cualquier ruta pública por defecto que convierta directamente a Project/Steps.
+  - createProjectFromPublicDraft dentro de la frontera Public Entry.
+
+NOT_YET_IMPLEMENTED:
+  - La integración canónica ADR-003 de registro → handoff Portfolio.
+  - El contrato productivo Public Entry → Product Handoff.
+```
+
+Invariantes de esta frontera: `AUTHENTICATION != BUSINESS CANONICALIZATION`,
+`PUBLIC_ENTRY_CONTINUATION != PROJECT_CREATION` y
+`PUBLIC_ENTRY_CONTINUATION != STEPS_ENTRY`.
 
 ## ADRs
 
