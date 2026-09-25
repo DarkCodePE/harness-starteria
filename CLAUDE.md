@@ -8,8 +8,15 @@ Este repo **es** un plugin de Claude Code: el harness de producto de Starteria, 
 chat sobre los contratos de `doc/`, para gente de lead y de producto que no es técnica. Corre en
 Claude Code y sólo ahí (`ADR-010`).
 
+> **Cada pedido nuevo entra por `/hu <el pedido>`** antes de escribir código: entrevista (grill) →
+> brief → agente `delivery-planner` → HU en Jira con subtareas `[Funcional]` (producto) y
+> `[Técnica]` (desarrollo), creada sólo con confirmación. Flujo completo en
+> [`AGENTS.md`](AGENTS.md) § "Flujo obligatorio para cada pedido nuevo".
+
 | Si vas a | Leé |
 |---|---|
+| **atender un pedido nuevo** | `/hu`, y [`AGENTS.md`](AGENTS.md) § Flujo obligatorio |
+| **abrir un PR** | `/pr`: cierra la HU de Jira con la plantilla de `.github/PULL_REQUEST_TEMPLATE.md` |
 | usar el harness | `/starteria`, que es el mapa y explica los otros nueve |
 | **cambiar** el harness | [`AGENTS.md`](AGENTS.md): fases, puntos de control humanos, y las dos verificaciones que no se mezclan |
 | tocar `doc/` | `.claude/rules/contratos-doc.md`. Son contratos con autoridad, no se editan acá |
