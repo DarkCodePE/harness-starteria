@@ -2663,6 +2663,7 @@ model StrategicFramingProvisionalState {
   blockers             Json
   softGaps             Json
   optionalContext      Json
+  prioritizationState  Json?
   version              Int                                     @default(1)
   createdAt            DateTime                                @default(now())
   updatedAt            DateTime                                @updatedAt

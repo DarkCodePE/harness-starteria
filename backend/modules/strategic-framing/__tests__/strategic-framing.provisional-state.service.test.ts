@@ -10,7 +10,12 @@ function snapshot(sourceMode: StrategicFramingReadModel['context']['sourceMode']
     anchor: { id: 'anchor-1', status: 'anchor_sufficient', intendedMovement: 'Mejorar conversión', whyItMatters: 'Reducir fricción', signal: { status: 'proxy', value: 'Conversión' }, decisionToEnable: 'Decidir inversión', parentContext: { status: 'unresolved', label: null, sourceRefs: ['entry:1'] }, provenance: [{ sourceRef: 'entry:1', kind: 'extracted' }] },
     scopeAssessment: { level: 'challenge_like', confidence: 'low', rationale: ['signal'], provenance: ['derived:text'], canonicalized: false },
     existingWork: [{ id: 'work-1', label: 'Resolver fricción', stateHint: 'active', ownerCandidate: 'candidate@example.com', alignment: { status: 'alignment_unknown' }, sourceRefs: ['work:1'] }],
-    framingSignals: { observations: [], drivers: [], gaps: [], opportunities: [] },
+    framingSignals: {
+      observations: [{ id: 'observation-1', kind: 'observation', statement: 'No candidate', sourceRefs: ['obs:1'], provenance: 'derived', confidence: 'low', canonical: false }],
+      drivers: [{ id: 'driver-1', kind: 'driver', statement: 'No candidate', sourceRefs: ['driver:1'], provenance: 'derived', confidence: 'low', canonical: false }],
+      gaps: [{ id: 'gap-1', kind: 'gap', statement: 'Resolver dependencia', sourceRefs: ['gap:1'], provenance: 'ai_suggested', confidence: 'medium', canonical: false }],
+      opportunities: [{ id: 'opportunity-1', kind: 'opportunity', statement: 'Aprovechar señal', sourceRefs: ['opp:1'], provenance: 'extracted', confidence: 'high', canonical: false }],
+    },
     sufficiency: { status: 'insufficient', blockers: ['Falta validación'], softGaps: ['Contexto'], optionalContext: ['Sin iniciativa'] },
     nextBestAction: { kind: 'review_parent_context', reason: 'parent' },
     generatedAt: '2026-09-24T10:00:00.000Z',
@@ -47,6 +52,73 @@ const read = permissionsForRoles(['portfolio_lead']);
 const write = permissionsForRoles(['portfolio_lead']);
 
 describe('StrategicFramingProvisionalStateService', () => {
+  it('seeds only noncanonical gaps and opportunities with stable source identity', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any);
+    const state = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'seed', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    expect(state.prioritizationState.candidates).toEqual([
+      expect.objectContaining({ candidateId: 'sf5:gap:gap-1', sourceCandidateRef: 'gap-1', humanDisposition: 'undecided', humanDecision: null, sourceVersion: '2026-09-24T10:00:00.000Z', sourceRefs: ['gap:1'], provenance: 'ai_suggested', confidence: 'medium' }),
+      expect.objectContaining({ candidateId: 'sf5:opportunity:opportunity-1', sourceCandidateRef: 'opportunity-1', sourceRefs: ['opp:1'], provenance: 'extracted', confidence: 'high' }),
+    ]);
+    expect(state.prioritizationState.candidates.some((candidate) => candidate.candidateId.includes('observation') || candidate.candidateId.includes('driver'))).toBe(false);
+    expect(state.prioritizationState.nonCanonical).toBe(true);
+  });
+
+  it('reads legacy null prioritization without writing or incrementing version', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any);
+    const created = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'null-state', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    db.states.get(created.id).prioritizationState = null;
+    const current = await service.getCurrent({ stateId: created.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    expect(current.version).toBe(1);
+    expect(current.prioritizationState).toEqual({ schemaVersion: 1, nonCanonical: true, focusSlots: null, focusRationale: null, candidates: [] });
+  });
+
+  it('initializes existing empty state transactionally and preserves non-empty reviewed state', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any);
+    const state = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'explicit-init', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    db.states.get(state.id).prioritizationState = null;
+    const initialized = await service.initializePrioritizationFromReadSnapshot({ stateId: state.id, snapshot: snapshot(), actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1 });
+    expect(initialized.version).toBe(2);
+    expect(db.histories[0].action).toBe('prioritization_initialized');
+    expect(db.histories[0].snapshot.prioritizationState).toBeNull();
+    const reviewed = await service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 2, decisions: [{ candidateId: 'sf5:gap:gap-1', disposition: 'address_now', rationale: 'Material', recommendationSnapshot: { recommendationVersion: 'test-1', inputStateVersion: 2, recommendedDisposition: 'address_now', rationale: ['evidence'], sourceRefs: ['gap:1'] } }] });
+    const resynced = await service.initializePrioritizationFromReadSnapshot({ stateId: state.id, snapshot: { ...snapshot(), generatedAt: 'changed' }, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 3 });
+    expect(reviewed.prioritizationState.candidates[0].humanDisposition).toBe('address_now');
+    expect(resynced.prioritizationState.candidates[0].humanDisposition).toBe('address_now');
+    expect(resynced.prioritizationState.candidates[0].statementSnapshot).toBe('Resolver dependencia');
+  });
+
+  it('persists reversible human review, trusted recommendation evidence and over-capacity', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any, () => new Date('2026-09-24T12:00:00.000Z'));
+    const state = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'review', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    const reviewed = await service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, focusSlots: 1, focusRationale: 'Capacidad actual', decisions: [
+      { candidateId: 'sf5:gap:gap-1', disposition: 'address_now', recommendationSnapshot: { recommendationVersion: 'test-1', inputStateVersion: 1, recommendedDisposition: 'observe', rationale: ['evidence'], sourceRefs: ['gap:1'] } },
+      { candidateId: 'sf5:opportunity:opportunity-1', disposition: 'address_now', recommendationSnapshot: { recommendationVersion: 'test-1', inputStateVersion: 1, recommendedDisposition: 'address_now', rationale: ['evidence'], sourceRefs: ['opp:1'] } },
+    ] });
+    expect(reviewed.version).toBe(2);
+    expect(reviewed.prioritizationState.focusSlots).toBe(1);
+    expect(reviewed.prioritizationState.candidates.filter((candidate) => candidate.humanDisposition === 'address_now')).toHaveLength(2);
+    expect(reviewed.prioritizationState.candidates[0].humanDecision).toMatchObject({ actorUserId: 'user-1', appliedFromStateVersion: 1, recommendationSnapshot: { recommendedDisposition: 'observe' } });
+    expect(reviewed.sufficiency.status).toBe('insufficient');
+    const reversed = await service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 2, focusSlots: 0, decisions: [{ candidateId: 'sf5:gap:gap-1', disposition: 'observe', recommendationSnapshot: { recommendationVersion: 'test-2', inputStateVersion: 2, recommendedDisposition: 'uncertain', rationale: [], sourceRefs: ['gap:1'] } }] });
+    expect(reversed.prioritizationState.focusSlots).toBe(0);
+    expect(reversed.prioritizationState.candidates[0].humanDisposition).toBe('observe');
+  });
+
+  it('rejects invalid capacity, unknown candidates, untrusted recommendation refs and stale review', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any);
+    const state = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'invalid-review', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    await expect(service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, focusSlots: -1 })).rejects.toMatchObject({ code: 'SF_PRIORITIZATION_FOCUS_SLOTS_INVALID' });
+    await expect(service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, decisions: [{ candidateId: 'missing', disposition: 'discard', recommendationSnapshot: { recommendationVersion: 'x', inputStateVersion: 1, recommendedDisposition: 'discard', rationale: [], sourceRefs: [] } }] })).rejects.toMatchObject({ code: 'SF_PRIORITIZATION_CANDIDATE_NOT_FOUND' });
+    await expect(service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, decisions: [{ candidateId: 'sf5:gap:gap-1', disposition: 'discard', recommendationSnapshot: { recommendationVersion: 'x', inputStateVersion: 1, recommendedDisposition: 'discard', rationale: [], sourceRefs: ['fabricated'] } }] })).rejects.toMatchObject({ code: 'SF_PRIORITIZATION_RECOMMENDATION_INVALID' });
+    await service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, focusSlots: null });
+    await expect(service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1 })).rejects.toMatchObject({ code: 'SF_PROVISIONAL_STATE_STALE' });
+  });
+
   it('initializes from SF-2 without canonicalizing and reuses on re-entry', async () => {
     const db = fakePrisma();
     const service = new StrategicFramingProvisionalStateService(db as any, () => new Date('2026-09-24T10:00:00.000Z'));
