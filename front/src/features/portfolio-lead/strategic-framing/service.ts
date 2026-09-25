@@ -1,5 +1,5 @@
 import api, { parseApiError, type AuthError } from '../../../app/services/api';
-import type { StrategicFramingDraft, StrategicFramingState } from './types';
+import type { StrategicFramingDraft, StrategicFramingState, StrategicLensSuggestionResult } from './types';
 
 type Envelope<T> = { success: true; data: T };
 export type StrategicFramingCorrection = Partial<StrategicFramingDraft> & { expectedVersion: number; reason?: string | null };
@@ -14,6 +14,13 @@ export async function getStrategicFramingState(stateId: string): Promise<Strateg
 export async function updateStrategicFramingState(stateId: string, correction: StrategicFramingCorrection): Promise<StrategicFramingState> {
   try {
     const { data } = await api.patch<Envelope<StrategicFramingState>>(`/strategic-framing/states/${encodeURIComponent(stateId)}`, correction);
+    return data.data;
+  } catch (error) { throw parseApiError(error); }
+}
+
+export async function getStrategicFramingLensSuggestions(stateId: string): Promise<StrategicLensSuggestionResult> {
+  try {
+    const { data } = await api.get<Envelope<StrategicLensSuggestionResult>>(`/strategic-framing/states/${encodeURIComponent(stateId)}/lens-suggestions`);
     return data.data;
   } catch (error) { throw parseApiError(error); }
 }

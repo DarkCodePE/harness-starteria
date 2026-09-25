@@ -1,6 +1,8 @@
 import React from 'react';
 import { useParams } from 'react-router';
 import { useStrategicFramingWorkspace } from './useStrategicFramingWorkspace';
+import { useStrategicFramingLensSuggestions } from './useStrategicFramingLensSuggestions';
+import { LensSuggestions } from './StrategicFramingLensSuggestions';
 import type { StrategicFramingDraft, SubjectLevel } from './types';
 
 const subjectLabels: Record<SubjectLevel, string> = { front_like: 'Frente estratégico posible', challenge_like: 'Reto o problema específico', initiative_like: 'Iniciativa o intervención', unresolved: 'Aún por definir' };
@@ -10,6 +12,7 @@ const sourceLabels: Record<string, string> = { public_entry: 'Entrada pública',
 export function StrategicFramingWorkspacePage() {
   const { stateId = '' } = useParams();
   const workspace = useStrategicFramingWorkspace(stateId);
+  const lenses = useStrategicFramingLensSuggestions(stateId, workspace.serverState?.version ?? null);
   if (workspace.status === 'loading') return <StateMessage text="Cargando el framing provisional…" />;
   if (workspace.status === 'error' && !workspace.serverState) return <StateMessage text={workspace.error?.code === 'SF_PROVISIONAL_STATE_NOT_FOUND' ? 'No encontramos este framing provisional.' : workspace.error?.code === 'SF_PROVISIONAL_STATE_FORBIDDEN' ? 'No tienes acceso a este framing.' : 'No pudimos cargar este framing.'} action={workspace.reload} />;
   if (!workspace.serverState || !workspace.draft) return null;
@@ -29,7 +32,7 @@ export function StrategicFramingWorkspacePage() {
         <Card title="Cómo sabremos que se mueve"><div className="grid gap-4 md:grid-cols-2"><Select label="Estado de la señal" value={draft.movementSignalStatus ?? ''} options={['confirmed', 'proxy', 'suggested', 'unknown', 'conflicting']} onChange={value => workspace.update('movementSignalStatus', (value || null) as StrategicFramingDraft['movementSignalStatus'])} /><TextInput label="Señal o valor proxy" value={draft.movementSignalValue} onChange={field('movementSignalValue')} /></div><TextArea label="Horizonte" value={draft.horizonContext} onChange={field('horizonContext')} /><TextArea label="Decisión que habilita" value={draft.decisionToEnable} onChange={field('decisionToEnable')} /></Card>
         <Card title="Relación estratégica"><Select label="Estado del contexto" value={draft.parentStatus} options={Object.keys(parentLabels)} optionLabels={parentLabels} onChange={value => workspace.update('parentStatus', value as StrategicFramingDraft['parentStatus'])} /><TextInput label="Descripción humana del contexto" value={draft.parentLabel} onChange={field('parentLabel')} /></Card>
       </section>
-      <aside className="space-y-6"><Card title="Qué falta para avanzar"><p className="text-xs uppercase tracking-wide text-slate-500">Evaluación actual · {state.sufficiency.status}</p><Gap title="Bloqueos" items={state.sufficiency.blockers} /><Gap title="Brechas suaves" items={state.sufficiency.softGaps} /><Gap title="Contexto opcional" items={state.sufficiency.optionalContext} /></Card><Card title="Contexto"><p className="text-sm text-slate-600">Última actualización</p><p className="mt-1 text-sm font-semibold text-slate-900">{new Date(state.updatedAt).toLocaleString('es-ES')}</p><p className="mt-4 text-sm text-slate-600">La procedencia y la evaluación son de solo lectura en esta versión.</p></Card></aside>
+      <aside className="space-y-6"><LensSuggestions stateDirty={workspace.dirty} lenses={lenses} /><Card title="Qué falta para avanzar"><p className="text-xs uppercase tracking-wide text-slate-500">Evaluación actual · {state.sufficiency.status}</p><Gap title="Bloqueos" items={state.sufficiency.blockers} /><Gap title="Brechas suaves" items={state.sufficiency.softGaps} /><Gap title="Contexto opcional" items={state.sufficiency.optionalContext} /></Card><Card title="Contexto"><p className="text-sm text-slate-600">Última actualización</p><p className="mt-1 text-sm font-semibold text-slate-900">{new Date(state.updatedAt).toLocaleString('es-ES')}</p><p className="mt-4 text-sm text-slate-600">La procedencia y la evaluación son de solo lectura en esta versión.</p></Card></aside>
     </div>
     <footer className="flex justify-end gap-3 border-t border-slate-200 pt-5"><button className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700" onClick={workspace.cancel} disabled={!workspace.dirty}>Cancelar cambios</button><button className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40" onClick={workspace.save} disabled={!workspace.dirty || workspace.status === 'saving'}>{workspace.status === 'saving' ? 'Guardando…' : 'Guardar cambios'}</button></footer>
   </main>;

@@ -1,0 +1,17 @@
+import type { useStrategicFramingLensSuggestions } from './useStrategicFramingLensSuggestions';
+
+type LensState = ReturnType<typeof useStrategicFramingLensSuggestions>;
+
+export function LensSuggestions({ stateDirty, lenses }: { stateDirty: boolean; lenses: LensState }) {
+  return <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <h2 className="mb-4 text-lg font-bold text-slate-950">Perspectivas que podrían ayudarte</h2>
+    <p className="text-sm text-slate-600">Son perspectivas opcionales basadas en el contexto guardado actual. Puedes continuar sin explorarlas.</p>
+    {stateDirty && <p className="mt-3 text-xs text-slate-500">Las perspectivas se actualizarán cuando guardes estos cambios.</p>}
+    {lenses.status === 'loading' && <p className="mt-4 text-sm text-slate-500">Cargando perspectivas sugeridas…</p>}
+    {lenses.status === 'error' && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p>No pudimos cargar las perspectivas sugeridas.</p><button className="mt-2 rounded-lg bg-white px-3 py-1.5 font-semibold" onClick={lenses.retry}>Reintentar perspectivas</button></div>}
+    {lenses.status === 'ready' && lenses.suggestions.length === 0 && <p className="mt-4 text-sm text-slate-500">No vemos una perspectiva adicional materialmente necesaria con la versión guardada actual.</p>}
+    {lenses.status === 'ready' && lenses.suggestions.map((suggestion) => <article key={suggestion.lens} className="mt-4 rounded-2xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><h3 className="font-semibold text-slate-900">{suggestion.label}</h3><span className="text-xs text-slate-500">Relevancia sugerida: {suggestion.confidence === 'low' ? 'baja' : suggestion.confidence === 'medium' ? 'media' : 'alta'}</span></div><p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Por qué puede importar</p><p className="mt-1 text-sm text-slate-700">{suggestion.reason}</p><p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Pregunta útil</p><p className="mt-1 text-sm text-slate-700">{suggestion.materialQuestion}</p><p className="mt-3 text-xs text-slate-500">{suggestion.sourceRefs.length > 0 ? `${suggestion.sourceRefs.length} fuentes de contexto vinculadas` : 'Sin fuentes explícitas vinculadas; sugerencia conservadora.'}</p><div className="mt-3 flex gap-2"><button className="rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white" onClick={() => lenses.explore(suggestion.lens)}>{lenses.expandedLens === suggestion.lens ? 'Cerrar exploración' : 'Explorar'}</button><button className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700" onClick={() => lenses.hide(suggestion)}>Ocultar por ahora</button></div>{lenses.expandedLens === suggestion.lens && <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">Puedes usar esta pregunta para orientar tu revisión. La exploración es local y no modifica el framing.</div>}</article>)}
+    {lenses.hiddenCount > 0 && <button className="mt-4 text-sm font-semibold text-slate-700 underline" onClick={lenses.restoreHidden}>Restaurar perspectivas ocultas</button>}
+    {lenses.result?.depthHint && <p className="mt-4 text-xs text-slate-500">{lenses.result.depthHint === 'light' ? 'Exploración ligera' : lenses.result.depthHint === 'deep' ? 'Exploración más profunda' : 'Exploración estándar'}</p>}
+  </section>;
+}
