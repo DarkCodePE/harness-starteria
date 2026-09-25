@@ -599,6 +599,8 @@ model User {
   sponsorCheckpoints       SponsorCheckpoint[]   @relation("SponsorCheckpoints")
   initialReviews           InitialReview[] // ADR-025: revisiones iniciales del usuario
   portfolioLeadGovernance  InitiativeGovernance[] @relation("InitiativePortfolioLeadGovernance")
+  portfolioAccessGrants    OrganizationPortfolioAccessGrant[] @relation("PortfolioAccessGrants")
+  portfolioAccessGrantsIssued OrganizationPortfolioAccessGrant[] @relation("PortfolioAccessGrantIssuers")
   requestedDecisionRequests DecisionRequest[] @relation("DecisionRequestRequester")
   authorityDecisionRequests DecisionRequest[] @relation("DecisionRequestAuthorityUser")
   decidedOrganizationalDecisions Decision[] @relation("DecisionDecider")
@@ -2213,6 +2215,7 @@ model Organization {
 
   subscriptions Subscription[]
   members       OrganizationMember[]
+  portfolioAccessGrants OrganizationPortfolioAccessGrant[]
 
   @@index([cohortId])
 }
@@ -2227,6 +2230,27 @@ model OrganizationMember {
 
   @@index([organizationId])
   @@index([userId])
+}
+
+// Organization-scoped Portfolio authority. This is deliberately separate from
+// User.roles and OrganizationMember.role: membership is necessary but does not
+// grant Portfolio capability, and platform roles are not target-scoped.
+model OrganizationPortfolioAccessGrant {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  capability     String
+  grantedByUserId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User          @relation("PortfolioAccessGrants", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grantedBy    User?         @relation("PortfolioAccessGrantIssuers", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, organizationId, capability])
+  @@index([organizationId, capability])
+  @@index([userId, organizationId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

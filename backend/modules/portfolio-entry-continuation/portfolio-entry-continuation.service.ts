@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
-import { can, type Permission } from '../../shared/authz/permissions';
+import type { Permission } from '../../shared/authz/permissions';
+import { ScopedPortfolioAccessService } from '../../shared/authz/scoped-portfolio-access.service';
 import { logger } from '../../shared/utils/logger';
 import { PortfolioEntryApiError } from '../portfolio-entry/portfolio-entry.errors';
 import type { PortfolioEntryIdempotencyRepository } from '../portfolio-entry/application/portfolio-entry-idempotency.repository';
@@ -12,10 +13,10 @@ export type PortfolioEntryContinuationResultDto = {
   status: 'CONTINUED';
   destinationRoute: string;
   continuedAt: string;
-  /** The grant is produced by this valid continuation, never by registration. */
+  /** True only because a pre-existing scoped grant was validated. */
   portfolioAccessGranted: boolean;
   portfolioScope: {
-    kind: 'platform_portfolio_permission';
+    kind: 'scoped_portfolio_grant';
     userId: string;
     organizationId: string | null;
   };
@@ -54,6 +55,7 @@ export class PortfolioEntryContinuationService {
     private readonly prisma: PrismaClient,
     private readonly idempotencyRepository: PortfolioEntryIdempotencyRepository,
     private readonly now: () => Date = () => new Date(),
+    private readonly scopedPortfolioAccess = new ScopedPortfolioAccessService(prisma),
   ) {}
 
   async continueToPortfolio(input: ContinuePortfolioEntryInput): Promise<PortfolioEntryContinuationResultDto> {
@@ -79,15 +81,20 @@ export class PortfolioEntryContinuationService {
   }
 
   async readContinuation(input: ReadPortfolioEntryContinuationInput): Promise<PortfolioEntryContinuationResultDto> {
-    if (!can(input.permissions, 'portfolio:read')) {
-      throw AppError.forbidden('No tienes permiso Portfolio para leer esta continuidad.', 'PORTFOLIO_ENTRY_CONTINUATION_PORTFOLIO_PERMISSION_REQUIRED');
-    }
     const row = await this.prisma.portfolioEntryPortfolioContinuation.findUnique({
       where: { id: input.continuationId },
     });
     if (!row) throw AppError.notFound('Portfolio Entry continuation', 'PORTFOLIO_ENTRY_CONTINUATION_NOT_FOUND');
     if (row.continuedByUserId !== input.authenticatedUserId) {
       throw AppError.forbidden('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_FORBIDDEN');
+    }
+    const scope = readOrganizationScope(row.portfolioScope);
+    if (!scope || !(await this.scopedPortfolioAccess.canUserAccessPortfolio({
+      userId: input.authenticatedUserId,
+      organizationId: scope,
+      capability: 'portfolio:read',
+    }))) {
+      throw AppError.forbidden('No tienes acceso Portfolio para esta organizacion.', 'PORTFOLIO_ENTRY_CONTINUATION_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
     }
     return this.toDto(row);
   }
@@ -135,7 +142,7 @@ export class PortfolioEntryContinuationService {
           }),
           tx.user.findUnique({
             where: { id: input.authenticatedUserId },
-            select: { id: true, organizationId: true, role: true, roles: true },
+            select: { id: true, organizationId: true },
           }),
         ]);
         if (!user) throw AppError.unauthorized('No autorizado.', 'PORTFOLIO_ENTRY_CONTINUATION_AUTH_REQUIRED');
@@ -147,20 +154,18 @@ export class PortfolioEntryContinuationService {
           throw AppError.conflict('La confirmacion ya no corresponde al handoff vigente.', 'PORTFOLIO_ENTRY_CONTINUATION_STALE_CONFIRMATION');
         }
 
-        // Portfolio access is a consequence of this validated continuation. Registration
-        // remains participant-only, and the primary role is deliberately preserved.
-        const effectiveRoles = user.roles.length > 0 ? user.roles : [user.role];
-        if (!effectiveRoles.includes('portfolio_lead')) {
-          await tx.user.update({
-            where: { id: input.authenticatedUserId },
-            data: { roles: [...effectiveRoles, 'portfolio_lead'] },
-          });
+        if (!user.organizationId || !(await this.scopedPortfolioAccess.canUserAccessPortfolio({
+          userId: input.authenticatedUserId,
+          organizationId: user.organizationId,
+          capability: 'portfolio:read',
+        }))) {
+          throw AppError.forbidden('No tienes acceso Portfolio para esta organizacion.', 'PORTFOLIO_ENTRY_CONTINUATION_SCOPED_PORTFOLIO_ACCESS_REQUIRED');
         }
 
         const continuationId = randomUUID();
         const destinationRoute = `/portfolio/inicio?portfolioEntryContinuationId=${encodeURIComponent(continuationId)}`;
         const scope = {
-          kind: 'platform_portfolio_permission',
+          kind: 'scoped_portfolio_grant',
           userId: input.authenticatedUserId,
           organizationId: user.organizationId,
         };
@@ -346,6 +351,12 @@ function buildPendingItems(handoffPayload: Prisma.JsonValue): Record<string, unk
     unresolved_context: handoff.unresolved_context ?? [],
     evidence_or_clarity_needed: handoff.evidence_or_clarity_needed ?? [],
   };
+}
+
+function readOrganizationScope(value: Prisma.JsonValue): string | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const organizationId = (value as Record<string, unknown>).organizationId;
+  return typeof organizationId === 'string' && organizationId.length > 0 ? organizationId : null;
 }
 
 function stableJson(value: unknown): string {

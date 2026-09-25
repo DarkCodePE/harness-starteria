@@ -241,7 +241,7 @@ export type PortfolioEntryContinuationResult = {
   continuedAt: string;
   portfolioAccessGranted: boolean;
   portfolioScope: {
-    kind: 'platform_portfolio_permission';
+    kind: 'scoped_portfolio_grant';
     userId: string;
     organizationId: string | null;
   };
