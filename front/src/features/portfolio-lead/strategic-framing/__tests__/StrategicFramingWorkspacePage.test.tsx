@@ -130,15 +130,27 @@ describe('StrategicFramingWorkspacePage SF-3C', () => {
     expect(await screen.findByText('Technology')).toBeInTheDocument();
   });
 
-  it('keeps suggestions while draft is dirty and refetches after the saved version changes', async () => {
-    getLens.mockResolvedValue({ stateId: 'state-1', stateVersion: 1, sourceMode: 'enterprise_direct', depthHint: 'standard', suggestions: [], generatedAt: '2026-09-24T10:00:00.000Z' });
-    renderPage(); await screen.findByText('Perspectivas que podrían ayudarte');
+  it('does not refetch for an unsaved draft and refetches once after save with local interaction reset', async () => {
+    getLens
+      .mockResolvedValueOnce({ stateId: 'state-1', stateVersion: 1, sourceMode: 'enterprise_direct', depthHint: 'standard', suggestions: [{ lens: 'technology', label: 'Technology', reason: 'Razón guardada', materialQuestion: 'Pregunta guardada', sourceRefs: [], confidence: 'low' }], generatedAt: '2026-09-24T10:00:00.000Z' })
+      .mockResolvedValueOnce({ stateId: 'state-1', stateVersion: 2, sourceMode: 'enterprise_direct', depthHint: 'standard', suggestions: [{ lens: 'financial', label: 'Financial', reason: 'Razón nueva', materialQuestion: 'Pregunta nueva', sourceRefs: [], confidence: 'low' }], generatedAt: '2026-09-24T11:00:00.000Z' });
+    renderPage(); await screen.findByText('Technology');
+    expect(getLens).toHaveBeenCalledTimes(1);
     fireEvent.change(screen.getByLabelText('Movimiento intencionado'), { target: { value: 'Borrador local' } });
+    expect(screen.getByDisplayValue('Borrador local')).toBeInTheDocument();
+    expect(getLens).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Razón guardada')).toBeInTheDocument();
     expect(screen.getByText('Las perspectivas se actualizarán cuando guardes estos cambios.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Explorar' }));
+    expect(screen.getByText(/La exploración es local/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar por ahora' }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-    await waitFor(() => expect(getLens.mock.calls.length).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expect(getLens).toHaveBeenCalledTimes(2));
     expect(updateState).toHaveBeenCalledWith('state-1', expect.objectContaining({ expectedVersion: 1 }));
+    expect(await screen.findByText('Financial')).toBeInTheDocument();
+    expect(screen.getByText('Razón nueva')).toBeInTheDocument();
+    expect(screen.queryByText('Technology')).not.toBeInTheDocument();
   });
 
   it('keeps the workspace functional when lens suggestions fail and retries only the lens read', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { StrategicFramingLensSuggestionEvaluator } from '../strategic-framing.lens-suggestions';
-import type { StrategicFramingProvisionalState } from '../strategic-framing.types';
+import type { StrategicFramingProvisionalState, StrategicLensKey } from '../strategic-framing.types';
 
 const base = (overrides: Partial<StrategicFramingProvisionalState> = {}): StrategicFramingProvisionalState => ({
   id: 'state-1', userId: 'user-1', organizationId: 'org-1', sourceMode: 'enterprise_direct', logicalContextKey: 'key', sourceRefs: ['trusted:movement'], provenance: [{ sourceRef: 'trusted:movement', kind: 'user_declared' }], intendedMovement: 'Mejorar retención', whyItMatters: 'Reduce abandono', movementSignalStatus: 'confirmed', movementSignalValue: 'retention', horizonContext: '12 meses', decisionToEnable: null, subjectLevel: 'challenge_like', scopeAssessment: { level: 'challenge_like', confidence: 'high', rationale: [], provenance: [], canonicalized: false }, rationaleUncertainty: null, parentStatus: 'known', parentContext: { label: 'Growth', sourceRefs: [] }, sufficiency: { status: 'sufficient', blockers: [], softGaps: [], optionalContext: [] }, version: 3, createdAt: '2026-09-25T00:00:00.000Z', updatedAt: '2026-09-25T00:00:00.000Z', ...overrides,
@@ -22,11 +22,19 @@ describe('StrategicFramingLensSuggestionEvaluator', () => {
   });
 
   it('uses material structured context for specialized lenses and does not spray weak ones', () => {
-    const weak = evaluator.evaluate(base({ intendedMovement: 'Tecnología para todo', whyItMatters: 'Valor', sufficiency: { status: 'sufficient', blockers: [], softGaps: [], optionalContext: [] } }));
-    expect(weak.suggestions.some((item) => item.lens === 'technology')).toBe(false);
-    expect(weak.suggestions.some((item) => ['financial', 'risk_compliance', 'ecosystem_partners', 'culture_organization'].includes(item.lens))).toBe(false);
-    const material = evaluator.evaluate(base({ decisionToEnable: 'Aprobar presupuesto de plataforma', rationaleUncertainty: 'La arquitectura y el riesgo legal no están resueltos', sufficiency: { status: 'insufficient', blockers: ['Dependencia técnica'], softGaps: [], optionalContext: [] }, intendedMovement: 'Modernizar datos y reducir coste', whyItMatters: 'Mejorar retorno', movementSignalStatus: 'unknown' }));
-    expect(material.suggestions.map((item) => item.lens)).toEqual(expect.arrayContaining(['financial', 'technology', 'risk_compliance']));
+    const weakInputs: Array<[string, StrategicLensKey]> = [
+      ['El coste parece importante', 'financial'],
+      ['La cultura debería mejorar', 'culture_organization'],
+      ['La tecnología parece necesaria', 'technology'],
+      ['El riesgo podría existir', 'risk_compliance'],
+      ['Necesitamos partners', 'ecosystem_partners'],
+    ];
+    for (const [intendedMovement, lens] of weakInputs) {
+      const weak = evaluator.evaluate(base({ intendedMovement, whyItMatters: 'Valor', sufficiency: { status: 'sufficient', blockers: [], softGaps: [], optionalContext: [] } }));
+      expect(weak.suggestions.some((item) => item.lens === lens), `${lens} must remain conservative`).toBe(false);
+    }
+    const material = evaluator.evaluate(base({ decisionToEnable: 'Aprobar presupuesto de plataforma', rationaleUncertainty: 'La arquitectura, la cultura organizativa, los partners y el riesgo legal no están resueltos', sufficiency: { status: 'insufficient', blockers: ['Dependencia técnica'], softGaps: [], optionalContext: [] }, intendedMovement: 'Modernizar datos y reducir coste', whyItMatters: 'Mejorar retorno', movementSignalStatus: 'unknown' }));
+    expect(material.suggestions.map((item) => item.lens)).toEqual(expect.arrayContaining(['financial', 'culture_organization', 'technology', 'risk_compliance', 'ecosystem_partners']));
   });
 
   it('allows empty sourceRefs and degrades confidence conservatively', () => {
