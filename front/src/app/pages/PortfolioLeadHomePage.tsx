@@ -24,6 +24,7 @@ import {
 import { PortfolioCopilotDrawer, PortfolioCopilotLauncher } from '../../features/copilot';
 import { isPortfolioCopilotEnabled } from '../services/featureFlags';
 import { PortfolioBootstrapHome, usePortfolioBootstrap } from '../../features/portfolio-lead/bootstrap';
+import { createOrReuseStrategicFramingFromSource } from '../../features/portfolio-lead/strategic-framing/service';
 
 export function PortfolioLeadHomePage() {
   const navigate = useNavigate();
@@ -75,6 +76,11 @@ export function PortfolioLeadHomePage() {
           onRejectProposedMutation={bootstrap.rejectProposedMutation}
           onLeaveProposedMutationPending={bootstrap.leaveProposedMutationPending}
           onPublishFirstReading={bootstrap.publishFirstReading}
+          onContinueToStrategicFraming={async () => {
+            if (!bootstrap.data?.bootstrapSession.id) return;
+            const result = await createOrReuseStrategicFramingFromSource({ sourceMode: 'public_entry', bootstrapSessionId: bootstrap.data.bootstrapSession.id });
+            navigate(result.workspacePath);
+          }}
           analysisStatus={bootstrap.analysisStatus}
           analysisError={bootstrap.analysisError}
           publishStatus={bootstrap.publishStatus}

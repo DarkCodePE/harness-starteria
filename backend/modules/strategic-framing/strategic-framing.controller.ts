@@ -2,10 +2,22 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../shared/errors/AppError';
 import { prisma } from '../../shared/db/prisma';
 import type { StrategicFramingProvisionalStateService } from './strategic-framing.provisional-state.service';
-import { strategicFramingCorrectionBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
+import type { StrategicFramingEntryService } from './strategic-framing.entry.service';
+import { strategicFramingCorrectionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
 
 export class StrategicFramingController {
-  constructor(private readonly service: StrategicFramingProvisionalStateService) {}
+  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService) {}
+
+  createOrReuseFromSource = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user?.id) throw AppError.unauthorized('No autorizado.', 'SF3D_AUTH_REQUIRED');
+      if (!this.entryService) throw AppError.internal('La orquestación SF-3D no está configurada.');
+      const body = strategicFramingSourceBodySchema.parse(req.body);
+      const actor = await this.resolveActor(req);
+      const data = await this.entryService.createOrReuse({ source: body, actor, permissions: req.user.permissions, idempotencyKey: req.get('Idempotency-Key') ?? undefined });
+      res.json({ success: true, data });
+    } catch (error) { next(error); }
+  };
 
   getState = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

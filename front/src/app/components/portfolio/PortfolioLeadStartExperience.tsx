@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowRight,
-  Flag,
+  Eye,
   Rocket,
   Sparkles,
-  Target,
   UploadCloud,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -25,6 +24,7 @@ import {
   DialogTitle,
 } from '../ui/dialog';
 import { PortfolioLeadContextStrip } from './PortfolioLeadPageElements';
+import { createOrReuseStrategicFramingFromSource } from '../../../features/portfolio-lead/strategic-framing/service';
 
 type StartOptionTone = 'emerald' | 'amber' | 'violet' | 'sky';
 
@@ -63,16 +63,31 @@ export function PortfolioLeadStartExperience({
   onImportOpenChange: (open: boolean) => void;
   onNavigate: (path: string) => void;
 }) {
+  const [directOpen, setDirectOpen] = useState(false);
+  const [existingOpen, setExistingOpen] = useState(false);
+  const [direct, setDirect] = useState({ intendedMovement: '', whyItMatters: '', movementSignalValue: '', decisionToEnable: '' });
+  const [sourceType, setSourceType] = useState<'strategic_front' | 'challenge' | 'initiative'>('strategic_front');
+  const [sourceId, setSourceId] = useState('');
+  const [directIdempotencyKey, setDirectIdempotencyKey] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const startFraming = async (input: Parameters<typeof createOrReuseStrategicFramingFromSource>[0], key?: string) => {
+    setBusy(true); setError(null);
+    try { const result = await createOrReuseStrategicFramingFromSource(input, key); onNavigate(result.workspacePath); }
+    catch (err) { setError(err instanceof Error ? err.message : 'No pudimos iniciar Strategic Framing.'); }
+    finally { setBusy(false); }
+  };
+
   const options: StartOption[] = [
     {
-      id: 'front',
+      id: 'framing',
       title: 'Crear frente estratégico',
       description: 'Define una prioridad del negocio, su KPI y los retos que la activan.',
-      actionLabel: 'Crear frente',
+      actionLabel: 'Iniciar framing',
       badge: 'Prioridad',
       tone: 'emerald',
-      icon: Target,
-      onClick: () => onNavigate('/portfolio/frentes-estrategicos'),
+      icon: Sparkles,
+      onClick: () => { setDirectIdempotencyKey(`direct-${Date.now()}-${Math.random().toString(36).slice(2)}`); setDirectOpen(true); },
     },
     {
       id: 'import',
@@ -86,14 +101,14 @@ export function PortfolioLeadStartExperience({
       muted: true,
     },
     {
-      id: 'challenge',
-      title: 'Crear reto rápido',
-      description: 'Aterriza un objetivo en un reto accionable para activar equipos.',
-      actionLabel: 'Crear reto',
-      badge: 'Rápido',
+      id: 'existing',
+      title: 'Revisar algo que ya existe',
+      description: 'Revisa un Frente, Reto o iniciativa existente en Strategic Framing sin modificar su registro canónico.',
+      actionLabel: 'Abrir revisión estratégica',
+      badge: 'Existing Portfolio',
       tone: 'violet',
-      icon: Flag,
-      onClick: () => onNavigate('/portfolio/retos'),
+      icon: Eye,
+      onClick: () => setExistingOpen(true),
     },
     {
       id: 'initiative',
@@ -186,6 +201,34 @@ export function PortfolioLeadStartExperience({
           </p>
         </div>
       </section>
+
+      {error ? <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{error}</div> : null}
+
+      {directOpen ? (
+        <section className="rounded-[28px] border border-emerald-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl text-slate-950" style={{ fontWeight: 700 }}>Estructurar una prioridad, reto o necesidad</h2>
+          <p className="mt-1 text-sm text-slate-600">No necesitas clasificarlo como Frente o Reto. Esa lectura permanece provisional.</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-semibold text-slate-700 md:col-span-2">Qué quieres mover *<textarea value={direct.intendedMovement} onChange={event => setDirect({ ...direct, intendedMovement: event.target.value })} className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 p-3 font-normal" /></label>
+            <label className="text-sm font-semibold text-slate-700">Por qué importa<textarea value={direct.whyItMatters} onChange={event => setDirect({ ...direct, whyItMatters: event.target.value })} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 p-3 font-normal" /></label>
+            <label className="text-sm font-semibold text-slate-700">Señal de movimiento<textarea value={direct.movementSignalValue} onChange={event => setDirect({ ...direct, movementSignalValue: event.target.value })} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 p-3 font-normal" /></label>
+            <label className="text-sm font-semibold text-slate-700 md:col-span-2">Decisión que habilita<textarea value={direct.decisionToEnable} onChange={event => setDirect({ ...direct, decisionToEnable: event.target.value })} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 p-3 font-normal" /></label>
+          </div>
+          <div className="mt-4 flex gap-3"><Button type="button" disabled={busy || !direct.intendedMovement.trim()} onClick={() => startFraming({ sourceMode: 'enterprise_direct', ...direct }, directIdempotencyKey)}>Continuar a Strategic Framing</Button><Button type="button" variant="secondary" onClick={() => setDirectOpen(false)}>Cancelar</Button></div>
+        </section>
+      ) : null}
+
+      {existingOpen ? (
+        <section className="rounded-[28px] border border-violet-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl text-slate-950" style={{ fontWeight: 700 }}>Revisar algo que ya existe</h2>
+          <p className="mt-1 text-sm text-slate-600">Introduce el identificador de un registro que ya puedes consultar.</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-semibold text-slate-700">Tipo<select value={sourceType} onChange={event => setSourceType(event.target.value as typeof sourceType)} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal"><option value="strategic_front">Strategic Front</option><option value="challenge">Challenge</option><option value="initiative">Initiative Portfolio</option></select></label>
+            <label className="text-sm font-semibold text-slate-700">ID de origen<input value={sourceId} onChange={event => setSourceId(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-3 font-normal" /></label>
+          </div>
+          <div className="mt-4 flex gap-3"><Button type="button" disabled={busy || !sourceId.trim()} onClick={() => startFraming({ sourceMode: 'existing_portfolio', sourceType, sourceId })}>Revisar en Strategic Framing</Button><Button type="button" variant="secondary" onClick={() => setExistingOpen(false)}>Cancelar</Button></div>
+        </section>
+      ) : null}
 
       <Dialog open={importOpen} onOpenChange={onImportOpenChange}>
         <DialogContent className="sm:max-w-lg">
