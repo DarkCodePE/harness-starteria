@@ -143,6 +143,49 @@ export type StrategicFramingProvisionalSourceMode = 'public_entry' | 'enterprise
 export type StrategicFramingProvisionalSubject = 'front_like' | 'challenge_like' | 'initiative_like' | 'unresolved';
 export type StrategicFramingParentContextStatus = 'known' | 'provisional' | 'unresolved';
 
+export type StrategicFramingPriorityCandidateKind = 'gap' | 'opportunity';
+export type StrategicFramingHumanDisposition = 'undecided' | 'address_now' | 'observe' | 'discard';
+export type StrategicFramingRecommendationDisposition = 'address_now' | 'observe' | 'discard' | 'uncertain' | 'needs_clarification';
+
+export type StrategicFramingRecommendationSnapshot = {
+  recommendationVersion: string;
+  inputStateVersion: number;
+  recommendedDisposition: StrategicFramingRecommendationDisposition;
+  rationale: string[];
+  sourceRefs: string[];
+};
+
+export type StrategicFramingPriorityHumanDecision = {
+  disposition: StrategicFramingHumanDisposition;
+  actorUserId: string;
+  decidedAt: string;
+  rationale: string | null;
+  appliedFromStateVersion: number;
+  recommendationSnapshot: StrategicFramingRecommendationSnapshot;
+};
+
+export type StrategicFramingPriorityCandidate = {
+  candidateId: string;
+  kind: StrategicFramingPriorityCandidateKind;
+  statementSnapshot: string;
+  sourceCandidateRef: string;
+  sourceVersion: string;
+  sourceRefs: string[];
+  provenance: 'extracted' | 'ai_inferred' | 'ai_suggested' | 'user_confirmed' | 'derived';
+  confidence: 'low' | 'medium' | 'high' | null;
+  uncertainty: string | null;
+  humanDisposition: StrategicFramingHumanDisposition;
+  humanDecision: StrategicFramingPriorityHumanDecision | null;
+};
+
+export type StrategicFramingPrioritizationState = {
+  schemaVersion: 1;
+  nonCanonical: true;
+  focusSlots: number | null;
+  focusRationale: string | null;
+  candidates: StrategicFramingPriorityCandidate[];
+};
+
 export type StrategicFramingCorrection = {
   intendedMovement?: string | null;
   whyItMatters?: string | null;
@@ -180,6 +223,7 @@ export type StrategicFramingProvisionalState = {
   parentStatus: StrategicFramingParentContextStatus;
   parentContext: { label: string | null; sourceRefs: string[] };
   sufficiency: StrategicFramingReadModel['sufficiency'];
+  prioritizationState: StrategicFramingPrioritizationState;
   version: number;
   createdAt: string;
   updatedAt: string;
