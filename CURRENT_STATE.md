@@ -144,6 +144,13 @@ No debe presentarse como runtime productivo certificado. Los resultados E2E en e
   focused tests and backend typecheck pass. Broader regression/runtime certification
   remains pending. See
   `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_LENS_EVALUATOR_SF4B_v0.1.md`.
+- SF-4C advisory lens workspace is implemented on
+  `feat/strategic-framing-sf4c-lens-workspace` as a frontend read-only integration
+  of SF-4B inside the SF-3C workspace. Suggestions, explore and hide interactions
+  remain session-local; no schema, persistence, canonical mutation, sufficiency or
+  Copilot behavior is added. Focused frontend, SF-3C regression, frontend build and
+  SF-4B backend regression evidence pass. Runtime certification remains pending. See
+  `docs/portfolio-lead/90-implementation-reports/STRATEGIC_FRAMING_LENS_WORKSPACE_SF4C_v0.1.md`.
 - The Portfolio Lead reconciliation plan, glossary/context map and PH-2
   revalidation report are indexed evidence/reference artifacts, not new
   authority.

@@ -22,3 +22,32 @@ export type StrategicFramingState = {
 };
 
 export type StrategicFramingDraft = Pick<StrategicFramingState, 'intendedMovement' | 'whyItMatters' | 'movementSignalStatus' | 'movementSignalValue' | 'horizonContext' | 'decisionToEnable' | 'subjectLevel' | 'parentStatus'> & { parentLabel: string | null };
+
+export type StrategicLensKey =
+  | 'value_outcome'
+  | 'customer_opportunity'
+  | 'process_capability'
+  | 'learning_evidence'
+  | 'financial'
+  | 'culture_organization'
+  | 'technology'
+  | 'risk_compliance'
+  | 'ecosystem_partners';
+
+export type StrategicLensSuggestion = {
+  lens: StrategicLensKey;
+  label: string;
+  reason: string;
+  materialQuestion: string;
+  sourceRefs: string[];
+  confidence: 'low' | 'medium' | 'high';
+};
+
+export type StrategicLensSuggestionResult = {
+  stateId: string;
+  stateVersion: number;
+  sourceMode: 'public_entry' | 'enterprise_direct' | 'existing_portfolio';
+  depthHint: 'light' | 'standard' | 'deep';
+  suggestions: StrategicLensSuggestion[];
+  generatedAt: string;
+};
