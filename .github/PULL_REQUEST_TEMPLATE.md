@@ -1,49 +1,38 @@
 <!--
-  Pull request template — Starteria
-  Keep this short. Delete sections that do not apply.
+  Plantilla de PR, Starteria. En Claude Code la llena la skill /pr (.claude/skills/pr).
+  Prosa corta, sin preámbulos. Borrá lo que no aplique, no lo dejes con los <...>.
 -->
 
-## Linked issue
+## HU
 
-Closes #<issue-number>
+Cierra [KAN-nnn](https://stateria.atlassian.net/browse/KAN-nnn): <resumen de la HU>
+Subtarea: KAN-nnn [Técnica] <resumen> · Slice V2: <nombre>
 
-## Phase / ADR
+## Criterios de aceptación
 
-- Phase: <e.g. Phase 0 / Phase 1>
-- ADR: ADR-011 (or list others, e.g. ADR-010, ADR-026)
+<!-- Copiados de la subtarea [Funcional]. Tildá solo lo que el diff o la evidencia muestran. -->
 
-## Summary
+- [ ] CA-1 <texto> · <dónde se ve>
+- [ ] CA-2 <texto> · <dónde se ve, o qué subtarea lo cierra>
 
-<!-- 1-3 sentences. What changed and why. -->
+## Resumen
 
-## Acceptance criteria
+<!-- La vista más chica que deje clara la idea: diagrama, diff chico, árbol de llamadas o de archivos. -->
 
-<!-- Copy the checklist from the linked issue and tick what is done. -->
+## Evidencia
 
-- [ ] AC1 from issue
-- [ ] AC2 from issue
-- [ ] AC3 from issue
+- **Antes:** <captura, salida, test que falla>
+  **Después:** <captura, salida, test que pasa>
 
-## Tests
+## Peligro de mergear
 
-- [ ] Unit tests added / updated
-- [ ] Integration tests added / updated
-- [ ] Not applicable (explain below)
+**Puerta:** <una vía | dos vías>
 
-<details>
-<summary>Test notes (optional)</summary>
+**Radio de impacto:** <una palabra>
 
-<!-- Commands run, coverage delta, edge cases covered. -->
+## Chequeos
 
-</details>
-
-## Security checklist
-
-- [ ] No secrets, credentials, or `.env` files in the diff
-- [ ] No hardcoded API keys or tokens
-- [ ] Input validation at any new system boundary
-- [ ] `GITHUB_TOKEN` / workflow permissions kept minimal (if workflows touched)
-
-## Reviewer notes
-
-<!-- Anything reviewers should focus on, screenshots, follow-ups. -->
+- [ ] Sin secretos, credenciales ni `.env` en el diff
+- [ ] `V2_CHANGE_GUARDRAIL_CHECK` producido (si toca código productivo)
+- [ ] Autoridad explícita para backend / Prisma / IA productiva / Core (si los toca)
+- [ ] Permisos de workflows mínimos (si toca `.github/workflows`)

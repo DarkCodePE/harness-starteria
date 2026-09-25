@@ -14,6 +14,46 @@ Las slices DS-05 y DS-06 documentan una decision explicita de modificar superfic
 
 No tratar este repositorio como runtime productivo certificado por defecto. Tratarlo como checkout mixto con autoridad documental y con implementacion frontend autorizable por slice cuando exista decision explicita.
 
+## Flujo obligatorio para cada pedido nuevo
+
+Todo pedido nuevo (feature, bug, cambio, idea dicha en una daily) entra por este flujo **antes** de
+escribir codigo. Sin HU en Jira no se implementa.
+
+El equipo trabaja en dos frentes y la HU los separa:
+
+- **[Funcional]**: producto. El que y el para que: historia, criterios de aceptacion, reglas de negocio, contrato de `doc/` que manda.
+- **[Tecnica]**: desarrollo. El como: areas del repo, enfoque, rebanadas verticales, tests, guardrail V2.
+
+```text
+1. clasificar      Jev propone pregunta | acotado | grande; el agente verifica en el repo
+                   (si hay duda, el mas pesado; si Jev falla, a mano)
+2. grill           entrevista por rondas, cada pregunta marcada [F] o [T]    <- la persona confirma
+                   preguntas [F] sin quien las conteste -> estado/hu/<slug>.cuestionario.md
+3. brief           estado/hu/<slug>.brief.md                                <- la persona lo aprueba
+4. planificar      agente delivery-planner -> estado/hu/<slug>.json -> dry-run
+5. crear en Jira   jira-hu-crear.mjs --aplicar                              <- la persona confirma
+6. implementar     recien ahora, subtarea [Tecnica] por subtarea, respetando sus bloqueos
+7. PR              /pr: cierra la HU (KAN-nnn), CA tildados contra el diff, resumen visual,
+                   evidencia antes/despues, peligro de mergear      <- la persona aprueba abrirlo
+```
+
+En Claude Code todo eso es un comando: `/hu <el pedido>` (`.claude/skills/hu/SKILL.md`), que
+despacha al agente `.claude/agents/delivery-planner.md` y usa la skill `.claude/skills/jira-hu/`.
+Otros agentes siguen los mismos pasos leyendo esos tres archivos.
+
+La clasificacion la hace Jev (`.claude/skills/hu/tools/jev-clasificar.mjs`) con preguntas atomicas
+sobre el texto, y la clase se deriva en codigo (`docs/analisis-jev/99-donde-no-aplica.md`). Es una
+propuesta que se anuncia y la persona corrige.
+
+Reglas que no se saltean:
+
+- **No saltear la entrevista** porque el pedido "ya esta claro": si esta claro, se vacia en una ronda.
+- **Los hechos los busca el agente, las decisiones son de la persona.** Nada inventado: lo que no tiene fuente va como `SUPUESTO` o `SIN RESOLVER`.
+- **Nunca crear, mover ni cerrar tickets en Jira sin el si explicito** de la persona sobre ese plan.
+- **Un pedido que ya tiene HU** (`KAN-nnn`) no se duplica: se lee con `jira-hu.mjs` y se continua desde ahi.
+- **Todo PR cierra una HU de Jira** con la plantilla de `.github/PULL_REQUEST_TEMPLATE.md` (la llena `/pr`). Rama: `<tipo>/KAN-nnn-<slug>`. Un PR sin HU se salto el flujo.
+- Implementar una subtarea [Tecnica] sigue sujeto a la jerarquia de autoridad y al `V2_CHANGE_GUARDRAIL_CHECK` de abajo.
+
 ## Regla de incorporacion productiva controlada
 
 No incorporar, restaurar, copiar ni crear codigo productivo en este repositorio sin una decision explicita y documentada.

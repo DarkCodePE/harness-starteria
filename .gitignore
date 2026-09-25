@@ -12,6 +12,9 @@ gbrain-evals/
 # Excepción: .claude/rules/ sí es del harness y se comparte con el equipo.
 .claude/*
 !.claude/rules/
+# Flujo de trabajo del equipo (HU en Jira): agente planner y skill jira-hu.
+!.claude/agents/
+!.claude/skills/
 .claude-flow/
 .swarm/
 estado/
@@ -77,3 +80,6 @@ docker-compose.override.yml
 
 # Provider/client secrets
 client_secret_*.json
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
