@@ -99,6 +99,7 @@ describe('StrategicFramingProvisionalStateService', () => {
     expect(corrected.version).toBe(2);
     expect(corrected.intendedMovement).toBe('Mejorar retención');
     expect(corrected.parentStatus).toBe('provisional');
+    expect(corrected.parentContext.sourceRefs).toEqual(['entry:1']);
     expect(db.histories[0]).toMatchObject({ version: 1, actorUserId: 'user-1', action: 'human_correction' });
     expect(db.histories[0].snapshot.intendedMovement).toBe('Mejorar conversión');
     expect(corrected.provenance).toMatchObject({ correction: { actorUserId: 'user-1', kind: 'human_corrected' } });

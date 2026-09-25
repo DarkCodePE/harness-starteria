@@ -68,7 +68,10 @@ export class StrategicFramingProvisionalStateService {
         if (isUniqueConstraintError(error)) throw staleCorrectionError(input.expectedVersion, current.version);
         throw error;
       }
-      const updated = await (tx as Db).strategicFramingProvisionalState.updateMany({ where: { id: current.id, version: input.expectedVersion }, data: { ...allowedCorrection(input.correction), provenance: mergeCorrectionProvenance(current.provenance, input.actorUserId), version: { increment: 1 }, updatedAt: this.now() } });
+      const safeCorrection = input.correction.parentContext === undefined
+        ? input.correction
+        : { ...input.correction, parentContext: { ...input.correction.parentContext, sourceRefs: parentSourceRefs(current.parentContext) } };
+      const updated = await (tx as Db).strategicFramingProvisionalState.updateMany({ where: { id: current.id, version: input.expectedVersion }, data: { ...allowedCorrection(safeCorrection), provenance: mergeCorrectionProvenance(current.provenance, input.actorUserId), version: { increment: 1 }, updatedAt: this.now() } });
       if (updated.count !== 1) throw staleCorrectionError(input.expectedVersion, current.version + 1);
       const next = await (tx as Db).strategicFramingProvisionalState.findUnique({ where: { id: current.id } });
       if (!next) throw AppError.notFound('Estado provisional de Strategic Framing', 'SF_PROVISIONAL_STATE_NOT_FOUND');
@@ -113,7 +116,11 @@ function allowedCorrection(correction: StrategicFramingCorrection): JsonRecord {
   const data: JsonRecord = {};
   for (const key of ['intendedMovement', 'whyItMatters', 'movementSignalStatus', 'movementSignalValue', 'horizonContext', 'decisionToEnable', 'subjectLevel', 'scopeAssessment', 'rationaleUncertainty'] as const) if (correction[key] !== undefined) data[key] = correction[key];
   if (correction.parentStatus !== undefined) data.parentStatus = correction.parentStatus;
-  if (correction.parentContext !== undefined) data.parentContext = { label: correction.parentContext.label ?? null, sourceRefs: correction.parentContext.sourceRefs ?? [] };
+  if (correction.parentContext !== undefined) {
+    // sourceRefs are trusted evidence owned by SF-3B. A browser correction may
+    // change the human label, but can never erase or replace that evidence.
+    data.parentContext = { label: correction.parentContext.label ?? null, sourceRefs: correction.parentContext.sourceRefs ?? [] };
+  }
   if (correction.sufficiency !== undefined) { data.sufficiencyStatus = correction.sufficiency.status; data.blockers = correction.sufficiency.blockers; data.softGaps = correction.sufficiency.softGaps; data.optionalContext = correction.sufficiency.optionalContext; }
   return data;
 }
@@ -121,4 +128,9 @@ function allowedCorrection(correction: StrategicFramingCorrection): JsonRecord {
 function sourceRefs(snapshot: StrategicFramingReadModel): string[] { return [...new Set([...snapshot.anchor.provenance.map((item) => item.sourceRef), ...snapshot.anchor.parentContext.sourceRefs, ...snapshot.scopeAssessment.provenance])]; }
 function mergeCorrectionProvenance(value: unknown, actorUserId: string): JsonRecord { return { original: value, correction: { actorUserId, kind: 'human_corrected' } }; }
 function snapshotOf(value: any): JsonRecord { const { id, createdAt, updatedAt, ...snapshot } = value; return snapshot; }
+function parentSourceRefs(value: unknown): string[] {
+  if (!value || typeof value !== 'object') return [];
+  const refs = (value as { sourceRefs?: unknown }).sourceRefs;
+  return Array.isArray(refs) ? refs.filter((ref): ref is string => typeof ref === 'string') : [];
+}
 function toState(value: any): StrategicFramingProvisionalState { return { ...value, sourceRefs: value.sourceRefs as string[], provenance: value.provenance as StrategicFramingProvisionalState['provenance'], scopeAssessment: value.scopeAssessment as StrategicFramingProvisionalState['scopeAssessment'], parentContext: value.parentContext as StrategicFramingProvisionalState['parentContext'], sufficiency: { status: value.sufficiencyStatus, blockers: value.blockers as string[], softGaps: value.softGaps as string[], optionalContext: value.optionalContext as string[] }, createdAt: new Date(value.createdAt).toISOString(), updatedAt: new Date(value.updatedAt).toISOString() }; }

@@ -151,6 +151,8 @@ export type StrategicFramingCorrection = {
   horizonContext?: string | null;
   decisionToEnable?: string | null;
   subjectLevel?: StrategicFramingProvisionalSubject;
+  // Internal SF-3B compatibility fields. SF-3C's strict HTTP schema does not
+  // expose these to browsers; existing initialization/service callers may use them.
   scopeAssessment?: StrategicFramingReadModel['scopeAssessment'];
   rationaleUncertainty?: string | null;
   parentStatus?: StrategicFramingParentContextStatus;
