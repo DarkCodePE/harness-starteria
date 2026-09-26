@@ -215,6 +215,27 @@ export type StrategicFramingPrioritizationState = {
   candidates: StrategicFramingPriorityCandidate[];
 };
 
+export type StrategicFramingChallengeStructureKind = 'lightweight_challenge' | 'one_challenge' | 'multiple_challenges';
+
+export type StrategicFramingChallengeCandidate = {
+  challengeCandidateId: string;
+  sourceCandidateIds: string[];
+  relatedWorkRefs: string[];
+  statement: string;
+  structureKind: StrategicFramingChallengeStructureKind;
+  structuralRecommendationRef: string | null;
+  structuralRecommendationVersion: string | null;
+  confirmedByUserId: string;
+  confirmedAt: string;
+  createdFromStateVersion: number;
+};
+
+export type StrategicFramingChallengeStructuringState = {
+  schemaVersion: 1;
+  nonCanonical: true;
+  candidates: StrategicFramingChallengeCandidate[];
+};
+
 export type StrategicFramingCorrection = {
   intendedMovement?: string | null;
   whyItMatters?: string | null;
@@ -253,6 +274,7 @@ export type StrategicFramingProvisionalState = {
   parentContext: { label: string | null; sourceRefs: string[] };
   sufficiency: StrategicFramingReadModel['sufficiency'];
   prioritizationState: StrategicFramingPrioritizationState;
+  challengeStructuringState?: StrategicFramingChallengeStructuringState;
   version: number;
   createdAt: string;
   updatedAt: string;

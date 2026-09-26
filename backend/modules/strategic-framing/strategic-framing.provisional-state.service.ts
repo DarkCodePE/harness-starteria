@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
 import { can, type Permission } from '../../shared/authz/permissions';
 import type {
   StrategicFramingCorrection,
+  StrategicFramingChallengeCandidate,
+  StrategicFramingChallengeStructureKind,
+  StrategicFramingChallengeStructuringState,
   StrategicFramingHumanDisposition,
   StrategicFramingParentContextStatus,
   StrategicFramingPrioritizationState,
@@ -123,6 +127,75 @@ export class StrategicFramingProvisionalStateService {
     return toState(state);
   }
 
+  async reviewChallengeStructure(input: {
+    stateId: string;
+    actorUserId: string;
+    organizationId?: string | null;
+    permissions: ReadonlySet<Permission>;
+    expectedVersion: number;
+    groups: Array<{
+      challengeCandidateId?: string;
+      sourceCandidateIds: string[];
+      relatedWorkRefs?: string[];
+      statement: string;
+      structureKind: StrategicFramingChallengeStructureKind;
+      structuralRecommendationRef?: string | null;
+      structuralRecommendationVersion?: string | null;
+    }>;
+    reason?: string | null;
+  }): Promise<StrategicFramingProvisionalState> {
+    this.assertPermission(input.permissions, 'portfolio:write');
+    return this.prisma.$transaction(async (tx) => {
+      const db: Db = tx as Db;
+      const current = await db.strategicFramingProvisionalState.findUnique({ where: { id: input.stateId } });
+      if (!current) throw AppError.notFound('Estado provisional de Strategic Framing', 'SF_PROVISIONAL_STATE_NOT_FOUND');
+      this.assertScope(current, input.actorUserId, input.organizationId);
+      if (current.version !== input.expectedVersion) throw staleStructuringError(input.expectedVersion, current.version);
+
+      const prioritization = normalizePrioritizationState(current.prioritizationState);
+      const sourceCandidates = new Map(prioritization.candidates.map((candidate) => [candidate.candidateId, candidate]));
+      const seenSources = new Set<string>();
+      const existing = normalizeChallengeStructuringState(current.challengeStructuringState);
+      const existingById = new Map(existing.candidates.map((candidate) => [candidate.challengeCandidateId, candidate]));
+      const candidates = input.groups.map((group) => {
+        const sourceCandidateIds = normalizeSourceCandidateIds(group.sourceCandidateIds, sourceCandidates, seenSources);
+        const challengeCandidateId = group.challengeCandidateId ?? randomUUID();
+        if (group.challengeCandidateId && !existingById.has(group.challengeCandidateId)) {
+          throw AppError.badRequest('El ChallengeCandidate no pertenece al estado actual.', 'SF_CHALLENGE_CANDIDATE_NOT_FOUND');
+        }
+        const statement = group.statement.trim();
+        if (!statement) throw AppError.badRequest('La declaraciÃ³n del ChallengeCandidate es obligatoria.', 'SF_CHALLENGE_CANDIDATE_STATEMENT_INVALID');
+        if (!['lightweight_challenge', 'one_challenge', 'multiple_challenges'].includes(group.structureKind)) {
+          throw AppError.badRequest('La estructura del ChallengeCandidate no es vÃ¡lida.', 'SF_CHALLENGE_CANDIDATE_STRUCTURE_INVALID');
+        }
+        return {
+          challengeCandidateId,
+          sourceCandidateIds,
+          relatedWorkRefs: normalizeStringRefs(group.relatedWorkRefs),
+          statement,
+          structureKind: group.structureKind,
+          structuralRecommendationRef: group.structuralRecommendationRef ?? null,
+          structuralRecommendationVersion: group.structuralRecommendationVersion ?? null,
+          confirmedByUserId: input.actorUserId,
+          confirmedAt: this.now().toISOString(),
+          createdFromStateVersion: current.version,
+        } satisfies StrategicFramingChallengeCandidate;
+      });
+      const nextState: StrategicFramingChallengeStructuringState = { schemaVersion: 1, nonCanonical: true, candidates };
+      try {
+        await db.strategicFramingProvisionalStateHistory.create({ data: { stateId: current.id, version: current.version, actorUserId: input.actorUserId, action: 'review_challenge_structure', reason: input.reason ?? null, snapshot: snapshotOf(current), createdAt: this.now() } });
+      } catch (error) {
+        if (isUniqueConstraintError(error)) throw staleStructuringError(input.expectedVersion, current.version);
+        throw error;
+      }
+      const updated = await db.strategicFramingProvisionalState.updateMany({ where: { id: current.id, version: input.expectedVersion }, data: { challengeStructuringState: nextState, version: { increment: 1 }, updatedAt: this.now() } });
+      if (updated.count !== 1) throw staleStructuringError(input.expectedVersion, current.version + 1);
+      const next = await db.strategicFramingProvisionalState.findUnique({ where: { id: current.id } });
+      if (!next) throw AppError.notFound('Estado provisional de Strategic Framing', 'SF_PROVISIONAL_STATE_NOT_FOUND');
+      return toState(next);
+    });
+  }
+
   async correct(input: { stateId: string; actorUserId: string; organizationId?: string | null; permissions: ReadonlySet<Permission>; expectedVersion: number; correction: StrategicFramingCorrection; reason?: string | null }): Promise<StrategicFramingProvisionalState> {
     this.assertPermission(input.permissions, 'portfolio:write');
     const db: Db = this.prisma as Db;
@@ -194,6 +267,10 @@ function stalePrioritizationError(expectedVersion: number, currentVersion: numbe
   return AppError.conflict(`La priorización SF-5B está desactualizada. Versión esperada ${expectedVersion}, actual ${currentVersion}.`, 'SF_PROVISIONAL_STATE_STALE');
 }
 
+function staleStructuringError(expectedVersion: number, currentVersion: number): AppError {
+  return AppError.conflict(`La estructuraciÃ³n SF-6B.1 estÃ¡ desactualizada. VersiÃ³n esperada ${expectedVersion}, actual ${currentVersion}.`, 'SF_PROVISIONAL_STATE_STALE');
+}
+
 function normalizeSourceMode(mode: string, continuationId?: string | null): StrategicFramingProvisionalSourceMode {
   if (mode === 'public_entry' || mode === 'enterprise_direct' || mode === 'existing_portfolio') return mode;
   if (mode === 'bootstrap' && continuationId) return 'public_entry';
@@ -235,10 +312,30 @@ function candidateFromItem(item: StrategicFramingReadModel['framingSignals']['ga
   return { candidateId: `sf5:${kind}:${item.id}`, kind, statementSnapshot: item.statement, sourceCandidateRef: item.id, sourceVersion, sourceRefs: [...item.sourceRefs], provenance: item.provenance, confidence: item.confidence ?? null, uncertainty: null, humanDisposition: 'undecided', humanDecision: null };
 }
 function emptyPrioritizationState(): StrategicFramingPrioritizationState { return { schemaVersion: 1, nonCanonical: true, focusSlots: null, focusRationale: null, candidates: [] }; }
+function emptyChallengeStructuringState(): StrategicFramingChallengeStructuringState { return { schemaVersion: 1, nonCanonical: true, candidates: [] }; }
 function normalizePrioritizationState(value: unknown): StrategicFramingPrioritizationState {
   if (!value || typeof value !== 'object') return emptyPrioritizationState();
   const state = value as Partial<StrategicFramingPrioritizationState>;
   return { schemaVersion: 1, nonCanonical: true, focusSlots: state.focusSlots ?? null, focusRationale: state.focusRationale ?? null, candidates: Array.isArray(state.candidates) ? state.candidates as StrategicFramingPriorityCandidate[] : [] };
+}
+function normalizeChallengeStructuringState(value: unknown): StrategicFramingChallengeStructuringState {
+  if (!value || typeof value !== 'object') return emptyChallengeStructuringState();
+  const state = value as Partial<StrategicFramingChallengeStructuringState>;
+  return { schemaVersion: 1, nonCanonical: true, candidates: Array.isArray(state.candidates) ? state.candidates as StrategicFramingChallengeCandidate[] : [] };
+}
+function normalizeStringRefs(value: string[] | undefined): string[] { return [...new Set((value ?? []).map((ref) => ref.trim()).filter(Boolean))].sort(); }
+function normalizeSourceCandidateIds(ids: string[], sourceCandidates: Map<string, StrategicFramingPriorityCandidate>, seenSources: Set<string>): string[] {
+  const normalized = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].sort();
+  if (normalized.length === 0) throw AppError.badRequest('El ChallengeCandidate requiere fuentes.', 'SF_CHALLENGE_CANDIDATE_SOURCES_INVALID');
+  for (const id of normalized) {
+    const candidate = sourceCandidates.get(id);
+    if (!candidate) throw AppError.badRequest('La fuente del ChallengeCandidate no existe.', 'SF_CHALLENGE_CANDIDATE_SOURCE_NOT_FOUND');
+    if (candidate.kind !== 'gap' && candidate.kind !== 'opportunity') throw AppError.badRequest('La fuente no es un gap u opportunity.', 'SF_CHALLENGE_CANDIDATE_SOURCE_INVALID');
+    if (candidate.humanDisposition !== 'address_now' || candidate.humanDecision === null) throw AppError.badRequest('La fuente debe estar confirmada como address_now.', 'SF_CHALLENGE_CANDIDATE_SOURCE_NOT_CONFIRMED');
+    if (seenSources.has(id)) throw AppError.badRequest('Una fuente no puede pertenecer a dos grupos.', 'SF_CHALLENGE_CANDIDATE_SOURCE_DUPLICATE');
+    seenSources.add(id);
+  }
+  return normalized;
 }
 function trustedRefs(current: any, candidate: StrategicFramingPriorityCandidate): Set<string> { return new Set([...stringArray(current.sourceRefs), ...candidate.sourceRefs]); }
 function validateRecommendationSnapshot(snapshot: StrategicFramingRecommendationSnapshot, currentVersion: number, trusted: Set<string>): void {
@@ -254,6 +351,7 @@ function toState(value: any): StrategicFramingProvisionalState {
     parentContext: value.parentContext as StrategicFramingProvisionalState['parentContext'],
     sufficiency: { status: value.sufficiencyStatus, blockers: value.blockers as string[], softGaps: value.softGaps as string[], optionalContext: value.optionalContext as string[] },
     prioritizationState: normalizePrioritizationState(value.prioritizationState),
+    challengeStructuringState: normalizeChallengeStructuringState(value.challengeStructuringState),
     createdAt: new Date(value.createdAt).toISOString(),
     updatedAt: new Date(value.updatedAt).toISOString(),
   };

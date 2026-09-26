@@ -64,6 +64,42 @@ describe('StrategicFramingProvisionalStateService', () => {
     expect(state.prioritizationState.nonCanonical).toBe(true);
   });
 
+  it('persists grouped and multiple human-confirmed ChallengeCandidates with stable identities', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any, () => new Date('2026-09-25T12:00:00.000Z'));
+    const state = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'challenge-structure', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    const prioritized = await service.reviewPrioritization({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, decisions: [
+      { candidateId: 'sf5:gap:gap-1', disposition: 'address_now', recommendationSnapshot: { recommendationVersion: 'sf5c-1', inputStateVersion: 1, recommendedDisposition: 'address_now', rationale: [], sourceRefs: ['gap:1'] } },
+      { candidateId: 'sf5:opportunity:opportunity-1', disposition: 'address_now', recommendationSnapshot: { recommendationVersion: 'sf5c-1', inputStateVersion: 1, recommendedDisposition: 'address_now', rationale: [], sourceRefs: ['opp:1'] } },
+    ] });
+    const reviewed = await service.reviewChallengeStructure({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: prioritized.version, groups: [
+      { sourceCandidateIds: ['sf5:opportunity:opportunity-1', 'sf5:gap:gap-1', 'sf5:gap:gap-1'], relatedWorkRefs: ['work:2', 'work:1'], statement: 'Resolver dependencia y aprovechar señal', structureKind: 'one_challenge', structuralRecommendationRef: 'sf6a:review-1', structuralRecommendationVersion: '1' },
+    ] });
+    const grouped = reviewed.challengeStructuringState!.candidates[0];
+    expect(grouped.sourceCandidateIds).toEqual(['sf5:gap:gap-1', 'sf5:opportunity:opportunity-1']);
+    expect(grouped.relatedWorkRefs).toEqual(['work:1', 'work:2']);
+    expect(grouped.challengeCandidateId).not.toBe('sf5:gap:gap-1');
+    expect(grouped.confirmedByUserId).toBe('user-1');
+    expect(reviewed.version).toBe(3);
+    expect(db.histories[1].action).toBe('review_challenge_structure');
+
+    const reentry = await service.getCurrent({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    expect(reentry.challengeStructuringState!.candidates[0].challengeCandidateId).toBe(grouped.challengeCandidateId);
+    const edited = await service.reviewChallengeStructure({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 3, groups: [{ challengeCandidateId: grouped.challengeCandidateId, sourceCandidateIds: ['sf5:gap:gap-1'], statement: 'Editar agrupación', structureKind: 'lightweight_challenge' }] });
+    expect(edited.challengeStructuringState!.candidates[0].challengeCandidateId).toBe(grouped.challengeCandidateId);
+    await expect(service.reviewChallengeStructure({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 3, groups: [] })).rejects.toMatchObject({ code: 'SF_PROVISIONAL_STATE_STALE' });
+  });
+
+  it('rejects unconfirmed, unknown and foreign ChallengeCandidate sources without canonical writes', async () => {
+    const db = fakePrisma();
+    const service = new StrategicFramingProvisionalStateService(db as any);
+    const state = await service.initializeFromReadSnapshot({ snapshot: snapshot(), logicalContextKey: 'challenge-invalid', actorUserId: 'user-1', organizationId: 'org-1', permissions: read });
+    await expect(service.reviewChallengeStructure({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, groups: [{ sourceCandidateIds: ['missing'], statement: 'No', structureKind: 'one_challenge' }] })).rejects.toMatchObject({ code: 'SF_CHALLENGE_CANDIDATE_SOURCE_NOT_FOUND' });
+    await expect(service.reviewChallengeStructure({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, groups: [{ sourceCandidateIds: ['sf5:gap:gap-1'], statement: 'No', structureKind: 'one_challenge' }] })).rejects.toMatchObject({ code: 'SF_CHALLENGE_CANDIDATE_SOURCE_NOT_CONFIRMED' });
+    await expect(service.reviewChallengeStructure({ stateId: state.id, actorUserId: 'user-1', organizationId: 'org-1', permissions: write, expectedVersion: 1, groups: [{ challengeCandidateId: 'foreign', sourceCandidateIds: [], statement: 'No', structureKind: 'one_challenge' }] })).rejects.toMatchObject({ code: 'SF_CHALLENGE_CANDIDATE_SOURCES_INVALID' });
+    expect(db.canonicalWrites).toEqual({ strategicFront: 0, challenge: 0, project: 0, initiative: 0, step: 0 });
+  });
+
   it('reads legacy null prioritization without writing or incrementing version', async () => {
     const db = fakePrisma();
     const service = new StrategicFramingProvisionalStateService(db as any);

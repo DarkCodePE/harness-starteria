@@ -602,6 +602,8 @@ model User {
   requestedDecisionRequests DecisionRequest[] @relation("DecisionRequestRequester")
   authorityDecisionRequests DecisionRequest[] @relation("DecisionRequestAuthorityUser")
   decidedOrganizationalDecisions Decision[] @relation("DecisionDecider")
+  portfolioAccessGrants    OrganizationPortfolioAccessGrant[] @relation("PortfolioAccessGrants")
+  portfolioAccessGrantsIssued OrganizationPortfolioAccessGrant[] @relation("PortfolioAccessGrantIssuers")
     portfolioEntryConversions PortfolioEntryConversion[]
     portfolioEntryPortfolioContinuations PortfolioEntryPortfolioContinuation[]
     portfolioBootstrapSessions PortfolioBootstrapSession[]
@@ -2213,6 +2215,7 @@ model Organization {
 
   subscriptions Subscription[]
   members       OrganizationMember[]
+  portfolioAccessGrants OrganizationPortfolioAccessGrant[]
 
   @@index([cohortId])
 }
@@ -2621,6 +2624,26 @@ model PortfolioBootstrapSession {
   @@index([existingWorkStatus])
 }
 
+// Organization-scoped Portfolio authority. Membership is necessary but does
+// not itself grant Portfolio capability, and platform roles are not scoped.
+model OrganizationPortfolioAccessGrant {
+  id              String   @id @default(cuid())
+  userId          String
+  organizationId  String
+  capability     String
+  grantedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user         User         @relation("PortfolioAccessGrants", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grantedBy    User?        @relation("PortfolioAccessGrantIssuers", fields: [grantedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, organizationId, capability])
+  @@index([organizationId, capability])
+  @@index([userId, organizationId])
+}
+
 enum StrategicFramingProvisionalSourceMode {
   public_entry
   enterprise_direct
@@ -2664,6 +2687,7 @@ model StrategicFramingProvisionalState {
   softGaps             Json
   optionalContext      Json
   prioritizationState  Json?
+  challengeStructuringState Json?
   version              Int                                     @default(1)
   createdAt            DateTime                                @default(now())
   updatedAt            DateTime                                @updatedAt
