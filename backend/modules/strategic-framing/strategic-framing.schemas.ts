@@ -6,6 +6,19 @@ export const strategicFramingStateParamsSchema = z.object({
 
 const nullableText = z.string().nullable().optional();
 
+export const strategicFramingPromotionBodySchema = z.object({
+  challengeCandidateId: z.string().trim().min(1),
+  expectedVersion: z.number().int().positive(),
+  strategicFrontId: z.string().trim().min(1),
+  title: z.string().trim().min(1),
+  statement: z.string().trim().min(1),
+  type: z.enum(['correccion', 'crecimiento', 'exploracion']),
+  objective: nullableText,
+  whyNow: nullableText,
+  successCriteria: nullableText,
+  rationale: nullableText,
+}).strict();
+
 export const strategicFramingCorrectionBodySchema = z.object({
   expectedVersion: z.number().int().positive(),
   intendedMovement: nullableText,

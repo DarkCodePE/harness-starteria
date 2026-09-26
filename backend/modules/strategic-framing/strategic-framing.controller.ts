@@ -5,10 +5,37 @@ import type { StrategicFramingProvisionalStateService } from './strategic-framin
 import type { StrategicFramingEntryService } from './strategic-framing.entry.service';
 import type { StrategicFramingLensSuggestionEvaluator } from './strategic-framing.lens-suggestions';
 import type { StrategicFramingPrioritizationRecommendationEvaluator } from './strategic-framing.prioritization-recommendation';
-import { strategicFramingCorrectionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
+import type { StrategicFramingPromotionService } from './strategic-framing.promotion.service';
+import { strategicFramingCorrectionBodySchema, strategicFramingPromotionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
 
 export class StrategicFramingController {
-  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator, private readonly prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator) {}
+  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator, private readonly prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator, private readonly promotionService?: StrategicFramingPromotionService) {}
+
+  promoteChallenge = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user?.id) throw AppError.unauthorized('No autorizado.', 'PROMOTION_FORBIDDEN');
+      if (!this.promotionService) throw AppError.internal('La promoción SF-6C no está configurada.');
+      const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
+      const parsed = strategicFramingPromotionBodySchema.safeParse(req.body);
+      if (!parsed.success) throw AppError.badRequest('El payload de promoción no es válido.', 'INVALID_PROMOTION_PAYLOAD');
+      const body = parsed.data;
+      const result = await this.promotionService.promote({
+        stateId,
+        challengeCandidateId: body.challengeCandidateId,
+        expectedVersion: body.expectedVersion,
+        strategicFrontId: body.strategicFrontId,
+        title: body.title,
+        statement: body.statement,
+        type: body.type,
+        objective: body.objective,
+        whyNow: body.whyNow,
+        successCriteria: body.successCriteria,
+        rationale: body.rationale,
+        actor: { id: req.user.id, roles: req.user.roles, permissions: req.user.permissions },
+      });
+      res.status(result.retry ? 200 : 201).json({ success: true, data: result });
+    } catch (error) { next(error); }
+  };
 
   createOrReuseFromSource = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
