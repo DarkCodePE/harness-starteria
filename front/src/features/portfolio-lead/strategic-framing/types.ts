@@ -19,7 +19,18 @@ export type StrategicFramingState = {
   version: number;
   createdAt: string;
   updatedAt: string;
+  prioritizationState?: StrategicFramingPrioritizationState;
+  challengeStructuringState?: StrategicFramingChallengeStructuringState | null;
 };
+
+export type HumanDisposition = 'undecided' | 'address_now' | 'observe' | 'discard';
+export type PriorityCandidate = { candidateId: string; kind: 'gap' | 'opportunity'; statementSnapshot: string; sourceRefs: string[]; humanDisposition: HumanDisposition; humanDecision: unknown | null };
+export type StrategicFramingPrioritizationState = { schemaVersion: 1; nonCanonical: true; focusSlots: number | null; focusRationale: string | null; candidates: PriorityCandidate[] };
+export type ChallengeCandidate = { challengeCandidateId: string; sourceCandidateIds: string[]; relatedWorkRefs: string[]; statement: string; structureKind: 'lightweight_challenge' | 'one_challenge' | 'multiple_challenges'; structuralRecommendationRef: string | null; structuralRecommendationVersion: string | null; confirmedByUserId: string; confirmedAt: string; createdFromStateVersion: number };
+export type StrategicFramingChallengeStructuringState = { schemaVersion: 1; nonCanonical: true; candidates: ChallengeCandidate[] };
+export type PrioritizationRecommendation = { candidateId: string; recommendedDisposition: 'address_now' | 'observe' | 'discard' | 'uncertain' | 'needs_clarification'; rationale: string[]; sourceRefs: string[]; humanDisposition: HumanDisposition; recommendationSnapshot: { recommendationVersion: string; inputStateVersion: number; recommendedDisposition: string; rationale: string[]; sourceRefs: string[] } };
+export type PrioritizationRecommendationResult = { stateId: string; stateVersion: number; focusSlots: number | null; capacityStatus: string; recommendations: PrioritizationRecommendation[]; warnings: string[]; limitations: string[]; recommendationVersion: string };
+export type PromotionSummary = { promotionId: string; challengeCandidateId: string; challengeId: string; challengeTitle?: string | null; strategicFrontId: string; status: string; promotedAt: string };
 
 export type StrategicFramingDraft = Pick<StrategicFramingState, 'intendedMovement' | 'whyItMatters' | 'movementSignalStatus' | 'movementSignalValue' | 'horizonContext' | 'decisionToEnable' | 'subjectLevel' | 'parentStatus'> & { parentLabel: string | null };
 
