@@ -19,6 +19,41 @@ export const strategicFramingPromotionBodySchema = z.object({
   rationale: nullableText,
 }).strict();
 
+const recommendationSnapshotSchema = z.object({
+  recommendationVersion: z.string().trim().min(1),
+  inputStateVersion: z.number().int().positive(),
+  recommendedDisposition: z.enum(['address_now', 'observe', 'discard', 'uncertain', 'needs_clarification']),
+  rationale: z.array(z.string()),
+  sourceRefs: z.array(z.string()),
+}).strict();
+
+export const strategicFramingPrioritizationReviewBodySchema = z.object({
+  expectedVersion: z.number().int().positive(),
+  focusSlots: z.number().int().min(0).nullable().optional(),
+  focusRationale: nullableText,
+  decisions: z.array(z.object({
+    candidateId: z.string().trim().min(1),
+    disposition: z.enum(['address_now', 'observe', 'discard']),
+    rationale: nullableText,
+    recommendationSnapshot: recommendationSnapshotSchema,
+  }).strict()).optional(),
+  reason: nullableText,
+}).strict();
+
+export const strategicFramingChallengeStructureReviewBodySchema = z.object({
+  expectedVersion: z.number().int().positive(),
+  groups: z.array(z.object({
+    challengeCandidateId: z.string().trim().min(1).optional(),
+    sourceCandidateIds: z.array(z.string().trim().min(1)),
+    relatedWorkRefs: z.array(z.string()).optional(),
+    statement: z.string().trim().min(1),
+    structureKind: z.enum(['lightweight_challenge', 'one_challenge', 'multiple_challenges']),
+    structuralRecommendationRef: nullableText,
+    structuralRecommendationVersion: nullableText,
+  }).strict()),
+  reason: nullableText,
+}).strict();
+
 export const strategicFramingCorrectionBodySchema = z.object({
   expectedVersion: z.number().int().positive(),
   intendedMovement: nullableText,

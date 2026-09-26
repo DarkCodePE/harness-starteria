@@ -7,16 +7,20 @@ import { StrategicFramingEntryService } from './strategic-framing.entry.service'
 import { StrategicFramingLensSuggestionEvaluator } from './strategic-framing.lens-suggestions';
 import { StrategicFramingPrioritizationRecommendationEvaluator } from './strategic-framing.prioritization-recommendation';
 import { StrategicFramingPromotionService } from './strategic-framing.promotion.service';
+import { StrategicFramingPromotionReadService } from './strategic-framing.promotion-read.service';
 
-export function buildStrategicFramingRouter(deps: { authenticate?: RequestHandler; service?: StrategicFramingProvisionalStateService; entryService?: StrategicFramingEntryService; lensEvaluator?: StrategicFramingLensSuggestionEvaluator; prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator; promotionService?: StrategicFramingPromotionService } = {}): Router {
+export function buildStrategicFramingRouter(deps: { authenticate?: RequestHandler; service?: StrategicFramingProvisionalStateService; entryService?: StrategicFramingEntryService; lensEvaluator?: StrategicFramingLensSuggestionEvaluator; prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator; promotionService?: StrategicFramingPromotionService; promotionReadService?: StrategicFramingPromotionReadService } = {}): Router {
   const router = Router();
   const auth = deps.authenticate ?? authenticate;
   const service = deps.service ?? new StrategicFramingProvisionalStateService(prisma);
-  const controller = new StrategicFramingController(service, deps.entryService ?? new StrategicFramingEntryService(prisma, undefined, service), deps.lensEvaluator ?? new StrategicFramingLensSuggestionEvaluator(), deps.prioritizationRecommendationEvaluator ?? new StrategicFramingPrioritizationRecommendationEvaluator(), deps.promotionService ?? new StrategicFramingPromotionService(prisma));
+  const controller = new StrategicFramingController(service, deps.entryService ?? new StrategicFramingEntryService(prisma, undefined, service), deps.lensEvaluator ?? new StrategicFramingLensSuggestionEvaluator(), deps.prioritizationRecommendationEvaluator ?? new StrategicFramingPrioritizationRecommendationEvaluator(), deps.promotionService ?? new StrategicFramingPromotionService(prisma), deps.promotionReadService ?? new StrategicFramingPromotionReadService(prisma));
   router.post('/states/from-source', auth, requirePermission('portfolio:write'), controller.createOrReuseFromSource);
   router.get('/states/:stateId', auth, requirePermission('portfolio:read'), controller.getState);
   router.get('/states/:stateId/lens-suggestions', auth, requirePermission('portfolio:read'), controller.getLensSuggestions);
   router.get('/states/:stateId/prioritization-recommendations', auth, requirePermission('portfolio:read'), controller.getPrioritizationRecommendations);
+  router.post('/states/:stateId/prioritization-review', auth, requirePermission('portfolio:write'), controller.reviewPrioritization);
+  router.post('/states/:stateId/challenge-structure-review', auth, requirePermission('portfolio:write'), controller.reviewChallengeStructure);
+  router.get('/states/:stateId/promotions', auth, requirePermission('portfolio:read'), controller.getPromotions);
   router.patch('/states/:stateId', auth, requirePermission('portfolio:write'), controller.updateState);
   router.post('/states/:stateId/promotions', auth, requirePermission('portfolio:write'), controller.promoteChallenge);
   return router;

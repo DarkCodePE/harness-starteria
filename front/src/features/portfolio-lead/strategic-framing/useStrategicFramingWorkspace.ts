@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getStrategicFramingState, updateStrategicFramingState, type StrategicFramingError } from './service';
-import type { StrategicFramingDraft, StrategicFramingState } from './types';
+import { getStrategicFramingPrioritizationRecommendations, getStrategicFramingPromotions, getStrategicFramingState, updateStrategicFramingState, type StrategicFramingError } from './service';
+import type { PrioritizationRecommendationResult, PromotionSummary, StrategicFramingDraft, StrategicFramingState } from './types';
 
 function draftFromState(state: StrategicFramingState): StrategicFramingDraft {
   return { intendedMovement: state.intendedMovement, whyItMatters: state.whyItMatters, movementSignalStatus: state.movementSignalStatus, movementSignalValue: state.movementSignalValue, horizonContext: state.horizonContext, decisionToEnable: state.decisionToEnable, subjectLevel: state.subjectLevel, parentStatus: state.parentStatus, parentLabel: state.parentContext.label };
@@ -12,11 +12,13 @@ export function useStrategicFramingWorkspace(stateId: string) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'saving' | 'error'>('loading');
   const [error, setError] = useState<StrategicFramingError | null>(null);
   const [conflict, setConflict] = useState(false);
+  const [recommendations, setRecommendations] = useState<PrioritizationRecommendationResult | null>(null);
+  const [promotions, setPromotions] = useState<PromotionSummary[]>([]);
   const dirty = useMemo(() => !!serverState && !!draft && JSON.stringify(draft) !== JSON.stringify(draftFromState(serverState)), [serverState, draft]);
 
   const load = useCallback(async () => {
     setStatus('loading'); setError(null); setConflict(false);
-    try { const next = await getStrategicFramingState(stateId); setServerState(next); setDraft(draftFromState(next)); setStatus('ready'); }
+    try { const next = await getStrategicFramingState(stateId); setServerState({ ...next, prioritizationState: next.prioritizationState ?? { schemaVersion: 1, nonCanonical: true, focusSlots: null, focusRationale: null, candidates: [] }, challengeStructuringState: next.challengeStructuringState ?? { schemaVersion: 1, nonCanonical: true, candidates: [] } }); setDraft(draftFromState(next)); if (typeof getStrategicFramingPrioritizationRecommendations === 'function' && typeof getStrategicFramingPromotions === 'function') { const [nextRecommendations, nextPromotions] = await Promise.all([getStrategicFramingPrioritizationRecommendations(stateId), getStrategicFramingPromotions(stateId)]); setRecommendations(nextRecommendations); setPromotions(nextPromotions); } setStatus('ready'); }
     catch (nextError) { const parsed = nextError as StrategicFramingError; setError(parsed); setStatus('error'); }
   }, [stateId]);
   useEffect(() => { void load(); }, [load]);
@@ -31,5 +33,5 @@ export function useStrategicFramingWorkspace(stateId: string) {
     try { const next = await updateStrategicFramingState(stateId, { ...changed, expectedVersion: serverState.version }); setServerState(next); setDraft(draftFromState(next)); setStatus('ready'); }
     catch (nextError) { const parsed = nextError as StrategicFramingError; setError(parsed); setStatus('ready'); if (parsed.code === 'SF_PROVISIONAL_STATE_STALE') setConflict(true); }
   };
-  return { serverState, draft, status, error, conflict, dirty, update, cancel, save, reload: load };
+  return { serverState, draft, status, error, conflict, dirty, recommendations, promotions, update, cancel, save, reload: load };
 }

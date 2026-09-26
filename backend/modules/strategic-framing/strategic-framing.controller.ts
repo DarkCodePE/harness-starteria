@@ -6,10 +6,38 @@ import type { StrategicFramingEntryService } from './strategic-framing.entry.ser
 import type { StrategicFramingLensSuggestionEvaluator } from './strategic-framing.lens-suggestions';
 import type { StrategicFramingPrioritizationRecommendationEvaluator } from './strategic-framing.prioritization-recommendation';
 import type { StrategicFramingPromotionService } from './strategic-framing.promotion.service';
-import { strategicFramingCorrectionBodySchema, strategicFramingPromotionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
+import { strategicFramingChallengeStructureReviewBodySchema, strategicFramingCorrectionBodySchema, strategicFramingPrioritizationReviewBodySchema, strategicFramingPromotionBodySchema, strategicFramingSourceBodySchema, strategicFramingStateParamsSchema } from './strategic-framing.schemas';
+import type { StrategicFramingPromotionReadService } from './strategic-framing.promotion-read.service';
 
 export class StrategicFramingController {
-  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator, private readonly prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator, private readonly promotionService?: StrategicFramingPromotionService) {}
+  constructor(private readonly service: StrategicFramingProvisionalStateService, private readonly entryService?: StrategicFramingEntryService, private readonly lensEvaluator?: StrategicFramingLensSuggestionEvaluator, private readonly prioritizationRecommendationEvaluator?: StrategicFramingPrioritizationRecommendationEvaluator, private readonly promotionService?: StrategicFramingPromotionService, private readonly promotionReadService?: StrategicFramingPromotionReadService) {}
+
+  reviewPrioritization = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const actor = await this.resolveActor(req); const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
+      const body = strategicFramingPrioritizationReviewBodySchema.parse(req.body);
+      const data = await this.service.reviewPrioritization({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions, ...(body as any) });
+      res.json({ success: true, data });
+    } catch (error) { next(error); }
+  };
+
+  reviewChallengeStructure = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const actor = await this.resolveActor(req); const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
+      const body = strategicFramingChallengeStructureReviewBodySchema.parse(req.body);
+      const data = await this.service.reviewChallengeStructure({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions, ...(body as any) });
+      res.json({ success: true, data });
+    } catch (error) { next(error); }
+  };
+
+  getPromotions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const actor = await this.resolveActor(req); const { stateId } = strategicFramingStateParamsSchema.parse(req.params);
+      await this.service.getCurrent({ stateId, actorUserId: actor.id, organizationId: actor.organizationId, permissions: req.user!.permissions });
+      if (!this.promotionReadService) throw AppError.internal('La lectura de promociones no está configurada.');
+      res.json({ success: true, data: await this.promotionReadService.listForState(stateId) });
+    } catch (error) { next(error); }
+  };
 
   promoteChallenge = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
