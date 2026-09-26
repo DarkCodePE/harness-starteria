@@ -239,6 +239,11 @@ enum ChallengeType {
   exploracion
 }
 
+enum StrategicFramingPromotionStatus {
+  completed
+  requires_review
+}
+
 enum StakeholderStatus {
   definido
   notificado
@@ -2693,11 +2698,43 @@ model StrategicFramingProvisionalState {
   updatedAt            DateTime                                @updatedAt
 
   history              StrategicFramingProvisionalStateHistory[]
+  strategicFramingPromotions StrategicFramingPromotion[]
 
   @@unique([userId, logicalContextKey])
   @@index([organizationId])
   @@index([sourceMode])
   @@index([parentStatus])
+}
+
+model StrategicFramingPromotion {
+  id                               String   @id @default(cuid())
+  stateId                          String
+  challengeCandidateId             String
+  sourceStateVersion               Int
+  sourceCandidateIds               Json
+  structuralRecommendationRef      String?
+  structuralRecommendationVersion  String?
+  strategicFrontId                 String
+  challengeId                      String   @unique
+  actorUserId                      String
+  actorSnapshot                    Json
+  promotedAt                       DateTime
+  candidateSnapshot                Json
+  confirmedChallengeSnapshot       Json
+  sourceRefs                       Json
+  provenance                       Json
+  status                           StrategicFramingPromotionStatus @default(completed)
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime @updatedAt
+
+  state StrategicFramingProvisionalState @relation(fields: [stateId], references: [id], onDelete: Restrict)
+
+  @@unique([stateId, challengeCandidateId])
+  @@index([stateId])
+  @@index([strategicFrontId])
+  @@index([actorUserId])
+  @@index([promotedAt])
+  @@index([sourceStateVersion])
 }
 
 model StrategicFramingProvisionalStateHistory {
