@@ -1,6 +1,6 @@
 # STARTERIA — PORTFOLIO → INITIATIVE OWNER HANDOFF EXPERIENCE CONTRACT v0.2
 
-**Estado:** CANDIDATE FOR FREEZE — previo a Delivery Translation / Technical Design  
+**Estado:** ACTIVE / FROZEN FOR IMPLEMENTATION PLANNING  
 **Versión:** v0.2  
 **Fecha:** 2026-09-28  
 **Vertical:** Portfolio Lead → Initiative Owner Handoff  

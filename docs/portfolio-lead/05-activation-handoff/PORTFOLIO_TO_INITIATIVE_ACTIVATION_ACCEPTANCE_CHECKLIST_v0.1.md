@@ -1,5 +1,10 @@
 # PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1
 
+> **SUPERSEDED for this bounded context.** Retained as a historical H-0
+> reference. The active Experience Contract and checklist are the v0.2-based
+> handoff documents, including
+> `PORTFOLIO_TO_INITIATIVE_HANDOFF_ACCEPTANCE_CHECKLIST_v0.1.md`.
+
 **Status:** Acceptance checklist for H-0 documentation freeze
 **Scope:** Portfolio / Challenge -> Invitation -> Accept -> Initiative Overview -> Start
 **Out of scope:** Internal Initiative Core / Steps 0-4 behavior after Start

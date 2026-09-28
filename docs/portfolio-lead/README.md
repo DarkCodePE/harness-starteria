@@ -166,7 +166,7 @@ Portfolio -> Initiative Activation/Handoff
 
 H-0 documentation freeze:
 
-- [Activation Experience Contract](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md)
+- [Active Activation Experience Contract](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md)
 - [Current State Audit](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md)
 - [Acceptance Checklist](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md)
 
@@ -275,7 +275,7 @@ Channel Independence / PG:
 Activation/Handoff:
 
 - [Activation/Handoff local index](05-activation-handoff/README.md)
-- [Activation Experience Contract](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md)
+- [Active Activation Experience Contract](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md)
 - [Current State Audit](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md)
 - [Acceptance Checklist](05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md)
 - [Portfolio Entry continuation ADR](../product-adr/ADR-031-portfolio-entry-continuation-to-portfolio.md)

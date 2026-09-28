@@ -1,6 +1,10 @@
 # PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1
 
-**Status:** Draft for implementation
+> **SUPERSEDED for this bounded context.** Retained as a historical reference
+> for traceability. The active contract is
+> `PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md`.
+
+**Status:** SUPERSEDED / HISTORICAL REFERENCE
 **Scope:** Portfolio/Challenge â†’ Invitation â†’ Accept â†’ Initiative Overview â†’ Start
 **Out of scope:** Internal logic of Initiative Core / Steps 0â€“4
 **Primary purpose:** Freeze the user experience, domain semantics and handoff boundary before implementation.

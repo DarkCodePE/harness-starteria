@@ -1,6 +1,14 @@
 # Portfolio To Initiative Activation/Handoff
 
-Status: H-0 documentation freeze for next implementation bounded context.
+Status: ACTIVE / FROZEN FOR IMPLEMENTATION PLANNING.
+
+Active Experience Contract:
+
+`PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md`
+
+The v0.1 contract is superseded for this bounded context and retained as a
+historical reference for traceability. This authority promotion does not
+authorize implementation, schema changes, route changes, or Step 0-4 changes.
 
 Bounded context:
 
@@ -45,7 +53,8 @@ DEPRECATE / ADR CANDIDATE.
 
 ## Contract Set
 
-- [Activation Experience Contract](PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md)
+- [Activation Experience Contract v0.2](PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md)
+- [Superseded v0.1 historical reference](PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md)
 - [Current State Audit](PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md)
 - [Acceptance Checklist](PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md)
 
@@ -62,15 +71,12 @@ Challenge link != Step initialization
 Target lifecycle:
 
 ```text
-Invitation -> Accept -> pre_start -> Start -> Initiative Core
+Assignment -> Invitation -> Accept / Reject -> Activation Overview -> Start
 ```
 
-Do not freeze the technical representation of `pre_start` in H-0. The functional
-definition is:
-
-```text
-Initiative exists + responsibility accepted + Core not started
-```
+For Assigned Challenge, Accept and Start do not create an Initiative in this
+bounded context. Start is the hard boundary; downstream Initiative formulation
+is outside this contract.
 
 ## ADR Candidates Pending
 
