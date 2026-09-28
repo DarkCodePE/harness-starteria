@@ -716,6 +716,69 @@ Do not:
 - infer Initiative Owner from team ordering;
 - auto-backfill missing legacy facts.
 
+## 27.1. Review amendments required before acceptance
+
+The review identified the following conditions. They are part of this ADR's
+decision boundary and must be reflected in the Technical Design before any
+implementation eligibility is reconsidered:
+
+1. **Authority status is now explicit.** The repository Authority Map promotes
+   v0.2 to `ACTIVE / FROZEN FOR IMPLEMENTATION PLANNING` for this bounded
+   context and marks v0.1 as superseded historical reference. Core remains
+   higher authority, and this promotion changes document authority only; it
+   does not authorize implementation. Any future semantic change still
+   requires explicit authority reconciliation and re-review.
+
+2. **Owner identity is mandatory even when an account is not.** Every
+   assignment must persist exactly one resolved or invitation-bound
+   `initiative_owner_identity`. A nullable user/account reference may be used
+   until authentication or identity resolution, but it must not make the
+   Owner itself optional. Observers must remain an explicit, non-executing
+   category; legacy team labels cannot satisfy the invariant without identity
+   resolution.
+
+3. **Invitation claim is not assignment claim.** Invitation token delivery,
+   opening, authentication continuation and recipient matching belong to the
+   invitation/access boundary. They may establish access to the assignment,
+   but do not create, accept, reopen or start the assignment. `claimed` is an
+   access condition, not a handoff lifecycle state. The assignment must retain
+   an explicit invitation linkage and issuer reference without making the
+   transport record a second lifecycle authority.
+
+4. **Legacy status mapping requires evidence.** `confirmado` may map to
+   `accepted` only when there is evidence of recipient acceptance; it must
+   never be mapped to `started`. `notificado` may map to `sent` only with
+   delivery evidence. Unknown actor, timestamp, recipient or reason facts
+   remain unknown/unavailable and are not synthesized. The mapping must not
+   fabricate `viewed`, `revoked`, `expired`, `started` or canonical history.
+
+5. **Core cardinality is not satisfied by a Challenge Assignment.** An
+   Assigned Challenge with `initiative_ref = null` is a handoff record only;
+   it is not an Initiative and does not count as the Initiative required by
+   any Core rule for an active Challenge. The assignment path must therefore
+   preserve the applicable Challenge state and defer any Initiative
+   cardinality obligation to the downstream formulation/materialization
+   workstream.
+
+6. **Route classification is scoped, not route-wide.**
+   `COMPATIBILITY_ONLY + DEPRECATION_TARGET` applies to the legacy
+   Challenge-to-project handoff caller/branch, not to unrelated valid Project
+   creation that happens to use the same route. The quarantine plan must
+   inventory callers and demonstrate that removing the new handoff caller
+   leaves unrelated Project creation unchanged.
+
+7. **Event names must follow the integration contract.** The canonical
+   semantic names are `handoff_assignment_created`,
+   `handoff_invitation_sent`, `handoff_invitation_viewed`,
+   `handoff_assignment_accepted`, `handoff_assignment_rejected`,
+   `handoff_rejection_response_recorded`, `handoff_assignment_started`,
+   `handoff_assignment_revoked` and `handoff_assignment_expired`. Short names
+   in this ADR are aliases only and must not introduce a second event
+   vocabulary.
+
+These amendments do not change the scope of this ADR. They are acceptance
+conditions for authority reconciliation and Technical Design re-evaluation.
+
 ## 28. Implementation gate unlocked by ADR acceptance
 
 After ADR acceptance, Technical Design may re-evaluate implementation readiness for:
