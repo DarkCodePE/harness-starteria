@@ -1,0 +1,64 @@
+import type { PrismaClient } from '@prisma/client';
+import type {
+  CreateHandoffAssignmentInput,
+  HandoffAssignment,
+  HandoffAssignmentRepository,
+  HandoffReference,
+  HandoffReferenceRepository,
+} from '../domain/portfolio-handoff-assignment.types';
+
+export class PrismaPortfolioHandoffAssignmentRepository implements HandoffAssignmentRepository, HandoffReferenceRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async create(input: CreateHandoffAssignmentInput): Promise<HandoffAssignment> {
+    const record = await this.prisma.portfolioHandoffAssignment.create({
+      data: {
+        organizationId: input.organizationId ?? null,
+        portfolioScopeRef: input.portfolioScopeRef ?? null,
+        challengeId: input.challengeId,
+        targetKind: input.targetKind,
+        initiativeId: input.initiativeId ?? null,
+        invitedEmailNormalized: input.invitedEmailNormalized,
+        invitedIdentityRef: input.invitedIdentityRef ?? null,
+        createdByActorId: input.createdByActorId,
+        members: { create: input.members.map((member) => ({ ...member, identityKey: member.identityKey.trim().toLowerCase() })) },
+      },
+      include: { members: true },
+    });
+    return mapAssignment(record);
+  }
+
+  async findById(id: string): Promise<HandoffAssignment | null> {
+    const record = await this.prisma.portfolioHandoffAssignment.findUnique({ where: { id }, include: { members: true } });
+    return record ? mapAssignment(record) : null;
+  }
+
+  async findChallenge(id: string): Promise<HandoffReference | null> {
+    const record = await this.prisma.challenge.findUnique({ where: { id }, select: { id: true, strategicFront: { select: { organizationId: true } } } });
+    return record ? { id: record.id, organizationId: record.strategicFront.organizationId } : null;
+  }
+
+  async findInitiative(id: string): Promise<HandoffReference | null> {
+    const record = await this.prisma.project.findUnique({ where: { id }, select: { id: true, owner: { select: { organizationId: true } } } });
+    return record ? { id: record.id, organizationId: record.owner.organizationId } : null;
+  }
+}
+
+function mapAssignment(record: any): HandoffAssignment {
+  return {
+    id: record.id,
+    organizationId: record.organizationId,
+    portfolioScopeRef: record.portfolioScopeRef,
+    challengeId: record.challengeId,
+    targetKind: record.targetKind,
+    initiativeId: record.initiativeId,
+    invitedEmailNormalized: record.invitedEmailNormalized,
+    invitedIdentityRef: record.invitedIdentityRef,
+    createdByActorId: record.createdByActorId,
+    state: record.state,
+    version: record.version,
+    members: record.members.map((member: any) => ({ identityKey: member.identityKey, userId: member.userId, emailNormalized: member.emailNormalized, label: member.label, role: member.role })),
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
+}
