@@ -121,7 +121,14 @@ Para el bounded context:
 Portfolio / Challenge -> Invitation -> Accept -> Initiative Overview -> Start
 ```
 
-el Experience Contract de referencia para implementacion posterior es:
+El Experience Contract activo para este bounded context es:
+
+`docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md`
+
+**Estado:** ACTIVE / FROZEN FOR IMPLEMENTATION PLANNING
+
+El contrato v0.1 queda superseded para este bounded context y se conserva
+como referencia historica y de trazabilidad:
 
 `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md`
 
@@ -212,7 +219,8 @@ Nota de estado: implementado no equivale a aprobado ni a probado end-to-end. El 
 ### Portfolio Lead / Activation-Handoff
 
 - `docs/portfolio-lead/04-channel-independence/PORTFOLIO_GOVERNANCE_INTERACTION_CONTRACT_v0.1.md` - contrato de interaccion/canal; debajo de Core.
-- `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md` - Experience Contract del bounded context Portfolio -> Initiative Activation/Handoff.
+- `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.2.md` - Experience Contract activo del bounded context Portfolio -> Initiative Activation/Handoff; frozen for implementation planning.
+- `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_EXPERIENCE_CONTRACT_v0.1.md` - superseded para este bounded context; referencia historica conservada para trazabilidad.
 - `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_ACTIVATION_ACCEPTANCE_CHECKLIST_v0.1.md` - checklist de aceptacion H-0.
 - `docs/portfolio-lead/05-activation-handoff/PORTFOLIO_TO_INITIATIVE_HANDOFF_CURRENT_STATE_AUDIT_v0.1.md` - evidencia factual; no autoridad funcional.
 
