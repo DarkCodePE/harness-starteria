@@ -168,6 +168,21 @@ enum TeamMemberStatus {
   PENDING
 }
 
+enum PortfolioHandoffTargetKind {
+  EXISTING_INITIATIVE
+  CHALLENGE
+}
+
+enum PortfolioHandoffState {
+  CREATED
+}
+
+enum PortfolioHandoffMemberRole {
+  OWNER
+  EXECUTOR
+  OBSERVER
+}
+
 enum SessionStatus {
   PENDING_SCHEDULE
   SCHEDULED
@@ -588,6 +603,8 @@ model User {
   updatedAt           DateTime  @updatedAt
 
   projects                 Project[]
+  handoffAssignments       PortfolioHandoffAssignment[] @relation("HandoffCreatedBy")
+  handoffMemberIdentities  PortfolioHandoffMember[] @relation("HandoffMemberUser")
   teamMemberships          TeamMember[]
   challengeTeamMemberships ChallengeTeamMember[] // ADR-023: reto-scoped team membership
   mentorSessions           MentorSession[]
@@ -684,6 +701,7 @@ model Project {
   implementationHandoffs ImplementationHandoff[]
   scalingHandoffs ScalingHandoff[]
   closureSummaries ClosureSummary[]
+  handoffAssignments PortfolioHandoffAssignment[]
 
   @@index([ownerId])
   @@index([cohortId])
@@ -1533,6 +1551,7 @@ model Challenge {
   initiativeMetas  InitiativePortfolioMeta[]
   overlaps         InitiativeOverlap[]
   executiveOutputs ExecutiveOutput[]
+  handoffAssignments PortfolioHandoffAssignment[]
 
   @@index([strategicFrontId])
   @@index([status])
@@ -1571,6 +1590,49 @@ model ChallengeInvitation {
   @@index([inviterUserId])
   @@index([claimedByUserId])
   @@index([expiresAt])
+}
+
+model PortfolioHandoffAssignment {
+  id                     String                    @id @default(cuid())
+  organizationId         String?
+  portfolioScopeRef      String?
+  challengeId            String
+  challenge              Challenge                 @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+  targetKind             PortfolioHandoffTargetKind
+  initiativeId           String?
+  initiative             Project?                  @relation(fields: [initiativeId], references: [id], onDelete: Restrict)
+  invitedEmailNormalized String
+  invitedIdentityRef     String?
+  state                  PortfolioHandoffState     @default(CREATED)
+  createdByActorId       String
+  createdByActor         User                      @relation("HandoffCreatedBy", fields: [createdByActorId], references: [id])
+  version                Int                       @default(1)
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+
+  members PortfolioHandoffMember[]
+
+  @@index([challengeId])
+  @@index([initiativeId])
+  @@index([organizationId])
+  @@index([createdByActorId])
+}
+
+model PortfolioHandoffMember {
+  id              String                    @id @default(cuid())
+  assignmentId    String
+  assignment      PortfolioHandoffAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  identityKey     String
+  userId          String?
+  user            User?                     @relation("HandoffMemberUser", fields: [userId], references: [id], onDelete: SetNull)
+  emailNormalized String?
+  label           String?
+  role            PortfolioHandoffMemberRole
+  createdAt       DateTime                  @default(now())
+
+  @@unique([assignmentId, identityKey])
+  @@index([assignmentId, role])
+  @@index([userId])
 }
 
 // DEPRECATED (ADR-023): superseded by ChallengeTeamMember. Kept read-only during the

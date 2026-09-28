@@ -1,6 +1,6 @@
 # ADR-005 — Portfolio Handoff Assignment Persistence and Legacy Challenge Route Boundary
 
-**Estado:** PROPOSED — ADR DESIGN ONLY  
+**Estado:** ACCEPTED — ADR DESIGN ONLY  
 **Fecha:** 2026-09-28  
 **Slice:** Portfolio Lead → Initiative Owner Handoff  
 **Decide:** persistencia mínima del Handoff Assignment y tratamiento del flujo legacy `Challenge → /projects/new?challengeId=...`  
@@ -822,7 +822,7 @@ ADR acceptance does not automatically mean GO. Technical Design must be updated.
 Current:
 
 ```text
-PROPOSED — ADR DESIGN ONLY
+ACCEPTED — ADR DESIGN ONLY
 ```
 
 Next:
