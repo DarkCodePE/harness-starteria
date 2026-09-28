@@ -105,20 +105,17 @@ The Technical Design leaves exact Prisma names as implementation detail. This im
 
 ## 14. Conflicts discovered
 
-```text
-CONFLICT
-Contract: user-requested authority list / Technical Design GO
-Requirement: ADR-005 is treated as accepted for H-TECH-02
-Current document/code: doc/product-adr/ADR-005-portfolio-handoff-assignment-persistence-and-legacy-route-boundary.md declares PROPOSED — ADR DESIGN ONLY
-Observed mismatch: repository status does not match the requested accepted-ADR status
-Risk: authority promotion and production rollout status could be misread
-Recommended treatment: KEEP this bounded implementation under the explicit KAN-52 scope; UPDATE ADR status through the product governance process
-Requires ADR: no new ADR; status reconciliation is required
-```
+**RESOLVED**
+
+ADR-005 is now formally marked `ACCEPTED ? ADR DESIGN ONLY` in the repository and is also listed as accepted in `ADR-INDEX.md`.
+
+The authority mismatch observed during the initial H-TECH-02 implementation no longer exists.
+
+There is no remaining authority conflict or ADR blocker for this slice.
 
 ## 15. ADR required?
 
-**No new ADR required for this implementation.** ADR-005 already defines the bounded persistence decision in the requested authority set; its repository status mismatch is documented above and is not silently resolved.
+**No new ADR required for this implementation.** ADR-005 already defines the bounded persistence decision in the requested authority set; its repository status is now aligned with the accepted authority state.
 
 ## 16. Next-slice dependencies
 
