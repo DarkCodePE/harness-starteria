@@ -107,7 +107,7 @@ The Technical Design leaves exact Prisma names as implementation detail. This im
 
 **RESOLVED**
 
-ADR-005 is now formally marked `ACCEPTED ? ADR DESIGN ONLY` in the repository and is also listed as accepted in `ADR-INDEX.md`.
+ADR-005 is now formally marked `ACCEPTED (ADR DESIGN ONLY)` in the repository and is also listed as accepted in `ADR-INDEX.md`.
 
 The authority mismatch observed during the initial H-TECH-02 implementation no longer exists.
 
