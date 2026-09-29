@@ -15,6 +15,8 @@ gbrain-evals/
 # Flujo de trabajo del equipo (HU en Jira): agente planner y skill jira-hu.
 !.claude/agents/
 !.claude/skills/
+# Hooks que usan esos agentes (el revisor de sólo lectura).
+!.claude/hooks/
 .claude-flow/
 .swarm/
 estado/
