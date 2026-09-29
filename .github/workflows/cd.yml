@@ -226,9 +226,19 @@ jobs:
       - name: Preflight live deployment and database
         env:
           DB_PASSWORD: ${{ secrets.STARTERIA_DB_PASSWORD }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
           set -euo pipefail
-          kubectl -n "$NAMESPACE" get statefulset/starteria-db secret/cloudflared-token
+          # A Spot nodepool that loses its bid leaves zero nodes: every rollout then
+          # hangs until ROLLOUT_TIMEOUT and gets cancelled with no hint why.
+          ready_nodes=$(kubectl get nodes --no-headers 2>/dev/null | awk '$2 == "Ready"' | wc -l)
+          [[ "$ready_nodes" -gt 0 ]] || { echo '::error::No Ready nodes in the cluster. Check the Rackspace Spot nodepool bid status (bidStatus Lost?)'; exit 1; }
+          kubectl -n "$NAMESPACE" get statefulset/starteria-db
+          # The tunnel token comes from GitHub when CLOUDFLARE_TUNNEL_TOKEN is set;
+          # until then the manually created secret must already exist.
+          if [[ -z "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
+            kubectl -n "$NAMESPACE" get secret/cloudflared-token
+          fi
           # The live password's source of truth is the StatefulSet's own env. It is an
           # inline literal there, not secret/starteria-db-secrets, which does not exist
           # in this cluster. Requiring that secret made the preflight fail before it
@@ -260,8 +270,18 @@ jobs:
           SMTP_USER: ${{ secrets.STARTERIA_SMTP_USER }}
           SMTP_PASS: ${{ secrets.STARTERIA_SMTP_PASS }}
           PILOT_LEAD_NOTIFY_FROM: ${{ secrets.STARTERIA_PILOT_LEAD_NOTIFY_FROM }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
         run: |
           set -euo pipefail
+          # Rotating the tunnel token = update the GitHub secret and rerun CD. cloudflared
+          # reads TUNNEL_TOKEN only at startup, so a changed value flags a restart below.
+          if [[ -n "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
+            live_tunnel_token=$(kubectl -n "$NAMESPACE" get secret/cloudflared-token -o jsonpath='{.data.token}' 2>/dev/null | base64 --decode || true)
+            kubectl -n "$NAMESPACE" create secret generic cloudflared-token --from-literal=token="$CLOUDFLARE_TUNNEL_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+            if [[ "$live_tunnel_token" != "$CLOUDFLARE_TUNNEL_TOKEN" ]]; then
+              echo 'TUNNEL_TOKEN_ROTATED=1' >> "$GITHUB_ENV"
+            fi
+          fi
           encoded_password=$(jq -nr --arg v "$DB_PASSWORD" '$v|@uri')
           database_url="postgresql://starteria:${encoded_password}@starteria-db:5432/starteria_db"
           kubectl -n "$NAMESPACE" create secret generic starteria-db-secrets --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
@@ -313,6 +333,12 @@ jobs:
             printf '%s\n' "$substituted" | kubectl -n "$NAMESPACE" apply -f -
           done
           kubectl -n "$NAMESPACE" apply -f k8s/cloudflared-deployment.yaml
+          if [[ "${TUNNEL_TOKEN_ROTATED:-0}" == 1 ]]; then
+            kubectl -n "$NAMESPACE" rollout restart deployment/cloudflared-tunnel
+          fi
+          # Readiness is /ready, so this fails the deploy when the tunnel cannot
+          # register (e.g. a revoked token) instead of reporting a green rollout.
+          kubectl -n "$NAMESPACE" rollout status deployment/cloudflared-tunnel --timeout="$ROLLOUT_TIMEOUT"
           for svc in backend frontend ai-service; do
             kubectl -n "$NAMESPACE" set image "deployment/starteria-$svc" "$svc=${DOCKERHUB_NAMESPACE}/starteria-$svc:${TAG}"
           done
