@@ -22,7 +22,7 @@ jobs:
       - name: Prepare diagnostics directory
         run: mkdir -p diagnostics
 
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
         with:
           version: v1.30.0
 
