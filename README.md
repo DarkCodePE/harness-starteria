@@ -74,8 +74,8 @@ Después de instalar, `/plugin` los lista.
 
 ### Codex
 
-**Dentro de este repo** no hay que instalar nada: el symlink `.agents/skills → ../skills` está
-commiteado y Codex lo sigue al escanear.
+**Dentro de este repo** no hay que instalar nada: `.agents/skills/` está commiteada con un symlink
+por skill (las del harness y las del ciclo de desarrollo) y Codex los sigue al escanear.
 
 ```text
 cd <este repo>

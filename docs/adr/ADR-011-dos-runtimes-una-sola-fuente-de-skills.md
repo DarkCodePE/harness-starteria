@@ -117,7 +117,10 @@ editada a mano que nadie vuelve a mirar.
   foco ya no aplica: hay gente del equipo en Codex hoy.
 - **Copiar `skills/` a un árbol por runtime:** rechazada, y es la que hay que rechazar con más
   ganas. Es exactamente `ADR-006` otra vez, con su deriva silenciosa entre copias.
-- **Symlink `.agents/skills → skills/` y nada más:** no rechazada, **complementaria**. Sirve para
+- **Symlink `.agents/skills → skills/` y nada más:** no rechazada, **complementaria**.
+  *Actualización 2026-09-29:* el symlink único pasó a ser una carpeta `.agents/skills/` con un
+  symlink por skill, para que Codex vea también las skills del ciclo de desarrollo que viven en
+  `.claude/skills/` (`AGENTS.md` §3). Sigue sin haber copias: la fuente de cada skill es una sola. Sirve para
   descubrimiento local dentro del repo y queda documentada en `codex/README.md`. No reemplaza al
   manifiesto, que es lo que habilita empaquetar.
 - **Publicar ya en el directorio de OpenAI:** rechazada por ahora, §2.3.

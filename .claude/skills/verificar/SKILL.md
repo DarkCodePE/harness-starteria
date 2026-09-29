@@ -8,6 +8,7 @@ description: >
   saber qué correr para un diff.
   Do not use for: escribir el código (/implementar) ni el cuerpo del PR (/pr).
 argument-hint: "[KAN-nnn] [rama base, por defecto origin/main]"
+allowed-tools: Read Grep Glob Agent Bash(git fetch *) Bash(git diff *) Bash(git rev-parse *) Bash(npm run *) Bash(npx vitest *) Bash(npx prisma validate *) Bash(uv run *)
 ---
 
 # Verificar un cambio

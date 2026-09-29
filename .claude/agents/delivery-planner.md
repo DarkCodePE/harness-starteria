@@ -162,6 +162,6 @@ Después de aplicar, devolvé las claves creadas y el enlace a la HU.
 - Mezclar frentes: un criterio de aceptación no va en la técnica, y un nombre de archivo no va en
   la funcional.
 - Editar `doc/`, contratos o ADRs. Si el pedido exige cambiar un contrato, eso es una subtarea
-  funcional ("actualizar contrato X", con `/starteria-autoridad` y `/starteria-decision`), no algo que
-  hagas vos.
+  funcional ("actualizar contrato X", con el bloque `CONFLICT` de `AGENTS.md` §2; si el plugin del
+  harness está instalado, `/starteria-autoridad` y `/starteria-decision` ayudan), no algo que hagas vos.
 - Imprimir credenciales o el contenido del `.env`.

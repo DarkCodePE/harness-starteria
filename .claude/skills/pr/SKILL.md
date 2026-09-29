@@ -8,7 +8,7 @@ description: >
   AGENTS.md, después de /implementar y de que /verificar deje la evidencia y el revisor apruebe.
   Do not use for: revisar el código de otro PR, ni crear la HU (eso es /hu).
 argument-hint: "[KAN-nnn] [rama base, por defecto main]"
-allowed-tools: Read Grep Glob
+allowed-tools: Read Grep Glob Write Bash(git diff *) Bash(git log *) Bash(git fetch *) Bash(git rev-parse *) Bash(gh pr view *) Bash(gh pr list *) Bash(node .claude/skills/jira-hu/tools/jira-hu.mjs *)
 ---
 
 # El cuerpo del PR

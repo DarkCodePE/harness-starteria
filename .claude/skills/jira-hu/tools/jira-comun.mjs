@@ -80,3 +80,26 @@ export async function api(ruta, params = {}, { method = 'GET', body } = {}) {
   }
   return { status: resp.status, body: resp.status === 204 ? null : await resp.json().catch(() => null) };
 }
+
+// Markdown mínimo → ADF (Atlassian Document Format). Lo usan crear y comentar.
+// Soporta `## título`, `- viñeta` y párrafos; nada más, a propósito.
+export function aADF(md) {
+  const content = [];
+  let lista = null;
+  const texto = (t) => [{ type: 'text', text: t }];
+  for (const cruda of String(md ?? '').split(/\r?\n/)) {
+    const l = cruda.trimEnd();
+    const vin = l.match(/^\s*[-*]\s+(.*)$/);
+    if (vin) {
+      if (!lista) { lista = { type: 'bulletList', content: [] }; content.push(lista); }
+      lista.content.push({ type: 'listItem', content: [{ type: 'paragraph', content: texto(vin[1]) }] });
+      continue;
+    }
+    lista = null;
+    if (!l.trim()) continue;
+    const h = l.match(/^(#{1,6})\s+(.*)$/);
+    if (h) content.push({ type: 'heading', attrs: { level: Math.min(h[1].length + 1, 6) }, content: texto(h[2]) });
+    else content.push({ type: 'paragraph', content: texto(l) });
+  }
+  return { type: 'doc', version: 1, content: content.length ? content : [{ type: 'paragraph', content: [] }] };
+}

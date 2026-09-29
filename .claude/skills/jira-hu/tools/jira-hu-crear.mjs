@@ -37,7 +37,7 @@
 // `descripcion` en markdown mínimo: `## título`, `- viñeta`, párrafos separados por línea vacía.
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { VARS, cargarEnv, api, explicarRechazo } from './jira-comun.mjs';
+import { VARS, cargarEnv, api, explicarRechazo, aADF } from './jira-comun.mjs';
 
 const args = process.argv.slice(2);
 const aplicar = args.includes('--aplicar');
@@ -137,28 +137,6 @@ if (frase) {
     maxResults: '5',
   });
   for (const i of q.body?.issues ?? []) parecidas.push(`${i.key} · ${i.fields.status?.name} · ${i.fields.summary}`);
-}
-
-// ── markdown mínimo → ADF ────────────────────────────────────────────────────
-function aADF(md) {
-  const content = [];
-  let lista = null;
-  const texto = (t) => [{ type: 'text', text: t }];
-  for (const cruda of String(md ?? '').split(/\r?\n/)) {
-    const l = cruda.trimEnd();
-    const vin = l.match(/^\s*[-*]\s+(.*)$/);
-    if (vin) {
-      if (!lista) { lista = { type: 'bulletList', content: [] }; content.push(lista); }
-      lista.content.push({ type: 'listItem', content: [{ type: 'paragraph', content: texto(vin[1]) }] });
-      continue;
-    }
-    lista = null;
-    if (!l.trim()) continue;
-    const h = l.match(/^(#{1,6})\s+(.*)$/);
-    if (h) content.push({ type: 'heading', attrs: { level: Math.min(h[1].length + 1, 6) }, content: texto(h[2]) });
-    else content.push({ type: 'paragraph', content: texto(l) });
-  }
-  return { type: 'doc', version: 1, content: content.length ? content : [{ type: 'paragraph', content: [] }] };
 }
 
 const prefijo = { funcional: '[Funcional] ', tecnica: '[Técnica] ' };

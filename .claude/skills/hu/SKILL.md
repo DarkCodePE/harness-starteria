@@ -7,7 +7,7 @@ description: >
   la crea en Jira con confirmación. Use when: llega un pedido, una idea o un bug que todavía no tiene
   HU. Do not use for: una HU que ya existe y sólo hay que leer (skill jira-hu), ni para implementar.
 argument-hint: "<el pedido, como lo dijeron>"
-allowed-tools: Read Grep Glob Agent
+allowed-tools: Read Grep Glob Agent Write Bash(node .claude/skills/hu/tools/*) Bash(node .claude/skills/jira-hu/tools/jira-hu.mjs *)
 ---
 
 # Del pedido a la HU
@@ -94,7 +94,9 @@ Además de lo obvio, que no falte:
 - **[F] Cómo se sabría que salió mal.** Si nadie puede describir el resultado malo, los criterios
   de aceptación no existen todavía.
 - **[F] Contra qué documento choca.** Si contradice algo escrito, nombralo; no elijas una lectura.
-  Eso va a `/starteria-autoridad`, no se resuelve acá.
+  Eso se escribe como bloque `CONFLICT` (`AGENTS.md` §2) en las preguntas abiertas del brief y lo
+  resuelve una persona (con `/starteria-autoridad` si el plugin del harness está instalado); no se
+  resuelve acá.
 - **[T] Qué ya existe.** Buscalo antes de preguntar: si el comportamiento ya está implementado,
   el pedido es otro.
 - **[T] Qué autoridad hace falta.** Backend, Prisma, IA productiva o Core necesitan autoridad

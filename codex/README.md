@@ -16,11 +16,14 @@ barato: `ADR-006` murió porque exigía renombrar catorce archivos a mano, y ac�
 codex
 ```
 
-Codex escanea `.agents/skills` desde el directorio actual hasta la raíz del repo, y **el repo ya trae
-ese symlink commiteado** (`.agents/skills → ../skills`, 9 bytes, modo `120000`). Codex sigue symlinks
-al escanear, así que no hay copia: clonás y los diez comandos están.
+Codex escanea `.agents/skills` desde el directorio actual hasta la raíz del repo. **El repo trae esa
+carpeta commiteada con un symlink por skill**: los diez comandos del harness (`→ ../../skills/<x>`) y
+las skills del ciclo de desarrollo de `AGENTS.md` (`hu`, `jira-hu`, `implementar`, `verificar`,
+`pr`, `cerrar` `→ ../../.claude/skills/<x>`). Codex sigue symlinks al escanear, así que no hay
+copia: clonás y están todas. Una skill nueva en cualquiera de las dos carpetas necesita su symlink
+acá.
 
-Son dos vías independientes a propósito. El symlink sirve adentro de este repo sin instalar nada; el
+Son dos vías independientes a propósito. La carpeta de symlinks sirve adentro de este repo sin instalar nada; el
 manifiesto `.codex-plugin/plugin.json` sirve para empaquetar y distribuir. Si una falla, la otra no
 depende de ella.
 

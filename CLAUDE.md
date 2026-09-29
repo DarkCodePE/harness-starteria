@@ -12,6 +12,7 @@ manda `AGENTS.md`.
 | implementar una subtarea [Técnica] | `/implementar KAN-nnn` |
 | verificar y revisar | `/verificar` → agente `revisor-starteria` (sólo lectura, máx. 3 rondas) |
 | abrir el PR | `/pr` (plantilla `.github/PULL_REQUEST_TEMPLATE.md`) |
+| cerrar después del merge | `/cerrar KAN-nnn` (closure check, Manifest, comentario en la HU) |
 
 Qué correr en cada frente: [`TESTING.md`](TESTING.md).
 

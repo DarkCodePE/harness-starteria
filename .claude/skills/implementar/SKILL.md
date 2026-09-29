@@ -7,6 +7,7 @@ description: >
   Use when: hay una subtarea [Técnica] (KAN-nnn) creada y desbloqueada, y toca escribir código.
   Do not use for: un pedido sin HU (eso es /hu), cambiar un contrato de doc/, ni abrir el PR (/pr).
 argument-hint: "<KAN-nnn de la subtarea [Técnica]>"
+allowed-tools: Read Grep Glob Write Edit Agent Bash(git fetch *) Bash(git worktree *) Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git add *) Bash(git commit *) Bash(node .claude/skills/jira-hu/tools/jira-hu.mjs *)
 ---
 
 # Implementar una subtarea [Técnica]

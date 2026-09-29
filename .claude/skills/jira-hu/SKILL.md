@@ -1,15 +1,17 @@
 ---
 name: jira-hu
 description: >
-  Lee y crea HU en el Jira del equipo de Starteria. Lectura: ubica una HU por clave (KAN-12) o por
-  número y trae resumen, estado, descripción, hermanas y homónimas. Escritura: crea una HU con sus
-  subtareas separadas en [Funcional] y [Técnica], con dry-run obligatorio antes de aplicar.
-  Use when: hay que traer el contenido real de una HU antes de planificar, o el delivery-planner
-  ya redactó un plan y hay que previsualizarlo o crearlo en Jira.
-  Do not use for: redactar la HU (eso es el agente delivery-planner), mover estados ni cerrar
-  tickets, ni nada del harness de producto de Portfolio Entry.
-argument-hint: "<KAN-nnn | nnn> | crear <plan.json> [--aplicar] | --usuarios"
-allowed-tools: Read Grep Glob
+  Lee, crea y comenta HU en el Jira del equipo de Starteria. Lectura: ubica una HU por clave (KAN-12)
+  o por número y trae resumen, estado, descripción, hermanas y homónimas. Escritura: crea una HU con
+  sus subtareas separadas en [Funcional] y [Técnica], y comenta o mueve de estado una HU existente;
+  las dos con dry-run obligatorio antes de aplicar.
+  Use when: hay que traer el contenido real de una HU antes de planificar o implementar, el
+  delivery-planner ya redactó un plan y hay que crearlo, o hay que dejar en la HU el cierre de una
+  sesión o de un PR (/cerrar, /implementar, /verificar).
+  Do not use for: redactar la HU (eso es el agente delivery-planner), ni nada del harness de
+  producto de Portfolio Entry.
+argument-hint: "<KAN-nnn | nnn> | crear <plan.json> [--aplicar] | comentar KAN-nnn --archivo <md> [--estado <e>] [--aplicar] | --usuarios"
+allowed-tools: Read Grep Glob Write Bash(node .claude/skills/jira-hu/tools/*)
 ---
 
 # Jira del equipo: leer y crear HU
@@ -83,3 +85,23 @@ no merece un segundo ticket.
 **`--aplicar` sólo con el sí explícito de una persona**, después de que vio el dry-run. Crear un
 ticket es visible para todo el equipo. Un plan ya aplicado lleva `creado` y el script se niega a
 aplicarlo otra vez.
+
+## Comentar o mover de estado
+
+Para dejar en Jira el cierre de una sesión (`AGENTS.md` §4) o de un PR (`/cerrar`):
+
+```bash
+node tools/jira-hu-comentar.mjs KAN-nnn --transiciones                          # estados posibles
+node tools/jira-hu-comentar.mjs KAN-nnn --archivo <comentario.md>               # dry-run
+node tools/jira-hu-comentar.mjs KAN-nnn --archivo <comentario.md> --estado "<e>" # dry-run con estado
+node tools/jira-hu-comentar.mjs KAN-nnn --archivo <comentario.md> [--estado "<e>"] --aplicar
+```
+
+El comentario va en un archivo (markdown mínimo, como las descripciones), no en la línea de
+comandos. `--estado` acepta el nombre de la transición o del estado destino; los estados del
+proyecto KAN son `Por hacer`, `En curso`, `ESPERANDO AL CLIENTE` y `RESUELTO`, pero consultá
+`--transiciones`: dependen de la issue.
+
+Las mismas reglas que al crear: **`--aplicar` sólo con el sí explícito de una persona** sobre ese
+dry-run. Comentar y mover estados es visible para el equipo, y mover a `RESUELTO` lo decide una
+persona, no el agente.
