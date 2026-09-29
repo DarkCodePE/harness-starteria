@@ -113,6 +113,12 @@ subtarea y bloquea a las demás** (`bloqueadaPor` → enlace `Blocks` en Jira).
 4. Escribir primero el test que demuestra cada `CA-n` que la subtarea cierra, verlo fallar, y
    recién ahí el código. El cambio más chico que cierra la subtarea: nada de refactors de paso.
 
+**Volver a `/hu`.** Si al implementar resulta que el cambio real es otro (el problema se origina en
+otro momento del producto que el que dice la HU, un CA no se puede cumplir sin tocar lo que quedó
+fuera de alcance, o aparece un contrato afectado que nadie nombró), el agente **no** reinterpreta
+el alcance: para, deja el hallazgo en la subtarea y la HU vuelve a `/hu` para re-afilarse. El por
+qué, el resultado buscado, el alcance y los criterios no se cambian en silencio desde el código.
+
 **Verificar (fase f)** — `.claude/skills/verificar/SKILL.md` y [`TESTING.md`](TESTING.md). El nivel
 barato mientras se itera; la matriz completa de los frentes tocados antes de pedir review. **Lo que
 no se pudo correr se reporta con el motivo**; nunca se declara verde algo que no se ejecutó.

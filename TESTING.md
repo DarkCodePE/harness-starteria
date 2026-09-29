@@ -14,12 +14,18 @@ mismo PR que lo cambió.
 | si el cambio toca prompts o agentes de IA | eval determinístico del harness (§4) | un test unitario no mide la decisión |
 | antes del PR | lo mismo que CI **más** `typecheck` y `lint`, que CI no corre | llegan rojos al CI si no |
 
+Tiempos de referencia en una máquina de desarrollo (2026-09-29): typecheck ~11 s por frente,
+`test:front` 12 s (561 tests), `test:backend` 21 s (1079), `build` 6 s, `pytest -m unit` 4 s (446),
+eval determinístico 1 s, E2E de Portfolio Entry ~65 s (8 tests). La matriz completa entra en
+unos 2 minutos: no hay excusa para no correrla antes del review.
+
 Todo comando que no se pudo correr (falta Docker, falta una clave, timeout) se reporta con el
 motivo. Un nivel no corrido no es un nivel verde.
 
 ## 2. front — `front/src/`
 
-Todos los comandos desde `front/`. Primera vez: `npm ci`.
+Todos los comandos desde `front/`. Primera vez: `npm ci && npx prisma generate` (sin el cliente
+Prisma generado, `typecheck:backend` y `test:backend` fallan con errores de tipos que no son tuyos).
 
 | Nivel | Comando | Qué cubre |
 |---|---|---|
@@ -98,6 +104,10 @@ npm run test:e2e:debug -- e2e/<spec>                 # con inspector
 Variables útiles: `E2E_SKIP_DOCKER=1` (usar una base que ya levantaste, con `E2E_DATABASE_URL`),
 `E2E_KEEP_DOCKER=1` (no bajar el contenedor al terminar), `E2E_BASE_URL`. Credenciales y flags
 tienen defaults de prueba en `run-e2e.ts`; no pongas secretos reales.
+
+Al terminar, el log muestra varios `prisma:error ... terminating connection due to administrator
+command` (`E57P01`): es el contenedor de Postgres bajando mientras el backend todavía tiene
+conexiones abiertas. Es ruido del teardown, no un fallo; lo que cuenta es la línea `N passed`.
 
 ### Deuda heredada: 20 fallos conocidos
 
