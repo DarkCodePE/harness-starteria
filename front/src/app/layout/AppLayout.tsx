@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 
 export function AppLayout() {
-  const { user, logout, setUserRole, currentProject, isAuthenticated, authLoading, canAccessProject } = useApp();
+  const { user, logout, setUserRole, currentProject, isAuthenticated, canAccessProject } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,11 +44,6 @@ export function AppLayout() {
   }, [currentProject?.id]);
 
   useEffect(() => {
-    // KAN-67: al abrir o recargar una ruta, la sesión todavía se está restaurando y
-    // `isAuthenticated` es false por un instante. Sin esperar, se mandaba a /auth y de
-    // ahí al dashboard. Mismo guard que PortfolioLeadLayout.
-    if (authLoading) return;
-
     if (!isAuthenticated) {
       navigate('/auth', { replace: true });
       return;
@@ -90,9 +85,9 @@ export function AppLayout() {
     ) {
       navigate('/dashboard', { replace: true });
     }
-  }, [authLoading, isAuthenticated, user?.role, location.pathname, navigate, canAccessProject]);
+  }, [isAuthenticated, user?.role, location.pathname, navigate, canAccessProject]);
 
-  if (authLoading || !isAuthenticated) return null;
+  if (!isAuthenticated) return null;
 
   const isActive = (path: string) => {
     if (path === '/evidencias' && matchPath('/projects/:projectId/evidencias', location.pathname)) return true;
