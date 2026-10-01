@@ -172,7 +172,7 @@ const questionPlanSchema = objectSchema({
   status: nullable({ type: 'string', enum: ['questions_required', 'no_questions_required', 'insufficient_input'] }),
 });
 
-const portfolioEntryAnalysisProperties: Record<string, JsonSchema> = {
+const portfolioEntryAnalysisSchema = objectSchema({
   entry_id: { type: 'string' },
   analysis_version: { type: 'string' },
   primary_intent: { type: 'string', enum: intentEnum },
@@ -185,20 +185,10 @@ const portfolioEntryAnalysisProperties: Record<string, JsonSchema> = {
   reverse_alignment: reverseAlignmentSchema,
   provenance: arrayOf(provenanceEntrySchema),
   status: { type: 'string', enum: ['pending', 'ready', 'insufficient_input', 'failed', 'superseded'] },
-};
-
-export const portfolioEntryTurnProviderJsonSchema = objectSchema({
-  analysis: objectSchema(portfolioEntryAnalysisProperties),
-  question_plan: questionPlanSchema,
 });
 
-// ADR-032: con Jev como clasificador, el LLM no puede devolver la clasificación.
-export const CLASSIFICATION_FIELDS = ['primary_intent', 'secondary_intents', 'initial_entry_state', 'current_frame'] as const;
-
-export const portfolioEntryTurnWithoutClassificationProviderJsonSchema = objectSchema({
-  analysis: objectSchema(Object.fromEntries(
-    Object.entries(portfolioEntryAnalysisProperties).filter(([key]) => !(CLASSIFICATION_FIELDS as readonly string[]).includes(key)),
-  )),
+export const portfolioEntryTurnProviderJsonSchema = objectSchema({
+  analysis: portfolioEntryAnalysisSchema,
   question_plan: questionPlanSchema,
 });
 
