@@ -204,7 +204,7 @@ jobs:
           for name in DOCKERHUB_USERNAME DOCKERHUB_TOKEN RACKSPACE_REFRESH_TOKEN RACKSPACE_ORG_NAME RACKSPACE_CLOUDSPACE_NAME STARTERIA_JWT_SECRET STARTERIA_DB_PASSWORD STARTERIA_AI_SERVICE_TOKEN STARTERIA_BRIDGE_SHARED_SECRET OPENROUTER_API_KEY JEV_API_KEY PORTFOLIO_ENTRY_API_KEY GOOGLE_CLIENT_ID; do
             [[ -n "${!name}" ]] || { echo "::error::Missing required secret $name"; exit 1; }
           done
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
         with:
           version: v1.30.0
       - name: Fetch kubeconfig from Rackspace Spot
